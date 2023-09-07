@@ -1,0 +1,10 @@
+# https://taskfile.dev
+
+version: '3'
+
+includes:
+  llama-service:
+    taskfile: ./llama-openai/Taskfile.yml
+
+  llama-openai:
+    taskfile: ./llama-openai/Taskfile.yml

@@ -1,0 +1,26 @@
+services:
+  llama:
+    image: adrianliechti/llama-server
+    pull_policy: always
+    command: --host 0.0.0.0 --port 8000 --path /public --model /models/llama-2-7b-chat.gguf --embedding --alias default --ctx-size 16384
+    volumes:
+      - ./models:/models:cached
+
+  openai:
+    image: adrianliechti/llama-openai
+    pull_policy: always
+    environment:
+      - API_KEY=changeme
+      - LLAMA_URL=http://llama:8000
+    ports:
+      - 8080:8080
+  
+  web:
+    image: ghcr.io/mckaywrigley/chatbot-ui:main
+    pull_policy: always
+    ports:
+      - 3000:3000
+    environment:
+      - OPENAI_API_KEY=changeme
+      - OPENAI_API_HOST=http://openai:8080
+      - DEFAULT_MODEL=default
