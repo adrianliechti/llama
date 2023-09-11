@@ -11,7 +11,9 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -66,11 +68,19 @@ func (p *Provider) Models(ctx context.Context) ([]openai.Model, error) {
 	return []openai.Model{
 		{
 			ID: "default",
+
+			Object: "model",
+			Root:   "default",
+
+			OwnedBy:   "owner",
+			CreatedAt: time.Now().Unix(),
 		},
 	}, nil
 }
 
 func (p *Provider) Chat(ctx context.Context, request openai.ChatCompletionRequest) (*openai.ChatCompletionResponse, error) {
+	sessionID := uuid.New().String()
+
 	req, err := convertRequest(request)
 
 	if err != nil {
@@ -106,8 +116,19 @@ func (p *Provider) Chat(ctx context.Context, request openai.ChatCompletionReques
 		return nil, err
 	}
 
+	model := result.Model
+
+	if model == "" {
+		model = request.Model
+	}
+
 	return &openai.ChatCompletionResponse{
-		Model: result.Model,
+		ID: sessionID,
+
+		Model:  model,
+		Object: "chat.completion",
+
+		Created: time.Now().Unix(),
 
 		Choices: []openai.ChatCompletionChoice{
 			{
@@ -122,6 +143,8 @@ func (p *Provider) Chat(ctx context.Context, request openai.ChatCompletionReques
 }
 
 func (p *Provider) ChatStream(ctx context.Context, request openai.ChatCompletionRequest, stream chan<- openai.ChatCompletionStreamResponse) error {
+	sessionID := uuid.New().String()
+
 	req, err := convertRequest(request)
 
 	if err != nil {
@@ -177,6 +200,12 @@ func (p *Provider) ChatStream(ctx context.Context, request openai.ChatCompletion
 			return err
 		}
 
+		model := result.Model
+
+		if model == "" {
+			model = request.Model
+		}
+
 		status := openai.FinishReasonNull
 
 		if result.Stop {
@@ -184,7 +213,12 @@ func (p *Provider) ChatStream(ctx context.Context, request openai.ChatCompletion
 		}
 
 		stream <- openai.ChatCompletionStreamResponse{
-			Model: result.Model,
+			ID: sessionID,
+
+			Model:  model,
+			Object: "chat.completion.chunk",
+
+			Created: time.Now().Unix(),
 
 			Choices: []openai.ChatCompletionStreamChoice{
 				{

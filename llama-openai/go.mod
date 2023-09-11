@@ -5,6 +5,7 @@ go 1.21.0
 require (
 	github.com/coreos/go-oidc/v3 v3.6.0
 	github.com/go-chi/chi/v5 v5.0.10
+	github.com/google/uuid v1.3.1
 	github.com/sashabaranov/go-openai v1.15.1
 )
 
