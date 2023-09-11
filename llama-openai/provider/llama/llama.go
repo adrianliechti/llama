@@ -20,7 +20,8 @@ import (
 type Provider struct {
 	client *http.Client
 
-	url string
+	url   string
+	model string
 
 	username string
 	password string
@@ -42,6 +43,12 @@ func FromEnvironment() (*Provider, error) {
 		return nil, errors.New("LLAMA_URL is not set")
 	}
 
+	model := os.Getenv("LLAMA_MODEL")
+
+	if model == "" {
+		model = "default"
+	}
+
 	var username string
 	var password string
 
@@ -57,7 +64,8 @@ func FromEnvironment() (*Provider, error) {
 	return &Provider{
 		client: client,
 
-		url: u.String(),
+		url:   u.String(),
+		model: model,
 
 		username: username,
 		password: password,
@@ -67,10 +75,10 @@ func FromEnvironment() (*Provider, error) {
 func (p *Provider) Models(ctx context.Context) ([]openai.Model, error) {
 	return []openai.Model{
 		{
-			ID: "default",
+			ID: p.model,
 
 			Object: "model",
-			Root:   "default",
+			Root:   p.model,
 
 			OwnedBy:   "owner",
 			CreatedAt: time.Now().Unix(),
@@ -119,7 +127,7 @@ func (p *Provider) Chat(ctx context.Context, request openai.ChatCompletionReques
 	model := result.Model
 
 	if model == "" {
-		model = request.Model
+		model = p.model
 	}
 
 	return &openai.ChatCompletionResponse{
