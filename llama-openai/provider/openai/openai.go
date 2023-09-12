@@ -14,7 +14,13 @@ type Provider struct {
 }
 
 func FromEnvironment() (*Provider, error) {
-	cfg := openai.DefaultConfig(os.Getenv("OPENAI_API_KEY"))
+	token := os.Getenv("OPENAI_API_KEY")
+
+	if token == "" {
+		return nil, errors.New("OPENAI_API_KEY is not configured")
+	}
+
+	cfg := openai.DefaultConfig(token)
 
 	if val := os.Getenv("OPENAI_API_HOST"); val != "" {
 		cfg.BaseURL = val
