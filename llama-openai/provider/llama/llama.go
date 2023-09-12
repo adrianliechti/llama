@@ -20,8 +20,10 @@ import (
 type Provider struct {
 	client *http.Client
 
-	url   string
-	model string
+	url string
+
+	model  string
+	system string
 
 	username string
 	password string
@@ -33,13 +35,9 @@ var (
 )
 
 func FromEnvironment() (*Provider, error) {
-	u, err := url.Parse(os.Getenv("LLAMA_URL"))
+	url := os.Getenv("LLAMA_URL")
 
-	if err != nil {
-		return nil, err
-	}
-
-	if u.Host == "" {
+	if url == "" {
 		return nil, errors.New("LLAMA_URL is not set")
 	}
 
@@ -47,6 +45,26 @@ func FromEnvironment() (*Provider, error) {
 
 	if model == "" {
 		model = "default"
+	}
+
+	system := os.Getenv("LLAMA_SYSTEM")
+
+	if system == "" {
+		system = "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."
+	}
+
+	return New(url, model, system)
+}
+
+func New(address, model, system string) (*Provider, error) {
+	u, err := url.Parse(address)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if u.Host == "" {
+		return nil, errors.New("host is not set")
 	}
 
 	var username string
@@ -64,8 +82,10 @@ func FromEnvironment() (*Provider, error) {
 	return &Provider{
 		client: client,
 
-		url:   u.String(),
-		model: model,
+		url: u.String(),
+
+		model:  model,
+		system: system,
 
 		username: username,
 		password: password,
@@ -89,7 +109,7 @@ func (p *Provider) Models(ctx context.Context) ([]openai.Model, error) {
 func (p *Provider) Chat(ctx context.Context, request openai.ChatCompletionRequest) (*openai.ChatCompletionResponse, error) {
 	sessionID := uuid.New().String()
 
-	req, err := convertRequest(request)
+	req, err := convertRequest(request, p.system)
 
 	if err != nil {
 		return nil, err
@@ -153,7 +173,7 @@ func (p *Provider) Chat(ctx context.Context, request openai.ChatCompletionReques
 func (p *Provider) ChatStream(ctx context.Context, request openai.ChatCompletionRequest, stream chan<- openai.ChatCompletionStreamResponse) error {
 	sessionID := uuid.New().String()
 
-	req, err := convertRequest(request)
+	req, err := convertRequest(request, p.system)
 
 	if err != nil {
 		return err
@@ -282,14 +302,12 @@ func verifyRequest(req openai.ChatCompletionRequest) error {
 	return nil
 }
 
-func convertRequest(req openai.ChatCompletionRequest) (*completionRequest, error) {
+func convertRequest(req openai.ChatCompletionRequest, system string) (*completionRequest, error) {
 	if err := verifyRequest(req); err != nil {
 		return nil, err
 	}
 
 	messages := slices.Clone(req.Messages)
-
-	system := "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."
 
 	if messages[0].Role == openai.ChatMessageRoleSystem {
 		system = strings.TrimSpace(messages[0].Content)
