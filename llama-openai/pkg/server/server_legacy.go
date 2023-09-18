@@ -74,13 +74,14 @@ func (s *Server) handleCompletions(w http.ResponseWriter, r *http.Request) {
 
 func convertChatRequest(r openai.CompletionRequest) openai.ChatCompletionRequest {
 	result := openai.ChatCompletionRequest{
-		Model:  r.Model,
-		Stream: r.Stream,
+		Model: r.Model,
 
 		MaxTokens:   r.MaxTokens,
 		Temperature: r.Temperature,
 		TopP:        r.TopP,
 		N:           r.N,
+
+		Stream: r.Stream,
 
 		Stop:             r.Stop,
 		PresencePenalty:  r.PresencePenalty,
@@ -93,6 +94,17 @@ func convertChatRequest(r openai.CompletionRequest) openai.ChatCompletionRequest
 				Role:    openai.ChatMessageRoleUser,
 				Content: prompt,
 			},
+		}
+	}
+
+	if prompts, ok := r.Prompt.([]string); ok {
+		for _, prompt := range prompts {
+			result.Messages = []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: prompt,
+				},
+			}
 		}
 	}
 

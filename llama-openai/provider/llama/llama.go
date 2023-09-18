@@ -268,20 +268,35 @@ func (p *Provider) ChatStream(ctx context.Context, request openai.ChatCompletion
 	return nil
 }
 
-func verifyRequest(req openai.ChatCompletionRequest) error {
-	messages := slices.Clone(req.Messages)
+func flattenMessages(msgs []openai.ChatCompletionMessage) []openai.ChatCompletionMessage {
+	result := make([]openai.ChatCompletionMessage, 0)
 
-	if len(messages) == 0 {
+	for _, m := range msgs {
+		if len(result) > 0 && result[len(result)-1].Role == m.Role {
+			result[len(result)-1].Content += "\n" + m.Content
+			continue
+		}
+
+		result = append(result, m)
+	}
+
+	return result
+}
+
+func verifyMessageOrder(msgs []openai.ChatCompletionMessage) error {
+	result := slices.Clone(msgs)
+
+	if len(result) == 0 {
 		return errors.New("there must be at least one message")
 	}
 
-	if messages[0].Role == openai.ChatMessageRoleSystem {
-		messages = messages[1:]
+	if result[0].Role == openai.ChatMessageRoleSystem {
+		result = result[1:]
 	}
 
 	errRole := errors.New("model only supports 'system', 'user' and 'assistant' roles, starting with 'system', then 'user' and alternating (u/a/u/a/u...)")
 
-	for i, m := range messages {
+	for i, m := range result {
 		if m.Role != openai.ChatMessageRoleUser && m.Role != openai.ChatMessageRoleAssistant {
 			return errRole
 		}
@@ -295,7 +310,7 @@ func verifyRequest(req openai.ChatCompletionRequest) error {
 		}
 	}
 
-	if messages[len(messages)-1].Role != openai.ChatMessageRoleUser {
+	if result[len(result)-1].Role != openai.ChatMessageRoleUser {
 		return errors.New("last message must be from user")
 	}
 
@@ -303,11 +318,11 @@ func verifyRequest(req openai.ChatCompletionRequest) error {
 }
 
 func convertRequest(req openai.ChatCompletionRequest, system string) (*completionRequest, error) {
-	if err := verifyRequest(req); err != nil {
+	messages := flattenMessages(req.Messages)
+
+	if err := verifyMessageOrder(messages); err != nil {
 		return nil, err
 	}
-
-	messages := slices.Clone(req.Messages)
 
 	if messages[0].Role == openai.ChatMessageRoleSystem {
 		system = strings.TrimSpace(messages[0].Content)
