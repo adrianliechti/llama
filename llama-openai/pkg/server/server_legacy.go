@@ -5,19 +5,18 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/sashabaranov/go-openai"
 )
 
 func (s *Server) handleCompletions(w http.ResponseWriter, r *http.Request) {
-	var legacyReq openai.CompletionRequest
+	var req openai.CompletionRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&legacyReq); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
-	req := convertChatRequest(legacyReq)
 
 	if req.Stream {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -28,13 +27,8 @@ func (s *Server) handleCompletions(w http.ResponseWriter, r *http.Request) {
 		done := make(chan error)
 		stream := make(chan openai.ChatCompletionStreamResponse)
 
-		// defer func() {
-		// 	close(done)
-		// 	close(stream)
-		// }()
-
 		go func() {
-			done <- s.provider.ChatStream(r.Context(), req, stream)
+			done <- s.provider.ChatStream(r.Context(), convertCompletionRequest(req), stream)
 		}()
 
 		for {
@@ -60,7 +54,7 @@ func (s *Server) handleCompletions(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else {
-		result, err := s.provider.Chat(r.Context(), req)
+		result, err := s.provider.Chat(r.Context(), convertCompletionRequest(req))
 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -72,16 +66,15 @@ func (s *Server) handleCompletions(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func convertChatRequest(r openai.CompletionRequest) openai.ChatCompletionRequest {
+func convertCompletionRequest(r openai.CompletionRequest) openai.ChatCompletionRequest {
 	result := openai.ChatCompletionRequest{
-		Model: r.Model,
+		Model:  r.Model,
+		Stream: r.Stream,
 
 		MaxTokens:   r.MaxTokens,
 		Temperature: r.Temperature,
 		TopP:        r.TopP,
 		N:           r.N,
-
-		Stream: r.Stream,
 
 		Stop:             r.Stop,
 		PresencePenalty:  r.PresencePenalty,
@@ -98,13 +91,11 @@ func convertChatRequest(r openai.CompletionRequest) openai.ChatCompletionRequest
 	}
 
 	if prompts, ok := r.Prompt.([]string); ok {
-		for _, prompt := range prompts {
-			result.Messages = []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: prompt,
-				},
-			}
+		result.Messages = []openai.ChatCompletionMessage{
+			{
+				Role:    openai.ChatMessageRoleUser,
+				Content: strings.Join(prompts, "\n"),
+			},
 		}
 	}
 
@@ -113,11 +104,12 @@ func convertChatRequest(r openai.CompletionRequest) openai.ChatCompletionRequest
 
 func convertChatCompletionResponse(r openai.ChatCompletionResponse) openai.CompletionResponse {
 	result := openai.CompletionResponse{
-		ID:      r.ID,
-		Object:  r.Object,
-		Created: r.Created,
-		Model:   r.Model,
+		ID: r.ID,
 
+		Object:  "text_completion",
+		Created: r.Created,
+
+		Model:   r.Model,
 		Choices: []openai.CompletionChoice{},
 	}
 
@@ -126,7 +118,7 @@ func convertChatCompletionResponse(r openai.ChatCompletionResponse) openai.Compl
 			Index: c.Index,
 			Text:  c.Message.Content,
 
-			FinishReason: string(c.FinishReason),
+			FinishReason: convertFinishReason(c.FinishReason),
 		})
 	}
 
@@ -135,11 +127,12 @@ func convertChatCompletionResponse(r openai.ChatCompletionResponse) openai.Compl
 
 func convertChatCompletionStreamResponse(r openai.ChatCompletionStreamResponse) openai.CompletionResponse {
 	result := openai.CompletionResponse{
-		ID:      r.ID,
-		Object:  r.Object,
-		Created: r.Created,
-		Model:   r.Model,
+		ID: r.ID,
 
+		Object:  "text_completion",
+		Created: r.Created,
+
+		Model:   r.Model,
 		Choices: []openai.CompletionChoice{},
 	}
 
@@ -148,9 +141,17 @@ func convertChatCompletionStreamResponse(r openai.ChatCompletionStreamResponse) 
 			Index: c.Index,
 			Text:  c.Delta.Content,
 
-			FinishReason: string(c.FinishReason),
+			FinishReason: convertFinishReason(c.FinishReason),
 		})
 	}
 
 	return result
+}
+
+func convertFinishReason(reason openai.FinishReason) string {
+	if reason == openai.FinishReasonLength {
+		return "length"
+	}
+
+	return "stop"
 }

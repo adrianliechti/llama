@@ -26,11 +26,6 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		done := make(chan error)
 		stream := make(chan openai.ChatCompletionStreamResponse)
 
-		// defer func() {
-		// 	close(done)
-		// 	close(stream)
-		// }()
-
 		go func() {
 			done <- s.provider.ChatStream(r.Context(), req, stream)
 		}()
