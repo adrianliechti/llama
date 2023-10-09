@@ -9,6 +9,7 @@ import (
 	"chat/provider"
 	"chat/provider/codellama"
 	"chat/provider/llama"
+	"chat/provider/mistral"
 	"chat/provider/openai"
 )
 
@@ -33,6 +34,10 @@ func main() {
 	}
 
 	if p, err := codellama.FromEnvironment(); err == nil {
+		providers = append(providers, p)
+	}
+
+	if p, err := mistral.FromEnvironment(); err == nil {
 		providers = append(providers, p)
 	}
 
