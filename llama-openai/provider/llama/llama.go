@@ -115,10 +115,10 @@ func (p *Provider) Embedding(ctx context.Context, request openai.EmbeddingReques
 
 	list := &openai.EmbeddingResponse{
 		Object: "list",
-		Model:  openai.AdaEmbeddingV2,
+		Model:  request.Model,
 	}
 
-	for _, content := range input {
+	for i, content := range input {
 		req := &embeddingRequest{
 			Content: strings.TrimSpace(content),
 		}
@@ -153,7 +153,9 @@ func (p *Provider) Embedding(ctx context.Context, request openai.EmbeddingReques
 		}
 
 		list.Data = append(list.Data, openai.Embedding{
-			Object:    "embedding",
+			Index:  i,
+			Object: "embedding",
+
 			Embedding: result.Embedding,
 		})
 	}
