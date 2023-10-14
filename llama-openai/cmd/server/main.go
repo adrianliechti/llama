@@ -4,7 +4,6 @@ import (
 	"chat/pkg/auth"
 	"chat/pkg/auth/oidc"
 	"chat/pkg/auth/static"
-	"chat/pkg/dispatcher"
 	"chat/pkg/server"
 	"chat/provider"
 	"chat/provider/codellama"
@@ -15,7 +14,7 @@ import (
 
 func main() {
 	var auth auth.Provider
-	var providers []provider.Provider
+	var provider provider.Provider
 
 	if p, err := static.FromEnvironment(); err == nil {
 		auth = p
@@ -26,33 +25,27 @@ func main() {
 	}
 
 	if p, err := openai.FromEnvironment(); err == nil {
-		providers = append(providers, p)
+		provider = p
 	}
 
 	if p, err := llama.FromEnvironment(); err == nil {
-		providers = append(providers, p)
+		provider = p
 	}
 
 	if p, err := codellama.FromEnvironment(); err == nil {
-		providers = append(providers, p)
+		provider = p
 	}
 
 	if p, err := mistral.FromEnvironment(); err == nil {
-		providers = append(providers, p)
+		provider = p
 	}
 
 	if auth == nil {
 		panic("auth provider is not configured")
 	}
 
-	if len(providers) == 0 {
+	if provider == nil {
 		panic("no provider configured")
-	}
-
-	provider, err := dispatcher.New(providers...)
-
-	if err != nil {
-		panic(err)
 	}
 
 	s := server.New(auth, provider)

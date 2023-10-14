@@ -35,6 +35,8 @@ func New(a auth.Provider, p provider.Provider) *Server {
 	r.Get("/v1/models", s.handleModels)
 	r.Get("/v1/model/{id}", s.handleModel)
 
+	r.Post("/v1/embeddings", s.handleEmbeddings)
+
 	r.Post("/v1/completions", s.handleCompletions)
 	r.Post("/v1/chat/completions", s.handleChatCompletions)
 

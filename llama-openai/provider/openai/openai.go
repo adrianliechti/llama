@@ -43,6 +43,16 @@ func (p *Provider) Models(ctx context.Context) ([]openai.Model, error) {
 	return result.Models, nil
 }
 
+func (p *Provider) Embedding(ctx context.Context, req openai.EmbeddingRequest) (*openai.EmbeddingResponse, error) {
+	result, err := p.client.CreateEmbeddings(ctx, req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
 func (p *Provider) Chat(ctx context.Context, req openai.ChatCompletionRequest) (*openai.ChatCompletionResponse, error) {
 	result, err := p.client.CreateChatCompletion(ctx, req)
 

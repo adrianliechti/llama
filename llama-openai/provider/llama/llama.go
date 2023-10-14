@@ -106,10 +106,65 @@ func (p *Provider) Models(ctx context.Context) ([]openai.Model, error) {
 	}, nil
 }
 
+func (p *Provider) Embedding(ctx context.Context, request openai.EmbeddingRequest) (*openai.EmbeddingResponse, error) {
+	input, err := convertEmbeddingRequest(request)
+
+	if err != nil {
+		return nil, err
+	}
+
+	list := &openai.EmbeddingResponse{
+		Object: "list",
+		Model:  openai.AdaEmbeddingV2,
+	}
+
+	for _, content := range input {
+		req := &embeddingRequest{
+			Content: strings.TrimSpace(content),
+		}
+
+		data, _ := json.Marshal(req)
+		url, _ := url.JoinPath(p.url, "/embedding")
+
+		r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(data))
+		r.Header.Set("Content-Type", "application/json")
+		r.Header.Set("Cache-Control", "no-cache")
+
+		if p.password != "" {
+			r.SetBasicAuth(p.username, p.password)
+		}
+
+		resp, err := p.client.Do(r)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, errors.New("unable to complete chat")
+		}
+
+		defer resp.Body.Close()
+
+		var result embeddingResponse
+
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			return nil, err
+		}
+
+		list.Data = append(list.Data, openai.Embedding{
+			Object:    "embedding",
+			Embedding: result.Embedding,
+		})
+	}
+
+	return list, nil
+}
+
 func (p *Provider) Chat(ctx context.Context, request openai.ChatCompletionRequest) (*openai.ChatCompletionResponse, error) {
 	sessionID := uuid.New().String()
 
-	req, err := convertRequest(request, p.system)
+	req, err := convertCompletionRequest(request, p.system)
 
 	if err != nil {
 		return nil, err
@@ -173,7 +228,7 @@ func (p *Provider) Chat(ctx context.Context, request openai.ChatCompletionReques
 func (p *Provider) ChatStream(ctx context.Context, request openai.ChatCompletionRequest, stream chan<- openai.ChatCompletionStreamResponse) error {
 	sessionID := uuid.New().String()
 
-	req, err := convertRequest(request, p.system)
+	req, err := convertCompletionRequest(request, p.system)
 
 	if err != nil {
 		return err
@@ -317,7 +372,37 @@ func verifyMessageOrder(msgs []openai.ChatCompletionMessage) error {
 	return nil
 }
 
-func convertRequest(req openai.ChatCompletionRequest, system string) (*completionRequest, error) {
+func convertEmbeddingRequest(request openai.EmbeddingRequest) ([]string, error) {
+	data, _ := json.Marshal(request)
+
+	type stringType struct {
+		Input string `json:"input"`
+	}
+
+	var stringVal stringType
+
+	if json.Unmarshal(data, &stringVal) == nil {
+		if stringVal.Input != "" {
+			return []string{stringVal.Input}, nil
+		}
+	}
+
+	type sliceType struct {
+		Input []string `json:"input"`
+	}
+
+	var sliceVal sliceType
+
+	if json.Unmarshal(data, &sliceVal) == nil {
+		if len(sliceVal.Input) > 0 {
+			return sliceVal.Input, nil
+		}
+	}
+
+	return nil, errors.New("invalid input format")
+}
+
+func convertCompletionRequest(req openai.ChatCompletionRequest, system string) (*completionRequest, error) {
 	messages := flattenMessages(req.Messages)
 
 	if err := verifyMessageOrder(messages); err != nil {
@@ -372,6 +457,14 @@ func convertRequest(req openai.ChatCompletionRequest, system string) (*completio
 	}
 
 	return result, nil
+}
+
+type embeddingRequest struct {
+	Content string `json:"content"`
+}
+
+type embeddingResponse struct {
+	Embedding []float32 `json:"embedding"`
 }
 
 type completionRequest struct {
