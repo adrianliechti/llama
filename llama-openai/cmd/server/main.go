@@ -1,10 +1,14 @@
 package main
 
 import (
+	"os"
+
+	"chat/pkg/server"
+
 	"chat/pkg/auth"
 	"chat/pkg/auth/oidc"
 	"chat/pkg/auth/static"
-	"chat/pkg/server"
+
 	"chat/provider"
 	"chat/provider/codellama"
 	"chat/provider/llama"
@@ -15,6 +19,12 @@ import (
 func main() {
 	var auth auth.Provider
 	var provider provider.Provider
+
+	port := os.Getenv("PORT")
+
+	if port == "" {
+		port = "8080"
+	}
 
 	if p, err := static.FromEnvironment(); err == nil {
 		auth = p
@@ -49,5 +59,5 @@ func main() {
 	}
 
 	s := server.New(auth, provider)
-	s.ListenAndServe(":8080")
+	s.ListenAndServe(":" + port)
 }
