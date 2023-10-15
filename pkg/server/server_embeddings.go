@@ -15,7 +15,7 @@ func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := s.provider.Embedding(r.Context(), req)
+	result, err := s.llm.Embedding(r.Context(), req)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)

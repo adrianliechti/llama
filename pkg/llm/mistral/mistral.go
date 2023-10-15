@@ -4,7 +4,7 @@ import (
 	"errors"
 	"os"
 
-	"chat/provider/llama"
+	"github.com/adrianliechti/llama/pkg/llm/llama"
 )
 
 func FromEnvironment() (*llama.Provider, error) {

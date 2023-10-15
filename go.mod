@@ -1,4 +1,4 @@
-module chat
+module github.com/adrianliechti/llama
 
 go 1.21.0
 
@@ -10,6 +10,7 @@ require (
 )
 
 require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7 // indirect

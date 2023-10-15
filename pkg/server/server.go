@@ -3,31 +3,34 @@ package server
 import (
 	"net/http"
 
-	"chat/pkg/auth"
-	"chat/provider"
+	"github.com/adrianliechti/llama/config"
+	"github.com/adrianliechti/llama/pkg/auth"
+	"github.com/adrianliechti/llama/pkg/llm"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 type Server struct {
+	addr   string
 	router *chi.Mux
 
-	auth     auth.Provider
-	provider provider.Provider
+	auth auth.Provider
+	llm  llm.Provider
 }
 
-func New(a auth.Provider, p provider.Provider) *Server {
+func New(cfg *config.Config) *Server {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
 	s := &Server{
+		addr:   cfg.Addr,
 		router: r,
 
-		auth:     a,
-		provider: p,
+		auth: cfg.Auth,
+		llm:  cfg.LLM,
 	}
 
 	r.Use(s.handleAuth)
@@ -43,17 +46,19 @@ func New(a auth.Provider, p provider.Provider) *Server {
 	return s
 }
 
-func (s *Server) ListenAndServe(addr string) error {
-	return http.ListenAndServe(addr, s.router)
+func (s *Server) ListenAndServe() error {
+	return http.ListenAndServe(s.addr, s.router)
 }
 
 func (s *Server) handleAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		if err := s.auth.Verify(ctx, r); err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
+		if s.auth != nil {
+			if err := s.auth.Verify(ctx, r); err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
 		}
 
 		next.ServeHTTP(w, r.WithContext(ctx))

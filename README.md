@@ -8,14 +8,14 @@ https://github.com/ggerganov/llama.cpp
 
 ```bash
 mkdir ./models
-curl -L -o ./models/llama-2-7b-chat.gguf https://huggingface.co/TheBloke/Llama-2-7b-Chat-GGUF/resolve/main/llama-2-7b-chat.Q4_K_M.gguf
+curl -L -o ./models/llama-2-7b-chat.Q4_K_M.gguf https://huggingface.co/TheBloke/Llama-2-7b-Chat-GGUF/resolve/main/llama-2-7b-chat.Q4_K_M.gguf
 ```
 
 ### Run Llama Server
 
 ```bash
-docker pull adrianliechti/llama-server
-docker run -it --rm -p 8000:8000 -v $(pwd)/models:/models adrianliechti/llama-server --host 0.0.0.0 --port 8000 --path /public --model /models/llama-2-7b-chat.gguf --embedding --alias default --ctx-size 16384
+docker pull ghcr.io/ggerganov/llama.cpp:full
+docker run -it --rm -p 8000:8000 -v $(pwd)/models:/modelsghcr.io/ggerganov/llama.cpp:full --server --host 0.0.0.0 --port 8000 --path /public --model /models/llama-2-7b-chat.Q4_K_M.gguf --embedding --alias default
 ```
 
 ### Run OpenAI API Server

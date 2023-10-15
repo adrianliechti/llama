@@ -11,7 +11,7 @@ import (
 )
 
 func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
-	models, err := s.provider.Models(r.Context())
+	models, err := s.llm.Models(r.Context())
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -29,7 +29,7 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleModel(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	models, err := s.provider.Models(r.Context())
+	models, err := s.llm.Models(r.Context())
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
