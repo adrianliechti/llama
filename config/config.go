@@ -9,6 +9,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/auth/static"
 
 	"github.com/adrianliechti/llama/pkg/llm"
+	"github.com/adrianliechti/llama/pkg/llm/azure"
 	"github.com/adrianliechti/llama/pkg/llm/codellama"
 	"github.com/adrianliechti/llama/pkg/llm/llama"
 	"github.com/adrianliechti/llama/pkg/llm/mistral"
@@ -67,6 +68,10 @@ func authFromEnvironment() auth.Provider {
 }
 
 func llmFromEnvironment() llm.Provider {
+	if p, err := azure.FromEnvironment(); err == nil {
+		return p
+	}
+
 	if p, err := openai.FromEnvironment(); err == nil {
 		return p
 	}

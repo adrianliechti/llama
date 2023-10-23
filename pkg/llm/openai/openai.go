@@ -26,7 +26,11 @@ func FromEnvironment() (*Provider, error) {
 		cfg.BaseURL = val
 	}
 
-	client := openai.NewClientWithConfig(cfg)
+	return New(cfg)
+}
+
+func New(config openai.ClientConfig) (*Provider, error) {
+	client := openai.NewClientWithConfig(config)
 
 	return &Provider{
 		client: client,
