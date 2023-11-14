@@ -4,47 +4,88 @@ import (
 	"context"
 	"errors"
 	"io"
-	"os"
+	"strings"
 
 	"github.com/sashabaranov/go-openai"
 )
 
 type Provider struct {
+	url   string
+	token string
+
 	client *openai.Client
+
+	modelMapper ModelMapper
 }
 
-func FromEnvironment() (*Provider, error) {
-	token := os.Getenv("OPENAI_API_KEY")
+type Option func(*Provider)
 
-	if token == "" {
-		return nil, errors.New("OPENAI_API_KEY is not configured")
+type ModelMapper = func(model string) string
+
+func New(options ...Option) *Provider {
+	p := &Provider{}
+
+	for _, option := range options {
+		option(p)
 	}
 
-	cfg := openai.DefaultConfig(token)
+	config := openai.DefaultConfig(p.token)
 
-	if val := os.Getenv("OPENAI_API_HOST"); val != "" {
-		cfg.BaseURL = val
+	if p.url != "" {
+		config.BaseURL = p.url
 	}
 
-	return New(cfg)
+	if strings.Contains(p.url, "openai.azure.com") {
+		config = openai.DefaultAzureConfig(p.token, p.url)
+	}
+
+	p.client = openai.NewClientWithConfig(config)
+
+	return p
 }
 
-func New(config openai.ClientConfig) (*Provider, error) {
-	client := openai.NewClientWithConfig(config)
+func WithURL(url string) Option {
+	return func(p *Provider) {
+		p.url = url
+	}
+}
 
-	return &Provider{
-		client: client,
-	}, nil
+func WithToken(token string) Option {
+	return func(p *Provider) {
+		p.token = token
+	}
+}
+
+func WithModelMapper(mapper ModelMapper) Option {
+	return func(p *Provider) {
+		p.modelMapper = mapper
+	}
 }
 
 func (p *Provider) Models(ctx context.Context) ([]openai.Model, error) {
-	result, err := p.client.ListModels(ctx)
+	list, err := p.client.ListModels(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return result.Models, nil
+	var result []openai.Model
+
+	for _, model := range list.Models {
+		if p.modelMapper != nil {
+			id := p.modelMapper(model.ID)
+
+			if id == "" {
+				continue
+			}
+
+			model.ID = id
+		}
+
+		result = append(result, model)
+	}
+
+	return result, nil
 }
 
 func (p *Provider) Embedding(ctx context.Context, req openai.EmbeddingRequest) (*openai.EmbeddingResponse, error) {

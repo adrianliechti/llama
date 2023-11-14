@@ -3,17 +3,16 @@ package config
 import (
 	"errors"
 	"os"
+	"strings"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/adrianliechti/llama/pkg/auth"
-	"github.com/adrianliechti/llama/pkg/auth/oidc"
-	"github.com/adrianliechti/llama/pkg/auth/static"
+	"github.com/adrianliechti/llama/pkg/llm/dispatcher"
+	"github.com/adrianliechti/llama/pkg/llm/llama"
+	"github.com/adrianliechti/llama/pkg/llm/openai"
 
 	"github.com/adrianliechti/llama/pkg/llm"
-	"github.com/adrianliechti/llama/pkg/llm/azure"
-	"github.com/adrianliechti/llama/pkg/llm/codellama"
-	"github.com/adrianliechti/llama/pkg/llm/llama"
-	"github.com/adrianliechti/llama/pkg/llm/mistral"
-	"github.com/adrianliechti/llama/pkg/llm/openai"
 )
 
 type Config struct {
@@ -23,25 +22,35 @@ type Config struct {
 	LLM  llm.Provider
 }
 
-func FromEnvironment() (*Config, error) {
-	addr := addrFromEnvironment()
-
-	auth := authFromEnvironment()
-	llm := llmFromEnvironment()
-
-	if auth == nil {
-		return nil, errors.New("no auth provider configured")
+func Parse(path string) (*Config, error) {
+	if path == "" {
+		path = "config.yaml"
 	}
 
-	if llm == nil {
-		return nil, errors.New("no llm provider configured")
+	data, err := os.ReadFile(path)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var config configFile
+
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		return nil, err
+	}
+
+	addr := addrFromEnvironment()
+
+	llm, err := llmFromConfig(config.Providers)
+
+	if err != nil {
+		return nil, err
 	}
 
 	return &Config{
 		Addr: addr,
 
-		Auth: auth,
-		LLM:  llm,
+		LLM: llm,
 	}, nil
 }
 
@@ -55,38 +64,83 @@ func addrFromEnvironment() string {
 	return ":" + port
 }
 
-func authFromEnvironment() auth.Provider {
-	if p, err := oidc.FromEnvironment(); err == nil {
-		return p
+func llmFromConfig(providers []providerConfig) (llm.Provider, error) {
+	var llms []llm.Provider
+
+	for _, p := range providers {
+		switch strings.ToLower(p.Type) {
+		case "", "openai":
+			var options []openai.Option
+
+			if p.URL != "" {
+				options = append(options, openai.WithURL(p.URL))
+			}
+
+			if p.Token != "" {
+				options = append(options, openai.WithToken(p.Token))
+			}
+
+			models := p.Models
+
+			if len(models) > 0 {
+				var mapper openai.ModelMapper = func(model string) string {
+					for _, m := range models {
+						if strings.EqualFold(m.ID, model) {
+							if m.Alias != "" {
+								return m.Alias
+							}
+
+							return m.ID
+						}
+					}
+
+					return ""
+				}
+
+				options = append(options, openai.WithModelMapper(mapper))
+			}
+
+			llm := openai.New(options...)
+			llms = append(llms, llm)
+
+		case "llama":
+			var options []llama.Option
+
+			if p.URL != "" {
+				options = append(options, llama.WithURL(p.URL))
+			}
+
+			if len(p.Models) > 0 {
+				options = append(options, llama.WithModel(p.Models[0].ID))
+			}
+
+			llm := llama.New(options...)
+			llms = append(llms, llm)
+
+		default:
+			return nil, errors.New("invalid provider type: " + p.Type)
+		}
 	}
 
-	if p, err := static.FromEnvironment(); err == nil {
-		return p
-	}
-
-	return nil
+	return dispatcher.New(llms...)
 }
 
-func llmFromEnvironment() llm.Provider {
-	if p, err := azure.FromEnvironment(); err == nil {
-		return p
-	}
+type configFile struct {
+	Providers []providerConfig `yaml:"providers"`
+}
 
-	if p, err := openai.FromEnvironment(); err == nil {
-		return p
-	}
+type providerConfig struct {
+	Type string `yaml:"type"`
 
-	if p, err := llama.FromEnvironment(); err == nil {
-		return p
-	}
+	URL   string `yaml:"url"`
+	Token string `yaml:"token"`
 
-	if p, err := codellama.FromEnvironment(); err == nil {
-		return p
-	}
+	Models []modelConfig `yaml:"models"`
+}
 
-	if p, err := mistral.FromEnvironment(); err == nil {
-		return p
-	}
+type modelConfig struct {
+	ID string `yaml:"id"`
 
-	return nil
+	Name  string `yaml:"name"`
+	Alias string `yaml:"alias"`
 }

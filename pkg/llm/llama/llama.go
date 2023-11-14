@@ -8,7 +8,6 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-	"os"
 	"slices"
 	"strings"
 	"time"
@@ -29,67 +28,52 @@ type Provider struct {
 	password string
 }
 
+type Option func(*Provider)
+
+type ModelMapper = func(model string) string
+
 var (
 	headerData  = []byte("data: ")
 	errorPrefix = []byte(`data: {"error":`)
 )
 
-func FromEnvironment() (*Provider, error) {
-	url := os.Getenv("LLAMA_URL")
+func New(options ...Option) *Provider {
+	p := &Provider{
+		client: http.DefaultClient,
 
-	if url == "" {
-		return nil, errors.New("LLAMA_URL is not set")
+		model:  "default",
+		system: "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.",
 	}
 
-	model := os.Getenv("LLAMA_MODEL")
-
-	if model == "" {
-		model = "default"
+	for _, option := range options {
+		option(p)
 	}
 
-	system := os.Getenv("LLAMA_SYSTEM")
-
-	if system == "" {
-		system = "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."
-	}
-
-	return New(url, model, system)
+	return p
 }
 
-func New(address, model, system string) (*Provider, error) {
-	u, err := url.Parse(address)
-
-	if err != nil {
-		return nil, err
+func WithClient(client *http.Client) Option {
+	return func(p *Provider) {
+		p.client = client
 	}
+}
 
-	if u.Host == "" {
-		return nil, errors.New("host is not set")
+func WithURL(url string) Option {
+	return func(p *Provider) {
+		p.url = url
 	}
+}
 
-	var username string
-	var password string
-
-	if u.User != nil {
-		username = u.User.Username()
-		password, _ = u.User.Password()
-
-		u.User = nil
+func WithModel(model string) Option {
+	return func(p *Provider) {
+		p.model = model
 	}
+}
 
-	client := http.DefaultClient
-
-	return &Provider{
-		client: client,
-
-		url: u.String(),
-
-		model:  model,
-		system: system,
-
-		username: username,
-		password: password,
-	}, nil
+func WithSystem(system string) Option {
+	return func(p *Provider) {
+		p.system = system
+	}
 }
 
 func (p *Provider) Models(ctx context.Context) ([]openai.Model, error) {
