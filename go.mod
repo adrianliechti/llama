@@ -5,8 +5,8 @@ go 1.21
 require (
 	github.com/coreos/go-oidc/v3 v3.7.0
 	github.com/go-chi/chi/v5 v5.0.10
-	github.com/google/uuid v1.3.1
-	github.com/sashabaranov/go-openai v1.16.0
+	github.com/google/uuid v1.4.0
+	github.com/sashabaranov/go-openai v1.17.6
 )
 
 require (
