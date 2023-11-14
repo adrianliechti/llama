@@ -3,9 +3,9 @@
 version: '3'
 
 vars:
-  REPOSITORY: adrianliechti/llama-openai
+  REPOSITORY: adrianliechti/llama-openai:1
 
 tasks:
   publish:
     cmds:
-      - docker buildx build . --push --platform linux/amd64,linux/arm64 --tag {{.REPOSITORY}}:latest
+      - docker buildx build . --push --platform linux/amd64,linux/arm64 --tag {{.REPOSITORY}}
