@@ -8,11 +8,13 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/adrianliechti/llama/pkg/auth"
+	"github.com/adrianliechti/llama/pkg/auth/oidc"
+	"github.com/adrianliechti/llama/pkg/auth/static"
+
+	"github.com/adrianliechti/llama/pkg/llm"
 	"github.com/adrianliechti/llama/pkg/llm/dispatcher"
 	"github.com/adrianliechti/llama/pkg/llm/llama"
 	"github.com/adrianliechti/llama/pkg/llm/openai"
-
-	"github.com/adrianliechti/llama/pkg/llm"
 )
 
 type Config struct {
@@ -41,6 +43,12 @@ func Parse(path string) (*Config, error) {
 
 	addr := addrFromEnvironment()
 
+	auth, err := authFromConfig(config.Auth)
+
+	if err != nil {
+		return nil, err
+	}
+
 	llm, err := llmFromConfig(config.Providers)
 
 	if err != nil {
@@ -50,7 +58,8 @@ func Parse(path string) (*Config, error) {
 	return &Config{
 		Addr: addr,
 
-		LLM: llm,
+		Auth: auth,
+		LLM:  llm,
 	}, nil
 }
 
@@ -62,6 +71,18 @@ func addrFromEnvironment() string {
 	}
 
 	return ":" + port
+}
+
+func authFromConfig(auth authConfig) (auth.Provider, error) {
+	if auth.Issuer != "" {
+		return oidc.New(auth.Issuer, auth.Audience)
+	}
+
+	if auth.Token != "" {
+		return static.New(auth.Token)
+	}
+
+	return nil, nil
 }
 
 func llmFromConfig(providers []providerConfig) (llm.Provider, error) {
@@ -126,7 +147,16 @@ func llmFromConfig(providers []providerConfig) (llm.Provider, error) {
 }
 
 type configFile struct {
+	Auth authConfig `yaml:"auth"`
+
 	Providers []providerConfig `yaml:"providers"`
+}
+
+type authConfig struct {
+	Token string `yaml:"token"`
+
+	Issuer   string `yaml:"issuer"`
+	Audience string `yaml:"audience"`
 }
 
 type providerConfig struct {

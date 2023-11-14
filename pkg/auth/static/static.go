@@ -4,18 +4,11 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"os"
 	"strings"
 )
 
 type Provider struct {
 	token string
-}
-
-func FromEnvironment() (*Provider, error) {
-	token := os.Getenv("API_TOKEN")
-
-	return New(token)
 }
 
 func New(token string) (*Provider, error) {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -13,21 +12,6 @@ import (
 type Provider struct {
 	provider *oidc.Provider
 	verifier *oidc.IDTokenVerifier
-}
-
-func FromEnvironment() (*Provider, error) {
-	issuer := os.Getenv("OIDC_ISSUER")
-	audience := os.Getenv("OIDC_AUDIENCE")
-
-	if issuer == "" {
-		return nil, errors.New("missing OIDC_ISSUER")
-	}
-
-	if audience == "" {
-		return nil, errors.New("missing OIDC_AUDIENCE")
-	}
-
-	return New(issuer, audience)
 }
 
 func New(issuer, audience string) (*Provider, error) {
