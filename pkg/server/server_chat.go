@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/sashabaranov/go-openai"
 )
@@ -32,7 +33,15 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 		for {
 			select {
+			case resp := <-stream:
+				data, _ := json.Marshal(resp)
+
+				fmt.Fprintf(w, "data: %s\n\n", string(data))
+				w.(http.Flusher).Flush()
+
 			case err := <-done:
+				time.Sleep(1 * time.Second)
+
 				fmt.Fprintf(w, "data: [DONE]\n\n")
 				w.(http.Flusher).Flush()
 
@@ -41,12 +50,6 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 				}
 
 				return
-
-			case resp := <-stream:
-				data, _ := json.Marshal(resp)
-
-				fmt.Fprintf(w, "data: %s\n\n", string(data))
-				w.(http.Flusher).Flush()
 
 			case <-r.Context().Done():
 				return
