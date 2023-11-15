@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 )
 
 type Server struct {
@@ -33,10 +34,26 @@ func New(cfg *config.Config) *Server {
 		llm:  cfg.LLM,
 	}
 
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins: []string{"*"},
+
+		AllowedMethods: []string{
+			http.MethodHead,
+			http.MethodGet,
+			http.MethodPost,
+			http.MethodOptions,
+		},
+
+		AllowedHeaders: []string{"*"},
+
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+
 	r.Use(s.handleAuth)
 
 	r.Get("/v1/models", s.handleModels)
-	r.Get("/v1/model/{id}", s.handleModel)
+	r.Get("/v1/models/{id}", s.handleModel)
 
 	r.Post("/v1/embeddings", s.handleEmbeddings)
 
