@@ -138,6 +138,22 @@ func llmFromConfig(providers []providerConfig) (llm.Provider, error) {
 			llm := llama.New(options...)
 			llms = append(llms, llm)
 
+		case "orca":
+			var options []llama.Option
+
+			if p.URL != "" {
+				options = append(options, llama.WithURL(p.URL))
+			}
+
+			if len(p.Models) > 0 {
+				options = append(options, llama.WithModel(p.Models[0].ID))
+			}
+
+			options = append(options, llama.WithPromptTemplate(&llama.PromptTemplateChatML{}))
+
+			llm := llama.New(options...)
+			llms = append(llms, llm)
+
 		default:
 			return nil, errors.New("invalid provider type: " + p.Type)
 		}
