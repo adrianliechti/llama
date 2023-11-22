@@ -200,7 +200,7 @@ func (p *Provider) Chat(ctx context.Context, request openai.ChatCompletionReques
 		model = p.model
 	}
 
-	content := p.template.RenderMessages(result.Content)
+	content := p.template.RenderContent(result.Content)
 
 	return &openai.ChatCompletionResponse{
 		ID: sessionID,
@@ -292,7 +292,7 @@ func (p *Provider) ChatStream(ctx context.Context, request openai.ChatCompletion
 			status = openai.FinishReasonStop
 		}
 
-		content := p.template.RenderMessages(result.Content)
+		content := p.template.RenderContent(result.Content)
 
 		stream <- openai.ChatCompletionStreamResponse{
 			ID: sessionID,
@@ -353,20 +353,7 @@ func convertEmbeddingRequest(request openai.EmbeddingRequest) ([]string, error) 
 }
 
 func (p *Provider) convertCompletionRequest(request openai.ChatCompletionRequest) (*completionRequest, error) {
-	messages, err := p.template.ConvertMessages(request.Messages)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var system = p.system
-
-	if len(messages) > 0 && messages[0].Role == openai.ChatMessageRoleSystem {
-		system = strings.TrimSpace(messages[0].Content)
-		messages = messages[1:]
-	}
-
-	prompt, err := p.template.ConvertPrompt(system, messages)
+	prompt, err := p.template.ConvertPrompt(p.system, request.Messages)
 
 	if err != nil {
 		return nil, err
