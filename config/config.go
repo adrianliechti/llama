@@ -135,6 +135,9 @@ func llmFromConfig(providers []providerConfig) (llm.Provider, error) {
 				options = append(options, llama.WithModel(p.Models[0].ID))
 			}
 
+			options = append(options, llama.WithPromptTemplate(&llama.PromptTemplateLLAMA{}))
+			options = append(options, llama.WithSystem("You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."))
+
 			llm := llama.New(options...)
 			llms = append(llms, llm)
 
@@ -150,6 +153,7 @@ func llmFromConfig(providers []providerConfig) (llm.Provider, error) {
 			}
 
 			options = append(options, llama.WithPromptTemplate(&llama.PromptTemplateChatML{}))
+			options = append(options, llama.WithSystem("You are Orca, an AI language model created by Microsoft. You are a cautious assistant. You carefully follow instructions. You are helpful and harmless and you follow ethical guidelines and promote positive behavior."))
 
 			llm := llama.New(options...)
 			llms = append(llms, llm)
