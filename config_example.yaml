@@ -1,0 +1,8 @@
+auth:
+  token: changeme
+
+providers:
+  - type: llama
+    url: http://llama:8000
+    models:
+      - id: gpt-3.5-turbo
