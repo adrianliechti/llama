@@ -5,6 +5,7 @@ import (
 
 	"github.com/adrianliechti/llama/config"
 	"github.com/adrianliechti/llama/pkg/authorizer"
+	"github.com/adrianliechti/llama/pkg/dispatcher"
 	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/go-chi/chi/v5"
@@ -20,17 +21,23 @@ type Server struct {
 	authorizer authorizer.Provider
 }
 
-func New(cfg *config.Config) *Server {
+func New(cfg *config.Config) (*Server, error) {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
+	provider, err := dispatcher.New(cfg.Providers...)
+
+	if err != nil {
+		return nil, err
+	}
+
 	s := &Server{
 		addr:   cfg.Addr,
 		router: r,
 
-		provider:   cfg.Provider,
+		provider:   provider,
 		authorizer: cfg.Authorizer,
 	}
 
@@ -60,7 +67,7 @@ func New(cfg *config.Config) *Server {
 	r.Post("/v1/completions", s.handleCompletions)
 	r.Post("/v1/chat/completions", s.handleChatCompletions)
 
-	return s
+	return s, nil
 }
 
 func (s *Server) ListenAndServe() error {

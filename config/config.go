@@ -11,8 +11,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/authorizer/oidc"
 	"github.com/adrianliechti/llama/pkg/authorizer/static"
 
-	"github.com/adrianliechti/llama/pkg/dispatcher"
-
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/llama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
@@ -21,7 +19,7 @@ import (
 type Config struct {
 	Addr string
 
-	Provider   provider.Provider
+	Providers  []provider.Provider
 	Authorizer authorizer.Provider
 }
 
@@ -44,7 +42,7 @@ func Parse(path string) (*Config, error) {
 
 	addr := addrFromEnvironment()
 
-	provider, err := providerFromConfig(config.Providers)
+	providers, err := providersFromConfig(config.Providers)
 
 	if err != nil {
 		return nil, err
@@ -59,7 +57,7 @@ func Parse(path string) (*Config, error) {
 	return &Config{
 		Addr: addr,
 
-		Provider:   provider,
+		Providers:  providers,
 		Authorizer: authorizer,
 	}, nil
 }
@@ -74,8 +72,8 @@ func addrFromEnvironment() string {
 	return ":" + port
 }
 
-func providerFromConfig(providers []providerConfig) (provider.Provider, error) {
-	var llms []provider.Provider
+func providersFromConfig(providers []providerConfig) ([]provider.Provider, error) {
+	var result []provider.Provider
 
 	for _, p := range providers {
 		switch strings.ToLower(p.Type) {
@@ -98,8 +96,8 @@ func providerFromConfig(providers []providerConfig) (provider.Provider, error) {
 				options = append(options, openai.WithModelMapper(mapper))
 			}
 
-			llm := openai.New(options...)
-			llms = append(llms, llm)
+			p := openai.New(options...)
+			result = append(result, p)
 
 		case "llama":
 			var options []llama.Option
@@ -112,22 +110,28 @@ func providerFromConfig(providers []providerConfig) (provider.Provider, error) {
 				return nil, errors.New("multiple models not supported for llama provider")
 			}
 
-			var model modelConfig
+			var model string
+			var prompt string
+			var template string
 
-			if len(p.Models) > 0 {
-				model = p.Models[0]
+			for k, v := range p.Models {
+				model = k
+				prompt = v.Prompt
+				template = v.Template
+
+				break
 			}
 
-			if model.ID != "" {
-				options = append(options, llama.WithModel(model.ID))
+			if model != "" {
+				options = append(options, llama.WithModel(model))
 			}
 
-			if model.Alias != "" {
-				options = append(options, llama.WithModel(model.Alias))
+			if prompt != "" {
+				options = append(options, llama.WithSystem(prompt))
 			}
 
-			switch strings.ToLower(model.Template) {
-			case "", "chatml":
+			switch strings.ToLower(template) {
+			case "chatml":
 				options = append(options, llama.WithPromptTemplate(&llama.PromptTemplateChatML{}))
 
 			case "llama":
@@ -137,22 +141,18 @@ func providerFromConfig(providers []providerConfig) (provider.Provider, error) {
 				options = append(options, llama.WithPromptTemplate(&llama.PromptTemplateMistral{}))
 
 			default:
-				return nil, errors.New("invalid prompt template: " + model.Template)
+				return nil, errors.New("invalid prompt template: " + template)
 			}
 
-			if model.Prompt != "" {
-				options = append(options, llama.WithSystem(model.Prompt))
-			}
-
-			llm := llama.New(options...)
-			llms = append(llms, llm)
+			p := llama.New(options...)
+			result = append(result, p)
 
 		default:
 			return nil, errors.New("invalid provider type: " + p.Type)
 		}
 	}
 
-	return dispatcher.New(llms...)
+	return result, nil
 }
 
 func authorizerFromConfig(auth authConfig) (authorizer.Provider, error) {
@@ -186,13 +186,11 @@ type providerConfig struct {
 	URL   string `yaml:"url"`
 	Token string `yaml:"token"`
 
-	Models []modelConfig `yaml:"models"`
+	Models map[string]modelConfig `yaml:"models"`
 }
 
 type modelConfig struct {
 	ID string `yaml:"id"`
-
-	Alias string `yaml:"alias"`
 
 	Prompt   string `yaml:"prompt"`
 	Template string `yaml:"template"`
@@ -201,18 +199,18 @@ type modelConfig struct {
 	Description string `yaml:"description"`
 }
 
-type modelMapper []modelConfig
+type modelMapper map[string]modelConfig
 
 func (m modelMapper) From(val string) string {
-	for _, model := range m {
-		to := model.ID
+	for k, v := range m {
+		if v.ID != "" && strings.EqualFold(v.ID, val) {
+			return k
+		}
+	}
 
-		if strings.EqualFold(to, val) {
-			if model.Alias == "" {
-				return model.ID
-			}
-
-			return model.Alias
+	for k := range m {
+		if strings.EqualFold(k, val) {
+			return k
 		}
 	}
 
@@ -220,15 +218,13 @@ func (m modelMapper) From(val string) string {
 }
 
 func (m modelMapper) To(val string) string {
-	for _, model := range m {
-		from := model.Alias
+	for k, v := range m {
+		if strings.EqualFold(k, val) {
+			if v.ID != "" {
+				return v.ID
+			}
 
-		if from == "" {
-			from = model.ID
-		}
-
-		if strings.EqualFold(from, val) {
-			return model.ID
+			return k
 		}
 	}
 

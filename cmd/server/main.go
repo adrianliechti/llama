@@ -12,6 +12,13 @@ func main() {
 		panic(err)
 	}
 
-	s := server.New(cfg)
-	s.ListenAndServe()
+	s, err := server.New(cfg)
+
+	if err != nil {
+		panic(err)
+	}
+
+	if err := s.ListenAndServe(); err != nil {
+		panic(err)
+	}
 }
