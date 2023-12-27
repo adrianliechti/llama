@@ -9,18 +9,24 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
+var (
+	ErrInvalidModelMapping = errors.New("invalid model mapping")
+)
+
 type Provider struct {
 	url   string
 	token string
 
 	client *openai.Client
+	mapper ModelMapper
+}
 
-	modelMapper ModelMapper
+type ModelMapper interface {
+	From(key string) string
+	To(key string) string
 }
 
 type Option func(*Provider)
-
-type ModelMapper = func(model string) string
 
 func New(options ...Option) *Provider {
 	p := &Provider{}
@@ -58,7 +64,7 @@ func WithToken(token string) Option {
 
 func WithModelMapper(mapper ModelMapper) Option {
 	return func(p *Provider) {
-		p.modelMapper = mapper
+		p.mapper = mapper
 	}
 }
 
@@ -69,26 +75,42 @@ func (p *Provider) Models(ctx context.Context) ([]openai.Model, error) {
 		return nil, err
 	}
 
+	if p.mapper == nil {
+		return list.Models, nil
+	}
+
 	var result []openai.Model
 
-	for _, model := range list.Models {
-		if p.modelMapper != nil {
-			id := p.modelMapper(model.ID)
+	for _, m := range list.Models {
+		model := p.mapper.From(m.ID)
 
-			if id == "" {
-				continue
-			}
-
-			model.ID = id
+		if model == "" {
+			continue
 		}
 
-		result = append(result, model)
+		m.ID = model
+
+		result = append(result, m)
 	}
 
 	return result, nil
 }
 
-func (p *Provider) Embedding(ctx context.Context, req openai.EmbeddingRequest) (*openai.EmbeddingResponse, error) {
+func (p *Provider) Embed(ctx context.Context, req openai.EmbeddingRequest) (*openai.EmbeddingResponse, error) {
+	if p.mapper != nil {
+		model := p.mapper.To(req.Model.String())
+
+		if model == "" {
+			return nil, ErrInvalidModelMapping
+		}
+
+		req.Model = openai.Unknown
+
+		if strings.EqualFold(model, "text-embedding-ada-002") {
+			req.Model = openai.AdaEmbeddingV2
+		}
+	}
+
 	result, err := p.client.CreateEmbeddings(ctx, req)
 
 	if err != nil {
@@ -98,7 +120,17 @@ func (p *Provider) Embedding(ctx context.Context, req openai.EmbeddingRequest) (
 	return &result, nil
 }
 
-func (p *Provider) Chat(ctx context.Context, req openai.ChatCompletionRequest) (*openai.ChatCompletionResponse, error) {
+func (p *Provider) Complete(ctx context.Context, req openai.ChatCompletionRequest) (*openai.ChatCompletionResponse, error) {
+	if p.mapper != nil {
+		model := p.mapper.To(req.Model)
+
+		if model == "" {
+			return nil, ErrInvalidModelMapping
+		}
+
+		req.Model = model
+	}
+
 	result, err := p.client.CreateChatCompletion(ctx, req)
 
 	if err != nil {
@@ -108,7 +140,17 @@ func (p *Provider) Chat(ctx context.Context, req openai.ChatCompletionRequest) (
 	return &result, nil
 }
 
-func (p *Provider) ChatStream(ctx context.Context, req openai.ChatCompletionRequest, stream chan<- openai.ChatCompletionStreamResponse) error {
+func (p *Provider) CompleteStream(ctx context.Context, req openai.ChatCompletionRequest, stream chan<- openai.ChatCompletionStreamResponse) error {
+	if p.mapper != nil {
+		model := p.mapper.To(req.Model)
+
+		if model == "" {
+			return ErrInvalidModelMapping
+		}
+
+		req.Model = model
+	}
+
 	result, err := p.client.CreateChatCompletionStream(ctx, req)
 
 	if err != nil {

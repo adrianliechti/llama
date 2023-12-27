@@ -28,7 +28,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		stream := make(chan openai.ChatCompletionStreamResponse)
 
 		go func() {
-			done <- s.llm.ChatStream(r.Context(), req, stream)
+			done <- s.provider.CompleteStream(r.Context(), req, stream)
 		}()
 
 		for {
@@ -56,7 +56,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else {
-		result, err := s.llm.Chat(r.Context(), req)
+		result, err := s.provider.Complete(r.Context(), req)
 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)

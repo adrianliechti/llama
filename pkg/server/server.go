@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/adrianliechti/llama/config"
-	"github.com/adrianliechti/llama/pkg/auth"
-	"github.com/adrianliechti/llama/pkg/llm"
+	"github.com/adrianliechti/llama/pkg/authorizer"
+	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -16,8 +16,8 @@ type Server struct {
 	addr   string
 	router *chi.Mux
 
-	auth auth.Provider
-	llm  llm.Provider
+	provider   provider.Provider
+	authorizer authorizer.Provider
 }
 
 func New(cfg *config.Config) *Server {
@@ -30,8 +30,8 @@ func New(cfg *config.Config) *Server {
 		addr:   cfg.Addr,
 		router: r,
 
-		auth: cfg.Auth,
-		llm:  cfg.LLM,
+		provider:   cfg.Provider,
+		authorizer: cfg.Authorizer,
 	}
 
 	r.Use(cors.Handler(cors.Options{
@@ -71,8 +71,8 @@ func (s *Server) handleAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		if s.auth != nil {
-			if err := s.auth.Verify(ctx, r); err != nil {
+		if s.authorizer != nil {
+			if err := s.authorizer.Verify(ctx, r); err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}

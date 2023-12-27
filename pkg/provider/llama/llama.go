@@ -8,7 +8,6 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-	"slices"
 	"strings"
 	"time"
 
@@ -21,8 +20,10 @@ type Provider struct {
 
 	url string
 
-	model  string
-	system string
+	model string
+
+	system   string
+	template PromptTemplate
 
 	username string
 	password string
@@ -30,11 +31,9 @@ type Provider struct {
 
 type Option func(*Provider)
 
-type ModelMapper = func(model string) string
-
 var (
-	headerData  = []byte("data: ")
-	errorPrefix = []byte(`data: {"error":`)
+	headerData = []byte("data: ")
+	//errorPrefix = []byte(`data: {"error":`)
 )
 
 func New(options ...Option) *Provider {
@@ -42,7 +41,9 @@ func New(options ...Option) *Provider {
 		client: http.DefaultClient,
 
 		model:  "default",
-		system: "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.",
+		system: "",
+
+		template: &PromptTemplateLLAMA{},
 	}
 
 	for _, option := range options {
@@ -76,6 +77,12 @@ func WithSystem(system string) Option {
 	}
 }
 
+func WithPromptTemplate(template PromptTemplate) Option {
+	return func(p *Provider) {
+		p.template = template
+	}
+}
+
 func (p *Provider) Models(ctx context.Context) ([]openai.Model, error) {
 	return []openai.Model{
 		{
@@ -90,7 +97,7 @@ func (p *Provider) Models(ctx context.Context) ([]openai.Model, error) {
 	}, nil
 }
 
-func (p *Provider) Embedding(ctx context.Context, request openai.EmbeddingRequest) (*openai.EmbeddingResponse, error) {
+func (p *Provider) Embed(ctx context.Context, request openai.EmbeddingRequest) (*openai.EmbeddingResponse, error) {
 	input, err := convertEmbeddingRequest(request)
 
 	if err != nil {
@@ -147,10 +154,10 @@ func (p *Provider) Embedding(ctx context.Context, request openai.EmbeddingReques
 	return list, nil
 }
 
-func (p *Provider) Chat(ctx context.Context, request openai.ChatCompletionRequest) (*openai.ChatCompletionResponse, error) {
+func (p *Provider) Complete(ctx context.Context, request openai.ChatCompletionRequest) (*openai.ChatCompletionResponse, error) {
 	sessionID := uuid.New().String()
 
-	req, err := convertCompletionRequest(request, p.system)
+	req, err := p.convertCompletionRequest(request)
 
 	if err != nil {
 		return nil, err
@@ -188,8 +195,14 @@ func (p *Provider) Chat(ctx context.Context, request openai.ChatCompletionReques
 	model := result.Model
 
 	if model == "" {
+		model = request.Model
+	}
+
+	if model == "" {
 		model = p.model
 	}
+
+	content := p.template.RenderContent(result.Content)
 
 	return &openai.ChatCompletionResponse{
 		ID: sessionID,
@@ -202,7 +215,7 @@ func (p *Provider) Chat(ctx context.Context, request openai.ChatCompletionReques
 		Choices: []openai.ChatCompletionChoice{
 			{
 				Message: openai.ChatCompletionMessage{
-					Content: strings.TrimSpace(result.Content),
+					Content: content,
 				},
 
 				FinishReason: openai.FinishReasonStop,
@@ -211,10 +224,10 @@ func (p *Provider) Chat(ctx context.Context, request openai.ChatCompletionReques
 	}, nil
 }
 
-func (p *Provider) ChatStream(ctx context.Context, request openai.ChatCompletionRequest, stream chan<- openai.ChatCompletionStreamResponse) error {
+func (p *Provider) CompleteStream(ctx context.Context, request openai.ChatCompletionRequest, stream chan<- openai.ChatCompletionStreamResponse) error {
 	sessionID := uuid.New().String()
 
-	req, err := convertCompletionRequest(request, p.system)
+	req, err := p.convertCompletionRequest(request)
 
 	if err != nil {
 		return err
@@ -275,11 +288,17 @@ func (p *Provider) ChatStream(ctx context.Context, request openai.ChatCompletion
 			model = request.Model
 		}
 
+		if model == "" {
+			model = p.model
+		}
+
 		status := openai.FinishReasonNull
 
 		if result.Stop {
 			status = openai.FinishReasonStop
 		}
+
+		content := p.template.RenderContent(result.Content)
 
 		stream <- openai.ChatCompletionStreamResponse{
 			ID: sessionID,
@@ -293,7 +312,7 @@ func (p *Provider) ChatStream(ctx context.Context, request openai.ChatCompletion
 				{
 					Delta: openai.ChatCompletionStreamChoiceDelta{
 						Role:    openai.ChatMessageRoleAssistant,
-						Content: result.Content,
+						Content: content,
 					},
 
 					FinishReason: status,
@@ -304,55 +323,6 @@ func (p *Provider) ChatStream(ctx context.Context, request openai.ChatCompletion
 		if result.Stop {
 			break
 		}
-	}
-
-	return nil
-}
-
-func flattenMessages(msgs []openai.ChatCompletionMessage) []openai.ChatCompletionMessage {
-	result := make([]openai.ChatCompletionMessage, 0)
-
-	for _, m := range msgs {
-		if len(result) > 0 && result[len(result)-1].Role == m.Role {
-			result[len(result)-1].Content += "\n" + m.Content
-			continue
-		}
-
-		result = append(result, m)
-	}
-
-	return result
-}
-
-func verifyMessageOrder(msgs []openai.ChatCompletionMessage) error {
-	result := slices.Clone(msgs)
-
-	if len(result) == 0 {
-		return errors.New("there must be at least one message")
-	}
-
-	if result[0].Role == openai.ChatMessageRoleSystem {
-		result = result[1:]
-	}
-
-	errRole := errors.New("model only supports 'system', 'user' and 'assistant' roles, starting with 'system', then 'user' and alternating (u/a/u/a/u...)")
-
-	for i, m := range result {
-		if m.Role != openai.ChatMessageRoleUser && m.Role != openai.ChatMessageRoleAssistant {
-			return errRole
-		}
-
-		if (i+1)%2 == 1 && m.Role != openai.ChatMessageRoleUser {
-			return errRole
-		}
-
-		if (i+1)%2 == 0 && m.Role != openai.ChatMessageRoleAssistant {
-			return errRole
-		}
-	}
-
-	if result[len(result)-1].Role != openai.ChatMessageRoleUser {
-		return errors.New("last message must be from user")
 	}
 
 	return nil
@@ -388,45 +358,21 @@ func convertEmbeddingRequest(request openai.EmbeddingRequest) ([]string, error) 
 	return nil, errors.New("invalid input format")
 }
 
-func convertCompletionRequest(req openai.ChatCompletionRequest, system string) (*completionRequest, error) {
-	messages := flattenMessages(req.Messages)
+func (p *Provider) convertCompletionRequest(request openai.ChatCompletionRequest) (*completionRequest, error) {
+	prompt, err := p.template.ConvertPrompt(p.system, request.Messages)
 
-	if err := verifyMessageOrder(messages); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
-	if messages[0].Role == openai.ChatMessageRoleSystem {
-		system = strings.TrimSpace(messages[0].Content)
-		messages = messages[1:]
-	}
-
-	var prompt string
-
-	for i, message := range messages {
-		if message.Role == openai.ChatMessageRoleUser {
-			content := strings.TrimSpace(message.Content)
-
-			if i == 0 && len(system) > 0 {
-				content = "<<SYS>>\n" + system + "\n<</SYS>>\n\n" + content
-			}
-
-			prompt += " [INST] " + content + " [/INST]"
-		}
-
-		if message.Role == openai.ChatMessageRoleAssistant {
-			content := strings.TrimSpace(message.Content)
-			prompt += " " + content
-		}
-	}
-
 	result := &completionRequest{
-		Stream: req.Stream,
+		Stream: request.Stream,
 
-		Prompt: strings.TrimSpace(prompt),
+		Prompt: prompt,
 		Stop:   []string{"[INST]"},
 
-		Temperature: req.Temperature,
-		TopP:        req.TopP,
+		Temperature: request.Temperature,
+		TopP:        request.TopP,
 
 		NPredict: -1,
 		//NPredict: 400,
