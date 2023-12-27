@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 
@@ -42,8 +43,10 @@ func (s *Server) handleModel(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
+		result := convertModel(m)
+
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(m)
+		json.NewEncoder(w).Encode(result)
 		return
 	}
 
@@ -64,6 +67,7 @@ func convertModel(m provider.Model) openai.Model {
 	return openai.Model{
 		ID: m.ID,
 
-		Object: "model",
+		Object:    "model",
+		CreatedAt: time.Now().Unix(),
 	}
 }

@@ -9,8 +9,8 @@ import (
 func CompletionMessages(s []openai.ChatCompletionMessage) []provider.CompletionMessage {
 	result := make([]provider.CompletionMessage, 0)
 
-	for i, m := range s {
-		result[i] = CompletionMessage(m)
+	for _, m := range s {
+		result = append(result, CompletionMessage(m))
 	}
 
 	return result
@@ -47,6 +47,9 @@ func MessageRole(r string) provider.MessageRole {
 
 func MessageResult(r openai.FinishReason) provider.MessageResult {
 	switch r {
+	case "":
+		return ""
+
 	case openai.FinishReasonNull:
 		return ""
 
