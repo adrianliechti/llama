@@ -3,21 +3,22 @@ package dispatcher
 import (
 	"context"
 	"errors"
+	"sort"
 
-	"github.com/adrianliechti/llama/pkg/llm"
+	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/sashabaranov/go-openai"
 )
 
 type Provider struct {
 	models    map[string]openai.Model
-	providers map[string]llm.Provider
+	providers map[string]provider.Provider
 }
 
-func New(providers ...llm.Provider) (*Provider, error) {
+func New(providers ...provider.Provider) (*Provider, error) {
 	p := &Provider{
 		models:    map[string]openai.Model{},
-		providers: map[string]llm.Provider{},
+		providers: map[string]provider.Provider{},
 	}
 
 	for _, provider := range providers {
@@ -43,14 +44,14 @@ func (p *Provider) Models(ctx context.Context) ([]openai.Model, error) {
 		result = append(result, m)
 	}
 
-	// sort.Slice(result, func(i, j int) bool {
-	// 	return result[i].ID < result[j].ID
-	// })
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].ID < result[j].ID
+	})
 
 	return result, nil
 }
 
-func (p *Provider) Embedding(ctx context.Context, req openai.EmbeddingRequest) (*openai.EmbeddingResponse, error) {
+func (p *Provider) Embed(ctx context.Context, req openai.EmbeddingRequest) (*openai.EmbeddingResponse, error) {
 	model := req.Model.String()
 	provider, ok := p.providers[model]
 
@@ -58,10 +59,10 @@ func (p *Provider) Embedding(ctx context.Context, req openai.EmbeddingRequest) (
 		return nil, errors.New("no provider configured for model")
 	}
 
-	return provider.Embedding(ctx, req)
+	return provider.Embed(ctx, req)
 }
 
-func (p *Provider) Chat(ctx context.Context, req openai.ChatCompletionRequest) (*openai.ChatCompletionResponse, error) {
+func (p *Provider) Complete(ctx context.Context, req openai.ChatCompletionRequest) (*openai.ChatCompletionResponse, error) {
 	model := req.Model
 	provider, ok := p.providers[model]
 
@@ -69,10 +70,10 @@ func (p *Provider) Chat(ctx context.Context, req openai.ChatCompletionRequest) (
 		return nil, errors.New("no provider configured for model")
 	}
 
-	return provider.Chat(ctx, req)
+	return provider.Complete(ctx, req)
 }
 
-func (p *Provider) ChatStream(ctx context.Context, req openai.ChatCompletionRequest, stream chan<- openai.ChatCompletionStreamResponse) error {
+func (p *Provider) CompleteStream(ctx context.Context, req openai.ChatCompletionRequest, stream chan<- openai.ChatCompletionStreamResponse) error {
 	model := req.Model
 	provider, ok := p.providers[model]
 
@@ -80,5 +81,5 @@ func (p *Provider) ChatStream(ctx context.Context, req openai.ChatCompletionRequ
 		return errors.New("no provider configured for model")
 	}
 
-	return provider.ChatStream(ctx, req, stream)
+	return provider.CompleteStream(ctx, req, stream)
 }

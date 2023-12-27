@@ -20,22 +20,20 @@ type Provider struct {
 
 	url string
 
-	model  string
-	system string
+	model string
+
+	system   string
+	template PromptTemplate
 
 	username string
 	password string
-
-	template PromptTemplate
 }
 
 type Option func(*Provider)
 
-type ModelMapper = func(model string) string
-
 var (
-	headerData  = []byte("data: ")
-	errorPrefix = []byte(`data: {"error":`)
+	headerData = []byte("data: ")
+	//errorPrefix = []byte(`data: {"error":`)
 )
 
 func New(options ...Option) *Provider {
@@ -99,7 +97,7 @@ func (p *Provider) Models(ctx context.Context) ([]openai.Model, error) {
 	}, nil
 }
 
-func (p *Provider) Embedding(ctx context.Context, request openai.EmbeddingRequest) (*openai.EmbeddingResponse, error) {
+func (p *Provider) Embed(ctx context.Context, request openai.EmbeddingRequest) (*openai.EmbeddingResponse, error) {
 	input, err := convertEmbeddingRequest(request)
 
 	if err != nil {
@@ -156,7 +154,7 @@ func (p *Provider) Embedding(ctx context.Context, request openai.EmbeddingReques
 	return list, nil
 }
 
-func (p *Provider) Chat(ctx context.Context, request openai.ChatCompletionRequest) (*openai.ChatCompletionResponse, error) {
+func (p *Provider) Complete(ctx context.Context, request openai.ChatCompletionRequest) (*openai.ChatCompletionResponse, error) {
 	sessionID := uuid.New().String()
 
 	req, err := p.convertCompletionRequest(request)
@@ -197,6 +195,10 @@ func (p *Provider) Chat(ctx context.Context, request openai.ChatCompletionReques
 	model := result.Model
 
 	if model == "" {
+		model = request.Model
+	}
+
+	if model == "" {
 		model = p.model
 	}
 
@@ -222,7 +224,7 @@ func (p *Provider) Chat(ctx context.Context, request openai.ChatCompletionReques
 	}, nil
 }
 
-func (p *Provider) ChatStream(ctx context.Context, request openai.ChatCompletionRequest, stream chan<- openai.ChatCompletionStreamResponse) error {
+func (p *Provider) CompleteStream(ctx context.Context, request openai.ChatCompletionRequest, stream chan<- openai.ChatCompletionStreamResponse) error {
 	sessionID := uuid.New().String()
 
 	req, err := p.convertCompletionRequest(request)
@@ -284,6 +286,10 @@ func (p *Provider) ChatStream(ctx context.Context, request openai.ChatCompletion
 
 		if model == "" {
 			model = request.Model
+		}
+
+		if model == "" {
+			model = p.model
 		}
 
 		status := openai.FinishReasonNull

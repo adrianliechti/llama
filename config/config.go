@@ -7,21 +7,22 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/adrianliechti/llama/pkg/auth"
-	"github.com/adrianliechti/llama/pkg/auth/oidc"
-	"github.com/adrianliechti/llama/pkg/auth/static"
+	"github.com/adrianliechti/llama/pkg/authorizer"
+	"github.com/adrianliechti/llama/pkg/authorizer/oidc"
+	"github.com/adrianliechti/llama/pkg/authorizer/static"
 
-	"github.com/adrianliechti/llama/pkg/llm"
-	"github.com/adrianliechti/llama/pkg/llm/dispatcher"
-	"github.com/adrianliechti/llama/pkg/llm/llama"
-	"github.com/adrianliechti/llama/pkg/llm/openai"
+	"github.com/adrianliechti/llama/pkg/dispatcher"
+
+	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/provider/llama"
+	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
 type Config struct {
 	Addr string
 
-	Auth auth.Provider
-	LLM  llm.Provider
+	Provider   provider.Provider
+	Authorizer authorizer.Provider
 }
 
 func Parse(path string) (*Config, error) {
@@ -43,13 +44,13 @@ func Parse(path string) (*Config, error) {
 
 	addr := addrFromEnvironment()
 
-	auth, err := authFromConfig(config.Auth)
+	provider, err := providerFromConfig(config.Providers)
 
 	if err != nil {
 		return nil, err
 	}
 
-	llm, err := llmFromConfig(config.Providers)
+	authorizer, err := authorizerFromConfig(config.Auth)
 
 	if err != nil {
 		return nil, err
@@ -58,8 +59,8 @@ func Parse(path string) (*Config, error) {
 	return &Config{
 		Addr: addr,
 
-		Auth: auth,
-		LLM:  llm,
+		Provider:   provider,
+		Authorizer: authorizer,
 	}, nil
 }
 
@@ -73,20 +74,8 @@ func addrFromEnvironment() string {
 	return ":" + port
 }
 
-func authFromConfig(auth authConfig) (auth.Provider, error) {
-	if auth.Issuer != "" {
-		return oidc.New(auth.Issuer, auth.Audience)
-	}
-
-	if auth.Token != "" {
-		return static.New(auth.Token)
-	}
-
-	return nil, nil
-}
-
-func llmFromConfig(providers []providerConfig) (llm.Provider, error) {
-	var llms []llm.Provider
+func providerFromConfig(providers []providerConfig) (provider.Provider, error) {
+	var llms []provider.Provider
 
 	for _, p := range providers {
 		switch strings.ToLower(p.Type) {
@@ -104,19 +93,7 @@ func llmFromConfig(providers []providerConfig) (llm.Provider, error) {
 			models := p.Models
 
 			if len(models) > 0 {
-				var mapper openai.ModelMapper = func(model string) string {
-					for _, m := range models {
-						if strings.EqualFold(m.ID, model) {
-							if m.Alias != "" {
-								return m.Alias
-							}
-
-							return m.ID
-						}
-					}
-
-					return ""
-				}
+				var mapper modelMapper = models
 
 				options = append(options, openai.WithModelMapper(mapper))
 			}
@@ -131,29 +108,41 @@ func llmFromConfig(providers []providerConfig) (llm.Provider, error) {
 				options = append(options, llama.WithURL(p.URL))
 			}
 
-			if len(p.Models) > 0 {
-				options = append(options, llama.WithModel(p.Models[0].ID))
+			if len(p.Models) > 1 {
+				return nil, errors.New("multiple models not supported for llama provider")
 			}
 
-			options = append(options, llama.WithPromptTemplate(&llama.PromptTemplateLLAMA{}))
-			options = append(options, llama.WithSystem("You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."))
-
-			llm := llama.New(options...)
-			llms = append(llms, llm)
-
-		case "orca":
-			var options []llama.Option
-
-			if p.URL != "" {
-				options = append(options, llama.WithURL(p.URL))
-			}
+			var model modelConfig
 
 			if len(p.Models) > 0 {
-				options = append(options, llama.WithModel(p.Models[0].ID))
+				model = p.Models[0]
 			}
 
-			options = append(options, llama.WithPromptTemplate(&llama.PromptTemplateChatML{}))
-			options = append(options, llama.WithSystem("You are Orca, an AI language model created by Microsoft. You are a cautious assistant. You carefully follow instructions. You are helpful and harmless and you follow ethical guidelines and promote positive behavior."))
+			if model.ID != "" {
+				options = append(options, llama.WithModel(model.ID))
+			}
+
+			if model.Alias != "" {
+				options = append(options, llama.WithModel(model.Alias))
+			}
+
+			switch strings.ToLower(model.Template) {
+			case "", "chatml":
+				options = append(options, llama.WithPromptTemplate(&llama.PromptTemplateChatML{}))
+
+			case "llama":
+				options = append(options, llama.WithPromptTemplate(&llama.PromptTemplateLLAMA{}))
+
+			case "mistral":
+				options = append(options, llama.WithPromptTemplate(&llama.PromptTemplateMistral{}))
+
+			default:
+				return nil, errors.New("invalid prompt template: " + model.Template)
+			}
+
+			if model.Prompt != "" {
+				options = append(options, llama.WithSystem(model.Prompt))
+			}
 
 			llm := llama.New(options...)
 			llms = append(llms, llm)
@@ -164,6 +153,18 @@ func llmFromConfig(providers []providerConfig) (llm.Provider, error) {
 	}
 
 	return dispatcher.New(llms...)
+}
+
+func authorizerFromConfig(auth authConfig) (authorizer.Provider, error) {
+	if auth.Issuer != "" {
+		return oidc.New(auth.Issuer, auth.Audience)
+	}
+
+	if auth.Token != "" {
+		return static.New(auth.Token)
+	}
+
+	return nil, nil
 }
 
 type configFile struct {
@@ -191,6 +192,45 @@ type providerConfig struct {
 type modelConfig struct {
 	ID string `yaml:"id"`
 
-	Name  string `yaml:"name"`
 	Alias string `yaml:"alias"`
+
+	Prompt   string `yaml:"prompt"`
+	Template string `yaml:"template"`
+
+	Name        string `yaml:"name"`
+	Description string `yaml:"description"`
+}
+
+type modelMapper []modelConfig
+
+func (m modelMapper) From(val string) string {
+	for _, model := range m {
+		to := model.ID
+
+		if strings.EqualFold(to, val) {
+			if model.Alias == "" {
+				return model.ID
+			}
+
+			return model.Alias
+		}
+	}
+
+	return ""
+}
+
+func (m modelMapper) To(val string) string {
+	for _, model := range m {
+		from := model.Alias
+
+		if from == "" {
+			from = model.ID
+		}
+
+		if strings.EqualFold(from, val) {
+			return model.ID
+		}
+	}
+
+	return ""
 }
