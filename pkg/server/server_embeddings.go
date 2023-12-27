@@ -5,41 +5,42 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/sashabaranov/go-openai"
+	"github.com/adrianliechti/llama/pkg/server/models"
 )
 
 func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
-	var req openai.EmbeddingRequest
+	var req models.EmbeddingRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	inputs, err := convertEmbeddingRequest(req)
+	inputs, err := convertEmbeddingInputs(req)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	result := &openai.EmbeddingResponse{
+	result := &models.Embeddings{
 		Object: "list",
-		Model:  req.Model,
+
+		Model: req.Model,
 	}
 
 	for i, input := range inputs {
-		embedding, err := s.provider.Embed(r.Context(), req.Model.String(), input)
+		embedding, err := s.provider.Embed(r.Context(), req.Model, input)
 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		result.Data = append(result.Data, openai.Embedding{
-			Index:  i,
+		result.Data = append(result.Data, models.Embedding{
 			Object: "embedding",
 
+			Index:     i,
 			Embedding: embedding.Embeddings,
 		})
 	}
@@ -48,7 +49,7 @@ func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
-func convertEmbeddingRequest(request openai.EmbeddingRequest) ([]string, error) {
+func convertEmbeddingInputs(request models.EmbeddingRequest) ([]string, error) {
 	data, _ := json.Marshal(request)
 
 	type stringType struct {

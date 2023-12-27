@@ -42,5 +42,6 @@ const (
 type MessageResult string
 
 const (
-	MessageResultStop MessageResult = "stop"
+	MessageResultStop   MessageResult = "stop"
+	MessageResultLength MessageResult = "length"
 )

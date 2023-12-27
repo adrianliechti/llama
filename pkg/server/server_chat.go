@@ -8,15 +8,16 @@ import (
 	"time"
 
 	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/provider/openai/from"
-	"github.com/adrianliechti/llama/pkg/provider/openai/to"
+
+	"github.com/adrianliechti/llama/pkg/server/models"
+	"github.com/adrianliechti/llama/pkg/server/models/convert"
+	"github.com/adrianliechti/llama/pkg/server/models/to"
 
 	"github.com/google/uuid"
-	"github.com/sashabaranov/go-openai"
 )
 
 func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
-	var req openai.ChatCompletionRequest
+	var req models.ChatCompletionRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -44,7 +45,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		for {
 			select {
 			case result := <-stream:
-				completion := openai.ChatCompletionStreamResponse{
+				completion := models.ChatCompletion{
 					ID: id,
 
 					Object:  "chat.completion.chunk",
@@ -52,14 +53,14 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 					Model: model,
 
-					Choices: []openai.ChatCompletionStreamChoice{
+					Choices: []models.ChatCompletionChoice{
 						{
-							Delta: openai.ChatCompletionStreamChoiceDelta{
-								Role:    from.MessageRole(result.Message.Role),
+							Delta: models.ChatCompletionMessage{
+								Role:    convert.MessageRole(result.Message.Role),
 								Content: result.Message.Content,
 							},
 
-							FinishReason: from.MessageResult(result.Result),
+							FinishReason: convert.MessageResult(result.Result),
 						},
 					},
 				}
@@ -93,7 +94,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		completion := openai.ChatCompletionResponse{
+		completion := models.ChatCompletion{
 			ID: id,
 
 			Object:  "chat.completion",
@@ -101,10 +102,14 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 			Model: model,
 
-			Choices: []openai.ChatCompletionChoice{
+			Choices: []models.ChatCompletionChoice{
 				{
-					Message:      from.CompletionMessage(result.Message),
-					FinishReason: from.MessageResult(result.Result),
+					Message: models.ChatCompletionMessage{
+						Role:    convert.MessageRole(result.Message.Role),
+						Content: result.Message.Content,
+					},
+
+					FinishReason: convert.MessageResult(result.Result),
 				},
 			},
 		}
