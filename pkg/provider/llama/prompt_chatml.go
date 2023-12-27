@@ -3,20 +3,20 @@ package llama
 import (
 	"strings"
 
-	"github.com/sashabaranov/go-openai"
+	"github.com/adrianliechti/llama/pkg/provider"
 )
 
 type PromptTemplateChatML struct {
 }
 
-func (t *PromptTemplateChatML) ConvertPrompt(system string, messages []openai.ChatCompletionMessage) (string, error) {
+func (t *PromptTemplateChatML) ConvertPrompt(system string, messages []provider.CompletionMessage) (string, error) {
 	messages = flattenMessages(messages)
 
 	if err := verifyMessageOrder(messages); err != nil {
 		return "", err
 	}
 
-	if len(messages) > 0 && messages[0].Role == openai.ChatMessageRoleSystem {
+	if len(messages) > 0 && messages[0].Role == provider.MessageRoleSystem {
 		system = strings.TrimSpace(messages[0].Content)
 		messages = messages[1:]
 	}
@@ -24,7 +24,7 @@ func (t *PromptTemplateChatML) ConvertPrompt(system string, messages []openai.Ch
 	var prompt string
 
 	for i, message := range messages {
-		if message.Role == openai.ChatMessageRoleUser {
+		if message.Role == provider.MessageRoleUser {
 			if i == 0 && len(system) > 0 {
 				prompt += "<|im_start|>system\n" + strings.TrimSpace(system) + "<|im_end|>\n"
 			}
@@ -33,7 +33,7 @@ func (t *PromptTemplateChatML) ConvertPrompt(system string, messages []openai.Ch
 			prompt += "<|im_start|>user\n" + content + "<|im_end|>\n"
 		}
 
-		if message.Role == openai.ChatMessageRoleAssistant {
+		if message.Role == provider.MessageRoleAssistant {
 			content := strings.TrimSpace(message.Content)
 			prompt += "<|im_start|>assistant\n" + content + "<|im_end|>\n"
 		}

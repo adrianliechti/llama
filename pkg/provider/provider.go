@@ -2,15 +2,45 @@ package provider
 
 import (
 	"context"
-
-	"github.com/sashabaranov/go-openai"
 )
 
 type Provider interface {
-	Models(ctx context.Context) ([]openai.Model, error)
+	Models(ctx context.Context) ([]Model, error)
 
-	Embed(ctx context.Context, req openai.EmbeddingRequest) (*openai.EmbeddingResponse, error)
+	Embed(ctx context.Context, model, content string) (*Embedding, error)
 
-	Complete(ctx context.Context, req openai.ChatCompletionRequest) (*openai.ChatCompletionResponse, error)
-	CompleteStream(ctx context.Context, req openai.ChatCompletionRequest, stream chan<- openai.ChatCompletionStreamResponse) error
+	Complete(ctx context.Context, model string, messages []CompletionMessage) (*Completion, error)
+	CompleteStream(ctx context.Context, model string, messages []CompletionMessage, stream chan<- Completion) error
 }
+
+type Model struct {
+	ID string
+}
+
+type Embedding struct {
+	Embeddings []float32
+}
+
+type CompletionMessage struct {
+	Role    MessageRole
+	Content string
+}
+
+type Completion struct {
+	Message CompletionMessage
+	Result  MessageResult
+}
+
+type MessageRole string
+
+const (
+	MessageRoleSystem    MessageRole = "system"
+	MessageRoleUser      MessageRole = "user"
+	MessageRoleAssistant MessageRole = "assistant"
+)
+
+type MessageResult string
+
+const (
+	MessageResultStop MessageResult = "stop"
+)

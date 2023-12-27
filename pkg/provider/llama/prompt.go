@@ -4,16 +4,18 @@ import (
 	"errors"
 	"slices"
 
+	"github.com/adrianliechti/llama/pkg/provider"
+
 	"github.com/sashabaranov/go-openai"
 )
 
 type PromptTemplate interface {
-	ConvertPrompt(system string, messages []openai.ChatCompletionMessage) (string, error)
+	ConvertPrompt(system string, messages []provider.CompletionMessage) (string, error)
 	RenderContent(content string) string
 }
 
-func flattenMessages(messages []openai.ChatCompletionMessage) []openai.ChatCompletionMessage {
-	result := make([]openai.ChatCompletionMessage, 0)
+func flattenMessages(messages []provider.CompletionMessage) []provider.CompletionMessage {
+	result := make([]provider.CompletionMessage, 0)
 
 	for _, m := range messages {
 		if len(result) > 0 && result[len(result)-1].Role == m.Role {
@@ -27,7 +29,7 @@ func flattenMessages(messages []openai.ChatCompletionMessage) []openai.ChatCompl
 	return result
 }
 
-func verifyMessageOrder(messages []openai.ChatCompletionMessage) error {
+func verifyMessageOrder(messages []provider.CompletionMessage) error {
 	result := slices.Clone(messages)
 
 	if len(result) == 0 {

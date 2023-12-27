@@ -6,7 +6,11 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/adrianliechti/llama/pkg/provider"
+
+	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -18,71 +22,13 @@ func (s *Server) handleCompletions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Stream {
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+	id := uuid.New().String()
 
-		done := make(chan error)
-		stream := make(chan openai.ChatCompletionStreamResponse)
+	model := req.Model
+	messages := []provider.CompletionMessage{}
 
-		go func() {
-			done <- s.provider.CompleteStream(r.Context(), convertCompletionRequest(req), stream)
-		}()
-
-		for {
-			select {
-			case err := <-done:
-				fmt.Fprintf(w, "data: [DONE]\n\n")
-				w.(http.Flusher).Flush()
-
-				if err != nil {
-					slog.Error("error in chat completion", "error", err)
-				}
-
-				return
-
-			case resp := <-stream:
-				data, _ := json.Marshal(convertChatCompletionStreamResponse(resp))
-
-				fmt.Fprintf(w, "data: %s\n\n", string(data))
-				w.(http.Flusher).Flush()
-
-			case <-r.Context().Done():
-				return
-			}
-		}
-	} else {
-		result, err := s.provider.Complete(r.Context(), convertCompletionRequest(req))
-
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(convertChatCompletionResponse(*result))
-	}
-}
-
-func convertCompletionRequest(r openai.CompletionRequest) openai.ChatCompletionRequest {
-	result := openai.ChatCompletionRequest{
-		Model:  r.Model,
-		Stream: r.Stream,
-
-		MaxTokens:   r.MaxTokens,
-		Temperature: r.Temperature,
-		TopP:        r.TopP,
-		N:           r.N,
-
-		Stop:             r.Stop,
-		PresencePenalty:  r.PresencePenalty,
-		FrequencyPenalty: r.FrequencyPenalty,
-	}
-
-	if prompt, ok := r.Prompt.(string); ok {
-		result.Messages = []openai.ChatCompletionMessage{
+	if prompt, ok := req.Prompt.(string); ok {
+		messages = []provider.CompletionMessage{
 			{
 				Role:    openai.ChatMessageRoleUser,
 				Content: prompt,
@@ -90,8 +36,8 @@ func convertCompletionRequest(r openai.CompletionRequest) openai.ChatCompletionR
 		}
 	}
 
-	if prompts, ok := r.Prompt.([]string); ok {
-		result.Messages = []openai.ChatCompletionMessage{
+	if prompts, ok := req.Prompt.([]string); ok {
+		messages = []provider.CompletionMessage{
 			{
 				Role:    openai.ChatMessageRoleUser,
 				Content: strings.Join(prompts, "\n"),
@@ -99,59 +45,98 @@ func convertCompletionRequest(r openai.CompletionRequest) openai.ChatCompletionR
 		}
 	}
 
-	return result
-}
+	if req.Stream {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 
-func convertChatCompletionResponse(r openai.ChatCompletionResponse) openai.CompletionResponse {
-	result := openai.CompletionResponse{
-		ID: r.ID,
+		done := make(chan error)
+		stream := make(chan provider.Completion)
 
-		Object:  "text_completion",
-		Created: r.Created,
+		go func() {
+			done <- s.provider.CompleteStream(r.Context(), model, messages, stream)
+		}()
 
-		Model:   r.Model,
-		Choices: []openai.CompletionChoice{},
+		for {
+			select {
+			case result := <-stream:
+				status := ""
+
+				if result.Result == provider.MessageResultStop {
+					status = "stop"
+				}
+
+				completion := openai.CompletionResponse{
+					ID: id,
+
+					Object:  "text_completion",
+					Created: time.Now().Unix(),
+
+					Model: model,
+
+					Choices: []openai.CompletionChoice{
+						{
+							Text: result.Message.Content,
+
+							FinishReason: status,
+						},
+					},
+				}
+
+				data, _ := json.Marshal(completion)
+
+				fmt.Fprintf(w, "data: %s\n\n", string(data))
+				w.(http.Flusher).Flush()
+
+			case err := <-done:
+				time.Sleep(1 * time.Second)
+
+				fmt.Fprintf(w, "data: [DONE]\n\n")
+				w.(http.Flusher).Flush()
+
+				if err != nil {
+					slog.Error("error in completion", "error", err)
+				}
+
+				return
+
+			case <-r.Context().Done():
+				return
+			}
+		}
+	} else {
+		result, err := s.provider.Complete(r.Context(), model, messages)
+
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		status := ""
+
+		if result.Result == provider.MessageResultStop {
+			status = "stop"
+		}
+
+		completion := openai.CompletionResponse{
+			ID: id,
+
+			Object:  "text_completion",
+			Created: time.Now().Unix(),
+
+			Model: model,
+
+			Choices: []openai.CompletionChoice{
+				{
+					Text: result.Message.Content,
+
+					FinishReason: status,
+				},
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(completion)
 	}
-
-	for _, c := range r.Choices {
-		result.Choices = append(result.Choices, openai.CompletionChoice{
-			Index: c.Index,
-			Text:  c.Message.Content,
-
-			FinishReason: convertFinishReason(c.FinishReason),
-		})
-	}
-
-	return result
-}
-
-func convertChatCompletionStreamResponse(r openai.ChatCompletionStreamResponse) openai.CompletionResponse {
-	result := openai.CompletionResponse{
-		ID: r.ID,
-
-		Object:  "text_completion",
-		Created: r.Created,
-
-		Model:   r.Model,
-		Choices: []openai.CompletionChoice{},
-	}
-
-	for _, c := range r.Choices {
-		result.Choices = append(result.Choices, openai.CompletionChoice{
-			Index: c.Index,
-			Text:  c.Delta.Content,
-
-			FinishReason: convertFinishReason(c.FinishReason),
-		})
-	}
-
-	return result
-}
-
-func convertFinishReason(reason openai.FinishReason) string {
-	if reason == openai.FinishReasonLength {
-		return "length"
-	}
-
-	return "stop"
 }

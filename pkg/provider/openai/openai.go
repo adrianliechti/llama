@@ -6,7 +6,14 @@ import (
 	"io"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/provider/openai/from"
+	"github.com/adrianliechti/llama/pkg/provider/openai/to"
 	"github.com/sashabaranov/go-openai"
+)
+
+var (
+	_ provider.Provider = &Provider{}
 )
 
 var (
@@ -68,67 +75,69 @@ func WithModelMapper(mapper ModelMapper) Option {
 	}
 }
 
-func (p *Provider) Models(ctx context.Context) ([]openai.Model, error) {
+func (p *Provider) Models(ctx context.Context) ([]provider.Model, error) {
 	list, err := p.client.ListModels(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if p.mapper == nil {
-		return list.Models, nil
-	}
-
-	var result []openai.Model
+	var result []provider.Model
 
 	for _, m := range list.Models {
-		model := p.mapper.From(m.ID)
+		model := provider.Model{
+			ID: m.ID,
+		}
 
-		if model == "" {
+		if p.mapper != nil {
+			model.ID = p.mapper.From(m.ID)
+		}
+
+		if model.ID == "" {
 			continue
 		}
 
-		m.ID = model
-
-		result = append(result, m)
+		result = append(result, model)
 	}
 
 	return result, nil
 }
 
-func (p *Provider) Embed(ctx context.Context, req openai.EmbeddingRequest) (*openai.EmbeddingResponse, error) {
-	if p.mapper != nil {
-		model := p.mapper.To(req.Model.String())
+func (p *Provider) Embed(ctx context.Context, model, content string) (*provider.Embedding, error) {
+	// if p.mapper != nil {
+	// 	model = p.mapper.To(model)
+	// }
 
-		if model == "" {
-			return nil, ErrInvalidModelMapping
-		}
-
-		req.Model = openai.Unknown
-
-		if strings.EqualFold(model, "text-embedding-ada-002") {
-			req.Model = openai.AdaEmbeddingV2
-		}
+	req := openai.EmbeddingRequest{
+		Input: content,
+		Model: openai.AdaEmbeddingV2,
 	}
 
-	result, err := p.client.CreateEmbeddings(ctx, req)
+	data, err := p.client.CreateEmbeddings(ctx, req)
 
 	if err != nil {
 		return nil, err
 	}
 
+	result := provider.Embedding{
+		Embeddings: data.Data[0].Embedding,
+	}
+
 	return &result, nil
 }
 
-func (p *Provider) Complete(ctx context.Context, req openai.ChatCompletionRequest) (*openai.ChatCompletionResponse, error) {
+func (p *Provider) Complete(ctx context.Context, model string, messages []provider.CompletionMessage) (*provider.Completion, error) {
 	if p.mapper != nil {
-		model := p.mapper.To(req.Model)
+		model = p.mapper.To(model)
+	}
 
-		if model == "" {
-			return nil, ErrInvalidModelMapping
-		}
+	if model == "" {
+		return nil, ErrInvalidModelMapping
+	}
 
-		req.Model = model
+	req := openai.ChatCompletionRequest{
+		Model:    model,
+		Messages: from.CompletionMessages(messages),
 	}
 
 	result, err := p.client.CreateChatCompletion(ctx, req)
@@ -137,18 +146,30 @@ func (p *Provider) Complete(ctx context.Context, req openai.ChatCompletionReques
 		return nil, err
 	}
 
-	return &result, nil
+	completion := provider.Completion{
+		Message: provider.CompletionMessage{
+			Role:    to.MessageRole(result.Choices[0].Message.Role),
+			Content: result.Choices[0].Message.Content,
+		},
+
+		Result: provider.MessageResultStop,
+	}
+
+	return &completion, nil
 }
 
-func (p *Provider) CompleteStream(ctx context.Context, req openai.ChatCompletionRequest, stream chan<- openai.ChatCompletionStreamResponse) error {
+func (p *Provider) CompleteStream(ctx context.Context, model string, messages []provider.CompletionMessage, stream chan<- provider.Completion) error {
 	if p.mapper != nil {
-		model := p.mapper.To(req.Model)
+		model = p.mapper.To(model)
+	}
 
-		if model == "" {
-			return ErrInvalidModelMapping
-		}
+	if model == "" {
+		return ErrInvalidModelMapping
+	}
 
-		req.Model = model
+	req := openai.ChatCompletionRequest{
+		Model:    model,
+		Messages: from.CompletionMessages(messages),
 	}
 
 	result, err := p.client.CreateChatCompletionStream(ctx, req)
@@ -160,7 +181,7 @@ func (p *Provider) CompleteStream(ctx context.Context, req openai.ChatCompletion
 	defer result.Close()
 
 	for {
-		response, err := result.Recv()
+		data, err := result.Recv()
 
 		if errors.Is(err, io.EOF) {
 			return nil
@@ -170,6 +191,15 @@ func (p *Provider) CompleteStream(ctx context.Context, req openai.ChatCompletion
 			return err
 		}
 
-		stream <- response
+		completion := provider.Completion{
+			Message: provider.CompletionMessage{
+				Role:    to.MessageRole(data.Choices[0].Delta.Role),
+				Content: data.Choices[0].Delta.Content,
+			},
+
+			Result: to.MessageResult(data.Choices[0].FinishReason),
+		}
+
+		stream <- completion
 	}
 }

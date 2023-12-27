@@ -9,10 +9,14 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
-	"github.com/google/uuid"
+	"github.com/adrianliechti/llama/pkg/provider"
+
 	"github.com/sashabaranov/go-openai"
+)
+
+var (
+	_ provider.Provider = &Provider{}
 )
 
 type Provider struct {
@@ -83,90 +87,23 @@ func WithPromptTemplate(template PromptTemplate) Option {
 	}
 }
 
-func (p *Provider) Models(ctx context.Context) ([]openai.Model, error) {
-	return []openai.Model{
+func (p *Provider) Models(ctx context.Context) ([]provider.Model, error) {
+	return []provider.Model{
 		{
 			ID: p.model,
-
-			Object: "model",
-			Root:   p.model,
-
-			OwnedBy:   "owner",
-			CreatedAt: time.Now().Unix(),
 		},
 	}, nil
 }
 
-func (p *Provider) Embed(ctx context.Context, request openai.EmbeddingRequest) (*openai.EmbeddingResponse, error) {
-	input, err := convertEmbeddingRequest(request)
-
-	if err != nil {
-		return nil, err
+func (p *Provider) Embed(ctx context.Context, model, content string) (*provider.Embedding, error) {
+	req := &embeddingRequest{
+		Content: strings.TrimSpace(content),
 	}
 
-	list := &openai.EmbeddingResponse{
-		Object: "list",
-		Model:  request.Model,
-	}
+	body, _ := json.Marshal(req)
+	url, _ := url.JoinPath(p.url, "/embedding")
 
-	for i, content := range input {
-		req := &embeddingRequest{
-			Content: strings.TrimSpace(content),
-		}
-
-		data, _ := json.Marshal(req)
-		url, _ := url.JoinPath(p.url, "/embedding")
-
-		r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(data))
-		r.Header.Set("Content-Type", "application/json")
-		r.Header.Set("Cache-Control", "no-cache")
-
-		if p.password != "" {
-			r.SetBasicAuth(p.username, p.password)
-		}
-
-		resp, err := p.client.Do(r)
-
-		if err != nil {
-			return nil, err
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			return nil, errors.New("unable to complete chat")
-		}
-
-		defer resp.Body.Close()
-
-		var result embeddingResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			return nil, err
-		}
-
-		list.Data = append(list.Data, openai.Embedding{
-			Index:  i,
-			Object: "embedding",
-
-			Embedding: result.Embedding,
-		})
-	}
-
-	return list, nil
-}
-
-func (p *Provider) Complete(ctx context.Context, request openai.ChatCompletionRequest) (*openai.ChatCompletionResponse, error) {
-	sessionID := uuid.New().String()
-
-	req, err := p.convertCompletionRequest(request)
-
-	if err != nil {
-		return nil, err
-	}
-
-	data, _ := json.Marshal(req)
-	url, _ := url.JoinPath(p.url, "/completion")
-
-	r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(data))
+	r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
 	r.Header.Set("Cache-Control", "no-cache")
 
@@ -186,57 +123,82 @@ func (p *Provider) Complete(ctx context.Context, request openai.ChatCompletionRe
 
 	defer resp.Body.Close()
 
-	var result completionResponse
+	var data embeddingResponse
 
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		return nil, err
 	}
 
-	model := result.Model
-
-	if model == "" {
-		model = request.Model
+	result := provider.Embedding{
+		Embeddings: data.Embedding,
 	}
 
-	if model == "" {
-		model = p.model
-	}
-
-	content := p.template.RenderContent(result.Content)
-
-	return &openai.ChatCompletionResponse{
-		ID: sessionID,
-
-		Model:  model,
-		Object: "chat.completion",
-
-		Created: time.Now().Unix(),
-
-		Choices: []openai.ChatCompletionChoice{
-			{
-				Message: openai.ChatCompletionMessage{
-					Content: content,
-				},
-
-				FinishReason: openai.FinishReasonStop,
-			},
-		},
-	}, nil
+	return &result, nil
 }
 
-func (p *Provider) CompleteStream(ctx context.Context, request openai.ChatCompletionRequest, stream chan<- openai.ChatCompletionStreamResponse) error {
-	sessionID := uuid.New().String()
+func (p *Provider) Complete(ctx context.Context, model string, messages []provider.CompletionMessage) (*provider.Completion, error) {
+	req, err := p.convertCompletionRequest(messages)
 
-	req, err := p.convertCompletionRequest(request)
+	if err != nil {
+		return nil, err
+	}
+
+	body, _ := json.Marshal(req)
+	url, _ := url.JoinPath(p.url, "/completion")
+
+	r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set("Cache-Control", "no-cache")
+
+	if p.password != "" {
+		r.SetBasicAuth(p.username, p.password)
+	}
+
+	resp, err := p.client.Do(r)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("unable to complete chat")
+	}
+
+	defer resp.Body.Close()
+
+	var data completionResponse
+
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return nil, err
+	}
+
+	content := p.template.RenderContent(data.Content)
+
+	result := provider.Completion{
+		Message: provider.CompletionMessage{
+			Role:    openai.ChatMessageRoleAssistant,
+			Content: content,
+		},
+
+		Result: provider.MessageResultStop,
+	}
+
+	return &result, nil
+}
+
+func (p *Provider) CompleteStream(ctx context.Context, model string, messages []provider.CompletionMessage, stream chan<- provider.Completion) error {
+	req, err := p.convertCompletionRequest(messages)
 
 	if err != nil {
 		return err
 	}
 
-	data, _ := json.Marshal(req)
+	req.Stream = true
+
+	body, _ := json.Marshal(req)
 	url, _ := url.JoinPath(p.url, "/completion")
 
-	r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(data))
+	r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
 	r.Header.Set("Accept", "text/event-stream")
 	r.Header.Set("Connection", "keep-alive")
@@ -282,43 +244,22 @@ func (p *Provider) CompleteStream(ctx context.Context, request openai.ChatComple
 			return err
 		}
 
-		model := result.Model
-
-		if model == "" {
-			model = request.Model
-		}
-
-		if model == "" {
-			model = p.model
-		}
-
-		status := openai.FinishReasonNull
-
-		if result.Stop {
-			status = openai.FinishReasonStop
-		}
-
 		content := p.template.RenderContent(result.Content)
 
-		stream <- openai.ChatCompletionStreamResponse{
-			ID: sessionID,
-
-			Model:  model,
-			Object: "chat.completion.chunk",
-
-			Created: time.Now().Unix(),
-
-			Choices: []openai.ChatCompletionStreamChoice{
-				{
-					Delta: openai.ChatCompletionStreamChoiceDelta{
-						Role:    openai.ChatMessageRoleAssistant,
-						Content: content,
-					},
-
-					FinishReason: status,
-				},
-			},
+		message := provider.CompletionMessage{
+			Role:    openai.ChatMessageRoleAssistant,
+			Content: content,
 		}
+
+		completion := provider.Completion{
+			Message: message,
+		}
+
+		if result.Stop {
+			completion.Result = provider.MessageResultStop
+		}
+
+		stream <- completion
 
 		if result.Stop {
 			break
@@ -328,65 +269,35 @@ func (p *Provider) CompleteStream(ctx context.Context, request openai.ChatComple
 	return nil
 }
 
-func convertEmbeddingRequest(request openai.EmbeddingRequest) ([]string, error) {
-	data, _ := json.Marshal(request)
-
-	type stringType struct {
-		Input string `json:"input"`
-	}
-
-	var stringVal stringType
-
-	if json.Unmarshal(data, &stringVal) == nil {
-		if stringVal.Input != "" {
-			return []string{stringVal.Input}, nil
-		}
-	}
-
-	type sliceType struct {
-		Input []string `json:"input"`
-	}
-
-	var sliceVal sliceType
-
-	if json.Unmarshal(data, &sliceVal) == nil {
-		if len(sliceVal.Input) > 0 {
-			return sliceVal.Input, nil
-		}
-	}
-
-	return nil, errors.New("invalid input format")
-}
-
-func (p *Provider) convertCompletionRequest(request openai.ChatCompletionRequest) (*completionRequest, error) {
-	prompt, err := p.template.ConvertPrompt(p.system, request.Messages)
+func (p *Provider) convertCompletionRequest(messages []provider.CompletionMessage) (*completionRequest, error) {
+	prompt, err := p.template.ConvertPrompt(p.system, messages)
 
 	if err != nil {
 		return nil, err
 	}
 
 	result := &completionRequest{
-		Stream: request.Stream,
+		//Stream: request.Stream,
 
 		Prompt: prompt,
 		Stop:   []string{"[INST]"},
 
-		Temperature: request.Temperature,
-		TopP:        request.TopP,
+		//Temperature: request.Temperature,
+		//TopP:        request.TopP,
 
-		NPredict: -1,
-		//NPredict: 400,
+		//NPredict: -1,
+		////NPredict: 400,
 	}
 
-	if result.TopP == 0 {
-		result.TopP = 0.9
-		//result.TopP = 0.95
-	}
+	// if result.TopP == 0 {
+	// 	result.TopP = 0.9
+	// 	//result.TopP = 0.95
+	// }
 
-	if result.Temperature == 0 {
-		result.Temperature = 0.6
-		//result.Temperature = 0.2
-	}
+	// if result.Temperature == 0 {
+	// 	result.Temperature = 0.6
+	// 	//result.Temperature = 0.2
+	// }
 
 	return result, nil
 }

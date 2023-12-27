@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/adrianliechti/llama/pkg/provider"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -19,7 +20,7 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result := openai.ModelsList{
-		Models: models,
+		Models: convertModels(models),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -47,4 +48,22 @@ func (s *Server) handleModel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNotFound)
+}
+
+func convertModels(s []provider.Model) []openai.Model {
+	var result []openai.Model
+
+	for _, m := range s {
+		result = append(result, convertModel(m))
+	}
+
+	return result
+}
+
+func convertModel(m provider.Model) openai.Model {
+	return openai.Model{
+		ID: m.ID,
+
+		Object: "model",
+	}
 }
