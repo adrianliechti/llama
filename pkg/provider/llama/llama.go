@@ -125,7 +125,7 @@ func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32,
 	return result.Embedding, nil
 }
 
-func (p *Provider) Complete(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Message, error) {
+func (p *Provider) Complete1(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Message, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
 	}
@@ -136,106 +136,105 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		return nil, err
 	}
 
-	body, _ := json.Marshal(req)
-	url, _ := url.JoinPath(p.url, "/completion")
+	if options.Stream == nil {
+		body, _ := json.Marshal(req)
+		url, _ := url.JoinPath(p.url, "/completion")
 
-	r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
-	r.Header.Set("Cache-Control", "no-cache")
+		r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+		r.Header.Set("Content-Type", "application/json")
+		r.Header.Set("Cache-Control", "no-cache")
 
-	resp, err := p.client.Do(r)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("unable to complete")
-	}
-
-	defer resp.Body.Close()
-
-	var result completionResponse
-
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
-	}
-
-	message := provider.Message{
-		Role:    openai.ChatMessageRoleAssistant,
-		Content: p.template.RenderContent(result.Content),
-	}
-
-	return &message, nil
-}
-
-func (p *Provider) CompleteStream(ctx context.Context, model string, messages []provider.Message, stream chan<- provider.Message, options *provider.CompleteOptions) error {
-	if options == nil {
-		options = &provider.CompleteOptions{}
-	}
-
-	req, err := p.convertCompletionRequest(messages, options)
-
-	if err != nil {
-		return err
-	}
-
-	body, _ := json.Marshal(req)
-	url, _ := url.JoinPath(p.url, "/completion")
-
-	r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
-	r.Header.Set("Accept", "text/event-stream")
-	r.Header.Set("Connection", "keep-alive")
-	r.Header.Set("Cache-Control", "no-cache")
-
-	resp, err := p.client.Do(r)
-
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return errors.New("unable to complete")
-	}
-
-	reader := bufio.NewReader(resp.Body)
-
-	for {
-		data, err := reader.ReadBytes('\n')
+		resp, err := p.client.Do(r)
 
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		data = bytes.TrimSpace(data)
-
-		// if bytes.HasPrefix(data, errorPrefix) {
-		// }
-
-		data = bytes.TrimPrefix(data, headerData)
-
-		if len(data) == 0 {
-			continue
+		if resp.StatusCode != http.StatusOK {
+			return nil, errors.New("unable to complete")
 		}
 
-		var result completionResponse
+		defer resp.Body.Close()
 
-		if err := json.Unmarshal([]byte(data), &result); err != nil {
-			return err
+		var completion completionResponse
+
+		if err := json.NewDecoder(resp.Body).Decode(&completion); err != nil {
+			return nil, err
 		}
 
-		stream <- provider.Message{
+		result := provider.Message{
 			Role:    openai.ChatMessageRoleAssistant,
-			Content: p.template.RenderContent(result.Content),
+			Content: p.template.RenderContent(completion.Content),
 		}
 
-		if result.Stop {
-			break
+		return &result, nil
+	} else {
+		defer close(options.Stream)
+
+		body, _ := json.Marshal(req)
+		url, _ := url.JoinPath(p.url, "/completion")
+
+		r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+		r.Header.Set("Content-Type", "application/json")
+		r.Header.Set("Accept", "text/event-stream")
+		r.Header.Set("Connection", "keep-alive")
+		r.Header.Set("Cache-Control", "no-cache")
+
+		resp, err := p.client.Do(r)
+
+		if err != nil {
+			return nil, err
 		}
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, errors.New("unable to complete")
+		}
+
+		reader := bufio.NewReader(resp.Body)
+
+		var resultText strings.Builder
+
+		for {
+			data, err := reader.ReadBytes('\n')
+
+			if err != nil {
+				return nil, err
+			}
+
+			data = bytes.TrimSpace(data)
+
+			// if bytes.HasPrefix(data, errorPrefix) {
+			// }
+
+			data = bytes.TrimPrefix(data, headerData)
+
+			if len(data) == 0 {
+				continue
+			}
+
+			var completion completionResponse
+
+			if err := json.Unmarshal([]byte(data), &completion); err != nil {
+				return nil, err
+			}
+
+			options.Stream <- provider.Message{
+				Role:    provider.MessageRoleAssistant,
+				Content: p.template.RenderContent(completion.Content),
+			}
+
+			if completion.Stop {
+				break
+			}
+		}
+
+		result := provider.Message{
+			Role:    provider.MessageRoleAssistant,
+			Content: resultText.String(),
+		}
+
+		return &result, nil
 	}
-
-	return nil
 }
 
 func (p *Provider) convertCompletionRequest(messages []provider.Message, options *provider.CompleteOptions) (*completionRequest, error) {
@@ -250,6 +249,8 @@ func (p *Provider) convertCompletionRequest(messages []provider.Message, options
 	}
 
 	result := &completionRequest{
+		Stream: options.Stream != nil,
+
 		Prompt: prompt,
 		Stop:   []string{"[INST]"},
 

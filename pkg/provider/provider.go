@@ -16,8 +16,7 @@ type Embedder interface {
 }
 
 type Completer interface {
-	Complete(ctx context.Context, model string, messages []Message, options *CompleteOptions) (*Message, error)
-	CompleteStream(ctx context.Context, model string, messages []Message, stream chan<- Message, options *CompleteOptions) error
+	Complete1(ctx context.Context, model string, messages []Message, options *CompleteOptions) (*Message, error)
 }
 
 type Model struct {
@@ -38,4 +37,5 @@ const (
 )
 
 type CompleteOptions struct {
+	Stream chan<- Message
 }
