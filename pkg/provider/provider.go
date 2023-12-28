@@ -23,20 +23,6 @@ type Model struct {
 	ID string
 }
 
-type Message struct {
-	Role    MessageRole
-	Content string
-}
-
-type CompleteOptions struct {
-	Stream chan<- Completion
-}
-
-type Completion struct {
-	*Message
-	Reason CompletionReason
-}
-
 type MessageRole string
 
 const (
@@ -45,9 +31,23 @@ const (
 	MessageRoleAssistant MessageRole = "assistant"
 )
 
+type Message struct {
+	Role    MessageRole
+	Content string
+}
+
 type CompletionReason string
 
 const (
 	CompletionReasonStop   CompletionReason = "stop"
 	CompletionReasonLength CompletionReason = "length"
 )
+
+type Completion struct {
+	*Message
+	Reason CompletionReason
+}
+
+type CompleteOptions struct {
+	Stream chan<- Completion
+}
