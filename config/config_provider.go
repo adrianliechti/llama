@@ -9,31 +9,31 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
-func createProvider(p providerConfig) (provider.Provider, error) {
-	switch strings.ToLower(p.Type) {
+func createProvider(c providerConfig) (provider.Provider, error) {
+	switch strings.ToLower(c.Type) {
 	case "openai":
-		return openaiProvider(p)
+		return openaiProvider(c)
 
 	case "llama":
-		return llamaProvider(p)
+		return llamaProvider(c)
 
 	default:
-		return nil, errors.New("invalid provider type: " + p.Type)
+		return nil, errors.New("invalid provider type: " + c.Type)
 	}
 }
 
-func openaiProvider(p providerConfig) (provider.Provider, error) {
+func openaiProvider(c providerConfig) (provider.Provider, error) {
 	var options []openai.Option
 
-	if p.URL != "" {
-		options = append(options, openai.WithURL(p.URL))
+	if c.URL != "" {
+		options = append(options, openai.WithURL(c.URL))
 	}
 
-	if p.Token != "" {
-		options = append(options, openai.WithToken(p.Token))
+	if c.Token != "" {
+		options = append(options, openai.WithToken(c.Token))
 	}
 
-	models := p.Models
+	models := c.Models
 
 	if len(models) > 0 {
 		var mapper modelMapper = models
@@ -44,14 +44,14 @@ func openaiProvider(p providerConfig) (provider.Provider, error) {
 	return openai.New(options...), nil
 }
 
-func llamaProvider(p providerConfig) (provider.Provider, error) {
+func llamaProvider(c providerConfig) (provider.Provider, error) {
 	var options []llama.Option
 
-	if p.URL != "" {
-		options = append(options, llama.WithURL(p.URL))
+	if c.URL != "" {
+		options = append(options, llama.WithURL(c.URL))
 	}
 
-	if len(p.Models) > 1 {
+	if len(c.Models) > 1 {
 		return nil, errors.New("multiple models not supported for llama provider")
 	}
 
@@ -59,7 +59,7 @@ func llamaProvider(p providerConfig) (provider.Provider, error) {
 	var prompt string
 	var template string
 
-	for k, v := range p.Models {
+	for k, v := range c.Models {
 		model = k
 		prompt = v.Prompt
 		template = v.Template
