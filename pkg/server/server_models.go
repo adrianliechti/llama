@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -11,16 +10,11 @@ import (
 )
 
 func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
-	data, err := s.provider.Models(r.Context())
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	models := s.Models()
 
 	result := openai.ModelsList{}
 
-	for _, m := range data {
+	for _, m := range models {
 		result.Models = append(result.Models, openai.Model{
 			ID: m.ID,
 
@@ -36,29 +30,20 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleModel(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	data, err := s.provider.Models(r.Context())
+	model, found := s.Model(id)
 
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+	if !found {
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	for _, m := range data {
-		if !strings.EqualFold(id, m.ID) {
-			continue
-		}
+	result := openai.Model{
+		ID: model.ID,
 
-		result := openai.Model{
-			ID: m.ID,
-
-			Object:    "model",
-			CreatedAt: time.Now().Unix(),
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(result)
-		return
+		Object:    "model",
+		CreatedAt: time.Now().Unix(),
 	}
 
-	w.WriteHeader(http.StatusNotFound)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
 }

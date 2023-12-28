@@ -16,6 +16,13 @@ func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	p, found := s.Provider(req.Model.String())
+
+	if !found {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	model := req.Model.String()
 	inputs, err := convertEmbeddingInputs(req)
 
@@ -31,7 +38,7 @@ func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i, input := range inputs {
-		data, err := s.provider.Embed(r.Context(), model, input)
+		data, err := p.Embed(r.Context(), model, input)
 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)

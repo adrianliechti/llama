@@ -1,30 +1,41 @@
 package config
 
 import (
-	"errors"
 	"os"
-	"strings"
 
 	"github.com/adrianliechti/llama/pkg/authorizer"
-	"github.com/adrianliechti/llama/pkg/authorizer/oidc"
-	"github.com/adrianliechti/llama/pkg/authorizer/static"
 
 	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/provider/llama"
-	"github.com/adrianliechti/llama/pkg/provider/openai"
-
-	"github.com/adrianliechti/llama/pkg/index"
-	"github.com/adrianliechti/llama/pkg/index/chroma"
-
-	"github.com/adrianliechti/llama/pkg/chain"
-	"github.com/adrianliechti/llama/pkg/chain/rag"
 )
 
 type Config struct {
-	Addr string
+	Address string
 
+	Authorizer []authorizer.Provider
 	Providers  []provider.Provider
-	Authorizer authorizer.Provider
+
+	models    map[string]provider.Model
+	providers map[string]provider.Provider
+}
+
+func (c *Config) Models() []provider.Model {
+	var result []provider.Model
+
+	for _, m := range c.models {
+		result = append(result, m)
+	}
+
+	return result
+}
+
+func (c *Config) Model(id string) (provider.Model, bool) {
+	m, ok := c.models[id]
+	return m, ok
+}
+
+func (c *Config) Provider(model string) (provider.Provider, bool) {
+	p, ok := c.providers[model]
+	return p, ok
 }
 
 func Parse(path string) (*Config, error) {
@@ -38,34 +49,25 @@ func Parse(path string) (*Config, error) {
 		return nil, err
 	}
 
-	addr := addrFromEnvironment()
+	c := &Config{
+		Address: addrFromEnvironment(),
 
-	providers, err := providersFromConfig(file.Providers)
+		Authorizer: make([]authorizer.Provider, 0),
+		Providers:  make([]provider.Provider, 0),
 
-	if err != nil {
+		models:    make(map[string]provider.Model),
+		providers: make(map[string]provider.Provider),
+	}
+
+	if err := c.registerAuthorizer(file); err != nil {
 		return nil, err
 	}
 
-	chains, err := RAGsFromConfig(file.Chains)
-
-	if err != nil {
+	if err := c.registerProviders(file); err != nil {
 		return nil, err
 	}
 
-	_ = chains
-
-	authorizer, err := authorizerFromConfig(file.Auth)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &Config{
-		Addr: addr,
-
-		Providers:  providers,
-		Authorizer: authorizer,
-	}, nil
+	return c, nil
 }
 
 func addrFromEnvironment() string {
@@ -78,136 +80,77 @@ func addrFromEnvironment() string {
 	return ":" + port
 }
 
-func providersFromConfig(providers []providerConfig) ([]provider.Provider, error) {
-	var result []provider.Provider
+func (c *Config) registerAuthorizer(f *configFile) error {
+	for _, a := range f.Authorizers {
+		authorizer, err := createAuthorizer(a)
 
-	for _, p := range providers {
-		switch strings.ToLower(p.Type) {
-		case "openai":
-			var options []openai.Option
-
-			if p.URL != "" {
-				options = append(options, openai.WithURL(p.URL))
-			}
-
-			if p.Token != "" {
-				options = append(options, openai.WithToken(p.Token))
-			}
-
-			models := p.Models
-
-			if len(models) > 0 {
-				var mapper modelMapper = models
-
-				options = append(options, openai.WithModelMapper(mapper))
-			}
-
-			p := openai.New(options...)
-			result = append(result, p)
-
-		case "llama":
-			var options []llama.Option
-
-			if p.URL != "" {
-				options = append(options, llama.WithURL(p.URL))
-			}
-
-			if len(p.Models) > 1 {
-				return nil, errors.New("multiple models not supported for llama provider")
-			}
-
-			var model string
-			var prompt string
-			var template string
-
-			for k, v := range p.Models {
-				model = k
-				prompt = v.Prompt
-				template = v.Template
-
-				break
-			}
-
-			if model != "" {
-				options = append(options, llama.WithModel(model))
-			}
-
-			if prompt != "" {
-				options = append(options, llama.WithSystem(prompt))
-			}
-
-			switch strings.ToLower(template) {
-			case "chatml":
-				options = append(options, llama.WithPromptTemplate(&llama.PromptTemplateChatML{}))
-
-			case "llama":
-				options = append(options, llama.WithPromptTemplate(&llama.PromptTemplateLLAMA{}))
-
-			case "mistral":
-				options = append(options, llama.WithPromptTemplate(&llama.PromptTemplateMistral{}))
-
-			default:
-				return nil, errors.New("invalid prompt template: " + template)
-			}
-
-			p := llama.New(options...)
-			result = append(result, p)
-
-		default:
-			return nil, errors.New("invalid provider type: " + p.Type)
+		if err != nil {
+			return err
 		}
+
+		c.Authorizer = append(c.Authorizer, authorizer)
 	}
 
-	return result, nil
+	return nil
 }
 
-func RAGsFromConfig(chains map[string]chainConfig) ([]chain.Provider, error) {
-	var result []chain.Provider
+func (c *Config) registerProviders(f *configFile) error {
+	for _, cfg := range f.Providers {
+		p, err := createProvider(cfg)
 
-	for id, c := range chains {
-		if !strings.EqualFold(c.Type, "rag") {
-			continue
+		if err != nil {
+			return err
 		}
 
-		_ = id
-
-		var index index.Index
-
-		if c.Index != nil {
-			switch strings.ToLower(c.Index.Type) {
-			case "chroma":
-				i, err := chroma.New(c.Index.URL, c.Index.Name)
-
-				if err != nil {
-					return nil, err
-				}
-
-				index = i
-
-			default:
-				return nil, errors.New("invalid index type: " + c.Index.Type)
+		for model := range cfg.Models {
+			c.models[model] = provider.Model{
+				ID: model,
 			}
+
+			c.providers[model] = p
 		}
 
-		switch strings.ToLower(c.Type) {
-		case "rag":
-			rag := rag.New(index, nil, nil)
-
-			result = append(result, rag)
-		}
+		c.Providers = append(c.Providers, p)
 	}
 
-	return result, nil
+	return nil
 }
 
-func authorizerFromConfig(auth authConfig) (authorizer.Provider, error) {
-	if auth.Issuer != "" {
-		return oidc.New(auth.Issuer, auth.Audience)
-	}
+// func RAGsFromConfig(chains map[string]chainConfig) ([]chain.Provider, error) {
+// 	var result []chain.Provider
 
-	if auth.Token != "" {
-		return static.New(auth.Token)
-	}
+// 	for id, c := range chains {
+// 		if !strings.EqualFold(c.Type, "rag") {
+// 			continue
+// 		}
 
-	return nil, nil
-}
+// 		_ = id
+
+// 		var index index.Index
+
+// 		if c.Index != nil {
+// 			switch strings.ToLower(c.Index.Type) {
+// 			case "chroma":
+// 				i, err := chroma.New(c.Index.URL, c.Index.Name)
+
+// 				if err != nil {
+// 					return nil, err
+// 				}
+
+// 				index = i
+
+// 			default:
+// 				return nil, errors.New("invalid index type: " + c.Index.Type)
+// 			}
+// 		}
+
+// 		switch strings.ToLower(c.Type) {
+// 		case "rag":
+// 			rag := rag.New(index, nil, nil)
+
+// 			result = append(result, rag)
+// 		}
+// 	}
+
+// 	return result, nil
+// }

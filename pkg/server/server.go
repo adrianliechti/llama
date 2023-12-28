@@ -4,9 +4,6 @@ import (
 	"net/http"
 
 	"github.com/adrianliechti/llama/config"
-	"github.com/adrianliechti/llama/pkg/authorizer"
-	"github.com/adrianliechti/llama/pkg/dispatcher"
-	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -14,11 +11,9 @@ import (
 )
 
 type Server struct {
-	addr   string
-	router *chi.Mux
+	*config.Config
 
-	provider   provider.Provider
-	authorizer authorizer.Provider
+	router *chi.Mux
 }
 
 func New(cfg *config.Config) (*Server, error) {
@@ -27,18 +22,10 @@ func New(cfg *config.Config) (*Server, error) {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	provider, err := dispatcher.New(cfg.Providers...)
-
-	if err != nil {
-		return nil, err
-	}
-
 	s := &Server{
-		addr:   cfg.Addr,
-		router: r,
+		Config: cfg,
 
-		provider:   provider,
-		authorizer: cfg.Authorizer,
+		router: r,
 	}
 
 	r.Use(cors.Handler(cors.Options{
@@ -70,18 +57,25 @@ func New(cfg *config.Config) (*Server, error) {
 }
 
 func (s *Server) ListenAndServe() error {
-	return http.ListenAndServe(s.addr, s.router)
+	return http.ListenAndServe(s.Config.Address, s.router)
 }
 
 func (s *Server) handleAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		if s.authorizer != nil {
-			if err := s.authorizer.Verify(ctx, r); err != nil {
-				w.WriteHeader(http.StatusUnauthorized)
-				return
+		var authorized = len(s.Authorizer) == 0
+
+		for _, a := range s.Authorizer {
+			if err := a.Verify(ctx, r); err == nil {
+				authorized = true
+				break
 			}
+		}
+
+		if !authorized {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
 		}
 
 		next.ServeHTTP(w, r.WithContext(ctx))

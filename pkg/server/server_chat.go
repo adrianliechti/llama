@@ -21,6 +21,13 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	p, found := s.Provider(req.Model)
+
+	if !found {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	id := uuid.New().String()
 
 	model := req.Model
@@ -40,7 +47,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 				Stream: stream,
 			}
 
-			_, err := s.provider.Complete(r.Context(), model, messages, options)
+			_, err := p.Complete(r.Context(), model, messages, options)
 			done <- err
 		}()
 
@@ -80,7 +87,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	} else {
 		options := &provider.CompleteOptions{}
 
-		completion, err := s.provider.Complete(r.Context(), model, messages, options)
+		completion, err := p.Complete(r.Context(), model, messages, options)
 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
