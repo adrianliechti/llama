@@ -16,6 +16,7 @@ func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	model := req.Model.String()
 	inputs, err := convertEmbeddingInputs(req)
 
 	if err != nil {
@@ -30,7 +31,7 @@ func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i, input := range inputs {
-		data, err := s.provider.Embed(r.Context(), req.Model.String(), input)
+		data, err := s.provider.Embed(r.Context(), model, input)
 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -49,8 +50,8 @@ func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
-func convertEmbeddingInputs(request openai.EmbeddingRequest) ([]string, error) {
-	data, _ := json.Marshal(request)
+func convertEmbeddingInputs(req openai.EmbeddingRequest) ([]string, error) {
+	data, _ := json.Marshal(req)
 
 	type stringType struct {
 		Input string `json:"input"`

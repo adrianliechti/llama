@@ -26,8 +26,6 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	model := req.Model
 	messages := convertCompletionMessages(req.Messages)
 
-	options := &provider.CompleteOptions{}
-
 	if req.Stream {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
@@ -35,16 +33,21 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 
 		done := make(chan error)
-		stream := make(chan provider.Message)
+		stream := make(chan provider.Completion)
 
 		go func() {
-			done <- s.provider.CompleteStream(r.Context(), model, messages, stream, options)
+			options := &provider.CompleteOptions{
+				Stream: stream,
+			}
+
+			_, err := s.provider.Complete(r.Context(), model, messages, options)
+			done <- err
 		}()
 
 		for {
 			select {
-			case message := <-stream:
-				completion := openai.ChatCompletionStreamResponse{
+			case completion := <-stream:
+				result := openai.ChatCompletionStreamResponse{
 					ID: id,
 
 					Object:  "chat.completion.chunk",
@@ -55,14 +58,16 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 					Choices: []openai.ChatCompletionStreamChoice{
 						{
 							Delta: openai.ChatCompletionStreamChoiceDelta{
-								Role:    toMessageRole(message.Role),
-								Content: message.Content,
+								Role:    toMessageRole(completion.Role),
+								Content: completion.Content,
 							},
+
+							FinishReason: toFinishReason(completion.Reason),
 						},
 					},
 				}
 
-				data, _ := json.Marshal(completion)
+				data, _ := json.Marshal(result)
 
 				fmt.Fprintf(w, "data: %s\n\n", string(data))
 				w.(http.Flusher).Flush()
@@ -72,33 +77,8 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 					slog.Error("error in chat completion", "error", err)
 				}
 
-				completion := openai.ChatCompletionStreamResponse{
-					ID: id,
-
-					Object:  "chat.completion.chunk",
-					Created: time.Now().Unix(),
-
-					Model: model,
-
-					Choices: []openai.ChatCompletionStreamChoice{
-						{
-							Delta: openai.ChatCompletionStreamChoiceDelta{
-								Role:    toMessageRole(provider.MessageRoleAssistant),
-								Content: "",
-							},
-
-							FinishReason: openai.FinishReasonStop,
-						},
-					},
-				}
-
-				data, _ := json.Marshal(completion)
-
-				fmt.Fprintf(w, "data: %s\n\n", string(data))
-				w.(http.Flusher).Flush()
-
-				fmt.Fprintf(w, "data: [DONE]\n\n")
-				w.(http.Flusher).Flush()
+				// fmt.Fprintf(w, "data: [DONE]\n\n")
+				// w.(http.Flusher).Flush()
 
 				return
 
@@ -107,14 +87,16 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else {
-		message, err := s.provider.Complete(r.Context(), model, messages, options)
+		options := &provider.CompleteOptions{}
+
+		completion, err := s.provider.Complete(r.Context(), model, messages, options)
 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		completion := openai.ChatCompletionResponse{
+		result := openai.ChatCompletionResponse{
 			ID: id,
 
 			Object:  "chat.completion",
@@ -125,15 +107,17 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 			Choices: []openai.ChatCompletionChoice{
 				{
 					Message: openai.ChatCompletionMessage{
-						Role:    toMessageRole(message.Role),
-						Content: message.Content,
+						Role:    toMessageRole(completion.Role),
+						Content: completion.Content,
 					},
+
+					FinishReason: toFinishReason(completion.Reason),
 				},
 			},
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(completion)
+		json.NewEncoder(w).Encode(result)
 	}
 }
 
@@ -176,8 +160,8 @@ func convertMessageRole(r string) provider.MessageRole {
 	}
 }
 
-func toMessageRole(r provider.MessageRole) string {
-	switch r {
+func toMessageRole(val provider.MessageRole) string {
+	switch val {
 	case provider.MessageRoleSystem:
 		return openai.ChatMessageRoleSystem
 
@@ -186,6 +170,19 @@ func toMessageRole(r provider.MessageRole) string {
 
 	case provider.MessageRoleAssistant:
 		return openai.ChatMessageRoleAssistant
+
+	default:
+		return ""
+	}
+}
+
+func toFinishReason(val provider.CompletionReason) openai.FinishReason {
+	switch val {
+	case provider.CompletionReasonStop:
+		return openai.FinishReasonStop
+
+	case provider.CompletionReasonLength:
+		return openai.FinishReasonLength
 
 	default:
 		return ""

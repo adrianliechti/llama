@@ -58,7 +58,7 @@ func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32,
 	return provider.Embed(ctx, model, content)
 }
 
-func (p *Provider) Complete1(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Message, error) {
+func (p *Provider) Complete(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
 	}
@@ -69,5 +69,5 @@ func (p *Provider) Complete1(ctx context.Context, model string, messages []provi
 		return nil, errors.New("no provider configured for model")
 	}
 
-	return provider.Complete1(ctx, model, messages, options)
+	return provider.Complete(ctx, model, messages, options)
 }

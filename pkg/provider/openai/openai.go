@@ -120,7 +120,7 @@ func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32,
 	return result.Data[0].Embedding, nil
 }
 
-func (p *Provider) Complete1(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Message, error) {
+func (p *Provider) Complete(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
 	}
@@ -146,9 +146,15 @@ func (p *Provider) Complete1(ctx context.Context, model string, messages []provi
 			return nil, err
 		}
 
-		result := provider.Message{
-			Role:    toMessageRole(completion.Choices[0].Message.Role),
-			Content: completion.Choices[0].Message.Content,
+		choice := completion.Choices[0]
+
+		result := provider.Completion{
+			Message: &provider.Message{
+				Role:    toMessageRole(choice.Message.Role),
+				Content: choice.Message.Content,
+			},
+
+			Reason: toCompletionResult(choice.FinishReason),
 		}
 
 		return &result, nil
@@ -164,6 +170,7 @@ func (p *Provider) Complete1(ctx context.Context, model string, messages []provi
 
 		var resultText strings.Builder
 		var resultRole provider.MessageRole
+		var resultReason provider.CompletionReason
 
 		for {
 			completion, err := stream.Recv()
@@ -179,11 +186,17 @@ func (p *Provider) Complete1(ctx context.Context, model string, messages []provi
 			choice := completion.Choices[0]
 
 			resultText.WriteString(choice.Delta.Content)
-			resultRole = toMessageRole(choice.Delta.Role)
 
-			options.Stream <- provider.Message{
-				Role:    toMessageRole(choice.Delta.Role),
-				Content: choice.Delta.Content,
+			resultRole = toMessageRole(choice.Delta.Role)
+			resultReason = toCompletionResult(choice.FinishReason)
+
+			options.Stream <- provider.Completion{
+				Message: &provider.Message{
+					Role:    resultRole,
+					Content: choice.Delta.Content,
+				},
+
+				Reason: resultReason,
 			}
 
 			if choice.FinishReason != "" {
@@ -195,9 +208,13 @@ func (p *Provider) Complete1(ctx context.Context, model string, messages []provi
 			}
 		}
 
-		result := provider.Message{
-			Role:    resultRole,
-			Content: resultText.String(),
+		result := provider.Completion{
+			Message: &provider.Message{
+				Role:    resultRole,
+				Content: resultText.String(),
+			},
+
+			Reason: resultReason,
 		}
 
 		return &result, nil
@@ -258,5 +275,18 @@ func toMessageRole(r string) provider.MessageRole {
 
 	default:
 		return provider.MessageRoleAssistant
+	}
+}
+
+func toCompletionResult(val openai.FinishReason) provider.CompletionReason {
+	switch val {
+	case openai.FinishReasonStop:
+		return provider.CompletionReasonStop
+
+	case openai.FinishReasonLength:
+		return provider.CompletionReasonLength
+
+	default:
+		return ""
 	}
 }

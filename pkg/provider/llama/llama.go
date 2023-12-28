@@ -11,8 +11,6 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
-
-	"github.com/sashabaranov/go-openai"
 )
 
 var (
@@ -125,7 +123,7 @@ func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32,
 	return result.Embedding, nil
 }
 
-func (p *Provider) Complete1(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Message, error) {
+func (p *Provider) Complete(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
 	}
@@ -162,9 +160,18 @@ func (p *Provider) Complete1(ctx context.Context, model string, messages []provi
 			return nil, err
 		}
 
-		result := provider.Message{
-			Role:    openai.ChatMessageRoleAssistant,
-			Content: p.template.RenderContent(completion.Content),
+		content := p.template.RenderContent(completion.Content)
+
+		var resultRole = provider.MessageRoleAssistant
+		var resultReason = toCompletionReason(completion)
+
+		result := provider.Completion{
+			Message: &provider.Message{
+				Role:    resultRole,
+				Content: content,
+			},
+
+			Reason: resultReason,
 		}
 
 		return &result, nil
@@ -193,6 +200,8 @@ func (p *Provider) Complete1(ctx context.Context, model string, messages []provi
 		reader := bufio.NewReader(resp.Body)
 
 		var resultText strings.Builder
+		var resultRole provider.MessageRole
+		var resultReason provider.CompletionReason
 
 		for {
 			data, err := reader.ReadBytes('\n')
@@ -218,9 +227,18 @@ func (p *Provider) Complete1(ctx context.Context, model string, messages []provi
 				return nil, err
 			}
 
-			options.Stream <- provider.Message{
-				Role:    provider.MessageRoleAssistant,
-				Content: p.template.RenderContent(completion.Content),
+			content := p.template.RenderContent(completion.Content)
+
+			resultText.WriteString(content)
+
+			resultRole = provider.MessageRoleAssistant
+			resultReason = toCompletionReason(completion)
+
+			options.Stream <- provider.Completion{
+				Message: &provider.Message{
+					Role:    provider.MessageRoleAssistant,
+					Content: content,
+				},
 			}
 
 			if completion.Stop {
@@ -228,9 +246,13 @@ func (p *Provider) Complete1(ctx context.Context, model string, messages []provi
 			}
 		}
 
-		result := provider.Message{
-			Role:    provider.MessageRoleAssistant,
-			Content: resultText.String(),
+		result := provider.Completion{
+			Message: &provider.Message{
+				Role:    resultRole,
+				Content: resultText.String(),
+			},
+
+			Reason: resultReason,
 		}
 
 		return &result, nil
@@ -301,4 +323,16 @@ type completionResponse struct {
 	Content string `json:"content"`
 
 	Truncated bool `json:"truncated"`
+}
+
+func toCompletionReason(res completionResponse) provider.CompletionReason {
+	if res.Truncated {
+		return provider.CompletionReasonLength
+	}
+
+	if res.Stop {
+		return provider.CompletionReasonStop
+	}
+
+	return ""
 }

@@ -64,7 +64,6 @@ func New(cfg *config.Config) (*Server, error) {
 
 	r.Post("/v1/embeddings", s.handleEmbeddings)
 
-	r.Post("/v1/completions", s.handleCompletions)
 	r.Post("/v1/chat/completions", s.handleChatCompletions)
 
 	return s, nil
