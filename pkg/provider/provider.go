@@ -7,8 +7,15 @@ import (
 type Provider interface {
 	Models(ctx context.Context) ([]Model, error)
 
-	Embed(ctx context.Context, model, content string) ([]float32, error)
+	Embedder
+	Completer
+}
 
+type Embedder interface {
+	Embed(ctx context.Context, model, content string) ([]float32, error)
+}
+
+type Completer interface {
 	Complete(ctx context.Context, model string, messages []Message, options *CompleteOptions) (*Message, error)
 	CompleteStream(ctx context.Context, model string, messages []Message, stream chan<- Message, options *CompleteOptions) error
 }

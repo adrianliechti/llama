@@ -14,6 +14,12 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/llama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
+
+	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/llama/pkg/index/chroma"
+
+	"github.com/adrianliechti/llama/pkg/chain"
+	"github.com/adrianliechti/llama/pkg/chain/rag"
 )
 
 type Config struct {
@@ -48,6 +54,14 @@ func Parse(path string) (*Config, error) {
 		return nil, err
 	}
 
+	chains, err := RAGsFromConfig(config.Chains)
+
+	if err != nil {
+		return nil, err
+	}
+
+	_ = chains
+
 	authorizer, err := authorizerFromConfig(config.Auth)
 
 	if err != nil {
@@ -77,7 +91,7 @@ func providersFromConfig(providers []providerConfig) ([]provider.Provider, error
 
 	for _, p := range providers {
 		switch strings.ToLower(p.Type) {
-		case "", "openai":
+		case "openai":
 			var options []openai.Option
 
 			if p.URL != "" {
@@ -155,6 +169,45 @@ func providersFromConfig(providers []providerConfig) ([]provider.Provider, error
 	return result, nil
 }
 
+func RAGsFromConfig(chains map[string]chainConfig) ([]chain.Provider, error) {
+	var result []chain.Provider
+
+	for id, c := range chains {
+		if !strings.EqualFold(c.Type, "rag") {
+			continue
+		}
+
+		_ = id
+
+		var index index.Index
+
+		if c.Index != nil {
+			switch strings.ToLower(c.Index.Type) {
+			case "chroma":
+				i, err := chroma.New(c.Index.URL, c.Index.Name)
+
+				if err != nil {
+					return nil, err
+				}
+
+				index = i
+
+			default:
+				return nil, errors.New("invalid index type: " + c.Index.Type)
+			}
+		}
+
+		switch strings.ToLower(c.Type) {
+		case "rag":
+			rag := rag.New(index, nil, nil)
+
+			result = append(result, rag)
+		}
+	}
+
+	return result, nil
+}
+
 func authorizerFromConfig(auth authConfig) (authorizer.Provider, error) {
 	if auth.Issuer != "" {
 		return oidc.New(auth.Issuer, auth.Audience)
@@ -171,6 +224,8 @@ type configFile struct {
 	Auth authConfig `yaml:"auth"`
 
 	Providers []providerConfig `yaml:"providers"`
+
+	Chains map[string]chainConfig `yaml:"chains"`
 }
 
 type authConfig struct {
@@ -229,4 +284,22 @@ func (m modelMapper) To(val string) string {
 	}
 
 	return ""
+}
+
+type chainConfig struct {
+	Type string `yaml:"type"`
+
+	Model     string `yaml:"model"`
+	Embedding string `yaml:"embedding"`
+
+	Index *indexConfig `yaml:"index"`
+}
+
+type indexConfig struct {
+	Type string `yaml:"type"`
+
+	URL   string `yaml:"url"`
+	Token string `yaml:"token"`
+
+	Name string `yaml:"name"`
 }
