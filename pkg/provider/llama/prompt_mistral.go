@@ -6,10 +6,16 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-type PromptTemplateMistral struct {
+type PromptMistral struct {
 }
 
-func (t *PromptTemplateMistral) ConvertPrompt(system string, messages []provider.Message) (string, error) {
+func (t *PromptMistral) Stop() []string {
+	return []string{
+		"[INST]",
+	}
+}
+
+func (t *PromptMistral) Prompt(system string, messages []provider.Message) (string, error) {
 	messages = flattenMessages(messages)
 
 	if err := verifyMessageOrder(messages); err != nil {
@@ -41,9 +47,4 @@ func (t *PromptTemplateMistral) ConvertPrompt(system string, messages []provider
 	}
 
 	return strings.TrimSpace(prompt), nil
-}
-
-func (t *PromptTemplateMistral) RenderContent(content string) string {
-	message := strings.TrimSpace(content)
-	return message
 }

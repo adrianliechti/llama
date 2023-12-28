@@ -6,10 +6,16 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-type PromptTemplateChatML struct {
+type PromptChatML struct {
 }
 
-func (t *PromptTemplateChatML) ConvertPrompt(system string, messages []provider.Message) (string, error) {
+func (t *PromptChatML) Stop() []string {
+	return []string{
+		"<|im_end|>",
+	}
+}
+
+func (t *PromptChatML) Prompt(system string, messages []provider.Message) (string, error) {
 	messages = flattenMessages(messages)
 
 	if err := verifyMessageOrder(messages); err != nil {
@@ -42,11 +48,4 @@ func (t *PromptTemplateChatML) ConvertPrompt(system string, messages []provider.
 	prompt += "<|im_start|>assistant"
 
 	return strings.TrimSpace(prompt), nil
-}
-
-func (t *PromptTemplateChatML) RenderContent(content string) string {
-	content = strings.TrimSpace(content)
-	content = strings.ReplaceAll(content, "<|im_end|>", "")
-	return content
-
 }

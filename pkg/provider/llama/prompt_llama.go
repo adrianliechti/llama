@@ -6,10 +6,16 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-type PromptTemplateLLAMA struct {
+type PromptLLAMA struct {
 }
 
-func (t *PromptTemplateLLAMA) ConvertPrompt(system string, messages []provider.Message) (string, error) {
+func (t *PromptLLAMA) Stop() []string {
+	return []string{
+		"[INST]",
+	}
+}
+
+func (t *PromptLLAMA) Prompt(system string, messages []provider.Message) (string, error) {
 	messages = flattenMessages(messages)
 
 	if err := verifyMessageOrder(messages); err != nil {
@@ -41,9 +47,4 @@ func (t *PromptTemplateLLAMA) ConvertPrompt(system string, messages []provider.M
 	}
 
 	return strings.TrimSpace(prompt), nil
-}
-
-func (t *PromptTemplateLLAMA) RenderContent(content string) string {
-	message := strings.TrimSpace(content)
-	return message
 }

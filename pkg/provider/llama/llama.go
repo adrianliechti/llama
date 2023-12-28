@@ -43,7 +43,7 @@ func New(options ...Option) *Provider {
 		model:  "default",
 		system: "",
 
-		template: &PromptTemplateLLAMA{},
+		template: &PromptLLAMA{},
 	}
 
 	for _, option := range options {
@@ -161,16 +161,13 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 			return nil, err
 		}
 
-		//content := p.template.RenderContent(completion.Content)
-		content := completion.Content
-
 		var resultRole = provider.MessageRoleAssistant
 		var resultReason = toCompletionReason(completion)
 
 		result := provider.Completion{
 			Message: &provider.Message{
 				Role:    resultRole,
-				Content: content,
+				Content: completion.Content,
 			},
 
 			Reason: resultReason,
@@ -233,12 +230,7 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 				return nil, err
 			}
 
-			println(completion.Prompt)
-
-			//content := p.template.RenderContent(completion.Content)
-			content := completion.Content
-
-			resultText.WriteString(content)
+			resultText.WriteString(completion.Content)
 
 			resultRole = provider.MessageRoleAssistant
 			resultReason = toCompletionReason(completion)
@@ -246,7 +238,7 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 			options.Stream <- provider.Completion{
 				Message: &provider.Message{
 					Role:    resultRole,
-					Content: content,
+					Content: completion.Content,
 				},
 
 				Reason: resultReason,
@@ -271,7 +263,7 @@ func (p *Provider) convertCompletionRequest(messages []provider.Message, options
 		options = &provider.CompleteOptions{}
 	}
 
-	prompt, err := p.template.ConvertPrompt(p.system, messages)
+	prompt, err := p.template.Prompt(p.system, messages)
 
 	if err != nil {
 		return nil, err
@@ -282,23 +274,7 @@ func (p *Provider) convertCompletionRequest(messages []provider.Message, options
 
 		Prompt: prompt,
 		Stop:   []string{"[INST]"},
-
-		//Temperature: request.Temperature,
-		//TopP:        request.TopP,
-
-		//NPredict: -1,
-		////NPredict: 400,
 	}
-
-	// if result.TopP == 0 {
-	// 	result.TopP = 0.9
-	// 	//result.TopP = 0.95
-	// }
-
-	// if result.Temperature == 0 {
-	// 	result.Temperature = 0.6
-	// 	//result.Temperature = 0.2
-	// }
 
 	return result, nil
 }
@@ -312,23 +288,23 @@ type embeddingResponse struct {
 }
 
 type completionRequest struct {
-	Stream bool `json:"stream"`
+	Prompt string `json:"prompt"`
 
+	Stream bool     `json:"stream"`
 	Stop   []string `json:"stop"`
-	Prompt string   `json:"prompt"`
 
-	Temperature float32 `json:"temperature"`
-	NPredict    int     `json:"n_predict"`
-	TopP        float32 `json:"top_p"`
+	//Temperature float32 `json:"temperature"`
+	//NPredict    int     `json:"n_predict"`
+	//TopP        float32 `json:"top_p"`
 }
 
 type completionResponse struct {
 	Model string `json:"model"`
 
-	Stop    bool   `json:"stop"`
 	Prompt  string `json:"prompt"`
 	Content string `json:"content"`
 
+	Stop      bool `json:"stop"`
 	Truncated bool `json:"truncated"`
 }
 

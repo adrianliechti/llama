@@ -10,8 +10,8 @@ import (
 )
 
 type PromptTemplate interface {
-	ConvertPrompt(system string, messages []provider.Message) (string, error)
-	RenderContent(content string) string
+	Stop() []string
+	Prompt(system string, messages []provider.Message) (string, error)
 }
 
 func flattenMessages(messages []provider.Message) []provider.Message {
