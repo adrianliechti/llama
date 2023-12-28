@@ -25,10 +25,10 @@ func (s *Server) handleCompletions(w http.ResponseWriter, r *http.Request) {
 	id := uuid.New().String()
 
 	model := req.Model
-	messages := []provider.CompletionMessage{}
+	messages := []provider.Message{}
 
 	if prompt, ok := req.Prompt.(string); ok {
-		messages = []provider.CompletionMessage{
+		messages = []provider.Message{
 			{
 				Role:    openai.ChatMessageRoleUser,
 				Content: prompt,
@@ -37,13 +37,15 @@ func (s *Server) handleCompletions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if prompts, ok := req.Prompt.([]string); ok {
-		messages = []provider.CompletionMessage{
+		messages = []provider.Message{
 			{
 				Role:    openai.ChatMessageRoleUser,
 				Content: strings.Join(prompts, "\n"),
 			},
 		}
 	}
+
+	options := &provider.CompleteOptions{}
 
 	if req.Stream {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -52,19 +54,38 @@ func (s *Server) handleCompletions(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 
 		done := make(chan error)
-		stream := make(chan provider.Completion)
+		stream := make(chan provider.Message)
 
 		go func() {
-			done <- s.provider.CompleteStream(r.Context(), model, messages, stream)
+			done <- s.provider.CompleteStream(r.Context(), model, messages, stream, options)
 		}()
 
 		for {
 			select {
-			case result := <-stream:
-				status := ""
+			case message := <-stream:
+				completion := openai.CompletionResponse{
+					ID: id,
 
-				if result.Result == provider.MessageResultStop {
-					status = "stop"
+					Object:  "text_completion",
+					Created: time.Now().Unix(),
+
+					Model: model,
+
+					Choices: []openai.CompletionChoice{
+						{
+							Text: message.Content,
+						},
+					},
+				}
+
+				data, _ := json.Marshal(completion)
+
+				fmt.Fprintf(w, "data: %s\n\n", string(data))
+				w.(http.Flusher).Flush()
+
+			case err := <-done:
+				if err != nil {
+					slog.Error("error in completion", "error", err)
 				}
 
 				completion := openai.CompletionResponse{
@@ -77,9 +98,8 @@ func (s *Server) handleCompletions(w http.ResponseWriter, r *http.Request) {
 
 					Choices: []openai.CompletionChoice{
 						{
-							Text: result.Message.Content,
-
-							FinishReason: status,
+							Text:         "",
+							FinishReason: string(openai.FinishReasonStop),
 						},
 					},
 				}
@@ -89,15 +109,8 @@ func (s *Server) handleCompletions(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprintf(w, "data: %s\n\n", string(data))
 				w.(http.Flusher).Flush()
 
-			case err := <-done:
-				time.Sleep(1 * time.Second)
-
 				fmt.Fprintf(w, "data: [DONE]\n\n")
 				w.(http.Flusher).Flush()
-
-				if err != nil {
-					slog.Error("error in completion", "error", err)
-				}
 
 				return
 
@@ -106,17 +119,11 @@ func (s *Server) handleCompletions(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else {
-		result, err := s.provider.Complete(r.Context(), model, messages)
+		message, err := s.provider.Complete(r.Context(), model, messages, options)
 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
-		}
-
-		status := ""
-
-		if result.Result == provider.MessageResultStop {
-			status = "stop"
 		}
 
 		completion := openai.CompletionResponse{
@@ -129,9 +136,7 @@ func (s *Server) handleCompletions(w http.ResponseWriter, r *http.Request) {
 
 			Choices: []openai.CompletionChoice{
 				{
-					Text: result.Message.Content,
-
-					FinishReason: status,
+					Text: message.Content,
 				},
 			},
 		}

@@ -28,9 +28,6 @@ type Provider struct {
 
 	system   string
 	template PromptTemplate
-
-	username string
-	password string
 }
 
 type Option func(*Provider)
@@ -95,7 +92,7 @@ func (p *Provider) Models(ctx context.Context) ([]provider.Model, error) {
 	}, nil
 }
 
-func (p *Provider) Embed(ctx context.Context, model, content string) (*provider.Embedding, error) {
+func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32, error) {
 	req := &embeddingRequest{
 		Content: strings.TrimSpace(content),
 	}
@@ -107,10 +104,6 @@ func (p *Provider) Embed(ctx context.Context, model, content string) (*provider.
 	r.Header.Set("Content-Type", "application/json")
 	r.Header.Set("Cache-Control", "no-cache")
 
-	if p.password != "" {
-		r.SetBasicAuth(p.username, p.password)
-	}
-
 	resp, err := p.client.Do(r)
 
 	if err != nil {
@@ -123,21 +116,21 @@ func (p *Provider) Embed(ctx context.Context, model, content string) (*provider.
 
 	defer resp.Body.Close()
 
-	var data embeddingResponse
+	var result embeddingResponse
 
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
 
-	result := provider.Embedding{
-		Embeddings: data.Embedding,
-	}
-
-	return &result, nil
+	return result.Embedding, nil
 }
 
-func (p *Provider) Complete(ctx context.Context, model string, messages []provider.CompletionMessage) (*provider.Completion, error) {
-	req, err := p.convertCompletionRequest(messages)
+func (p *Provider) Complete(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Message, error) {
+	if options == nil {
+		options = &provider.CompleteOptions{}
+	}
+
+	req, err := p.convertCompletionRequest(messages, options)
 
 	if err != nil {
 		return nil, err
@@ -150,10 +143,6 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 	r.Header.Set("Content-Type", "application/json")
 	r.Header.Set("Cache-Control", "no-cache")
 
-	if p.password != "" {
-		r.SetBasicAuth(p.username, p.password)
-	}
-
 	resp, err := p.client.Do(r)
 
 	if err != nil {
@@ -161,39 +150,35 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("unable to complete chat")
+		return nil, errors.New("unable to complete")
 	}
 
 	defer resp.Body.Close()
 
-	var data completionResponse
+	var result completionResponse
 
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
 
-	content := p.template.RenderContent(data.Content)
-
-	result := provider.Completion{
-		Message: provider.CompletionMessage{
-			Role:    openai.ChatMessageRoleAssistant,
-			Content: content,
-		},
-
-		Result: provider.MessageResultStop,
+	message := provider.Message{
+		Role:    openai.ChatMessageRoleAssistant,
+		Content: p.template.RenderContent(result.Content),
 	}
 
-	return &result, nil
+	return &message, nil
 }
 
-func (p *Provider) CompleteStream(ctx context.Context, model string, messages []provider.CompletionMessage, stream chan<- provider.Completion) error {
-	req, err := p.convertCompletionRequest(messages)
+func (p *Provider) CompleteStream(ctx context.Context, model string, messages []provider.Message, stream chan<- provider.Message, options *provider.CompleteOptions) error {
+	if options == nil {
+		options = &provider.CompleteOptions{}
+	}
+
+	req, err := p.convertCompletionRequest(messages, options)
 
 	if err != nil {
 		return err
 	}
-
-	req.Stream = true
 
 	body, _ := json.Marshal(req)
 	url, _ := url.JoinPath(p.url, "/completion")
@@ -204,10 +189,6 @@ func (p *Provider) CompleteStream(ctx context.Context, model string, messages []
 	r.Header.Set("Connection", "keep-alive")
 	r.Header.Set("Cache-Control", "no-cache")
 
-	if err != nil {
-		return err
-	}
-
 	resp, err := p.client.Do(r)
 
 	if err != nil {
@@ -215,7 +196,7 @@ func (p *Provider) CompleteStream(ctx context.Context, model string, messages []
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("unable to complete chat")
+		return errors.New("unable to complete")
 	}
 
 	reader := bufio.NewReader(resp.Body)
@@ -244,22 +225,10 @@ func (p *Provider) CompleteStream(ctx context.Context, model string, messages []
 			return err
 		}
 
-		content := p.template.RenderContent(result.Content)
-
-		message := provider.CompletionMessage{
+		stream <- provider.Message{
 			Role:    openai.ChatMessageRoleAssistant,
-			Content: content,
+			Content: p.template.RenderContent(result.Content),
 		}
-
-		completion := provider.Completion{
-			Message: message,
-		}
-
-		if result.Stop {
-			completion.Result = provider.MessageResultStop
-		}
-
-		stream <- completion
 
 		if result.Stop {
 			break
@@ -269,7 +238,11 @@ func (p *Provider) CompleteStream(ctx context.Context, model string, messages []
 	return nil
 }
 
-func (p *Provider) convertCompletionRequest(messages []provider.CompletionMessage) (*completionRequest, error) {
+func (p *Provider) convertCompletionRequest(messages []provider.Message, options *provider.CompleteOptions) (*completionRequest, error) {
+	if options == nil {
+		options = &provider.CompleteOptions{}
+	}
+
 	prompt, err := p.template.ConvertPrompt(p.system, messages)
 
 	if err != nil {
@@ -277,8 +250,6 @@ func (p *Provider) convertCompletionRequest(messages []provider.CompletionMessag
 	}
 
 	result := &completionRequest{
-		//Stream: request.Stream,
-
 		Prompt: prompt,
 		Stop:   []string{"[INST]"},
 

@@ -6,9 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/adrianliechti/llama/pkg/server/models"
-
 	"github.com/go-chi/chi/v5"
+	"github.com/sashabaranov/go-openai"
 )
 
 func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
@@ -19,10 +18,10 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := models.Models{}
+	result := openai.ModelsList{}
 
 	for _, m := range data {
-		result.Models = append(result.Models, models.Model{
+		result.Models = append(result.Models, openai.Model{
 			ID: m.ID,
 
 			Object:    "model",
@@ -49,7 +48,7 @@ func (s *Server) handleModel(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		result := models.Model{
+		result := openai.Model{
 			ID: m.ID,
 
 			Object:    "model",

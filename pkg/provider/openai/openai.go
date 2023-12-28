@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/provider/openai/from"
-	"github.com/adrianliechti/llama/pkg/provider/openai/to"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -103,7 +101,7 @@ func (p *Provider) Models(ctx context.Context) ([]provider.Model, error) {
 	return result, nil
 }
 
-func (p *Provider) Embed(ctx context.Context, model, content string) (*provider.Embedding, error) {
+func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32, error) {
 	// if p.mapper != nil {
 	// 	model = p.mapper.To(model)
 	// }
@@ -113,20 +111,20 @@ func (p *Provider) Embed(ctx context.Context, model, content string) (*provider.
 		Model: openai.AdaEmbeddingV2,
 	}
 
-	data, err := p.client.CreateEmbeddings(ctx, req)
+	result, err := p.client.CreateEmbeddings(ctx, req)
 
 	if err != nil {
 		return nil, err
 	}
 
-	result := provider.Embedding{
-		Embeddings: data.Data[0].Embedding,
-	}
-
-	return &result, nil
+	return result.Data[0].Embedding, nil
 }
 
-func (p *Provider) Complete(ctx context.Context, model string, messages []provider.CompletionMessage) (*provider.Completion, error) {
+func (p *Provider) Complete(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Message, error) {
+	if options == nil {
+		options = &provider.CompleteOptions{}
+	}
+
 	if p.mapper != nil {
 		model = p.mapper.To(model)
 	}
@@ -135,30 +133,31 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		return nil, ErrInvalidModelMapping
 	}
 
-	req := openai.ChatCompletionRequest{
-		Model:    model,
-		Messages: from.CompletionMessages(messages),
-	}
-
-	result, err := p.client.CreateChatCompletion(ctx, req)
+	req, err := p.convertCompletionRequest(model, messages, options)
 
 	if err != nil {
 		return nil, err
 	}
 
-	completion := provider.Completion{
-		Message: provider.CompletionMessage{
-			Role:    to.MessageRole(result.Choices[0].Message.Role),
-			Content: result.Choices[0].Message.Content,
-		},
+	completion, err := p.client.CreateChatCompletion(ctx, *req)
 
-		Result: provider.MessageResultStop,
+	if err != nil {
+		return nil, err
 	}
 
-	return &completion, nil
+	message := provider.Message{
+		Role:    toMessageRole(completion.Choices[0].Message.Role),
+		Content: completion.Choices[0].Message.Content,
+	}
+
+	return &message, nil
 }
 
-func (p *Provider) CompleteStream(ctx context.Context, model string, messages []provider.CompletionMessage, stream chan<- provider.Completion) error {
+func (p *Provider) CompleteStream(ctx context.Context, model string, messages []provider.Message, stream chan<- provider.Message, options *provider.CompleteOptions) error {
+	if options == nil {
+		options = &provider.CompleteOptions{}
+	}
+
 	if p.mapper != nil {
 		model = p.mapper.To(model)
 	}
@@ -167,12 +166,13 @@ func (p *Provider) CompleteStream(ctx context.Context, model string, messages []
 		return ErrInvalidModelMapping
 	}
 
-	req := openai.ChatCompletionRequest{
-		Model:    model,
-		Messages: from.CompletionMessages(messages),
+	req, err := p.convertCompletionRequest(model, messages, options)
+
+	if err != nil {
+		return err
 	}
 
-	result, err := p.client.CreateChatCompletionStream(ctx, req)
+	result, err := p.client.CreateChatCompletionStream(ctx, *req)
 
 	if err != nil {
 		return err
@@ -181,7 +181,7 @@ func (p *Provider) CompleteStream(ctx context.Context, model string, messages []
 	defer result.Close()
 
 	for {
-		data, err := result.Recv()
+		completion, err := result.Recv()
 
 		if errors.Is(err, io.EOF) {
 			return nil
@@ -191,15 +191,72 @@ func (p *Provider) CompleteStream(ctx context.Context, model string, messages []
 			return err
 		}
 
-		completion := provider.Completion{
-			Message: provider.CompletionMessage{
-				Role:    to.MessageRole(data.Choices[0].Delta.Role),
-				Content: data.Choices[0].Delta.Content,
-			},
-
-			Result: to.MessageResult(data.Choices[0].FinishReason),
+		stream <- provider.Message{
+			Role:    toMessageRole(completion.Choices[0].Delta.Role),
+			Content: completion.Choices[0].Delta.Content,
 		}
 
-		stream <- completion
+		if completion.Choices[0].FinishReason != "" {
+			break
+		}
+	}
+
+	return nil
+}
+
+func (p *Provider) convertCompletionRequest(model string, messages []provider.Message, options *provider.CompleteOptions) (*openai.ChatCompletionRequest, error) {
+	if options == nil {
+		options = &provider.CompleteOptions{}
+	}
+
+	req := &openai.ChatCompletionRequest{
+		Model: model,
+	}
+
+	for _, m := range messages {
+		req.Messages = append(req.Messages, openai.ChatCompletionMessage{
+			Role:    convertMessageRole(m.Role),
+			Content: m.Content,
+		})
+	}
+
+	return req, nil
+}
+
+func convertMessageRole(r provider.MessageRole) string {
+	switch r {
+	case provider.MessageRoleSystem:
+		return openai.ChatMessageRoleSystem
+
+	case provider.MessageRoleUser:
+		return openai.ChatMessageRoleUser
+
+	case provider.MessageRoleAssistant:
+		return openai.ChatMessageRoleAssistant
+
+	default:
+		return ""
+	}
+}
+
+func toMessageRole(r string) provider.MessageRole {
+	switch r {
+	case openai.ChatMessageRoleSystem:
+		return provider.MessageRoleSystem
+
+	case openai.ChatMessageRoleUser:
+		return provider.MessageRoleUser
+
+	case openai.ChatMessageRoleAssistant:
+		return provider.MessageRoleAssistant
+
+	// case openai.ChatMessageRoleFunction:
+	// 	return provider.MessageRoleFunction
+
+	// case openai.ChatMessageRoleTool:
+	// 	return provider.MessageRoleTool
+
+	default:
+		return provider.MessageRoleAssistant
 	}
 }

@@ -9,7 +9,7 @@ import (
 type PromptTemplateChatML struct {
 }
 
-func (t *PromptTemplateChatML) ConvertPrompt(system string, messages []provider.CompletionMessage) (string, error) {
+func (t *PromptTemplateChatML) ConvertPrompt(system string, messages []provider.Message) (string, error) {
 	messages = flattenMessages(messages)
 
 	if err := verifyMessageOrder(messages); err != nil {

@@ -7,28 +7,19 @@ import (
 type Provider interface {
 	Models(ctx context.Context) ([]Model, error)
 
-	Embed(ctx context.Context, model, content string) (*Embedding, error)
+	Embed(ctx context.Context, model, content string) ([]float32, error)
 
-	Complete(ctx context.Context, model string, messages []CompletionMessage) (*Completion, error)
-	CompleteStream(ctx context.Context, model string, messages []CompletionMessage, stream chan<- Completion) error
+	Complete(ctx context.Context, model string, messages []Message, options *CompleteOptions) (*Message, error)
+	CompleteStream(ctx context.Context, model string, messages []Message, stream chan<- Message, options *CompleteOptions) error
 }
 
 type Model struct {
 	ID string
 }
 
-type Embedding struct {
-	Embeddings []float32
-}
-
-type CompletionMessage struct {
+type Message struct {
 	Role    MessageRole
 	Content string
-}
-
-type Completion struct {
-	Message CompletionMessage
-	Result  MessageResult
 }
 
 type MessageRole string
@@ -39,9 +30,5 @@ const (
 	MessageRoleAssistant MessageRole = "assistant"
 )
 
-type MessageResult string
-
-const (
-	MessageResultStop   MessageResult = "stop"
-	MessageResultLength MessageResult = "length"
-)
+type CompleteOptions struct {
+}

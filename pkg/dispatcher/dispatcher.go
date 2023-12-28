@@ -48,7 +48,7 @@ func (p *Provider) Models(ctx context.Context) ([]provider.Model, error) {
 	return result, nil
 }
 
-func (p *Provider) Embed(ctx context.Context, model, content string) (*provider.Embedding, error) {
+func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32, error) {
 	provider, ok := p.providers[model]
 
 	if !ok {
@@ -58,22 +58,30 @@ func (p *Provider) Embed(ctx context.Context, model, content string) (*provider.
 	return provider.Embed(ctx, model, content)
 }
 
-func (p *Provider) Complete(ctx context.Context, model string, messages []provider.CompletionMessage) (*provider.Completion, error) {
+func (p *Provider) Complete(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Message, error) {
+	if options == nil {
+		options = &provider.CompleteOptions{}
+	}
+
 	provider, ok := p.providers[model]
 
 	if !ok {
 		return nil, errors.New("no provider configured for model")
 	}
 
-	return provider.Complete(ctx, model, messages)
+	return provider.Complete(ctx, model, messages, options)
 }
 
-func (p *Provider) CompleteStream(ctx context.Context, model string, messages []provider.CompletionMessage, stream chan<- provider.Completion) error {
+func (p *Provider) CompleteStream(ctx context.Context, model string, messages []provider.Message, stream chan<- provider.Message, options *provider.CompleteOptions) error {
+	if options == nil {
+		options = &provider.CompleteOptions{}
+	}
+
 	provider, ok := p.providers[model]
 
 	if !ok {
 		return errors.New("no provider configured for model")
 	}
 
-	return provider.CompleteStream(ctx, model, messages, stream)
+	return provider.CompleteStream(ctx, model, messages, stream, options)
 }

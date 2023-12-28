@@ -9,7 +9,7 @@ import (
 type PromptTemplateLLAMA struct {
 }
 
-func (t *PromptTemplateLLAMA) ConvertPrompt(system string, messages []provider.CompletionMessage) (string, error) {
+func (t *PromptTemplateLLAMA) ConvertPrompt(system string, messages []provider.Message) (string, error) {
 	messages = flattenMessages(messages)
 
 	if err := verifyMessageOrder(messages); err != nil {

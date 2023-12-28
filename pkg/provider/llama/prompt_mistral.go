@@ -9,7 +9,7 @@ import (
 type PromptTemplateMistral struct {
 }
 
-func (t *PromptTemplateMistral) ConvertPrompt(system string, messages []provider.CompletionMessage) (string, error) {
+func (t *PromptTemplateMistral) ConvertPrompt(system string, messages []provider.Message) (string, error) {
 	messages = flattenMessages(messages)
 
 	if err := verifyMessageOrder(messages); err != nil {

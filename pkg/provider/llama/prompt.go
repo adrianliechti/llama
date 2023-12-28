@@ -10,12 +10,12 @@ import (
 )
 
 type PromptTemplate interface {
-	ConvertPrompt(system string, messages []provider.CompletionMessage) (string, error)
+	ConvertPrompt(system string, messages []provider.Message) (string, error)
 	RenderContent(content string) string
 }
 
-func flattenMessages(messages []provider.CompletionMessage) []provider.CompletionMessage {
-	result := make([]provider.CompletionMessage, 0)
+func flattenMessages(messages []provider.Message) []provider.Message {
+	result := make([]provider.Message, 0)
 
 	for _, m := range messages {
 		if len(result) > 0 && result[len(result)-1].Role == m.Role {
@@ -29,7 +29,7 @@ func flattenMessages(messages []provider.CompletionMessage) []provider.Completio
 	return result
 }
 
-func verifyMessageOrder(messages []provider.CompletionMessage) error {
+func verifyMessageOrder(messages []provider.Message) error {
 	result := slices.Clone(messages)
 
 	if len(result) == 0 {
