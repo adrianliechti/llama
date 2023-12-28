@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"unicode"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 )
@@ -161,13 +162,15 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 			return nil, err
 		}
 
+		content := strings.TrimSpace(completion.Content)
+
 		var resultRole = provider.MessageRoleAssistant
 		var resultReason = toCompletionReason(completion)
 
 		result := provider.Completion{
 			Message: &provider.Message{
 				Role:    resultRole,
-				Content: completion.Content,
+				Content: content,
 			},
 
 			Reason: resultReason,
@@ -202,7 +205,7 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		var resultRole provider.MessageRole
 		var resultReason provider.CompletionReason
 
-		for {
+		for i := 0; ; i++ {
 			data, err := reader.ReadBytes('\n')
 
 			if errors.Is(err, io.EOF) {
@@ -230,7 +233,13 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 				return nil, err
 			}
 
-			resultText.WriteString(completion.Content)
+			var content = completion.Content
+
+			if i == 0 {
+				content = strings.TrimLeftFunc(content, unicode.IsSpace)
+			}
+
+			resultText.WriteString(content)
 
 			resultRole = provider.MessageRoleAssistant
 			resultReason = toCompletionReason(completion)
@@ -238,7 +247,7 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 			options.Stream <- provider.Completion{
 				Message: &provider.Message{
 					Role:    resultRole,
-					Content: completion.Content,
+					Content: content,
 				},
 
 				Reason: resultReason,
