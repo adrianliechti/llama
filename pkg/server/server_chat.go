@@ -44,48 +44,39 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 			done <- err
 		}()
 
-		for {
-			select {
-			case completion := <-stream:
-				result := openai.ChatCompletionStreamResponse{
-					ID: id,
+		for completion := range stream {
+			result := openai.ChatCompletionStreamResponse{
+				ID: id,
 
-					Object:  "chat.completion.chunk",
-					Created: time.Now().Unix(),
+				Object:  "chat.completion.chunk",
+				Created: time.Now().Unix(),
 
-					Model: model,
+				Model: model,
 
-					Choices: []openai.ChatCompletionStreamChoice{
-						{
-							Delta: openai.ChatCompletionStreamChoiceDelta{
-								Role:    toMessageRole(completion.Role),
-								Content: completion.Content,
-							},
-
-							FinishReason: toFinishReason(completion.Reason),
+				Choices: []openai.ChatCompletionStreamChoice{
+					{
+						Delta: openai.ChatCompletionStreamChoiceDelta{
+							Role:    toMessageRole(completion.Role),
+							Content: completion.Content,
 						},
+
+						FinishReason: toFinishReason(completion.Reason),
 					},
-				}
-
-				data, _ := json.Marshal(result)
-
-				fmt.Fprintf(w, "data: %s\n\n", string(data))
-				w.(http.Flusher).Flush()
-
-			case err := <-done:
-				if err != nil {
-					slog.Error("error in chat completion", "error", err)
-				}
-
-				// fmt.Fprintf(w, "data: [DONE]\n\n")
-				// w.(http.Flusher).Flush()
-
-				return
-
-			case <-r.Context().Done():
-				return
+				},
 			}
+
+			data, _ := json.Marshal(result)
+
+			fmt.Fprintf(w, "data: %s\n\n", string(data))
+			w.(http.Flusher).Flush()
 		}
+
+		if err := <-done; err != nil {
+			slog.Error("error in chat completion", "error", err)
+		}
+
+		//fmt.Fprintf(w, "data: [DONE]\n\n")
+		//w.(http.Flusher).Flush()
 	} else {
 		options := &provider.CompleteOptions{}
 

@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -160,7 +161,8 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 			return nil, err
 		}
 
-		content := p.template.RenderContent(completion.Content)
+		//content := p.template.RenderContent(completion.Content)
+		content := completion.Content
 
 		var resultRole = provider.MessageRoleAssistant
 		var resultReason = toCompletionReason(completion)
@@ -206,6 +208,10 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		for {
 			data, err := reader.ReadBytes('\n')
 
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
 			if err != nil {
 				return nil, err
 			}
@@ -227,7 +233,10 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 				return nil, err
 			}
 
-			content := p.template.RenderContent(completion.Content)
+			println(completion.Prompt)
+
+			//content := p.template.RenderContent(completion.Content)
+			content := completion.Content
 
 			resultText.WriteString(content)
 
@@ -236,13 +245,11 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 
 			options.Stream <- provider.Completion{
 				Message: &provider.Message{
-					Role:    provider.MessageRoleAssistant,
+					Role:    resultRole,
 					Content: content,
 				},
-			}
 
-			if completion.Stop {
-				break
+				Reason: resultReason,
 			}
 		}
 
