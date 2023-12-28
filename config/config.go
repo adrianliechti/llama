@@ -5,8 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/adrianliechti/llama/pkg/authorizer"
 	"github.com/adrianliechti/llama/pkg/authorizer/oidc"
 	"github.com/adrianliechti/llama/pkg/authorizer/static"
@@ -34,27 +32,21 @@ func Parse(path string) (*Config, error) {
 		path = "config.yaml"
 	}
 
-	data, err := os.ReadFile(path)
+	file, err := parseFile(path)
 
 	if err != nil {
-		return nil, err
-	}
-
-	var config configFile
-
-	if err := yaml.Unmarshal(data, &config); err != nil {
 		return nil, err
 	}
 
 	addr := addrFromEnvironment()
 
-	providers, err := providersFromConfig(config.Providers)
+	providers, err := providersFromConfig(file.Providers)
 
 	if err != nil {
 		return nil, err
 	}
 
-	chains, err := RAGsFromConfig(config.Chains)
+	chains, err := RAGsFromConfig(file.Chains)
 
 	if err != nil {
 		return nil, err
@@ -62,7 +54,7 @@ func Parse(path string) (*Config, error) {
 
 	_ = chains
 
-	authorizer, err := authorizerFromConfig(config.Auth)
+	authorizer, err := authorizerFromConfig(file.Auth)
 
 	if err != nil {
 		return nil, err
@@ -218,88 +210,4 @@ func authorizerFromConfig(auth authConfig) (authorizer.Provider, error) {
 	}
 
 	return nil, nil
-}
-
-type configFile struct {
-	Auth authConfig `yaml:"auth"`
-
-	Providers []providerConfig `yaml:"providers"`
-
-	Chains map[string]chainConfig `yaml:"chains"`
-}
-
-type authConfig struct {
-	Token string `yaml:"token"`
-
-	Issuer   string `yaml:"issuer"`
-	Audience string `yaml:"audience"`
-}
-
-type providerConfig struct {
-	Type string `yaml:"type"`
-
-	URL   string `yaml:"url"`
-	Token string `yaml:"token"`
-
-	Models map[string]modelConfig `yaml:"models"`
-}
-
-type modelConfig struct {
-	ID string `yaml:"id"`
-
-	Prompt   string `yaml:"prompt"`
-	Template string `yaml:"template"`
-
-	Name        string `yaml:"name"`
-	Description string `yaml:"description"`
-}
-
-type modelMapper map[string]modelConfig
-
-func (m modelMapper) From(val string) string {
-	for k, v := range m {
-		if v.ID != "" && strings.EqualFold(v.ID, val) {
-			return k
-		}
-	}
-
-	for k := range m {
-		if strings.EqualFold(k, val) {
-			return k
-		}
-	}
-
-	return ""
-}
-
-func (m modelMapper) To(val string) string {
-	for k, v := range m {
-		if strings.EqualFold(k, val) {
-			if v.ID != "" {
-				return v.ID
-			}
-
-			return k
-		}
-	}
-
-	return ""
-}
-
-type chainConfig struct {
-	Type string `yaml:"type"`
-
-	Model     string `yaml:"model"`
-	Embedding string `yaml:"embedding"`
-
-	Index *indexConfig `yaml:"index"`
-}
-
-type indexConfig struct {
-	Type string `yaml:"type"`
-
-	URL   string `yaml:"url"`
-	Token string `yaml:"token"`
-
-	Name string `yaml:"name"`
 }
