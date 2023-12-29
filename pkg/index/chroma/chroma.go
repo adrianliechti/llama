@@ -68,7 +68,7 @@ func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
 
 		payload.IDs[i] = id
 
-		payload.Embeddings[i] = d.Embeddings
+		payload.Embeddings[i] = d.Embedding
 
 		payload.Documents[i] = d.Content
 		payload.Metadatas[i] = d.Metadata
@@ -97,12 +97,12 @@ func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
 	return nil
 }
 
-func (c *Chroma) Search(ctx context.Context, embeddings []float32) ([]index.Result, error) {
+func (c *Chroma) Search(ctx context.Context, embedding []float32) ([]index.Result, error) {
 	u, _ := url.JoinPath(c.baesURL.String(), "/api/v1/collections/"+c.collection.ID+"/query")
 
 	payload, _ := json.Marshal(map[string]any{
 		"query_embeddings": [][]float32{
-			embeddings,
+			embedding,
 		},
 	})
 
@@ -140,7 +140,7 @@ func (c *Chroma) Search(ctx context.Context, embeddings []float32) ([]index.Resu
 				Document: index.Document{
 					ID: result.IDs[i][j],
 
-					// Embeddings: float32to64(result.Embeddings[i]),
+					// Embedding: float32to64(result.Embeddings[i]),
 
 					Content:  result.Documents[i][j],
 					Metadata: result.Metadatas[i][j],
