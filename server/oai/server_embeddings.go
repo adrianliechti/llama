@@ -3,17 +3,10 @@ package oai
 import (
 	"encoding/json"
 	"net/http"
-
-	"github.com/sashabaranov/go-openai"
 )
 
 func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
-	type embeddingRequest struct {
-		Input any    `json:"input"`
-		Model string `json:"model"`
-	}
-
-	var req embeddingRequest
+	var req EmbeddingsRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -41,10 +34,10 @@ func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := &openai.EmbeddingResponse{
+	result := &EmbeddingList{
 		Object: "list",
 
-		Model: openai.AdaEmbeddingV2,
+		Model: req.Model,
 	}
 
 	for i, input := range inputs {
@@ -55,7 +48,7 @@ func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		result.Data = append(result.Data, openai.Embedding{
+		result.Data = append(result.Data, Embedding{
 			Object: "embedding",
 
 			Index:     i,

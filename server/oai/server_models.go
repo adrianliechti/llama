@@ -6,22 +6,20 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/sashabaranov/go-openai"
 )
 
 func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
-	models := s.Models()
+	result := &ModelList{
+		Object: "list",
+	}
 
-	result := openai.ModelsList{}
-
-	for _, m := range models {
-		result.Models = append(result.Models, openai.Model{
+	for _, m := range s.Models() {
+		result.Models = append(result.Models, Model{
 			Object: "model",
 
-			ID: m.ID,
-
-			OwnedBy:   "openai",
-			CreatedAt: time.Now().Unix(),
+			ID:      m.ID,
+			Created: time.Now().Unix(),
+			OwnedBy: "openai",
 		})
 	}
 
@@ -30,20 +28,19 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleModel(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-
-	model, found := s.Model(id)
+	model, found := s.Model(chi.URLParam(r, "id"))
 
 	if !found {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	result := openai.Model{
-		ID: model.ID,
+	result := &Model{
+		Object: "model",
 
-		Object:    "model",
-		CreatedAt: time.Now().Unix(),
+		ID:      model.ID,
+		Created: time.Now().Unix(),
+		OwnedBy: "openai",
 	}
 
 	w.Header().Set("Content-Type", "application/json")

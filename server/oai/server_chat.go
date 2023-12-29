@@ -8,13 +8,12 @@ import (
 	"time"
 
 	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/sashabaranov/go-openai"
 
 	"github.com/google/uuid"
 )
 
 func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
-	var req openai.ChatCompletionRequest
+	var req ChatCompletionRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -31,7 +30,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	id := uuid.New().String()
 
 	model := req.Model
-	messages := convertCompletionMessages(req.Messages)
+	messages := toMessages(req.Messages)
 
 	if req.Stream {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -52,22 +51,22 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		}()
 
 		for completion := range stream {
-			result := openai.ChatCompletionStreamResponse{
+			result := ChatCompletion{
+				Object: "chat.completion.chunk",
+
 				ID: id,
 
-				Object:  "chat.completion.chunk",
+				Model:   model,
 				Created: time.Now().Unix(),
 
-				Model: model,
-
-				Choices: []openai.ChatCompletionStreamChoice{
+				Choices: []ChatCompletionChoice{
 					{
-						Delta: openai.ChatCompletionStreamChoiceDelta{
-							Role:    toMessageRole(completion.Role),
+						Delta: ChatCompletionMessage{
+							Role:    fromMessageRole(completion.Role),
 							Content: completion.Content,
 						},
 
-						FinishReason: toFinishReason(completion.Reason),
+						FinishReason: fromCompletionReason(completion.Reason),
 					},
 				},
 			}
@@ -94,95 +93,27 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		result := openai.ChatCompletionResponse{
+		result := ChatCompletion{
+			Object: "chat.completion",
+
 			ID: id,
 
-			Object:  "chat.completion",
+			Model:   model,
 			Created: time.Now().Unix(),
 
-			Model: model,
-
-			Choices: []openai.ChatCompletionChoice{
+			Choices: []ChatCompletionChoice{
 				{
-					Message: openai.ChatCompletionMessage{
-						Role:    toMessageRole(completion.Role),
+					Message: ChatCompletionMessage{
+						Role:    fromMessageRole(completion.Role),
 						Content: completion.Content,
 					},
 
-					FinishReason: toFinishReason(completion.Reason),
+					FinishReason: fromCompletionReason(completion.Reason),
 				},
 			},
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(result)
-	}
-}
-
-func convertCompletionMessages(s []openai.ChatCompletionMessage) []provider.Message {
-	result := make([]provider.Message, 0)
-
-	for _, m := range s {
-		result = append(result, convertCompletionMessage(m))
-	}
-
-	return result
-}
-
-func convertCompletionMessage(m openai.ChatCompletionMessage) provider.Message {
-	return provider.Message{
-		Role:    convertMessageRole(m.Role),
-		Content: m.Content,
-	}
-}
-
-func convertMessageRole(r string) provider.MessageRole {
-	switch r {
-	case openai.ChatMessageRoleSystem:
-		return provider.MessageRoleSystem
-
-	case openai.ChatMessageRoleUser:
-		return provider.MessageRoleUser
-
-	case openai.ChatMessageRoleAssistant:
-		return provider.MessageRoleAssistant
-
-	// case openai.ChatMessageRoleFunction:
-	// 	return provider.MessageRoleFunction
-
-	// case openai.ChatMessageRoleTool:
-	// 	return provider.MessageRoleTool
-
-	default:
-		return ""
-	}
-}
-
-func toMessageRole(val provider.MessageRole) string {
-	switch val {
-	case provider.MessageRoleSystem:
-		return openai.ChatMessageRoleSystem
-
-	case provider.MessageRoleUser:
-		return openai.ChatMessageRoleUser
-
-	case provider.MessageRoleAssistant:
-		return openai.ChatMessageRoleAssistant
-
-	default:
-		return ""
-	}
-}
-
-func toFinishReason(val provider.CompletionReason) openai.FinishReason {
-	switch val {
-	case provider.CompletionReasonStop:
-		return openai.FinishReasonStop
-
-	case provider.CompletionReasonLength:
-		return openai.FinishReasonLength
-
-	default:
-		return ""
 	}
 }
