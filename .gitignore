@@ -1,4 +1,6 @@
+/index
 /models
+/cmd/server/config.yaml
 
 .DS_Store
 /.vscode
