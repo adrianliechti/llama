@@ -16,9 +16,11 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 
 	for _, m := range models {
 		result.Models = append(result.Models, openai.Model{
+			Object: "model",
+
 			ID: m.ID,
 
-			Object:    "model",
+			OwnedBy:   "openai",
 			CreatedAt: time.Now().Unix(),
 		})
 	}
