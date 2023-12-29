@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/adrianliechti/llama/config"
-	"github.com/adrianliechti/llama/pkg/server/oai"
+	"github.com/adrianliechti/llama/server/oai"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -40,6 +40,9 @@ func New(cfg *config.Config) (*Server, error) {
 			http.MethodHead,
 			http.MethodGet,
 			http.MethodPost,
+			http.MethodPut,
+			http.MethodPatch,
+			http.MethodDelete,
 			http.MethodOptions,
 		},
 

@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/adrianliechti/llama/config"
-	"github.com/adrianliechti/llama/pkg/server"
+	"github.com/adrianliechti/llama/server"
 )
 
 func main() {
