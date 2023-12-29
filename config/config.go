@@ -1,11 +1,19 @@
 package config
 
 import (
+	"errors"
 	"os"
 
 	"github.com/adrianliechti/llama/pkg/authorizer"
+	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
+)
+
+var (
+	ErrModelNotFound     = errors.New("model not found")
+	ErrEmbedderNotFound  = errors.New("embedder not found")
+	ErrCompleterNotFound = errors.New("completer not found")
 )
 
 type Config struct {
@@ -15,8 +23,9 @@ type Config struct {
 
 	models map[string]Model
 
-	indexes   map[string]index.Provider
 	providers map[string]provider.Provider
+	indexes   map[string]index.Provider
+	chains    map[string]chain.Provider
 }
 
 type Model struct {
@@ -35,41 +44,46 @@ func (c *Config) Models() []Model {
 	return result
 }
 
-func (c *Config) Model(id string) (Model, bool) {
+func (c *Config) Model(id string) (*Model, error) {
 	m, ok := c.models[id]
-	return m, ok
-}
-
-func (c *Config) Embedder(model string) (provider.Embedder, bool) {
-	m, found := c.Model(model)
-
-	if !found {
-		return nil, false
-	}
-
-	p, found := c.providers[model]
-
-	if !found {
-		return nil, false
-	}
-
-	return provider.ToEmbbedder(p, m.model), true
-}
-
-func (c *Config) Completer(model string) (provider.Completer, bool) {
-	m, found := c.Model(model)
-
-	if !found {
-		return nil, false
-	}
-
-	p, ok := c.providers[model]
 
 	if !ok {
-		return nil, false
+		return nil, ErrModelNotFound
 	}
 
-	return provider.ToCompleter(p, m.model), true
+	return &m, nil
+}
+
+func (c *Config) Embedder(model string) (provider.Embedder, error) {
+	m, err := c.Model(model)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if p, ok := c.providers[model]; ok {
+		return provider.ToEmbbedder(p, m.model), nil
+	}
+
+	return nil, ErrEmbedderNotFound
+}
+
+func (c *Config) Completer(model string) (provider.Completer, error) {
+	m, err := c.Model(model)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if p, ok := c.providers[model]; ok {
+		return provider.ToCompleter(p, m.model), nil
+	}
+
+	if c, ok := c.chains[model]; ok {
+		return c, nil
+	}
+
+	return nil, ErrCompleterNotFound
 }
 
 func Parse(path string) (*Config, error) {
@@ -88,8 +102,9 @@ func Parse(path string) (*Config, error) {
 
 		models: make(map[string]Model),
 
-		indexes:   make(map[string]index.Provider),
 		providers: make(map[string]provider.Provider),
+		indexes:   make(map[string]index.Provider),
+		chains:    make(map[string]chain.Provider),
 	}
 
 	if err := c.registerAuthorizer(file); err != nil {
@@ -97,6 +112,10 @@ func Parse(path string) (*Config, error) {
 	}
 
 	if err := c.registerProviders(file); err != nil {
+		return nil, err
+	}
+
+	if err := c.registerChains(file); err != nil {
 		return nil, err
 	}
 
@@ -111,63 +130,4 @@ func addrFromEnvironment() string {
 	}
 
 	return ":" + port
-}
-
-func (c *Config) registerAuthorizer(f *configFile) error {
-	for _, a := range f.Authorizers {
-		authorizer, err := createAuthorizer(a)
-
-		if err != nil {
-			return err
-		}
-
-		c.Authorizers = append(c.Authorizers, authorizer)
-	}
-
-	return nil
-}
-
-func (c *Config) registerChains(f *configFile) error {
-	for id, cfg := range f.Chains {
-
-		if cfg.Model != "" {
-		}
-
-		if cfg.Embedding != "" {
-		}
-
-		if cfg.Index != nil {
-			i, err := createIndex(*cfg.Index)
-
-			if err != nil {
-				return err
-			}
-
-			c.indexes[id] = i
-		}
-	}
-
-	return nil
-}
-
-func (c *Config) registerProviders(f *configFile) error {
-	for _, cfg := range f.Providers {
-		p, err := createProvider(cfg)
-
-		if err != nil {
-			return err
-		}
-
-		for id, cfg := range cfg.Models {
-			c.models[id] = Model{
-				ID: id,
-
-				model: cfg.ID,
-			}
-
-			c.providers[id] = p
-		}
-	}
-
-	return nil
 }

@@ -20,9 +20,9 @@ var (
 )
 
 type Provider struct {
-	client *http.Client
-
 	url string
+
+	client *http.Client
 
 	system   string
 	template PromptTemplate
@@ -35,7 +35,7 @@ var (
 	//errorPrefix = []byte(`data: {"error":`)
 )
 
-func New(options ...Option) *Provider {
+func New(options ...Option) (*Provider, error) {
 	p := &Provider{
 		client: http.DefaultClient,
 
@@ -48,18 +48,22 @@ func New(options ...Option) *Provider {
 		option(p)
 	}
 
-	return p
-}
-
-func WithClient(client *http.Client) Option {
-	return func(p *Provider) {
-		p.client = client
+	if p.url == "" {
+		return nil, errors.New("missing url")
 	}
+
+	return p, nil
 }
 
 func WithURL(url string) Option {
 	return func(p *Provider) {
 		p.url = url
+	}
+}
+
+func WithClient(client *http.Client) Option {
+	return func(p *Provider) {
+		p.client = client
 	}
 }
 

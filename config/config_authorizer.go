@@ -9,6 +9,20 @@ import (
 	"github.com/adrianliechti/llama/pkg/authorizer/static"
 )
 
+func (c *Config) registerAuthorizer(f *configFile) error {
+	for _, a := range f.Authorizers {
+		authorizer, err := createAuthorizer(a)
+
+		if err != nil {
+			return err
+		}
+
+		c.Authorizers = append(c.Authorizers, authorizer)
+	}
+
+	return nil
+}
+
 func createAuthorizer(cfg authorizerConfig) (authorizer.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
 	case "static":

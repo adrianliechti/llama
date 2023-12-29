@@ -10,6 +10,28 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/sentencetransformers"
 )
 
+func (c *Config) registerProviders(f *configFile) error {
+	for _, cfg := range f.Providers {
+		p, err := createProvider(cfg)
+
+		if err != nil {
+			return err
+		}
+
+		for id, cfg := range cfg.Models {
+			c.models[id] = Model{
+				ID: id,
+
+				model: cfg.ID,
+			}
+
+			c.providers[id] = p
+		}
+	}
+
+	return nil
+}
+
 func createProvider(cfg providerConfig) (provider.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
 	case "openai":
@@ -37,7 +59,7 @@ func openaiProvider(cfg providerConfig) (provider.Provider, error) {
 		options = append(options, openai.WithToken(cfg.Token))
 	}
 
-	return openai.New(options...), nil
+	return openai.New(options...)
 }
 
 func llamaProvider(cfg providerConfig) (provider.Provider, error) {
@@ -79,7 +101,7 @@ func llamaProvider(cfg providerConfig) (provider.Provider, error) {
 		return nil, errors.New("invalid prompt template: " + template)
 	}
 
-	return llama.New(options...), nil
+	return llama.New(options...)
 }
 
 func sentencetransformersProvider(cfg providerConfig) (provider.Provider, error) {

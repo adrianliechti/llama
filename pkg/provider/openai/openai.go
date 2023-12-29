@@ -27,7 +27,7 @@ type Provider struct {
 
 type Option func(*Provider)
 
-func New(options ...Option) *Provider {
+func New(options ...Option) (*Provider, error) {
 	p := &Provider{}
 
 	for _, option := range options {
@@ -46,7 +46,7 @@ func New(options ...Option) *Provider {
 
 	p.client = openai.NewClientWithConfig(config)
 
-	return p
+	return p, nil
 }
 
 func WithURL(url string) Option {

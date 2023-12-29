@@ -20,9 +20,9 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	completer, found := s.Completer(req.Model)
+	completer, err := s.Completer(req.Model)
 
-	if !found {
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

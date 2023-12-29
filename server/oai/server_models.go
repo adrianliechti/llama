@@ -28,9 +28,9 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleModel(w http.ResponseWriter, r *http.Request) {
-	model, found := s.Model(chi.URLParam(r, "id"))
+	model, err := s.Model(chi.URLParam(r, "id"))
 
-	if !found {
+	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}

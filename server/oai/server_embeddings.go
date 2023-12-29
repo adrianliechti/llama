@@ -13,9 +13,9 @@ func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	embedder, found := s.Embedder(req.Model)
+	embedder, err := s.Embedder(req.Model)
 
-	if !found {
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
