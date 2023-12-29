@@ -4,9 +4,15 @@ services:
   llama:
     image: ghcr.io/ggerganov/llama.cpp:full
     pull_policy: always
-    command: --server --host 0.0.0.0 --port 8000 --path /public --model /models/llama-2-7b-chat.Q4_K_M.gguf --embedding --alias default
+    command: --server --host 0.0.0.0 --port 8080 --path /public --model /models/llama-2-7b-chat.Q4_K_M.gguf --embedding --alias default
     volumes:
       - ./models:/models:cached
+  
+  sentence-transformers:
+    image: semitechnologies/transformers-inference:sentence-transformers-multi-qa-MiniLM-L6-cos-v1
+    pull_policy: always
+    environment:
+      ENABLE_CUDA: 0
 
   gateway:
     image: adrianliechti/llama-openai:2
@@ -33,13 +39,20 @@ services:
 configs:
   config:
     content: |
-      auth:
-        token: changeme
-
       providers:
         - type: llama
-          url: http://llama:8000
+          url: http://llama:8080
           models:
             gpt-3.5-turbo:
               id: default
               template: llama
+        
+        - type: sentence-transformers
+          url: http://sentence-transformers:8080
+          models:
+            text-embedding-ada-002:
+              id: all-minilm-l6-v2
+
+      authorizers:
+        - type: static
+          token: changeme
