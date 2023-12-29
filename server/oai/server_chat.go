@@ -20,7 +20,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p, found := s.Provider(req.Model)
+	completer, found := s.Completer(req.Model)
 
 	if !found {
 		w.WriteHeader(http.StatusBadRequest)
@@ -29,7 +29,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 	id := uuid.New().String()
 
-	model := req.Model
+	//model := req.Model
 	messages := toMessages(req.Messages)
 
 	if req.Stream {
@@ -46,7 +46,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 				Stream: stream,
 			}
 
-			_, err := p.Complete(r.Context(), model, messages, options)
+			_, err := completer.Complete(r.Context(), messages, options)
 			done <- err
 		}()
 
@@ -56,7 +56,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 				ID: id,
 
-				Model:   model,
+				Model:   req.Model,
 				Created: time.Now().Unix(),
 
 				Choices: []ChatCompletionChoice{
@@ -87,7 +87,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	} else {
 		options := &provider.CompleteOptions{}
 
-		completion, err := p.Complete(r.Context(), model, messages, options)
+		completion, err := completer.Complete(r.Context(), messages, options)
 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -99,7 +99,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 			ID: id,
 
-			Model:   model,
+			Model:   req.Model,
 			Created: time.Now().Unix(),
 
 			Choices: []ChatCompletionChoice{

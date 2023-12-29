@@ -48,10 +48,6 @@ func WithURL(url string) Option {
 	}
 }
 
-func (*Provider) Models(ctx context.Context) ([]provider.Model, error) {
-	return nil, errors.ErrUnsupported
-}
-
 func (p *Provider) Embed(ctx context.Context, model string, content string) ([]float32, error) {
 	req := &vectorsRequest{
 		Text: strings.TrimSpace(content),

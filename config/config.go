@@ -13,13 +13,20 @@ type Config struct {
 
 	Authorizers []authorizer.Provider
 
-	models    map[string]provider.Model
+	models map[string]Model
+
 	indexes   map[string]index.Provider
 	providers map[string]provider.Provider
 }
 
-func (c *Config) Models() []provider.Model {
-	var result []provider.Model
+type Model struct {
+	ID string
+
+	model string
+}
+
+func (c *Config) Models() []Model {
+	var result []Model
 
 	for _, m := range c.models {
 		result = append(result, m)
@@ -28,14 +35,41 @@ func (c *Config) Models() []provider.Model {
 	return result
 }
 
-func (c *Config) Model(id string) (provider.Model, bool) {
+func (c *Config) Model(id string) (Model, bool) {
 	m, ok := c.models[id]
 	return m, ok
 }
 
-func (c *Config) Provider(model string) (provider.Provider, bool) {
+func (c *Config) Embedder(model string) (provider.Embedder, bool) {
+	m, found := c.Model(model)
+
+	if !found {
+		return nil, false
+	}
+
+	p, found := c.providers[model]
+
+	if !found {
+		return nil, false
+	}
+
+	return provider.ToEmbbedder(p, m.model), true
+}
+
+func (c *Config) Completer(model string) (provider.Completer, bool) {
+	m, found := c.Model(model)
+
+	if !found {
+		return nil, false
+	}
+
 	p, ok := c.providers[model]
-	return p, ok
+
+	if !ok {
+		return nil, false
+	}
+
+	return provider.ToCompleter(p, m.model), true
 }
 
 func Parse(path string) (*Config, error) {
@@ -52,7 +86,8 @@ func Parse(path string) (*Config, error) {
 	c := &Config{
 		Address: addrFromEnvironment(),
 
-		models:    make(map[string]provider.Model),
+		models: make(map[string]Model),
+
 		indexes:   make(map[string]index.Provider),
 		providers: make(map[string]provider.Provider),
 	}
@@ -62,10 +97,6 @@ func Parse(path string) (*Config, error) {
 	}
 
 	if err := c.registerProviders(file); err != nil {
-		return nil, err
-	}
-
-	if err := c.registerIndex(file); err != nil {
 		return nil, err
 	}
 
@@ -96,15 +127,24 @@ func (c *Config) registerAuthorizer(f *configFile) error {
 	return nil
 }
 
-func (c *Config) registerIndex(f *configFile) error {
-	for id, cfg := range f.Indexes {
-		i, err := createIndex(cfg)
+func (c *Config) registerChains(f *configFile) error {
+	for id, cfg := range f.Chains {
 
-		if err != nil {
-			return err
+		if cfg.Model != "" {
 		}
 
-		c.indexes[id] = i
+		if cfg.Embedding != "" {
+		}
+
+		if cfg.Index != nil {
+			i, err := createIndex(*cfg.Index)
+
+			if err != nil {
+				return err
+			}
+
+			c.indexes[id] = i
+		}
 	}
 
 	return nil
@@ -118,12 +158,14 @@ func (c *Config) registerProviders(f *configFile) error {
 			return err
 		}
 
-		for model := range cfg.Models {
-			c.models[model] = provider.Model{
-				ID: model,
+		for id, cfg := range cfg.Models {
+			c.models[id] = Model{
+				ID: id,
+
+				model: cfg.ID,
 			}
 
-			c.providers[model] = p
+			c.providers[id] = p
 		}
 	}
 

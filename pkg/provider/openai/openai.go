@@ -23,12 +23,6 @@ type Provider struct {
 	token string
 
 	client *openai.Client
-	mapper ModelMapper
-}
-
-type ModelMapper interface {
-	From(key string) string
-	To(key string) string
 }
 
 type Option func(*Provider)
@@ -67,40 +61,6 @@ func WithToken(token string) Option {
 	}
 }
 
-func WithModelMapper(mapper ModelMapper) Option {
-	return func(p *Provider) {
-		p.mapper = mapper
-	}
-}
-
-func (p *Provider) Models(ctx context.Context) ([]provider.Model, error) {
-	list, err := p.client.ListModels(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var result []provider.Model
-
-	for _, m := range list.Models {
-		model := provider.Model{
-			ID: m.ID,
-		}
-
-		if p.mapper != nil {
-			model.ID = p.mapper.From(m.ID)
-		}
-
-		if model.ID == "" {
-			continue
-		}
-
-		result = append(result, model)
-	}
-
-	return result, nil
-}
-
 func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32, error) {
 	// if p.mapper != nil {
 	// 	model = p.mapper.To(model)
@@ -123,10 +83,6 @@ func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32,
 func (p *Provider) Complete(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
-	}
-
-	if p.mapper != nil {
-		model = p.mapper.To(model)
 	}
 
 	if model == "" {
@@ -242,6 +198,7 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 
 func convertMessageRole(r provider.MessageRole) string {
 	switch r {
+
 	case provider.MessageRoleSystem:
 		return openai.ChatMessageRoleSystem
 
@@ -256,8 +213,8 @@ func convertMessageRole(r provider.MessageRole) string {
 	}
 }
 
-func toMessageRole(r string) provider.MessageRole {
-	switch r {
+func toMessageRole(val string) provider.MessageRole {
+	switch val {
 	case openai.ChatMessageRoleSystem:
 		return provider.MessageRoleSystem
 

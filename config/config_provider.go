@@ -37,14 +37,6 @@ func openaiProvider(cfg providerConfig) (provider.Provider, error) {
 		options = append(options, openai.WithToken(cfg.Token))
 	}
 
-	models := cfg.Models
-
-	if len(models) > 0 {
-		var mapper modelMapper = models
-
-		options = append(options, openai.WithModelMapper(mapper))
-	}
-
 	return openai.New(options...), nil
 }
 
@@ -59,20 +51,14 @@ func llamaProvider(cfg providerConfig) (provider.Provider, error) {
 		return nil, errors.New("multiple models not supported for llama provider")
 	}
 
-	var model string
 	var prompt string
 	var template string
 
-	for k, v := range cfg.Models {
-		model = k
+	for _, v := range cfg.Models {
 		prompt = v.Prompt
 		template = v.Template
 
 		break
-	}
-
-	if model != "" {
-		options = append(options, llama.WithModel(model))
 	}
 
 	if prompt != "" {

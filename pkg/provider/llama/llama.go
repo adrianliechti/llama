@@ -24,8 +24,6 @@ type Provider struct {
 
 	url string
 
-	model string
-
 	system   string
 	template PromptTemplate
 }
@@ -41,7 +39,6 @@ func New(options ...Option) *Provider {
 	p := &Provider{
 		client: http.DefaultClient,
 
-		model:  "default",
 		system: "",
 
 		template: &PromptLLAMA{},
@@ -66,12 +63,6 @@ func WithURL(url string) Option {
 	}
 }
 
-func WithModel(model string) Option {
-	return func(p *Provider) {
-		p.model = model
-	}
-}
-
 func WithSystem(system string) Option {
 	return func(p *Provider) {
 		p.system = system
@@ -82,14 +73,6 @@ func WithPromptTemplate(template PromptTemplate) Option {
 	return func(p *Provider) {
 		p.template = template
 	}
-}
-
-func (p *Provider) Models(ctx context.Context) ([]provider.Model, error) {
-	return []provider.Model{
-		{
-			ID: p.model,
-		},
-	}, nil
 }
 
 func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32, error) {

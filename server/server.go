@@ -60,7 +60,7 @@ func New(cfg *config.Config) (*Server, error) {
 }
 
 func (s *Server) ListenAndServe() error {
-	return http.ListenAndServe(s.Config.Address, s)
+	return http.ListenAndServe(s.Address, s)
 }
 
 func (s *Server) handleAuth(next http.Handler) http.Handler {
