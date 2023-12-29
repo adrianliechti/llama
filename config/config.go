@@ -4,17 +4,17 @@ import (
 	"os"
 
 	"github.com/adrianliechti/llama/pkg/authorizer"
-
+	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
 type Config struct {
 	Address string
 
-	Authorizer []authorizer.Provider
-	Providers  []provider.Provider
+	Authorizers []authorizer.Provider
 
 	models    map[string]provider.Model
+	indexes   map[string]index.Provider
 	providers map[string]provider.Provider
 }
 
@@ -52,10 +52,8 @@ func Parse(path string) (*Config, error) {
 	c := &Config{
 		Address: addrFromEnvironment(),
 
-		Authorizer: make([]authorizer.Provider, 0),
-		Providers:  make([]provider.Provider, 0),
-
 		models:    make(map[string]provider.Model),
+		indexes:   make(map[string]index.Provider),
 		providers: make(map[string]provider.Provider),
 	}
 
@@ -64,6 +62,10 @@ func Parse(path string) (*Config, error) {
 	}
 
 	if err := c.registerProviders(file); err != nil {
+		return nil, err
+	}
+
+	if err := c.registerIndex(file); err != nil {
 		return nil, err
 	}
 
@@ -88,7 +90,21 @@ func (c *Config) registerAuthorizer(f *configFile) error {
 			return err
 		}
 
-		c.Authorizer = append(c.Authorizer, authorizer)
+		c.Authorizers = append(c.Authorizers, authorizer)
+	}
+
+	return nil
+}
+
+func (c *Config) registerIndex(f *configFile) error {
+	for id, cfg := range f.Indexes {
+		i, err := createIndex(cfg)
+
+		if err != nil {
+			return err
+		}
+
+		c.indexes[id] = i
 	}
 
 	return nil
@@ -109,8 +125,6 @@ func (c *Config) registerProviders(f *configFile) error {
 
 			c.providers[model] = p
 		}
-
-		c.Providers = append(c.Providers, p)
 	}
 
 	return nil

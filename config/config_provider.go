@@ -10,34 +10,34 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/sentencetransformers"
 )
 
-func createProvider(c providerConfig) (provider.Provider, error) {
-	switch strings.ToLower(c.Type) {
+func createProvider(cfg providerConfig) (provider.Provider, error) {
+	switch strings.ToLower(cfg.Type) {
 	case "openai":
-		return openaiProvider(c)
+		return openaiProvider(cfg)
 
 	case "llama":
-		return llamaProvider(c)
+		return llamaProvider(cfg)
 
 	case "sentence-transformers":
-		return sentencetransformersProvider(c)
+		return sentencetransformersProvider(cfg)
 
 	default:
-		return nil, errors.New("invalid provider type: " + c.Type)
+		return nil, errors.New("invalid provider type: " + cfg.Type)
 	}
 }
 
-func openaiProvider(c providerConfig) (provider.Provider, error) {
+func openaiProvider(cfg providerConfig) (provider.Provider, error) {
 	var options []openai.Option
 
-	if c.URL != "" {
-		options = append(options, openai.WithURL(c.URL))
+	if cfg.URL != "" {
+		options = append(options, openai.WithURL(cfg.URL))
 	}
 
-	if c.Token != "" {
-		options = append(options, openai.WithToken(c.Token))
+	if cfg.Token != "" {
+		options = append(options, openai.WithToken(cfg.Token))
 	}
 
-	models := c.Models
+	models := cfg.Models
 
 	if len(models) > 0 {
 		var mapper modelMapper = models
@@ -48,14 +48,14 @@ func openaiProvider(c providerConfig) (provider.Provider, error) {
 	return openai.New(options...), nil
 }
 
-func llamaProvider(c providerConfig) (provider.Provider, error) {
+func llamaProvider(cfg providerConfig) (provider.Provider, error) {
 	var options []llama.Option
 
-	if c.URL != "" {
-		options = append(options, llama.WithURL(c.URL))
+	if cfg.URL != "" {
+		options = append(options, llama.WithURL(cfg.URL))
 	}
 
-	if len(c.Models) > 1 {
+	if len(cfg.Models) > 1 {
 		return nil, errors.New("multiple models not supported for llama provider")
 	}
 
@@ -63,7 +63,7 @@ func llamaProvider(c providerConfig) (provider.Provider, error) {
 	var prompt string
 	var template string
 
-	for k, v := range c.Models {
+	for k, v := range cfg.Models {
 		model = k
 		prompt = v.Prompt
 		template = v.Template
@@ -96,14 +96,14 @@ func llamaProvider(c providerConfig) (provider.Provider, error) {
 	return llama.New(options...), nil
 }
 
-func sentencetransformersProvider(c providerConfig) (provider.Provider, error) {
+func sentencetransformersProvider(cfg providerConfig) (provider.Provider, error) {
 	var options []sentencetransformers.Option
 
-	if c.URL != "" {
-		options = append(options, sentencetransformers.WithURL(c.URL))
+	if cfg.URL != "" {
+		options = append(options, sentencetransformers.WithURL(cfg.URL))
 	}
 
-	if len(c.Models) > 1 {
+	if len(cfg.Models) > 1 {
 		return nil, errors.New("multiple models not supported for sentence-transformers provider")
 	}
 

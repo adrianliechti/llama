@@ -8,16 +8,16 @@ import (
 	"github.com/adrianliechti/llama/pkg/index/chroma"
 )
 
-func createIndex(c indexConfig) (index.Index, error) {
-	switch strings.ToLower(c.Type) {
+func createIndex(cfg indexConfig) (index.Provider, error) {
+	switch strings.ToLower(cfg.Type) {
 	case "chroma":
-		return chromaIndex(c)
+		return chromaIndex(cfg)
 
 	default:
-		return nil, errors.New("invalid index type: " + c.Type)
+		return nil, errors.New("invalid index type: " + cfg.Type)
 	}
 }
 
-func chromaIndex(c indexConfig) (index.Index, error) {
-	return chroma.New(c.URL, c.Name)
+func chromaIndex(cfg indexConfig) (index.Provider, error) {
+	return chroma.New(cfg.URL, cfg.Name)
 }

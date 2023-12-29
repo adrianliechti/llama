@@ -27,7 +27,7 @@ type configFile struct {
 
 	Providers []providerConfig `yaml:"providers"`
 
-	Chains map[string]chainConfig `yaml:"chains"`
+	Indexes map[string]indexConfig `yaml:"indexes"`
 }
 
 type authorizerConfig struct {
@@ -56,15 +56,6 @@ type modelConfig struct {
 
 	Name        string `yaml:"name"`
 	Description string `yaml:"description"`
-}
-
-type chainConfig struct {
-	Type string `yaml:"type"`
-
-	Model     string `yaml:"model"`
-	Embedding string `yaml:"embedding"`
-
-	Index *indexConfig `yaml:"index"`
 }
 
 type indexConfig struct {

@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-type Index interface {
+type Provider interface {
 	Index(ctx context.Context, documents ...Document) error
 	Search(ctx context.Context, embedding []float32) ([]Result, error)
 }

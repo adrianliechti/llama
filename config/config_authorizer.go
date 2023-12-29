@@ -9,23 +9,23 @@ import (
 	"github.com/adrianliechti/llama/pkg/authorizer/static"
 )
 
-func createAuthorizer(c authorizerConfig) (authorizer.Provider, error) {
-	switch strings.ToLower(c.Type) {
+func createAuthorizer(cfg authorizerConfig) (authorizer.Provider, error) {
+	switch strings.ToLower(cfg.Type) {
 	case "static":
-		return staticAuthorizer(c)
+		return staticAuthorizer(cfg)
 
 	case "oidc":
-		return oidcAuthorizer(c)
+		return oidcAuthorizer(cfg)
 
 	default:
-		return nil, errors.New("invalid authorizer type: " + c.Type)
+		return nil, errors.New("invalid authorizer type: " + cfg.Type)
 	}
 }
 
-func staticAuthorizer(c authorizerConfig) (authorizer.Provider, error) {
-	return static.New(c.Token)
+func staticAuthorizer(cfg authorizerConfig) (authorizer.Provider, error) {
+	return static.New(cfg.Token)
 }
 
-func oidcAuthorizer(c authorizerConfig) (authorizer.Provider, error) {
-	return oidc.New(c.Issuer, c.Audience)
+func oidcAuthorizer(cfg authorizerConfig) (authorizer.Provider, error) {
+	return oidc.New(cfg.Issuer, cfg.Audience)
 }

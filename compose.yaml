@@ -16,7 +16,7 @@ services:
   llama:
     image: ghcr.io/ggerganov/llama.cpp:full
     pull_policy: always
-    command: --server --host 0.0.0.0 --port 8080 --path /public --model /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf --alias mistral
+    command: --server --host 0.0.0.0 --port 8080 --model /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf --alias mistral
     volumes:
       - ./models:/models:cached
     depends_on:

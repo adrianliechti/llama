@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var _ index.Index = &Chroma{}
+var _ index.Provider = &Chroma{}
 
 type Chroma struct {
 	baesURL *url.URL

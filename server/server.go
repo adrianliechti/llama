@@ -67,9 +67,9 @@ func (s *Server) handleAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		var authorized = len(s.Authorizer) == 0
+		var authorized = len(s.Authorizers) == 0
 
-		for _, a := range s.Authorizer {
+		for _, a := range s.Authorizers {
 			if err := a.Verify(ctx, r); err == nil {
 				authorized = true
 				break
