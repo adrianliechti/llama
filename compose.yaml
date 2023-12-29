@@ -1,12 +1,27 @@
 version: "3"
 
 services:
+  model:
+    image: curlimages/curl
+    pull_policy: always
+    command: > 
+      /bin/ash -c "
+      if [ ! -f /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf ]; then
+        echo Downloading Model...
+        curl -s -L -o /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+      fi"
+    volumes:
+      - ./models:/models:cached
+             
   llama:
     image: ghcr.io/ggerganov/llama.cpp:full
     pull_policy: always
-    command: --server --host 0.0.0.0 --port 8080 --path /public --model /models/llama-2-7b-chat.Q4_K_M.gguf --embedding --alias default
+    command: --server --host 0.0.0.0 --port 8080 --path /public --model /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf --alias mistral
     volumes:
       - ./models:/models:cached
+    depends_on:
+      model:
+        condition: service_completed_successfully
   
   sentence-transformers:
     image: semitechnologies/transformers-inference:sentence-transformers-multi-qa-MiniLM-L6-cos-v1
@@ -25,6 +40,9 @@ services:
     configs:
       - source: config
         target: /config.yaml
+    depends_on:
+      - llama
+      - sentence-transformers
   
   web:
     image: ghcr.io/mckaywrigley/chatbot-ui:main
@@ -35,6 +53,8 @@ services:
       - OPENAI_API_KEY=changeme
       - OPENAI_API_HOST=http://gateway:8080/oai
       - DEFAULT_MODEL=gpt-3.5-turbo
+    depends_on:
+      - gateway
   
 configs:
   config:
@@ -44,8 +64,8 @@ configs:
           url: http://llama:8080
           models:
             gpt-3.5-turbo:
-              id: default
-              template: llama
+              id: mistral
+              template: mistral
         
         - type: sentence-transformers
           url: http://sentence-transformers:8080
