@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/adrianliechti/llama/config"
+	"github.com/adrianliechti/llama/pkg/server/oai"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -12,8 +13,7 @@ import (
 
 type Server struct {
 	*config.Config
-
-	router *chi.Mux
+	http.Handler
 }
 
 func New(cfg *config.Config) (*Server, error) {
@@ -23,9 +23,14 @@ func New(cfg *config.Config) (*Server, error) {
 	r.Use(middleware.Recoverer)
 
 	s := &Server{
-		Config: cfg,
+		Config:  cfg,
+		Handler: r,
+	}
 
-		router: r,
+	oai, err := oai.New(cfg)
+
+	if err != nil {
+		return nil, err
 	}
 
 	r.Use(cors.Handler(cors.Options{
@@ -46,18 +51,13 @@ func New(cfg *config.Config) (*Server, error) {
 
 	r.Use(s.handleAuth)
 
-	r.Get("/v1/models", s.handleModels)
-	r.Get("/v1/models/{id}", s.handleModel)
-
-	r.Post("/v1/embeddings", s.handleEmbeddings)
-
-	r.Post("/v1/chat/completions", s.handleChatCompletions)
+	r.Mount("/oai", oai)
 
 	return s, nil
 }
 
 func (s *Server) ListenAndServe() error {
-	return http.ListenAndServe(s.Config.Address, s.router)
+	return http.ListenAndServe(s.Config.Address, s)
 }
 
 func (s *Server) handleAuth(next http.Handler) http.Handler {

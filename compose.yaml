@@ -33,7 +33,7 @@ services:
       - 3000:3000
     environment:
       - OPENAI_API_KEY=changeme
-      - OPENAI_API_HOST=http://gateway:8080
+      - OPENAI_API_HOST=http://gateway:8080/oai
       - DEFAULT_MODEL=gpt-3.5-turbo
   
 configs:

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export OPENAI_BASE_URL=http://localhost:8080/v1
+export OPENAI_BASE_URL=http://localhost:8080/oai/v1
 export OPENAI_API_KEY=changeme
 export OPENAI_MODEL=gpt-3.5-turbo
 export OPENAI_EMBEDDING_MODEL=text-embedding-ada-002
