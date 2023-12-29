@@ -8,7 +8,8 @@ COPY go.* ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOEXPERIMENT=loopvar go build -o server ./cmd/server
+WORKDIR /src/cmd/server
+RUN CGO_ENABLED=0 GOEXPERIMENT=loopvar go build -o server
 
 
 FROM alpine
@@ -16,7 +17,7 @@ FROM alpine
 RUN apk add --no-cache tini ca-certificates
 
 WORKDIR /
-COPY --from=build /src/server server
+COPY --from=build /src/cmd/server/server .
 
 EXPOSE 8080
 
