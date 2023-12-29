@@ -53,15 +53,15 @@ func fromMessageRole(r provider.MessageRole) MessageRole {
 	}
 }
 
-func fromCompletionReason(val provider.CompletionReason) CompletionReason {
+func fromCompletionReason(val provider.CompletionReason) *CompletionReason {
 	switch val {
 	case provider.CompletionReasonStop:
-		return CompletionReasonStop
+		return &CompletionReasonStop
 
 	case provider.CompletionReasonLength:
-		return CompletionReasonLength
+		return &CompletionReasonLength
 
 	default:
-		return ""
+		return nil
 	}
 }

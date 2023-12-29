@@ -61,8 +61,8 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 				Choices: []ChatCompletionChoice{
 					{
-						Delta: ChatCompletionMessage{
-							Role:    fromMessageRole(completion.Role),
+						Delta: &ChatCompletionMessage{
+							//Role:    fromMessageRole(completion.Role),
 							Content: completion.Content,
 						},
 
@@ -77,12 +77,13 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 			w.(http.Flusher).Flush()
 		}
 
+		fmt.Fprintf(w, "data: [DONE]\n\n")
+		w.(http.Flusher).Flush()
+
 		if err := <-done; err != nil {
 			slog.Error("error in chat completion", "error", err)
 		}
 
-		//fmt.Fprintf(w, "data: [DONE]\n\n")
-		//w.(http.Flusher).Flush()
 	} else {
 		options := &provider.CompleteOptions{}
 
@@ -103,7 +104,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 			Choices: []ChatCompletionChoice{
 				{
-					Message: ChatCompletionMessage{
+					Message: &ChatCompletionMessage{
 						Role:    fromMessageRole(completion.Role),
 						Content: completion.Content,
 					},

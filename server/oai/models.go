@@ -35,7 +35,7 @@ type EmbeddingList struct {
 
 type MessageRole string
 
-const (
+var (
 	MessageRoleSystem    MessageRole = "system"
 	MessageRoleUser      MessageRole = "user"
 	MessageRoleAssistant MessageRole = "assistant"
@@ -56,7 +56,7 @@ type ChatCompletionRequest struct {
 }
 
 type ChatCompletion struct {
-	Object string `json:"object"` // "chat.completion | chat.completion.chunk"
+	Object string `json:"object"` // "chat.completion"
 
 	ID string `json:"id"`
 
@@ -69,13 +69,13 @@ type ChatCompletion struct {
 type ChatCompletionChoice struct {
 	Index int `json:"index"`
 
-	Delta   ChatCompletionMessage `json:"delta,omitempty"`
-	Message ChatCompletionMessage `json:"message,omitempty"`
+	Delta   *ChatCompletionMessage `json:"delta,omitempty"`
+	Message *ChatCompletionMessage `json:"message,omitempty"`
 
-	FinishReason CompletionReason `json:"finish_reason"`
+	FinishReason *CompletionReason `json:"finish_reason"`
 }
 
 type ChatCompletionMessage struct {
-	Role    MessageRole `json:"role"`
+	Role    MessageRole `json:"role,omitempty"`
 	Content string      `json:"content"`
 }
