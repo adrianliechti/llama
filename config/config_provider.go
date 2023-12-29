@@ -7,6 +7,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/llama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
+	"github.com/adrianliechti/llama/pkg/provider/sentencetransformers"
 )
 
 func createProvider(c providerConfig) (provider.Provider, error) {
@@ -16,6 +17,9 @@ func createProvider(c providerConfig) (provider.Provider, error) {
 
 	case "llama":
 		return llamaProvider(c)
+
+	case "sentence-transformers":
+		return sentencetransformersProvider(c)
 
 	default:
 		return nil, errors.New("invalid provider type: " + c.Type)
@@ -90,4 +94,18 @@ func llamaProvider(c providerConfig) (provider.Provider, error) {
 	}
 
 	return llama.New(options...), nil
+}
+
+func sentencetransformersProvider(c providerConfig) (provider.Provider, error) {
+	var options []sentencetransformers.Option
+
+	if c.URL != "" {
+		options = append(options, sentencetransformers.WithURL(c.URL))
+	}
+
+	if len(c.Models) > 1 {
+		return nil, errors.New("multiple models not supported for sentence-transformers provider")
+	}
+
+	return sentencetransformers.New(options...), nil
 }

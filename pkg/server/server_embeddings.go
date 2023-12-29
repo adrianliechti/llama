@@ -2,31 +2,41 @@ package server
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"github.com/sashabaranov/go-openai"
 )
 
 func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
-	var req openai.EmbeddingRequest
+	type embeddingRequest struct {
+		Input any    `json:"input"`
+		Model string `json:"model"`
+	}
+
+	var req embeddingRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	p, found := s.Provider(req.Model.String())
+	p, found := s.Provider(req.Model)
 
 	if !found {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	model := req.Model.String()
-	inputs, err := convertEmbeddingInputs(req)
+	var inputs []string
 
-	if err != nil {
+	switch v := req.Input.(type) {
+	case string:
+		inputs = []string{v}
+	case []string:
+		inputs = v
+	}
+
+	if len(inputs) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -34,11 +44,11 @@ func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 	result := &openai.EmbeddingResponse{
 		Object: "list",
 
-		Model: req.Model,
+		Model: openai.AdaEmbeddingV2,
 	}
 
 	for i, input := range inputs {
-		data, err := p.Embed(r.Context(), model, input)
+		data, err := p.Embed(r.Context(), req.Model, input)
 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -55,34 +65,4 @@ func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
-}
-
-func convertEmbeddingInputs(req openai.EmbeddingRequest) ([]string, error) {
-	data, _ := json.Marshal(req)
-
-	type stringType struct {
-		Input string `json:"input"`
-	}
-
-	var stringVal stringType
-
-	if json.Unmarshal(data, &stringVal) == nil {
-		if stringVal.Input != "" {
-			return []string{stringVal.Input}, nil
-		}
-	}
-
-	type sliceType struct {
-		Input []string `json:"input"`
-	}
-
-	var sliceVal sliceType
-
-	if json.Unmarshal(data, &sliceVal) == nil {
-		if len(sliceVal.Input) > 0 {
-			return sliceVal.Input, nil
-		}
-	}
-
-	return nil, errors.New("invalid input format")
 }

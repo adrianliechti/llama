@@ -8,6 +8,11 @@ export OPENAI_MODEL=gpt-3.5-turbo
 # export OPENAI_API_KEY=changeme
 # export OPENAI_MODEL=gpt-3.5-turbo
 
+# Models API
+
+curl -v $OPENAI_BASE_URL/models \
+  -H "Authorization: Bearer $OPENAI_API_KEY"|jq
+
 # Embedding API
 
 curl -v $OPENAI_BASE_URL/embeddings \
@@ -15,7 +20,7 @@ curl -v $OPENAI_BASE_URL/embeddings \
   -H "Authorization: Bearer $OPENAI_API_KEY" \
   -d '{
     "input": "Your text string goes here",
-    "model": "text-embedding-ada-002"
+    "model": "'$OPENAI_EMBEDDING_MODEL'"
   }'|jq
 
 # Chat Completion API
