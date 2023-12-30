@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"errors"
 	"math"
 	"sort"
 
@@ -36,6 +37,14 @@ func WithEmbedder(embedder index.Embedder) Option {
 	return func(m *Memory) {
 		m.embedder = embedder
 	}
+}
+
+func (m *Memory) Embed(ctx context.Context, content string) ([]float32, error) {
+	if m.embedder == nil {
+		return nil, errors.New("no embedder configured")
+	}
+
+	return m.embedder.Embed(ctx, content)
 }
 
 func (m *Memory) Index(ctx context.Context, documents ...index.Document) error {

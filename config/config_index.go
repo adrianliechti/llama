@@ -9,6 +9,32 @@ import (
 	"github.com/adrianliechti/llama/pkg/index/memory"
 )
 
+func (c *Config) registerIndexes(f *configFile) error {
+	for id, cfg := range f.Indexes {
+		var embedder index.Embedder
+
+		if cfg.Embedding != "" {
+			e, err := c.Embedder(cfg.Embedding)
+
+			if err != nil {
+				return err
+			}
+
+			embedder = e
+		}
+
+		i, err := createIndex(cfg, embedder)
+
+		if err != nil {
+			return err
+		}
+
+		c.indexes[id] = i
+	}
+
+	return nil
+}
+
 func createIndex(cfg indexConfig, embedder index.Embedder) (index.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
 	case "chroma":
@@ -28,7 +54,7 @@ func chromaIndex(cfg indexConfig, embedder index.Embedder) (index.Provider, erro
 		options = append(options, chroma.WithEmbedder(embedder))
 	}
 
-	return chroma.New(cfg.URL, cfg.Name, options...)
+	return chroma.New(cfg.URL, cfg.Namespace, options...)
 }
 
 func memoryIndex(cfg indexConfig, embedder index.Embedder) (index.Provider, error) {

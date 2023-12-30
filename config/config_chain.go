@@ -35,14 +35,16 @@ func (c *Config) registerChains(f *configFile) error {
 			}
 		}
 
-		if cfg.Index != nil {
-			index, err = createIndex(*cfg.Index, embedder)
+		if cfg.Index != "" {
+			index, err = c.Index(cfg.Index)
 
 			if err != nil {
 				return err
 			}
 
-			c.indexes[id] = index
+			if embedder == nil {
+				embedder = index
+			}
 		}
 
 		chain, err := createChain(cfg, embedder, completer, index)

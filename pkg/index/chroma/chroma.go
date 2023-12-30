@@ -18,16 +18,15 @@ var _ index.Provider = &Chroma{}
 type Chroma struct {
 	url string
 
-	client *http.Client
+	client   *http.Client
+	embedder index.Embedder
 
 	collection *collection
-
-	embedder index.Embedder
 }
 
 type Option func(*Chroma)
 
-func New(url, collection string, options ...Option) (*Chroma, error) {
+func New(url, namespace string, options ...Option) (*Chroma, error) {
 	chroma := &Chroma{
 		url: url,
 
@@ -38,13 +37,13 @@ func New(url, collection string, options ...Option) (*Chroma, error) {
 		option(chroma)
 	}
 
-	col, err := chroma.createCollection(collection)
+	collection, err := chroma.createCollection(namespace)
 
 	if err != nil {
 		return nil, err
 	}
 
-	chroma.collection = col
+	chroma.collection = collection
 
 	return chroma, nil
 }
@@ -59,6 +58,14 @@ func WithEmbedder(embedder index.Embedder) Option {
 	return func(c *Chroma) {
 		c.embedder = embedder
 	}
+}
+
+func (c *Chroma) Embed(ctx context.Context, content string) ([]float32, error) {
+	if c.embedder == nil {
+		return nil, errors.New("no embedder configured")
+	}
+
+	return c.embedder.Embed(ctx, content)
 }
 
 func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
