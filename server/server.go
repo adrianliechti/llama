@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/adrianliechti/llama/config"
+	"github.com/adrianliechti/llama/server/api"
 	"github.com/adrianliechti/llama/server/oai"
 
 	"github.com/go-chi/chi/v5"
@@ -25,6 +26,12 @@ func New(cfg *config.Config) (*Server, error) {
 	s := &Server{
 		Config:  cfg,
 		Handler: r,
+	}
+
+	api, err := api.New(cfg)
+
+	if err != nil {
+		return nil, err
 	}
 
 	oai, err := oai.New(cfg)
@@ -54,6 +61,7 @@ func New(cfg *config.Config) (*Server, error) {
 
 	r.Use(s.handleAuth)
 
+	r.Mount("/api", api)
 	r.Mount("/oai", oai)
 
 	return s, nil

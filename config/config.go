@@ -12,6 +12,7 @@ import (
 
 var (
 	ErrModelNotFound     = errors.New("model not found")
+	ErrIndexNotFound     = errors.New("index not found")
 	ErrEmbedderNotFound  = errors.New("embedder not found")
 	ErrCompleterNotFound = errors.New("completer not found")
 )
@@ -84,6 +85,16 @@ func (c *Config) Completer(model string) (provider.Completer, error) {
 	}
 
 	return nil, ErrCompleterNotFound
+}
+
+func (c *Config) Index(id string) (index.Provider, error) {
+	i, ok := c.indexes[id]
+
+	if !ok {
+		return nil, ErrIndexNotFound
+	}
+
+	return i, nil
 }
 
 func Parse(path string) (*Config, error) {

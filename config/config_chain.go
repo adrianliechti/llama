@@ -36,7 +36,7 @@ func (c *Config) registerChains(f *configFile) error {
 		}
 
 		if cfg.Index != nil {
-			index, err = createIndex(*cfg.Index)
+			index, err = createIndex(*cfg.Index, embedder)
 
 			if err != nil {
 				return err
