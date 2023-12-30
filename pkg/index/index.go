@@ -6,7 +6,11 @@ import (
 
 type Provider interface {
 	Index(ctx context.Context, documents ...Document) error
-	Search(ctx context.Context, embedding []float32) ([]Result, error)
+	Search(ctx context.Context, embedding []float32, options *SearchOptions) ([]Result, error)
+}
+
+type SearchOptions struct {
+	Top int
 }
 
 type Document struct {

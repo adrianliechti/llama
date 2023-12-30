@@ -77,8 +77,8 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 			w.(http.Flusher).Flush()
 		}
 
-		fmt.Fprintf(w, "data: [DONE]\n\n")
-		w.(http.Flusher).Flush()
+		// fmt.Fprintf(w, "data: [DONE]\n\n")
+		// w.(http.Flusher).Flush()
 
 		if err := <-done; err != nil {
 			slog.Error("error in chat completion", "error", err)

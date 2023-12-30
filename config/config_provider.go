@@ -65,10 +65,6 @@ func openaiProvider(cfg providerConfig) (provider.Provider, error) {
 func llamaProvider(cfg providerConfig) (provider.Provider, error) {
 	var options []llama.Option
 
-	if cfg.URL != "" {
-		options = append(options, llama.WithURL(cfg.URL))
-	}
-
 	if len(cfg.Models) > 1 {
 		return nil, errors.New("multiple models not supported for llama provider")
 	}
@@ -101,19 +97,15 @@ func llamaProvider(cfg providerConfig) (provider.Provider, error) {
 		return nil, errors.New("invalid prompt template: " + template)
 	}
 
-	return llama.New(options...)
+	return llama.New(cfg.URL, options...)
 }
 
 func sentencetransformersProvider(cfg providerConfig) (provider.Provider, error) {
 	var options []sentencetransformers.Option
 
-	if cfg.URL != "" {
-		options = append(options, sentencetransformers.WithURL(cfg.URL))
-	}
-
 	if len(cfg.Models) > 1 {
 		return nil, errors.New("multiple models not supported for sentence-transformers provider")
 	}
 
-	return sentencetransformers.New(options...), nil
+	return sentencetransformers.New(cfg.URL, options...)
 }

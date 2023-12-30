@@ -16,41 +16,41 @@ import (
 var _ index.Provider = &Chroma{}
 
 type Chroma struct {
-	baesURL *url.URL
+	url string
 
-	client     *http.Client
+	client *http.Client
+
 	collection *collection
 }
 
-func New(addr, name string) (*Chroma, error) {
-	c := http.DefaultClient
+type Option func(*Chroma)
 
-	u, err := url.Parse(addr)
-
-	if err != nil {
-		return nil, err
-	}
-
+func New(url, collection string, options ...Option) (*Chroma, error) {
 	chroma := &Chroma{
-		baesURL: u,
-		client:  c,
+		url: url,
+
+		client: http.DefaultClient,
 	}
 
-	collection, err := chroma.createCollection(name)
+	for _, option := range options {
+		option(chroma)
+	}
+
+	col, err := chroma.createCollection(collection)
 
 	if err != nil {
 		return nil, err
 	}
 
-	chroma.collection = collection
+	chroma.collection = col
 
 	return chroma, nil
 }
 
 func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
-	u, _ := url.JoinPath(c.baesURL.String(), "/api/v1/collections/"+c.collection.ID+"/upsert")
+	u, _ := url.JoinPath(c.url, "/api/v1/collections/"+c.collection.ID+"/upsert")
 
-	payload := embeddings{
+	request := embeddings{
 		IDs: make([]string, len(documents)),
 
 		Embeddings: make([][]float32, len(documents)),
@@ -66,15 +66,15 @@ func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
 			id = uuid.NewString()
 		}
 
-		payload.IDs[i] = id
+		request.IDs[i] = id
 
-		payload.Embeddings[i] = d.Embedding
+		request.Embeddings[i] = d.Embedding
 
-		payload.Documents[i] = d.Content
-		payload.Metadatas[i] = d.Metadata
+		request.Documents[i] = d.Content
+		request.Metadatas[i] = d.Metadata
 	}
 
-	body, _ := json.Marshal(payload)
+	body, _ := json.Marshal(request)
 
 	req, err := http.NewRequest(http.MethodPost, u, bytes.NewReader(body))
 
@@ -97,16 +97,26 @@ func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
 	return nil
 }
 
-func (c *Chroma) Search(ctx context.Context, embedding []float32) ([]index.Result, error) {
-	u, _ := url.JoinPath(c.baesURL.String(), "/api/v1/collections/"+c.collection.ID+"/query")
+func (c *Chroma) Search(ctx context.Context, embedding []float32, options *index.SearchOptions) ([]index.Result, error) {
+	if options == nil {
+		options = &index.SearchOptions{}
+	}
 
-	payload, _ := json.Marshal(map[string]any{
+	u, _ := url.JoinPath(c.url, "/api/v1/collections/"+c.collection.ID+"/query")
+
+	request := map[string]any{
 		"query_embeddings": [][]float32{
 			embedding,
 		},
-	})
+	}
 
-	req, err := http.NewRequest(http.MethodPost, u, bytes.NewReader(payload))
+	if options.Top > 0 {
+		request["n_results"] = options.Top
+	}
+
+	body, _ := json.Marshal(request)
+
+	req, err := http.NewRequest(http.MethodPost, u, bytes.NewReader(body))
 
 	if err != nil {
 		return nil, err
@@ -155,14 +165,16 @@ func (c *Chroma) Search(ctx context.Context, embedding []float32) ([]index.Resul
 }
 
 func (c *Chroma) createCollection(name string) (*collection, error) {
-	u, _ := url.JoinPath(c.baesURL.String(), "/api/v1/collections")
+	u, _ := url.JoinPath(c.url, "/api/v1/collections")
 
-	payload, _ := json.Marshal(map[string]any{
+	request := map[string]any{
 		"name":          name,
 		"get_or_create": true,
-	})
+	}
 
-	req, err := http.NewRequest(http.MethodPost, u, bytes.NewReader(payload))
+	body, _ := json.Marshal(request)
+
+	req, err := http.NewRequest(http.MethodPost, u, bytes.NewReader(body))
 
 	if err != nil {
 		return nil, err

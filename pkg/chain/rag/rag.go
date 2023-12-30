@@ -3,6 +3,7 @@ package rag
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
@@ -61,6 +62,44 @@ func WithCompleter(completer provider.Completer) Option {
 	}
 }
 
-func (*Provider) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
-	return nil, errors.ErrUnsupported
+func (p *Provider) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+	message := messages[len(messages)-1]
+
+	if message.Role != provider.MessageRoleUser {
+		return nil, errors.New("last message must be from user")
+	}
+
+	embedding, err := p.embedder.Embed(ctx, message.Content)
+
+	if err != nil {
+		return nil, err
+	}
+
+	results, err := p.index.Search(ctx, embedding, &index.SearchOptions{
+		Top: 3,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	var prompt strings.Builder
+
+	if len(results) > 0 {
+		prompt.WriteString("Answer the question with help of this information:\n\n")
+
+		for _, result := range results {
+			prompt.WriteString(result.Content)
+			prompt.WriteString("\n\n")
+		}
+	}
+
+	prompt.WriteString(message.Content)
+
+	messages[len(messages)-1] = provider.Message{
+		Role:    provider.MessageRoleUser,
+		Content: prompt.String(),
+	}
+
+	return p.completer.Complete(ctx, messages, options)
 }

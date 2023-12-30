@@ -35,12 +35,13 @@ var (
 	//errorPrefix = []byte(`data: {"error":`)
 )
 
-func New(options ...Option) (*Provider, error) {
+func New(url string, options ...Option) (*Provider, error) {
 	p := &Provider{
+		url: url,
+
 		client: http.DefaultClient,
 
-		system: "",
-
+		system:   "",
 		template: &PromptLLAMA{},
 	}
 
@@ -49,16 +50,10 @@ func New(options ...Option) (*Provider, error) {
 	}
 
 	if p.url == "" {
-		return nil, errors.New("missing url")
+		return nil, errors.New("invalid url")
 	}
 
 	return p, nil
-}
-
-func WithURL(url string) Option {
-	return func(p *Provider) {
-		p.url = url
-	}
 }
 
 func WithClient(client *http.Client) Option {
@@ -80,18 +75,18 @@ func WithPromptTemplate(template PromptTemplate) Option {
 }
 
 func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32, error) {
-	req := &embeddingRequest{
+	request := &embeddingRequest{
 		Content: strings.TrimSpace(content),
 	}
 
-	body, _ := json.Marshal(req)
+	body, _ := json.Marshal(request)
 	url, _ := url.JoinPath(p.url, "/embedding")
 
-	r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
-	r.Header.Set("Cache-Control", "no-cache")
+	req, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cache-Control", "no-cache")
 
-	resp, err := p.client.Do(r)
+	resp, err := p.client.Do(req)
 
 	if err != nil {
 		return nil, err
@@ -117,21 +112,21 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		options = &provider.CompleteOptions{}
 	}
 
-	req, err := p.convertCompletionRequest(messages, options)
+	request, err := p.convertCompletionRequest(messages, options)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if options.Stream == nil {
-		body, _ := json.Marshal(req)
+		body, _ := json.Marshal(request)
 		url, _ := url.JoinPath(p.url, "/completion")
 
-		r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
-		r.Header.Set("Content-Type", "application/json")
-		r.Header.Set("Cache-Control", "no-cache")
+		req, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cache-Control", "no-cache")
 
-		resp, err := p.client.Do(r)
+		resp, err := p.client.Do(req)
 
 		if err != nil {
 			return nil, err
@@ -167,16 +162,16 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 	} else {
 		defer close(options.Stream)
 
-		body, _ := json.Marshal(req)
+		body, _ := json.Marshal(request)
 		url, _ := url.JoinPath(p.url, "/completion")
 
-		r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
-		r.Header.Set("Content-Type", "application/json")
-		r.Header.Set("Accept", "text/event-stream")
-		r.Header.Set("Connection", "keep-alive")
-		r.Header.Set("Cache-Control", "no-cache")
+		req, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "text/event-stream")
+		req.Header.Set("Connection", "keep-alive")
+		req.Header.Set("Cache-Control", "no-cache")
 
-		resp, err := p.client.Do(r)
+		resp, err := p.client.Do(req)
 
 		if err != nil {
 			return nil, err

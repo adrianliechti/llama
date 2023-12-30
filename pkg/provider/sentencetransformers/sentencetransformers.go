@@ -17,15 +17,17 @@ var (
 )
 
 type Provider struct {
-	client *http.Client
-
 	url string
+
+	client *http.Client
 }
 
 type Option func(*Provider)
 
-func New(options ...Option) *Provider {
+func New(url string, options ...Option) (*Provider, error) {
 	p := &Provider{
+		url: url,
+
 		client: http.DefaultClient,
 	}
 
@@ -33,7 +35,11 @@ func New(options ...Option) *Provider {
 		option(p)
 	}
 
-	return p
+	if p.url == "" {
+		return nil, errors.New("invalid url")
+	}
+
+	return p, nil
 }
 
 func WithClient(client *http.Client) Option {
@@ -42,24 +48,18 @@ func WithClient(client *http.Client) Option {
 	}
 }
 
-func WithURL(url string) Option {
-	return func(p *Provider) {
-		p.url = url
-	}
-}
-
 func (p *Provider) Embed(ctx context.Context, model string, content string) ([]float32, error) {
-	req := &vectorsRequest{
+	request := &vectorsRequest{
 		Text: strings.TrimSpace(content),
 	}
 
-	body, _ := json.Marshal(req)
+	body, _ := json.Marshal(request)
 	url, _ := url.JoinPath(p.url, "/vectors")
 
-	r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
+	req, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := p.client.Do(r)
+	resp, err := p.client.Do(req)
 
 	if err != nil {
 		return nil, err
