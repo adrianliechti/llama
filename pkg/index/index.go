@@ -2,6 +2,8 @@ package index
 
 import (
 	"context"
+
+	"github.com/adrianliechti/llama/pkg/provider"
 )
 
 type Provider interface {
@@ -26,3 +28,5 @@ type Result struct {
 	Document
 	Distance float32
 }
+
+type Embedder = provider.Embedder

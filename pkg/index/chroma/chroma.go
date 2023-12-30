@@ -21,6 +21,8 @@ type Chroma struct {
 	client *http.Client
 
 	collection *collection
+
+	embedder index.Embedder
 }
 
 type Option func(*Chroma)
@@ -47,6 +49,18 @@ func New(url, collection string, options ...Option) (*Chroma, error) {
 	return chroma, nil
 }
 
+func WithClient(client *http.Client) Option {
+	return func(c *Chroma) {
+		c.client = client
+	}
+}
+
+func WithEmbedder(embedder index.Embedder) Option {
+	return func(c *Chroma) {
+		c.embedder = embedder
+	}
+}
+
 func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
 	u, _ := url.JoinPath(c.url, "/api/v1/collections/"+c.collection.ID+"/upsert")
 
@@ -64,6 +78,16 @@ func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
 
 		if id == "" {
 			id = uuid.NewString()
+		}
+
+		if len(d.Embedding) == 0 && c.embedder != nil {
+			embedding, err := c.embedder.Embed(ctx, d.Content)
+
+			if err != nil {
+				return err
+			}
+
+			d.Embedding = embedding
 		}
 
 		request.IDs[i] = id
