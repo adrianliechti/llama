@@ -85,12 +85,16 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 
 	var prompt strings.Builder
 
+	prompt.WriteString(message.Content)
+
 	if len(results) > 0 {
-		prompt.WriteString("Answer the question with help of this information:\n\n")
+		prompt.WriteString("\n\n")
+		prompt.WriteString("Here is some possibly useful information:")
 
 		for _, result := range results {
-			prompt.WriteString(result.Content)
 			prompt.WriteString("\n\n")
+			prompt.WriteString(result.Content)
+
 		}
 	}
 
