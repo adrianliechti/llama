@@ -205,6 +205,10 @@ func (c *Chroma) createCollection(name string) (*collection, error) {
 	request := map[string]any{
 		"name":          name,
 		"get_or_create": true,
+
+		"metadata": map[string]any{
+			"hnsw:space": "cosine",
+		},
 	}
 
 	body, _ := json.Marshal(request)
