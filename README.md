@@ -10,12 +10,19 @@ Retrieval-Augmented Generation (RAG) for use cases like:
 
 ## Integrations
 
-### LLM Providers
+###  Large Language Models (LLM)
 
 - OpenAI API (or compatible)  
-  (e.g [OpenAI Platform](https://platform.openai.com/docs/introduction), [Azure OpenAI Service](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [vLLM](https://docs.vllm.ai), ...)
-- Local & Open Source Models via [LLAMA.CPP](https://github.com/ggerganov/llama.cpp) Server
-- Embedding Models using [Sentence BERT](https://www.sbert.net) 
+  - [OpenAI Platform](https://platform.openai.com/docs/introduction)
+  - [Azure OpenAI Service](https://azure.microsoft.com/en-us/products/ai-services/openai-service)
+  - [vLLM](https://docs.vllm.ai)
+  - ...
+
+- Local Models
+  - [LLAMA.CPP](https://github.com/ggerganov/llama.cpp) Server
+
+- Embedding Models
+  -  [Sentence BERT](https://www.sbert.net) 
 
 
 ### Vector Indexes
@@ -32,11 +39,11 @@ Retrieval-Augmented Generation (RAG) for use cases like:
 
 ## Example Application
 
-The Docker `compose.yaml` file starts a simple web-based [Chatbot UI](https://github.com/mckaywrigley/chatbot-ui)  (port http/3000) and a [llama.cpp](https://github.com/ggerganov/llama.cpp) server. The LLAMA Gateway API is exposed locally (port http/8080) using the static token `changeme`. An OpenAI-compatible API is availabe in http://localhost:8080/oai/v1. 
+The Docker `compose.yaml` file starts a simple web-based [Chatbot UI](https://github.com/mckaywrigley/chatbot-ui)  (port http/3000) and a [LLAMA.CPP](https://github.com/ggerganov/llama.cpp) server. The LLAMA Gateway API is exposed locally (port http/8080) using the static token `changeme`. An OpenAI-compatible API is availabe at http://localhost:8080/oai/v1. 
 
 While starting up, a [Mistral 7B Instruct](https://mistral.ai/news/announcing-mistral-7b/) model file will be downloaded from [Hugging Face](https://huggingface.co) (see ./models) if not already exists.
 
-The sample also starts a text2vec sentence-transformer provided by [Weaviate](https://weaviate.io/developers/weaviate/modules/retriever-vectorizer-modules/text2vec-transformers) to provide embedding APIs.
+The sample also starts a sentence-transformer server to provide embedding APIs.
 
 For broad compatibility with existing tools (like the bundled WebUI), the models are aliased as `gpt-3.5-turbo` and `text-embedding-ada-002`.
 
@@ -48,7 +55,7 @@ $ docker compose up
 
 Browse to http://localhost:3000
 
-## Config
+## Configuration
 
 ### Providers
 
@@ -142,6 +149,21 @@ indexes:
     embedding: text-embedding-ada-002
 ```
 
+#### Weaviate
+
+```shell
+docker run -it --rm -p 9084:8080 -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true -e PERSISTENCE_DATA_PATH=/data semitechnologies/weaviate
+```
+
+```yaml
+indexes:
+  docs:
+    type: weaviate
+    url: http://localhost:9084
+    namespace: Document
+    embedding: multi-qa-minilm-l6-cos-v1  
+```
+
 #### In-Memory
 
 ```yaml
@@ -149,4 +171,27 @@ indexes:
   docs:
     type: memory   
     embedding: text-embedding-ada-002
+```
+
+## Use Cases
+
+### Retrieval Augmented Generation (RAG)
+
+#### Index Documents
+
+```
+POST http://localhost:8080/api/index/{index-name}
+```
+
+```json
+[
+    {
+        "id": "id1",
+        "content": "content of document..."
+    },
+    {
+        "id": "id2",
+        "content": "content of document..."
+    }
+]
 ```

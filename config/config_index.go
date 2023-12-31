@@ -7,6 +7,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/index/chroma"
 	"github.com/adrianliechti/llama/pkg/index/memory"
+	"github.com/adrianliechti/llama/pkg/index/weaviate"
 )
 
 func (c *Config) registerIndexes(f *configFile) error {
@@ -41,6 +42,8 @@ func createIndex(cfg indexConfig, embedder index.Embedder) (index.Provider, erro
 		return chromaIndex(cfg, embedder)
 	case "memory":
 		return memoryIndex(cfg, embedder)
+	case "weaviate":
+		return weaviateIndex(cfg, embedder)
 
 	default:
 		return nil, errors.New("invalid index type: " + cfg.Type)
@@ -65,4 +68,14 @@ func memoryIndex(cfg indexConfig, embedder index.Embedder) (index.Provider, erro
 	}
 
 	return memory.New(options...)
+}
+
+func weaviateIndex(cfg indexConfig, embedder index.Embedder) (index.Provider, error) {
+	var options []weaviate.Option
+
+	if embedder != nil {
+		options = append(options, weaviate.WithEmbedder(embedder))
+	}
+
+	return weaviate.New(cfg.URL, cfg.Namespace, options...)
 }

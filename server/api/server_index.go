@@ -37,7 +37,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		documents = append(documents, document)
 	}
 
-	if err != i.Index(r.Context(), documents...) {
+	if err := i.Index(r.Context(), documents...); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

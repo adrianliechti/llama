@@ -53,13 +53,10 @@ func (p *Provider) Embed(ctx context.Context, model string, content string) ([]f
 		Text: strings.TrimSpace(content),
 	}
 
+	u, _ := url.JoinPath(p.url, "/vectors")
+
 	body, _ := json.Marshal(request)
-	url, _ := url.JoinPath(p.url, "/vectors")
-
-	req, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := p.client.Do(req)
+	resp, err := p.client.Post(u, "application/json", bytes.NewReader(body))
 
 	if err != nil {
 		return nil, err

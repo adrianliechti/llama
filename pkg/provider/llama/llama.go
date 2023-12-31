@@ -79,14 +79,10 @@ func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32,
 		Content: strings.TrimSpace(content),
 	}
 
+	u, _ := url.JoinPath(p.url, "/embedding")
+
 	body, _ := json.Marshal(request)
-	url, _ := url.JoinPath(p.url, "/embedding")
-
-	req, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cache-Control", "no-cache")
-
-	resp, err := p.client.Do(req)
+	resp, err := p.client.Post(u, "application/json", bytes.NewReader(body))
 
 	if err != nil {
 		return nil, err
@@ -119,14 +115,10 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 	}
 
 	if options.Stream == nil {
+		u, _ := url.JoinPath(p.url, "/completion")
+
 		body, _ := json.Marshal(request)
-		url, _ := url.JoinPath(p.url, "/completion")
-
-		req, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Cache-Control", "no-cache")
-
-		resp, err := p.client.Do(req)
+		resp, err := p.client.Post(u, "application/json", bytes.NewReader(body))
 
 		if err != nil {
 			return nil, err
@@ -168,8 +160,6 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		req, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "text/event-stream")
-		req.Header.Set("Connection", "keep-alive")
-		req.Header.Set("Cache-Control", "no-cache")
 
 		resp, err := p.client.Do(req)
 

@@ -106,14 +106,7 @@ func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
 	}
 
 	body, _ := json.Marshal(request)
-
-	req, err := http.NewRequest(http.MethodPost, u, bytes.NewReader(body))
-
-	if err != nil {
-		return err
-	}
-
-	resp, err := c.client.Do(req)
+	resp, err := c.client.Post(u, "application/json", bytes.NewReader(body))
 
 	if err != nil {
 		return err
@@ -146,14 +139,7 @@ func (c *Chroma) Search(ctx context.Context, embedding []float32, options *index
 	}
 
 	body, _ := json.Marshal(request)
-
-	req, err := http.NewRequest(http.MethodPost, u, bytes.NewReader(body))
-
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := c.client.Do(req)
+	resp, err := c.client.Post(u, "application/json", bytes.NewReader(body))
 
 	if err != nil {
 		return nil, err
@@ -212,14 +198,7 @@ func (c *Chroma) createCollection(name string) (*collection, error) {
 	}
 
 	body, _ := json.Marshal(request)
-
-	req, err := http.NewRequest(http.MethodPost, u, bytes.NewReader(body))
-
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := c.client.Do(req)
+	resp, err := c.client.Post(u, "application/json", bytes.NewReader(body))
 
 	if err != nil {
 		return nil, err
