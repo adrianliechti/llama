@@ -18,6 +18,9 @@ type Provider struct {
 
 	embedder  provider.Embedder
 	completer provider.Completer
+
+	topK int
+	topP float32
 }
 
 type Option func(*Provider)
@@ -62,6 +65,18 @@ func WithCompleter(completer provider.Completer) Option {
 	}
 }
 
+func WithTopK(val int) Option {
+	return func(p *Provider) {
+		p.topK = val
+	}
+}
+
+func WithTopP(val float32) Option {
+	return func(p *Provider) {
+		p.topP = val
+	}
+}
+
 func (p *Provider) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	message := messages[len(messages)-1]
 
@@ -76,7 +91,8 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	}
 
 	results, err := p.index.Search(ctx, embedding, &index.SearchOptions{
-		TopP: 0.30,
+		TopP: p.topP,
+		TopK: p.topK,
 	})
 
 	if err != nil {

@@ -177,6 +177,18 @@ indexes:
 
 ### Retrieval Augmented Generation (RAG)
 
+#### Configuration
+
+```yaml
+chains:
+  qa:
+    type: rag
+    index: docs
+    model: mistral-7b-instruct
+    top_k: 5
+    top_p: 0.5
+```
+
 #### Index Documents
 
 ```
