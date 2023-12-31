@@ -13,9 +13,9 @@ Retrieval-Augmented Generation (RAG) for use cases like:
 ### LLM Providers
 
 - OpenAI API (or compatible)  
-  (e.g [OpenAI Platform](https://platform.openai.com/docs/introduction), [Azure OpenAI Service](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [vLLM](https://docs.vllm.ai), ...))
+  (e.g [OpenAI Platform](https://platform.openai.com/docs/introduction), [Azure OpenAI Service](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [vLLM](https://docs.vllm.ai), ...)
 - Local & Open Source Models via [LLAMA.CPP](https://github.com/ggerganov/llama.cpp) Server
-- Embedding Models using [Sentence Transformers](https://www.sbert.net) 
+- Embedding Models using [Sentence BERT](https://www.sbert.net) 
 
 
 ### Vector Indexes
@@ -91,7 +91,7 @@ providers:
 #### LLAMA.CPP
 
 ```shell
-server --host 0.0.0.0 --port 9081 --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+server --port 9081 --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
 ```
 
 ```shell
@@ -109,7 +109,7 @@ providers:
         template: mistral
 ```
 
-#### Sentence Transformers
+#### Sentence-BERT
 
 ```shell
 docker run -it --rm -p 9082:8080 semitechnologies/transformers-inference:sentence-transformers-multi-qa-MiniLM-L6-cos-v1
@@ -117,7 +117,7 @@ docker run -it --rm -p 9082:8080 semitechnologies/transformers-inference:sentenc
 
 ```yaml
 providers:
-  - type: sentence-transformers
+  - type: sbert
     url: http://localhost:9082
 
     models:

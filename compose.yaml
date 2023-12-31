@@ -23,7 +23,7 @@ services:
       model:
         condition: service_completed_successfully
   
-  sentence-transformers:
+  sbert:
     image: semitechnologies/transformers-inference:sentence-transformers-multi-qa-MiniLM-L6-cos-v1
     pull_policy: always
     environment:
@@ -42,7 +42,7 @@ services:
         target: /config.yaml
     depends_on:
       - llama
-      - sentence-transformers
+      - sbert
   
   web:
     image: ghcr.io/mckaywrigley/chatbot-ui:main
@@ -69,8 +69,8 @@ configs:
               id: mistral
               template: mistral
         
-        - type: sentence-transformers
-          url: http://sentence-transformers:8080
+        - type: sbert
+          url: http://sbert:8080
           models:
             text-embedding-ada-002:
               id: all-minilm-l6-v2

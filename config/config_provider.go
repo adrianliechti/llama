@@ -7,7 +7,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/llama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
-	"github.com/adrianliechti/llama/pkg/provider/sentencetransformers"
+	"github.com/adrianliechti/llama/pkg/provider/sbert"
 )
 
 func (c *Config) registerProviders(f *configFile) error {
@@ -40,8 +40,8 @@ func createProvider(cfg providerConfig) (provider.Provider, error) {
 	case "llama":
 		return llamaProvider(cfg)
 
-	case "sentence-transformers":
-		return sentencetransformersProvider(cfg)
+	case "sbert":
+		return sbertProvider(cfg)
 
 	default:
 		return nil, errors.New("invalid provider type: " + cfg.Type)
@@ -100,12 +100,12 @@ func llamaProvider(cfg providerConfig) (provider.Provider, error) {
 	return llama.New(cfg.URL, options...)
 }
 
-func sentencetransformersProvider(cfg providerConfig) (provider.Provider, error) {
-	var options []sentencetransformers.Option
+func sbertProvider(cfg providerConfig) (provider.Provider, error) {
+	var options []sbert.Option
 
 	if len(cfg.Models) > 1 {
-		return nil, errors.New("multiple models not supported for sentence-transformers provider")
+		return nil, errors.New("multiple models not supported for sbert provider")
 	}
 
-	return sentencetransformers.New(cfg.URL, options...)
+	return sbert.New(cfg.URL, options...)
 }

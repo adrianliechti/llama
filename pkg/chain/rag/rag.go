@@ -69,14 +69,14 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		return nil, errors.New("last message must be from user")
 	}
 
-	embedding, err := p.embedder.Embed(ctx, message.Content)
+	embedding, err := p.index.Embed(ctx, message.Content)
 
 	if err != nil {
 		return nil, err
 	}
 
 	results, err := p.index.Search(ctx, embedding, &index.SearchOptions{
-		Top: 3,
+		TopP: 0.30,
 	})
 
 	if err != nil {

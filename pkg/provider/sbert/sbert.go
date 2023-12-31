@@ -1,4 +1,4 @@
-package sentencetransformers
+package sbert
 
 import (
 	"bytes"

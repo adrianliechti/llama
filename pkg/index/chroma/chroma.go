@@ -141,8 +141,8 @@ func (c *Chroma) Search(ctx context.Context, embedding []float32, options *index
 		},
 	}
 
-	if options.Top > 0 {
-		request["n_results"] = options.Top
+	if options.TopK > 0 {
+		request["n_results"] = options.TopK
 	}
 
 	body, _ := json.Marshal(request)
@@ -186,6 +186,10 @@ func (c *Chroma) Search(ctx context.Context, embedding []float32, options *index
 					Content:  result.Documents[i][j],
 					Metadata: result.Metadatas[i][j],
 				},
+			}
+
+			if options.TopP <= 0 || r.Distance > options.TopP {
+				continue
 			}
 
 			results = append(results, r)

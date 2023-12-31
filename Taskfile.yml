@@ -5,7 +5,48 @@ version: '3'
 vars:
   REPOSITORY: adrianliechti/llama-openai:2
 
+  MODEL: mistral-7b-instruct-v0.2.Q4_K_M.gguf
+  MODEL_URL: https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+
 tasks:
   publish:
     cmds:
       - docker buildx build . --push --platform linux/amd64,linux/arm64 --tag {{.REPOSITORY}}
+  
+  llama-server:
+    deps: [download-llama-server, download-llama-model]
+    cmds:
+      - bin/llama-server --port 9081 --model ./models/{{.MODEL}} --log-disable
+  
+  download-llama-server:
+    cmds:
+      - mkdir -p bin
+      - rm -rf bin/llama.cpp
+      - rm -f bin/llama-server
+      - git clone https://github.com/ggerganov/llama.cpp bin/llama.cpp
+      - make -C bin/llama.cpp/ server
+      - mv bin/llama.cpp/server bin/llama-server
+      - rm -rf bin/llama.cpp
+
+    status:
+      - test -f bin/llama-server
+  
+  download-llama-model:
+    cmds:
+      - mkdir -p models
+      - curl -s -L -o models/{{.MODEL}} {{.MODEL_URL}}
+
+    status:
+      - test -f models/{{.MODEL}}
+  
+  sbert-server:
+    cmds:
+      - docker run -it --rm -p 9082:8080 semitechnologies/transformers-inference:sentence-transformers-multi-qa-MiniLM-L6-cos-v1
+
+  chroma-server:
+    cmds:
+      - docker run -it --rm -p 9083:8000 ghcr.io/chroma-core/chroma
+  
+  chatbot-server:
+    cmds:
+      - docker run -it --rm -p 3000:3000 -e OPENAI_API_HOST=http://host.docker.internal:8080/oai -e OPENAI_API_KEY=changeme ghcr.io/mckaywrigley/chatbot-ui:main
