@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -49,14 +50,12 @@ func WithClient(client *http.Client) Option {
 }
 
 func (p *Provider) Embed(ctx context.Context, model string, content string) ([]float32, error) {
-	request := &vectorsRequest{
+	body := &vectorsRequest{
 		Text: strings.TrimSpace(content),
 	}
 
 	u, _ := url.JoinPath(p.url, "/vectors")
-
-	body, _ := json.Marshal(request)
-	resp, err := p.client.Post(u, "application/json", bytes.NewReader(body))
+	resp, err := p.client.Post(u, "application/json", jsonReader(body))
 
 	if err != nil {
 		return nil, err
@@ -90,4 +89,14 @@ type vectorsRequest struct {
 type vectorsResponse struct {
 	Text   string    `json:"text"`
 	Vector []float32 `json:"vector"`
+}
+
+func jsonReader(v any) io.Reader {
+	b := new(bytes.Buffer)
+
+	enc := json.NewEncoder(b)
+	enc.SetEscapeHTML(false)
+
+	enc.Encode(v)
+	return b
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -139,14 +140,12 @@ func (w *Weaviate) Search(ctx context.Context, embedding []float32, options *ind
 		}
 	}`
 
-	u, _ := url.JoinPath(w.url, "/v1/graphql")
-
-	request := map[string]any{
+	body := map[string]any{
 		"query": query,
 	}
 
-	body, _ := json.Marshal(request)
-	resp, err := w.client.Post(u, "application/json", bytes.NewReader(body))
+	u, _ := url.JoinPath(w.url, "/v1/graphql")
+	resp, err := w.client.Post(u, "application/json", jsonReader(body))
 
 	if err != nil {
 		return nil, err
@@ -226,7 +225,7 @@ func (w *Weaviate) getClass(name string) (*class, error) {
 func (w *Weaviate) createClass(name string) (*class, error) {
 	u, _ := url.JoinPath(w.url, "/v1/schema")
 
-	request := map[string]any{
+	body := map[string]any{
 		"class": name,
 
 		"properties": []map[string]any{
@@ -239,8 +238,7 @@ func (w *Weaviate) createClass(name string) (*class, error) {
 		},
 	}
 
-	body, _ := json.Marshal(request)
-	resp, err := w.client.Post(u, "application/json", bytes.NewReader(body))
+	resp, err := w.client.Post(u, "application/json", jsonReader(body))
 
 	if err != nil {
 		return nil, err
@@ -262,9 +260,7 @@ func (w *Weaviate) createClass(name string) (*class, error) {
 }
 
 func (w *Weaviate) createObject(d index.Document) error {
-	u, _ := url.JoinPath(w.url, "/v1/objects")
-
-	request := map[string]any{
+	body := map[string]any{
 		"id": d.ID,
 
 		"class":  w.class.Class,
@@ -275,8 +271,8 @@ func (w *Weaviate) createObject(d index.Document) error {
 		},
 	}
 
-	body, _ := json.Marshal(request)
-	resp, err := w.client.Post(u, "application/json", bytes.NewReader(body))
+	u, _ := url.JoinPath(w.url, "/v1/objects")
+	resp, err := w.client.Post(u, "application/json", jsonReader(body))
 
 	if err != nil {
 		return err
@@ -292,9 +288,7 @@ func (w *Weaviate) createObject(d index.Document) error {
 }
 
 func (w *Weaviate) updateObject(d index.Document) error {
-	u, _ := url.JoinPath(w.url, "/v1/objects/"+w.class.Class+"/"+d.ID)
-
-	request := map[string]any{
+	body := map[string]any{
 		"id": d.ID,
 
 		"class":  w.class.Class,
@@ -305,9 +299,8 @@ func (w *Weaviate) updateObject(d index.Document) error {
 		},
 	}
 
-	body, _ := json.Marshal(request)
-
-	req, err := http.NewRequest(http.MethodPut, u, bytes.NewReader(body))
+	u, _ := url.JoinPath(w.url, "/v1/objects/"+w.class.Class+"/"+d.ID)
+	req, err := http.NewRequest(http.MethodPut, u, jsonReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	if err != nil {
@@ -342,4 +335,14 @@ type document struct {
 type additional struct {
 	Certainty float32 `json:"certainty"`
 	Distance  float32 `json:"distance"`
+}
+
+func jsonReader(v any) io.Reader {
+	b := new(bytes.Buffer)
+
+	enc := json.NewEncoder(b)
+	enc.SetEscapeHTML(false)
+
+	enc.Encode(v)
+	return b
 }

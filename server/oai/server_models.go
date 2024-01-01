@@ -1,7 +1,6 @@
 package oai
 
 import (
-	"encoding/json"
 	"net/http"
 	"time"
 
@@ -23,8 +22,7 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	writeJson(w, result)
 }
 
 func (s *Server) handleModel(w http.ResponseWriter, r *http.Request) {
@@ -43,6 +41,5 @@ func (s *Server) handleModel(w http.ResponseWriter, r *http.Request) {
 		OwnedBy: "openai",
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	writeJson(w, result)
 }

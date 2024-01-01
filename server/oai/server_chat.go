@@ -1,6 +1,7 @@
 package oai
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -74,9 +75,13 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 				},
 			}
 
-			data, _ := json.Marshal(result)
+			var data bytes.Buffer
 
-			fmt.Fprintf(w, "data: %s\n\n", string(data))
+			enc := json.NewEncoder(&data)
+			enc.SetEscapeHTML(false)
+			enc.Encode(result)
+
+			fmt.Fprintf(w, "data: %s\n\n", data.String())
 			w.(http.Flusher).Flush()
 		}
 
@@ -115,7 +120,6 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(result)
+		writeJson(w, result)
 	}
 }

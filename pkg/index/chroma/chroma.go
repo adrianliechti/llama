@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -71,7 +72,7 @@ func (c *Chroma) Embed(ctx context.Context, content string) ([]float32, error) {
 func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
 	u, _ := url.JoinPath(c.url, "/api/v1/collections/"+c.collection.ID+"/upsert")
 
-	request := embeddings{
+	body := embeddings{
 		IDs: make([]string, len(documents)),
 
 		Embeddings: make([][]float32, len(documents)),
@@ -97,16 +98,15 @@ func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
 			d.Embedding = embedding
 		}
 
-		request.IDs[i] = id
+		body.IDs[i] = id
 
-		request.Embeddings[i] = d.Embedding
+		body.Embeddings[i] = d.Embedding
 
-		request.Documents[i] = d.Content
-		request.Metadatas[i] = d.Metadata
+		body.Documents[i] = d.Content
+		body.Metadatas[i] = d.Metadata
 	}
 
-	body, _ := json.Marshal(request)
-	resp, err := c.client.Post(u, "application/json", bytes.NewReader(body))
+	resp, err := c.client.Post(u, "application/json", jsonReader(body))
 
 	if err != nil {
 		return err
@@ -128,18 +128,17 @@ func (c *Chroma) Search(ctx context.Context, embedding []float32, options *index
 
 	u, _ := url.JoinPath(c.url, "/api/v1/collections/"+c.collection.ID+"/query")
 
-	request := map[string]any{
+	body := map[string]any{
 		"query_embeddings": [][]float32{
 			embedding,
 		},
 	}
 
 	if options.TopK > 0 {
-		request["n_results"] = options.TopK
+		body["n_results"] = options.TopK
 	}
 
-	body, _ := json.Marshal(request)
-	resp, err := c.client.Post(u, "application/json", bytes.NewReader(body))
+	resp, err := c.client.Post(u, "application/json", jsonReader(body))
 
 	if err != nil {
 		return nil, err
@@ -188,7 +187,7 @@ func (c *Chroma) Search(ctx context.Context, embedding []float32, options *index
 func (c *Chroma) createCollection(name string) (*collection, error) {
 	u, _ := url.JoinPath(c.url, "/api/v1/collections")
 
-	request := map[string]any{
+	body := map[string]any{
 		"name":          name,
 		"get_or_create": true,
 
@@ -197,8 +196,7 @@ func (c *Chroma) createCollection(name string) (*collection, error) {
 		},
 	}
 
-	body, _ := json.Marshal(request)
-	resp, err := c.client.Post(u, "application/json", bytes.NewReader(body))
+	resp, err := c.client.Post(u, "application/json", jsonReader(body))
 
 	if err != nil {
 		return nil, err
@@ -243,4 +241,14 @@ type result struct {
 
 	Metadatas [][]map[string]any `json:"metadatas"`
 	Documents [][]string         `json:"documents"`
+}
+
+func jsonReader(v any) io.Reader {
+	b := new(bytes.Buffer)
+
+	enc := json.NewEncoder(b)
+	enc.SetEscapeHTML(false)
+
+	enc.Encode(v)
+	return b
 }

@@ -75,14 +75,12 @@ func WithPromptTemplate(template PromptTemplate) Option {
 }
 
 func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32, error) {
-	request := &embeddingRequest{
+	body := &embeddingRequest{
 		Content: strings.TrimSpace(content),
 	}
 
 	u, _ := url.JoinPath(p.url, "/embedding")
-
-	body, _ := json.Marshal(request)
-	resp, err := p.client.Post(u, "application/json", bytes.NewReader(body))
+	resp, err := p.client.Post(u, "application/json", jsonReader(body))
 
 	if err != nil {
 		return nil, err
@@ -108,17 +106,15 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		options = &provider.CompleteOptions{}
 	}
 
-	request, err := p.convertCompletionRequest(messages, options)
+	url, _ := url.JoinPath(p.url, "/completion")
+	body, err := p.convertCompletionRequest(messages, options)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if options.Stream == nil {
-		u, _ := url.JoinPath(p.url, "/completion")
-
-		body, _ := json.Marshal(request)
-		resp, err := p.client.Post(u, "application/json", bytes.NewReader(body))
+		resp, err := p.client.Post(url, "application/json", jsonReader(body))
 
 		if err != nil {
 			return nil, err
@@ -154,10 +150,7 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 	} else {
 		defer close(options.Stream)
 
-		body, _ := json.Marshal(request)
-		url, _ := url.JoinPath(p.url, "/completion")
-
-		req, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "text/event-stream")
 
@@ -303,4 +296,14 @@ func toCompletionReason(res completionResponse) provider.CompletionReason {
 	}
 
 	return ""
+}
+
+func jsonReader(v any) io.Reader {
+	b := new(bytes.Buffer)
+
+	enc := json.NewEncoder(b)
+	enc.SetEscapeHTML(false)
+
+	enc.Encode(v)
+	return b
 }
