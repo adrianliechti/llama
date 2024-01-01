@@ -13,6 +13,10 @@ tasks:
     cmds:
       - docker buildx build . --push --platform linux/amd64,linux/arm64 --tag {{.REPOSITORY}}
   
+  client:
+    cmds:
+      - go run cmd/client/main.go
+
   llama-server:
     deps: [download-llama-server, download-llama-model]
     cmds:
