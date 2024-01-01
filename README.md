@@ -19,8 +19,9 @@ Retrieval-Augmented Generation (RAG) for use cases like:
   - ...
 
 - Local Models
-  - [LLAMA.CPP](https://github.com/ggerganov/llama.cpp) Server
-  -  [Sentence BERT](https://www.sbert.net) 
+  - [LLAMA.CPP](https://github.com/ggerganov/llama.cpp)
+  - [Ollama](https://ollama.ai/)
+  - [Sentence BERT](https://www.sbert.net) 
 
 
 ### Vector Indexes
@@ -47,7 +48,7 @@ For broad compatibility with existing tools (like the bundled WebUI), the models
 
 Run example application
 
-```bash
+```shell
 $ docker compose up
 ```
 
@@ -96,11 +97,11 @@ providers:
 #### LLAMA.CPP
 
 ```shell
-server --port 9081 --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+$ server --port 9081 --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
 ```
 
 ```shell
-docker run -it --rm -p 9081:9081 -v ./models/:/models/ ghcr.io/ggerganov/llama.cpp:full --server --host 0.0.0.0 --port 9081 --model /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+$ docker run -it --rm -p 9081:9081 -v ./models/:/models/ ghcr.io/ggerganov/llama.cpp:full --server --host 0.0.0.0 --port 9081 --model /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
 ```
 
 ```yaml
@@ -114,10 +115,27 @@ providers:
         template: mistral
 ```
 
+#### Ollama
+
+```shell
+$ ollama start
+$ ollama run mistral
+```
+
+```yaml
+providers:
+  - type: ollama
+    url: http://localhost:11434
+
+    models:
+      mistral:
+        id: mistral
+```
+
 #### Sentence-BERT
 
 ```shell
-docker run -it --rm -p 9082:8080 semitechnologies/transformers-inference:sentence-transformers-multi-qa-MiniLM-L6-cos-v1
+$ docker run -it --rm -p 9082:8080 semitechnologies/transformers-inference:sentence-transformers-multi-qa-MiniLM-L6-cos-v1
 ```
 
 ```yaml
@@ -135,7 +153,7 @@ providers:
 #### Chroma
 
 ```shell
-docker run -it --rm -p 9083:8000 ghcr.io/chroma-core/chroma
+$ docker run -it --rm -p 9083:8000 ghcr.io/chroma-core/chroma
 ```
 
 ```yaml
@@ -150,7 +168,7 @@ indexes:
 #### Weaviate
 
 ```shell
-docker run -it --rm -p 9084:8080 -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true -e PERSISTENCE_DATA_PATH=/data semitechnologies/weaviate
+$ docker run -it --rm -p 9084:8080 -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true -e PERSISTENCE_DATA_PATH=/data semitechnologies/weaviate
 ```
 
 ```yaml

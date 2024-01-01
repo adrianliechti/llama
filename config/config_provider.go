@@ -6,6 +6,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/llama"
+	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 	"github.com/adrianliechti/llama/pkg/provider/sbert"
 )
@@ -39,6 +40,9 @@ func createProvider(cfg providerConfig) (provider.Provider, error) {
 
 	case "llama":
 		return llamaProvider(cfg)
+
+	case "ollama":
+		return ollamaProvider(cfg)
 
 	case "sbert":
 		return sbertProvider(cfg)
@@ -101,6 +105,12 @@ func llamaProvider(cfg providerConfig) (provider.Provider, error) {
 	}
 
 	return llama.New(cfg.URL, options...)
+}
+
+func ollamaProvider(cfg providerConfig) (provider.Provider, error) {
+	var options []ollama.Option
+
+	return ollama.New(cfg.URL, options...)
 }
 
 func sbertProvider(cfg providerConfig) (provider.Provider, error) {

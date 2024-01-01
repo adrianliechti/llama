@@ -1,4 +1,4 @@
-package llama
+package ollama
 
 import (
 	"bufio"
@@ -23,26 +23,15 @@ type Provider struct {
 	url string
 
 	client *http.Client
-
-	system   string
-	template PromptTemplate
 }
 
 type Option func(*Provider)
-
-var (
-	headerData = []byte("data: ")
-	//errorPrefix = []byte(`data: {"error":`)
-)
 
 func New(url string, options ...Option) (*Provider, error) {
 	p := &Provider{
 		url: url,
 
 		client: http.DefaultClient,
-
-		system:   "",
-		template: &PromptLlama{},
 	}
 
 	for _, option := range options {
@@ -62,24 +51,13 @@ func WithClient(client *http.Client) Option {
 	}
 }
 
-func WithSystem(system string) Option {
-	return func(p *Provider) {
-		p.system = system
-	}
-}
-
-func WithPromptTemplate(template PromptTemplate) Option {
-	return func(p *Provider) {
-		p.template = template
-	}
-}
-
-func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32, error) {
+func (p *Provider) Embed(ctx context.Context, model string, content string) ([]float32, error) {
 	body := &EmbeddingRequest{
-		Content: strings.TrimSpace(content),
+		Model:  model,
+		Prompt: strings.TrimSpace(content),
 	}
 
-	u, _ := url.JoinPath(p.url, "/embedding")
+	u, _ := url.JoinPath(p.url, "/api/embeddings")
 	resp, err := p.client.Post(u, "application/json", jsonReader(body))
 
 	if err != nil {
@@ -98,7 +76,7 @@ func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32,
 		return nil, err
 	}
 
-	return result.Embedding, nil
+	return toFloat32s(result.Embedding), nil
 }
 
 func (p *Provider) Complete(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
@@ -106,8 +84,8 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		options = &provider.CompleteOptions{}
 	}
 
-	url, _ := url.JoinPath(p.url, "/completion")
-	body, err := p.convertCompletionRequest(messages, options)
+	url, _ := url.JoinPath(p.url, "/api/chat")
+	body, err := p.convertChatRequest(model, messages, options)
 
 	if err != nil {
 		return nil, err
@@ -126,24 +104,19 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 
 		defer resp.Body.Close()
 
-		var completion CompletionResponse
+		var chat ChatResponse
 
-		if err := json.NewDecoder(resp.Body).Decode(&completion); err != nil {
+		if err := json.NewDecoder(resp.Body).Decode(&chat); err != nil {
 			return nil, err
 		}
 
-		content := strings.TrimSpace(completion.Content)
-
-		var resultRole = provider.MessageRoleAssistant
-		var resultReason = toCompletionReason(completion)
-
 		result := provider.Completion{
 			Message: &provider.Message{
-				Role:    resultRole,
-				Content: content,
+				Role:    provider.MessageRole(chat.Message.Role),
+				Content: chat.Message.Content,
 			},
 
-			Reason: resultReason,
+			Reason: provider.CompletionReasonStop,
 		}
 
 		return &result, nil
@@ -152,7 +125,7 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 
 		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "text/event-stream")
+		req.Header.Set("Accept", "application/x-ndjson")
 
 		resp, err := p.client.Do(req)
 
@@ -183,24 +156,17 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 				return nil, err
 			}
 
-			data = bytes.TrimSpace(data)
-
-			// if bytes.HasPrefix(data, errorPrefix) {
-			// }
-
-			data = bytes.TrimPrefix(data, headerData)
-
 			if len(data) == 0 {
 				continue
 			}
 
-			var completion CompletionResponse
+			var chat ChatResponse
 
-			if err := json.Unmarshal([]byte(data), &completion); err != nil {
+			if err := json.Unmarshal([]byte(data), &chat); err != nil {
 				return nil, err
 			}
 
-			var content = completion.Content
+			var content = chat.Message.Content
 
 			if i == 0 {
 				content = strings.TrimLeftFunc(content, unicode.IsSpace)
@@ -209,7 +175,7 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 			resultText.WriteString(content)
 
 			resultRole = provider.MessageRoleAssistant
-			resultReason = toCompletionReason(completion)
+			resultReason = toCompletionReason(chat)
 
 			options.Stream <- provider.Completion{
 				Message: &provider.Message{
@@ -234,41 +200,28 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 	}
 }
 
-func (p *Provider) convertCompletionRequest(messages []provider.Message, options *provider.CompleteOptions) (*CompletionRequest, error) {
+func (p *Provider) convertChatRequest(model string, messages []provider.Message, options *provider.CompleteOptions) (*ChatRequest, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
 	}
 
-	prompt, err := p.template.Prompt(p.system, messages)
+	stream := options.Stream != nil
 
-	if err != nil {
-		return nil, err
+	req := &ChatRequest{
+		Model:  model,
+		Stream: &stream,
 	}
 
-	req := &CompletionRequest{
-		Stream: options.Stream != nil,
+	for _, m := range messages {
+		message := Message{
+			Role:    MessageRole(m.Role),
+			Content: m.Content,
+		}
 
-		Prompt: prompt,
-		Stop:   []string{"[INST]"},
-
-		Temperature: options.Temperature,
-		TopP:        options.TopP,
-		MinP:        options.MinP,
+		req.Messages = append(req.Messages, message)
 	}
 
 	return req, nil
-}
-
-func toCompletionReason(resp CompletionResponse) provider.CompletionReason {
-	if resp.Truncated {
-		return provider.CompletionReasonLength
-	}
-
-	if resp.Stop {
-		return provider.CompletionReasonStop
-	}
-
-	return ""
 }
 
 func jsonReader(v any) io.Reader {
@@ -279,4 +232,22 @@ func jsonReader(v any) io.Reader {
 
 	enc.Encode(v)
 	return b
+}
+
+func toFloat32s(v []float64) []float32 {
+	result := make([]float32, len(v))
+
+	for i, x := range v {
+		result[i] = float32(x)
+	}
+
+	return result
+}
+
+func toCompletionReason(chat ChatResponse) provider.CompletionReason {
+	if chat.Done {
+		return provider.CompletionReasonStop
+	}
+
+	return ""
 }
