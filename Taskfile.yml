@@ -22,11 +22,10 @@ tasks:
     cmds:
       - mkdir -p bin
       - rm -rf bin/llama.cpp
-      - rm -f bin/llama-server
+      - rm -rf bin/llama-server
       - git clone https://github.com/ggerganov/llama.cpp bin/llama.cpp
       - make -C bin/llama.cpp/ server
-      - mv bin/llama.cpp/server bin/llama-server
-      - rm -rf bin/llama.cpp
+      - ln -s llama.cpp/server bin/llama-server
 
     status:
       - test -f bin/llama-server
