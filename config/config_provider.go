@@ -69,18 +69,17 @@ func openaiProvider(cfg providerConfig) (provider.Provider, error) {
 func llamaProvider(cfg providerConfig) (provider.Provider, error) {
 	var options []llama.Option
 
-	if len(cfg.Models) > 1 {
-		return nil, errors.New("multiple models not supported for llama provider")
-	}
-
 	var prompt string
 	var template string
 
 	for _, v := range cfg.Models {
-		prompt = v.Prompt
-		template = v.Template
+		if prompt == "" {
+			prompt = v.Prompt
+		}
 
-		break
+		if template == "" {
+			template = v.Template
+		}
 	}
 
 	if prompt != "" {
