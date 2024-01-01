@@ -32,6 +32,11 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	//model := req.Model
 	messages := toMessages(req.Messages)
 
+	options := &provider.CompleteOptions{
+		Temperature: req.Temperature,
+		TopP:        req.TopP,
+	}
+
 	if req.Stream {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
@@ -42,9 +47,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		stream := make(chan provider.Completion)
 
 		go func() {
-			options := &provider.CompleteOptions{
-				Stream: stream,
-			}
+			options.Stream = stream
 
 			_, err := completer.Complete(r.Context(), messages, options)
 			done <- err
@@ -85,8 +88,6 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else {
-		options := &provider.CompleteOptions{}
-
 		completion, err := completer.Complete(r.Context(), messages, options)
 
 		if err != nil {

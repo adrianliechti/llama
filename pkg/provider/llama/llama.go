@@ -42,7 +42,7 @@ func New(url string, options ...Option) (*Provider, error) {
 		client: http.DefaultClient,
 
 		system:   "",
-		template: &PromptLLAMA{},
+		template: &PromptLlama{},
 	}
 
 	for _, option := range options {
@@ -250,14 +250,18 @@ func (p *Provider) convertCompletionRequest(messages []provider.Message, options
 		return nil, err
 	}
 
-	result := &completionRequest{
+	req := &completionRequest{
 		Stream: options.Stream != nil,
 
 		Prompt: prompt,
 		Stop:   []string{"[INST]"},
+
+		Temperature: options.Temperature,
+		TopP:        options.TopP,
+		MinP:        options.MinP,
 	}
 
-	return result, nil
+	return req, nil
 }
 
 type embeddingRequest struct {
@@ -271,12 +275,12 @@ type embeddingResponse struct {
 type completionRequest struct {
 	Prompt string `json:"prompt"`
 
-	Stream bool     `json:"stream"`
-	Stop   []string `json:"stop"`
+	Stream bool     `json:"stream,omitempty"`
+	Stop   []string `json:"stop,omitempty"`
 
-	//Temperature float32 `json:"temperature"`
-	//NPredict    int     `json:"n_predict"`
-	//TopP        float32 `json:"top_p"`
+	Temperature *float32 `json:"temperature,omitempty"`
+	TopP        *float32 `json:"top_p,omitempty"`
+	MinP        *float32 `json:"min_p,omitempty"`
 }
 
 type completionResponse struct {

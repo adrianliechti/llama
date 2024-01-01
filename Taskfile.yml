@@ -16,7 +16,7 @@ tasks:
   llama-server:
     deps: [download-llama-server, download-llama-model]
     cmds:
-      - bin/llama-server --port 9081 --model ./models/{{.MODEL}} --log-disable
+      - bin/llama-server --port 9081 --log-disable --model ./models/{{.MODEL}} 
   
   download-llama-server:
     cmds:

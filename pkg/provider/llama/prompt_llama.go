@@ -6,16 +6,16 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-type PromptLLAMA struct {
+type PromptLlama struct {
 }
 
-func (t *PromptLLAMA) Stop() []string {
+func (t *PromptLlama) Stop() []string {
 	return []string{
 		"[INST]",
 	}
 }
 
-func (t *PromptLLAMA) Prompt(system string, messages []provider.Message) (string, error) {
+func (t *PromptLlama) Prompt(system string, messages []provider.Message) (string, error) {
 	messages = flattenMessages(messages)
 
 	if err := verifyMessageOrder(messages); err != nil {

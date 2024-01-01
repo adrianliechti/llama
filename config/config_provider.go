@@ -88,7 +88,10 @@ func llamaProvider(cfg providerConfig) (provider.Provider, error) {
 		options = append(options, llama.WithPromptTemplate(&llama.PromptChatML{}))
 
 	case "llama":
-		options = append(options, llama.WithPromptTemplate(&llama.PromptLLAMA{}))
+		options = append(options, llama.WithPromptTemplate(&llama.PromptLlama{}))
+
+	case "llamaguard":
+		options = append(options, llama.WithPromptTemplate(&llama.PromptLlamaGuard{}))
 
 	case "mistral":
 		options = append(options, llama.WithPromptTemplate(&llama.PromptMistral{}))

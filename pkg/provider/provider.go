@@ -44,6 +44,10 @@ type Completion struct {
 
 type CompleteOptions struct {
 	Stream chan<- Completion
+
+	Temperature *float32
+	TopP        *float32
+	MinP        *float32
 }
 
 func ToEmbbedder(p Provider, model string) Embedder {

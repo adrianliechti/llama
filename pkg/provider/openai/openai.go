@@ -89,7 +89,7 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		return nil, ErrInvalidModelMapping
 	}
 
-	req, err := convertCompletionRequest(model, messages, options)
+	req, err := p.convertCompletionRequest(model, messages, options)
 
 	if err != nil {
 		return nil, err
@@ -177,13 +177,21 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 	}
 }
 
-func convertCompletionRequest(model string, messages []provider.Message, options *provider.CompleteOptions) (*openai.ChatCompletionRequest, error) {
+func (p *Provider) convertCompletionRequest(model string, messages []provider.Message, options *provider.CompleteOptions) (*openai.ChatCompletionRequest, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
 	}
 
 	req := &openai.ChatCompletionRequest{
 		Model: model,
+	}
+
+	if options.Temperature != nil {
+		req.Temperature = *options.Temperature
+	}
+
+	if options.TopP != nil {
+		req.TopP = *options.TopP
 	}
 
 	for _, m := range messages {
