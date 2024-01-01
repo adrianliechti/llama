@@ -12,13 +12,14 @@ type PromptMistral struct {
 func (t *PromptMistral) Stop() []string {
 	return []string{
 		"[INST]",
+		"[/INST]",
 	}
 }
 
 func (t *PromptMistral) Prompt(system string, messages []provider.Message) (string, error) {
-	messages = flattenMessages(messages)
+	messages = llamaMessageFlattening(messages)
 
-	if err := verifyMessageOrder(messages); err != nil {
+	if err := llamaMessageOrder(messages); err != nil {
 		return "", err
 	}
 

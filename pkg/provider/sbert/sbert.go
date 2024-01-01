@@ -50,7 +50,7 @@ func WithClient(client *http.Client) Option {
 }
 
 func (p *Provider) Embed(ctx context.Context, model string, content string) ([]float32, error) {
-	body := &vectorsRequest{
+	body := &VectorsRequest{
 		Text: strings.TrimSpace(content),
 	}
 
@@ -67,7 +67,7 @@ func (p *Provider) Embed(ctx context.Context, model string, content string) ([]f
 
 	defer resp.Body.Close()
 
-	var result vectorsResponse
+	var result VectorsResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
@@ -78,17 +78,6 @@ func (p *Provider) Embed(ctx context.Context, model string, content string) ([]f
 
 func (*Provider) Complete(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	return nil, errors.ErrUnsupported
-}
-
-//curl localhost:9090/vectors -H 'Content-Type: application/json' -d '{"text": "foo bar"}'
-
-type vectorsRequest struct {
-	Text string `json:"text"`
-}
-
-type vectorsResponse struct {
-	Text   string    `json:"text"`
-	Vector []float32 `json:"vector"`
 }
 
 func jsonReader(v any) io.Reader {

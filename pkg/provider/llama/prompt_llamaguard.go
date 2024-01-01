@@ -12,6 +12,7 @@ type PromptLlamaGuard struct {
 func (t *PromptLlamaGuard) Stop() []string {
 	return []string{
 		"[INST]",
+		"[/INST]",
 	}
 }
 
