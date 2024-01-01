@@ -20,8 +20,6 @@ Retrieval-Augmented Generation (RAG) for use cases like:
 
 - Local Models
   - [LLAMA.CPP](https://github.com/ggerganov/llama.cpp) Server
-
-- Embedding Models
   -  [Sentence BERT](https://www.sbert.net) 
 
 
