@@ -1,7 +1,7 @@
 
-# LLAMA Gateway
+# LLAMA Platform
 
-The LLAMA Gateway provides an unified API to various Large Language Models (LLM) and higher level functionality like 
+The LLAMA Platform provides an unified API to various Large Language Models (LLM) and higher level functionality like 
 Retrieval-Augmented Generation (RAG) for use cases like:
 
 - Enterprise Chat
