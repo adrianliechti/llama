@@ -28,24 +28,33 @@ func (t *PromptMistral) Prompt(system string, messages []provider.Message) (stri
 		messages = messages[1:]
 	}
 
-	var prompt string
+	var prompt strings.Builder
 
 	for i, message := range messages {
 		if message.Role == provider.MessageRoleUser {
-			content := strings.TrimSpace(message.Content)
+			prompt.WriteString("[INST] ")
 
 			if i == 0 && len(system) > 0 {
-				content = system + "\n\n" + content
+				prompt.WriteString(strings.TrimSpace(system))
+				prompt.WriteString("\n\n")
 			}
 
-			prompt += " [INST] " + content + " [/INST]"
+			if i > 0 {
+				prompt.WriteString(" ")
+			}
+
+			prompt.WriteString(strings.TrimSpace(message.Content))
+			prompt.WriteString(" [/INST]")
 		}
 
 		if message.Role == provider.MessageRoleAssistant {
-			content := strings.TrimSpace(message.Content)
-			prompt += " " + content
+			if i > 0 {
+				prompt.WriteString(" ")
+			}
+
+			prompt.WriteString(strings.TrimSpace(message.Content))
 		}
 	}
 
-	return strings.TrimSpace(prompt), nil
+	return prompt.String(), nil
 }
