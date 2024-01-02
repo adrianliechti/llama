@@ -38,6 +38,12 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		TopP:        req.TopP,
 	}
 
+	if req.Format != nil {
+		if req.Format.Type == ResponseFormatJSON {
+			options.Format = provider.CompletionFormatJSON
+		}
+	}
+
 	if req.Stream {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")

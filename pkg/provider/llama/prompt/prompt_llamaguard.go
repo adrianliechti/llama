@@ -1,4 +1,4 @@
-package llama
+package prompt
 
 import (
 	"strings"
@@ -6,17 +6,10 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-type PromptLlamaGuard struct {
+type promptLlamaGuard struct {
 }
 
-func (t *PromptLlamaGuard) Stop() []string {
-	return []string{
-		"[INST]",
-		"[/INST]",
-	}
-}
-
-func (t *PromptLlamaGuard) Prompt(system string, messages []provider.Message) (string, error) {
+func (t *promptLlamaGuard) Prompt(system string, messages []provider.Message) (string, error) {
 	var task = "Task: Check if there is unsafe content in conversations according our safety policy with the below categories."
 
 	var categories = `
@@ -102,4 +95,11 @@ Should
 	prompt.WriteString(" [/INST]")
 
 	return prompt.String(), nil
+}
+
+func (t *promptLlamaGuard) Stop() []string {
+	return []string{
+		"[INST]",
+		"[/INST]",
+	}
 }

@@ -62,10 +62,6 @@ func WithToken(token string) Option {
 }
 
 func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32, error) {
-	// if p.mapper != nil {
-	// 	model = p.mapper.To(model)
-	// }
-
 	req := openai.EmbeddingRequest{
 		Input: content,
 		Model: openai.AdaEmbeddingV2,
@@ -184,6 +180,12 @@ func (p *Provider) convertCompletionRequest(model string, messages []provider.Me
 
 	req := &openai.ChatCompletionRequest{
 		Model: model,
+	}
+
+	if options.Format == provider.CompletionFormatJSON {
+		req.ResponseFormat = &openai.ChatCompletionResponseFormat{
+			Type: openai.ChatCompletionResponseFormatTypeJSONObject,
+		}
 	}
 
 	if options.Temperature != nil {

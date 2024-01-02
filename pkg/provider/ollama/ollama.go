@@ -212,6 +212,10 @@ func (p *Provider) convertChatRequest(model string, messages []provider.Message,
 		Stream: &stream,
 	}
 
+	if options.Format == provider.CompletionFormatJSON {
+		req.Format = "json"
+	}
+
 	for _, m := range messages {
 		message := Message{
 			Role:    MessageRole(m.Role),

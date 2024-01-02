@@ -13,6 +13,8 @@ import (
 	"unicode"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/provider/llama/grammar"
+	"github.com/adrianliechti/llama/pkg/provider/llama/prompt"
 )
 
 var (
@@ -25,14 +27,18 @@ type Provider struct {
 	client *http.Client
 
 	system   string
-	template PromptTemplate
+	template prompt.Template
 }
 
 type Option func(*Provider)
 
+type Template = prompt.Template
+
 var (
-	headerData = []byte("data: ")
-	//errorPrefix = []byte(`data: {"error":`)
+	TemplateChatML     = prompt.ChatML
+	TemplateLlama      = prompt.Llama
+	TemplateLlamaGuard = prompt.LlamaGuard
+	TemplateMistral    = prompt.Mistral
 )
 
 func New(url string, options ...Option) (*Provider, error) {
@@ -42,7 +48,7 @@ func New(url string, options ...Option) (*Provider, error) {
 		client: http.DefaultClient,
 
 		system:   "",
-		template: &PromptLlama{},
+		template: prompt.Llama,
 	}
 
 	for _, option := range options {
@@ -68,7 +74,7 @@ func WithSystem(system string) Option {
 	}
 }
 
-func WithPromptTemplate(template PromptTemplate) Option {
+func WithTemplate(template Template) Option {
 	return func(p *Provider) {
 		p.template = template
 	}
@@ -188,7 +194,7 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 			// if bytes.HasPrefix(data, errorPrefix) {
 			// }
 
-			data = bytes.TrimPrefix(data, headerData)
+			data = bytes.TrimPrefix(data, []byte("data: "))
 
 			if len(data) == 0 {
 				continue
@@ -246,14 +252,19 @@ func (p *Provider) convertCompletionRequest(messages []provider.Message, options
 	}
 
 	req := &CompletionRequest{
-		Stream: options.Stream != nil,
-
 		Prompt: prompt,
-		Stop:   []string{"[INST]"},
+
+		Stream: options.Stream != nil,
 
 		Temperature: options.Temperature,
 		TopP:        options.TopP,
 		MinP:        options.MinP,
+
+		Stop: p.template.Stop(),
+	}
+
+	if options.Format == provider.CompletionFormatJSON {
+		req.Grammar = grammar.JSON
 	}
 
 	return req, nil

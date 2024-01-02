@@ -1,4 +1,4 @@
-package llama
+package prompt
 
 import (
 	"errors"
@@ -8,19 +8,10 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-type PromptLlama struct {
+type promptLlama struct {
 }
 
-func (t *PromptLlama) Stop() []string {
-	return []string{
-		"[INST]",
-		"[/INST]",
-		"<<SYS>>",
-		"<</SYS>>",
-	}
-}
-
-func (t *PromptLlama) Prompt(system string, messages []provider.Message) (string, error) {
+func (t *promptLlama) Prompt(system string, messages []provider.Message) (string, error) {
 	messages = llamaMessageFlattening(messages)
 
 	if err := llamaMessageOrder(messages); err != nil {
@@ -62,6 +53,15 @@ func (t *PromptLlama) Prompt(system string, messages []provider.Message) (string
 	}
 
 	return prompt.String(), nil
+}
+
+func (t *promptLlama) Stop() []string {
+	return []string{
+		"[INST]",
+		"[/INST]",
+		"<<SYS>>",
+		"<</SYS>>",
+	}
 }
 
 func llamaMessageFlattening(messages []provider.Message) []provider.Message {

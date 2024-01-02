@@ -1,4 +1,4 @@
-package llama
+package prompt
 
 import (
 	"strings"
@@ -6,17 +6,10 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-type PromptMistral struct {
+type promptMistral struct {
 }
 
-func (t *PromptMistral) Stop() []string {
-	return []string{
-		"[INST]",
-		"[/INST]",
-	}
-}
-
-func (t *PromptMistral) Prompt(system string, messages []provider.Message) (string, error) {
+func (t *promptMistral) Prompt(system string, messages []provider.Message) (string, error) {
 	messages = llamaMessageFlattening(messages)
 
 	if err := llamaMessageOrder(messages); err != nil {
@@ -57,4 +50,11 @@ func (t *PromptMistral) Prompt(system string, messages []provider.Message) (stri
 	}
 
 	return prompt.String(), nil
+}
+
+func (t *promptMistral) Stop() []string {
+	return []string{
+		"[INST]",
+		"[/INST]",
+	}
 }

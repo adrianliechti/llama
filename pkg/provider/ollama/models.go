@@ -23,9 +23,12 @@ type Message struct {
 }
 
 type ChatRequest struct {
-	Model    string    `json:"model"`
+	Model string `json:"model"`
+
+	Stream *bool  `json:"stream,omitempty"`
+	Format string `json:"format,omitempty"`
+
 	Messages []Message `json:"messages"`
-	Stream   *bool     `json:"stream,omitempty"`
 }
 
 type ChatResponse struct {

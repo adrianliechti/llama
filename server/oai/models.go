@@ -41,6 +41,13 @@ var (
 	MessageRoleAssistant MessageRole = "assistant"
 )
 
+type ResponseFormat string
+
+var (
+	ResponseFormatText ResponseFormat = "text"
+	ResponseFormatJSON ResponseFormat = "json_object"
+)
+
 type CompletionReason string
 
 var (
@@ -53,10 +60,16 @@ type ChatCompletionRequest struct {
 
 	Stream bool `json:"stream,omitempty"`
 
+	Format *ChatCompletionResponseFormat `json:"response_format,omitempty"`
+
 	Temperature *float32 `json:"temperature,omitempty"`
 	TopP        *float32 `json:"top_p,omitempty"`
 
 	Messages []ChatCompletionMessage `json:"messages"`
+}
+
+type ChatCompletionResponseFormat struct {
+	Type ResponseFormat `json:"type"`
 }
 
 type ChatCompletion struct {

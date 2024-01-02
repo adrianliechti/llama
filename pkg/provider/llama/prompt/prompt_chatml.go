@@ -1,4 +1,4 @@
-package llama
+package prompt
 
 import (
 	"strings"
@@ -6,19 +6,10 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-type PromptChatML struct {
+type promptChatML struct {
 }
 
-func (t *PromptChatML) Stop() []string {
-	return []string{
-		"<|im_start",
-		"<|im_end",
-		"|im_start",
-		"|im_end",
-	}
-}
-
-func (t *PromptChatML) Prompt(system string, messages []provider.Message) (string, error) {
+func (t *promptChatML) Prompt(system string, messages []provider.Message) (string, error) {
 	if err := llamaMessageOrder(messages); err != nil {
 		return "", err
 	}
@@ -58,4 +49,13 @@ func (t *PromptChatML) Prompt(system string, messages []provider.Message) (strin
 	prompt.WriteString("<|im_start|>assistant")
 
 	return prompt.String(), nil
+}
+
+func (t *promptChatML) Stop() []string {
+	return []string{
+		"<|im_start",
+		"<|im_end",
+		"|im_start",
+		"|im_end",
+	}
 }

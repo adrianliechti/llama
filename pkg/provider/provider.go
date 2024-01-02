@@ -30,6 +30,12 @@ type Message struct {
 	Content string
 }
 
+type CompletionFormat string
+
+const (
+	CompletionFormatJSON CompletionFormat = "json"
+)
+
 type CompletionReason string
 
 const (
@@ -44,6 +50,8 @@ type Completion struct {
 
 type CompleteOptions struct {
 	Stream chan<- Completion
+
+	Format CompletionFormat
 
 	Temperature *float32
 	TopP        *float32

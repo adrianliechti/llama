@@ -88,16 +88,16 @@ func llamaProvider(cfg providerConfig) (provider.Provider, error) {
 
 	switch strings.ToLower(template) {
 	case "chatml":
-		options = append(options, llama.WithPromptTemplate(&llama.PromptChatML{}))
+		options = append(options, llama.WithTemplate(llama.TemplateChatML))
 
 	case "llama":
-		options = append(options, llama.WithPromptTemplate(&llama.PromptLlama{}))
+		options = append(options, llama.WithTemplate(llama.TemplateLlama))
 
 	case "llamaguard":
-		options = append(options, llama.WithPromptTemplate(&llama.PromptLlamaGuard{}))
+		options = append(options, llama.WithTemplate(llama.TemplateLlamaGuard))
 
 	case "mistral":
-		options = append(options, llama.WithPromptTemplate(&llama.PromptMistral{}))
+		options = append(options, llama.WithTemplate(llama.TemplateMistral))
 
 	default:
 		return nil, errors.New("invalid prompt template: " + template)
