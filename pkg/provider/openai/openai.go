@@ -112,7 +112,7 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 			Reason: toCompletionResult(choice.FinishReason),
 
 			Message: provider.Message{
-				Role:    toMessageRole(choice.Message.Role),
+				Role:    provider.MessageRoleAssistant,
 				Content: choice.Message.Content,
 			},
 
@@ -129,7 +129,6 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 
 		var resultID string
 		var resultText strings.Builder
-		var resultRole provider.MessageRole
 		var resultReason provider.CompletionReason
 		var resultFunctions []provider.FunctionCall
 
@@ -149,7 +148,6 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 			resultText.WriteString(choice.Delta.Content)
 
 			resultID = completion.ID
-			resultRole = toMessageRole(choice.Delta.Role)
 			resultReason = toCompletionResult(choice.FinishReason)
 			resultFunctions = toFunctionCalls(choice.Delta.ToolCalls)
 
@@ -159,7 +157,6 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 				Reason: resultReason,
 
 				Message: provider.Message{
-					Role:    resultRole,
 					Content: choice.Delta.Content,
 				},
 
@@ -177,7 +174,7 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 			Reason: resultReason,
 
 			Message: provider.Message{
-				Role:    resultRole,
+				Role:    provider.MessageRoleAssistant,
 				Content: resultText.String(),
 			},
 
@@ -271,28 +268,6 @@ func convertMessageRole(r provider.MessageRole) string {
 
 	default:
 		return ""
-	}
-}
-
-func toMessageRole(val string) provider.MessageRole {
-	switch val {
-	case openai.ChatMessageRoleSystem:
-		return provider.MessageRoleSystem
-
-	case openai.ChatMessageRoleUser:
-		return provider.MessageRoleUser
-
-	case openai.ChatMessageRoleAssistant:
-		return provider.MessageRoleAssistant
-
-	// case openai.ChatMessageRoleFunction:
-	// 	return provider.MessageRoleFunction
-
-	// case openai.ChatMessageRoleTool:
-	// 	return provider.MessageRoleTool
-
-	default:
-		return provider.MessageRoleAssistant
 	}
 }
 
