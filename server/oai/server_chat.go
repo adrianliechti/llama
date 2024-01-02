@@ -30,7 +30,6 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 	id := uuid.New().String()
 
-	//model := req.Model
 	messages := toMessages(req.Messages)
 
 	options := &provider.CompleteOptions{
@@ -76,7 +75,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 							Content: completion.Content,
 						},
 
-						FinishReason: fromCompletionReason(completion.Reason),
+						FinishReason: oaiCompletionReason(completion.Reason),
 					},
 				},
 			}
@@ -117,15 +116,73 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 			Choices: []ChatCompletionChoice{
 				{
 					Message: &ChatCompletionMessage{
-						Role:    fromMessageRole(completion.Role),
+						Role:    oaiMessageRole(completion.Role),
 						Content: completion.Content,
 					},
 
-					FinishReason: fromCompletionReason(completion.Reason),
+					FinishReason: oaiCompletionReason(completion.Reason),
 				},
 			},
 		}
 
 		writeJson(w, result)
+	}
+}
+
+func toMessages(s []ChatCompletionMessage) []provider.Message {
+	result := make([]provider.Message, 0)
+
+	for _, m := range s {
+		result = append(result, provider.Message{
+			Role:    toMessageRole(m.Role),
+			Content: m.Content,
+		})
+	}
+
+	return result
+}
+
+func toMessageRole(r MessageRole) provider.MessageRole {
+	switch r {
+	case MessageRoleSystem:
+		return provider.MessageRoleSystem
+
+	case MessageRoleUser:
+		return provider.MessageRoleUser
+
+	case MessageRoleAssistant:
+		return provider.MessageRoleAssistant
+
+	default:
+		return ""
+	}
+}
+
+func oaiMessageRole(r provider.MessageRole) MessageRole {
+	switch r {
+	case provider.MessageRoleSystem:
+		return MessageRoleSystem
+
+	case provider.MessageRoleUser:
+		return MessageRoleUser
+
+	case provider.MessageRoleAssistant:
+		return MessageRoleAssistant
+
+	default:
+		return ""
+	}
+}
+
+func oaiCompletionReason(val provider.CompletionReason) *CompletionReason {
+	switch val {
+	case provider.CompletionReasonStop:
+		return &CompletionReasonStop
+
+	case provider.CompletionReasonLength:
+		return &CompletionReasonLength
+
+	default:
+		return nil
 	}
 }

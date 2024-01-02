@@ -44,8 +44,9 @@ const (
 )
 
 type Completion struct {
-	*Message
 	Reason CompletionReason
+
+	Message
 }
 
 type CompleteOptions struct {

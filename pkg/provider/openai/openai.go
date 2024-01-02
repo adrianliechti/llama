@@ -101,12 +101,12 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		choice := completion.Choices[0]
 
 		result := provider.Completion{
-			Message: &provider.Message{
+			Reason: toCompletionResult(choice.FinishReason),
+
+			Message: provider.Message{
 				Role:    toMessageRole(choice.Message.Role),
 				Content: choice.Message.Content,
 			},
-
-			Reason: toCompletionResult(choice.FinishReason),
 		}
 
 		return &result, nil
@@ -143,12 +143,12 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 			resultReason = toCompletionResult(choice.FinishReason)
 
 			options.Stream <- provider.Completion{
-				Message: &provider.Message{
+				Reason: resultReason,
+
+				Message: provider.Message{
 					Role:    resultRole,
 					Content: choice.Delta.Content,
 				},
-
-				Reason: resultReason,
 			}
 
 			if choice.FinishReason != "" {
@@ -161,12 +161,12 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		}
 
 		result := provider.Completion{
-			Message: &provider.Message{
+			Reason: resultReason,
+
+			Message: provider.Message{
 				Role:    resultRole,
 				Content: resultText.String(),
 			},
-
-			Reason: resultReason,
 		}
 
 		return &result, nil

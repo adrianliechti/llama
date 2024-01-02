@@ -144,12 +144,12 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		var resultReason = toCompletionReason(completion)
 
 		result := provider.Completion{
-			Message: &provider.Message{
+			Reason: resultReason,
+
+			Message: provider.Message{
 				Role:    resultRole,
 				Content: content,
 			},
-
-			Reason: resultReason,
 		}
 
 		return &result, nil
@@ -218,22 +218,22 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 			resultReason = toCompletionReason(completion)
 
 			options.Stream <- provider.Completion{
-				Message: &provider.Message{
+				Reason: resultReason,
+
+				Message: provider.Message{
 					Role:    resultRole,
 					Content: content,
 				},
-
-				Reason: resultReason,
 			}
 		}
 
 		result := provider.Completion{
-			Message: &provider.Message{
+			Reason: resultReason,
+
+			Message: provider.Message{
 				Role:    resultRole,
 				Content: resultText.String(),
 			},
-
-			Reason: resultReason,
 		}
 
 		return &result, nil
