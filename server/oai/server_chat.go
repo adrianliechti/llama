@@ -72,9 +72,9 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 						Delta: &ChatCompletionMessage{
 							//Role:    fromMessageRole(completion.Role),
-							Content: completion.Content,
+							Content: completion.Message.Content,
 
-							ToolCallID: completion.FunctionID,
+							ToolCallID: completion.Message.FunctionID,
 							ToolCalls:  oaiToolCalls(completion.Functions),
 						},
 					},
@@ -119,10 +119,10 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 					FinishReason: oaiCompletionReason(completion.Reason),
 
 					Message: &ChatCompletionMessage{
-						Role:    oaiMessageRole(completion.Role),
-						Content: completion.Content,
+						Role:    oaiMessageRole(completion.Message.Role),
+						Content: completion.Message.Content,
 
-						ToolCallID: completion.FunctionID,
+						ToolCallID: completion.Message.FunctionID,
 						ToolCalls:  oaiToolCalls(completion.Functions),
 					},
 				},
