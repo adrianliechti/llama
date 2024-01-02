@@ -30,7 +30,7 @@ func newTestContext() *TestContext {
 		Context: context.Background(),
 		Client:  client,
 
-		Model:     openai.GPT4,
+		Model:     openai.GPT3Dot5Turbo,
 		Embedding: openai.AdaEmbeddingV2,
 	}
 }
