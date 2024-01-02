@@ -71,8 +71,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 				Choices: []ChatCompletionChoice{
 					{
 						Delta: &ChatCompletionMessage{
-							//Role:    fromMessageRole(completion.Role),
-							Content: completion.Content,
+							Content: completion.Message.Content,
 						},
 
 						FinishReason: oaiCompletionReason(completion.Reason),
@@ -116,8 +115,8 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 			Choices: []ChatCompletionChoice{
 				{
 					Message: &ChatCompletionMessage{
-						Role:    oaiMessageRole(completion.Role),
-						Content: completion.Content,
+						Role:    oaiMessageRole(completion.Message.Role),
+						Content: completion.Message.Content,
 					},
 
 					FinishReason: oaiCompletionReason(completion.Reason),

@@ -46,7 +46,7 @@ const (
 type Completion struct {
 	Reason CompletionReason
 
-	Message
+	Message Message
 }
 
 type CompleteOptions struct {

@@ -63,6 +63,10 @@ func TestEmbedding(t *testing.T) {
 	assert.NotEmpty(t, resp.Model)
 	assert.Len(t, resp.Data, 1)
 
+	if len(resp.Data) == 0 {
+		t.FailNow()
+	}
+
 	embedding := resp.Data[0]
 	assert.Equal(t, embedding.Object, "embedding")
 	assert.Equal(t, 0, embedding.Index)
@@ -101,6 +105,10 @@ func TestChatCompletion(t *testing.T) {
 	assert.NotEmpty(t, resp.Model)
 	assert.NotEmpty(t, resp.Created)
 	assert.Len(t, resp.Choices, 1)
+
+	if len(resp.Choices) == 0 {
+		t.FailNow()
+	}
 
 	choice := resp.Choices[0]
 	assert.Equal(t, 0, choice.Index)
@@ -161,6 +169,10 @@ func TestChatCompletionStream(t *testing.T) {
 		assert.NotEmpty(t, chunk.Created)
 		assert.NotEmpty(t, chunk.Model)
 		assert.Len(t, chunk.Choices, 1)
+
+		if len(chunk.Choices) == 0 {
+			t.FailNow()
+		}
 
 		choice := chunk.Choices[0]
 		assert.Equal(t, 0, choice.Index)
