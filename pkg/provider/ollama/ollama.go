@@ -13,6 +13,8 @@ import (
 	"unicode"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -84,6 +86,8 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		options = &provider.CompleteOptions{}
 	}
 
+	id := uuid.NewString()
+
 	url, _ := url.JoinPath(p.url, "/api/chat")
 	body, err := p.convertChatRequest(model, messages, options)
 
@@ -111,6 +115,8 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		}
 
 		result := provider.Completion{
+			ID: id,
+
 			Reason: provider.CompletionReasonStop,
 
 			Message: provider.Message{
@@ -178,6 +184,8 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 			resultReason = toCompletionReason(chat)
 
 			options.Stream <- provider.Completion{
+				ID: id,
+
 				Reason: resultReason,
 
 				Message: provider.Message{

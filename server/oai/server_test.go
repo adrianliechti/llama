@@ -2,11 +2,14 @@ package oai
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 
-	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/sashabaranov/go-openai"
+	"github.com/sashabaranov/go-openai/jsonschema"
 )
 
 type TestContext struct {
@@ -27,7 +30,7 @@ func newTestContext() *TestContext {
 		Context: context.Background(),
 		Client:  client,
 
-		Model:     openai.GPT3Dot5Turbo,
+		Model:     openai.GPT4,
 		Embedding: openai.AdaEmbeddingV2,
 	}
 }
@@ -175,4 +178,111 @@ func TestChatCompletionStream(t *testing.T) {
 	}
 
 	assert.NotEmpty(t, content.String())
+}
+
+func TestChatCompletionWithTool(t *testing.T) {
+	c := newTestContext()
+
+	fnGetCurrentWeather := openai.Tool{
+		Type: openai.ToolTypeFunction,
+
+		Function: openai.FunctionDefinition{
+			Description: "Get the current weather in a given location",
+
+			Name: "get_current_weather",
+			Parameters: jsonschema.Definition{
+				Type: jsonschema.Object,
+
+				Properties: map[string]jsonschema.Definition{
+					"location": {
+						Type:        jsonschema.String,
+						Description: "The city and state, e.g. San Francisco, CA",
+					},
+
+					"unit": {
+						Type: jsonschema.String,
+						Enum: []string{"celsius", "fahrenheit"},
+					},
+				},
+
+				Required: []string{"location"},
+			},
+		},
+	}
+
+	dialoge := []openai.ChatCompletionMessage{
+		{
+			Role:    openai.ChatMessageRoleUser,
+			Content: "What is the weather in Boston today?",
+		},
+	}
+
+	resp, err := c.Client.CreateChatCompletion(c.Context, openai.ChatCompletionRequest{
+		Model: c.Model,
+
+		Tools: []openai.Tool{
+			fnGetCurrentWeather,
+		},
+
+		Messages: dialoge,
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, "chat.completion", resp.Object)
+	assert.NotEmpty(t, resp.ID)
+	assert.NotEmpty(t, resp.Model)
+	assert.NotEmpty(t, resp.Created)
+	assert.Len(t, resp.Choices, 1)
+
+	choice := resp.Choices[0]
+	assert.Equal(t, 0, choice.Index)
+	assert.Equal(t, openai.FinishReasonToolCalls, choice.FinishReason)
+	assert.Len(t, choice.Message.ToolCalls, 1)
+
+	dialoge = append(dialoge, choice.Message)
+
+	call := choice.Message.ToolCalls[0]
+	assert.NotEmpty(t, call.ID)
+
+	type argsGetCurrentWeather struct {
+		Location string `json:"location"`
+		Unit     string `json:"unit"`
+	}
+
+	var args argsGetCurrentWeather
+	assert.NoError(t, json.Unmarshal([]byte(call.Function.Arguments), &args))
+
+	assert.NotEmpty(t, args.Location)
+
+	dialoge = append(dialoge, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleTool,
+		Content: "Sunny and 80 degrees.",
+
+		// Name:       msg.ToolCalls[0].Function.Name,
+		ToolCallID: call.ID,
+	})
+
+	resp, err = c.Client.CreateChatCompletion(c.Context, openai.ChatCompletionRequest{
+		Model: c.Model,
+
+		Tools: []openai.Tool{
+			fnGetCurrentWeather,
+		},
+
+		Messages: dialoge,
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, "chat.completion", resp.Object)
+	assert.NotEmpty(t, resp.ID)
+	assert.NotEmpty(t, resp.Model)
+	assert.NotEmpty(t, resp.Created)
+	assert.Len(t, resp.Choices, 1)
+
+	choice = resp.Choices[0]
+	assert.Equal(t, 0, choice.Index)
+	assert.Equal(t, openai.FinishReasonStop, choice.FinishReason)
+
+	assert.Equal(t, openai.ChatMessageRoleAssistant, choice.Message.Role)
+	assert.NotEmpty(t, choice.Message.Content)
 }

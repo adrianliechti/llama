@@ -23,11 +23,15 @@ const (
 	MessageRoleSystem    MessageRole = "system"
 	MessageRoleUser      MessageRole = "user"
 	MessageRoleAssistant MessageRole = "assistant"
+	MessageRoleFunction  MessageRole = "function"
 )
 
 type Message struct {
 	Role    MessageRole
 	Content string
+
+	FunctionID    string
+	FunctionCalls []FunctionCall
 }
 
 type CompletionFormat string
@@ -36,23 +40,42 @@ const (
 	CompletionFormatJSON CompletionFormat = "json"
 )
 
+type Function struct {
+	Name       string
+	Parameters any
+
+	Description string
+}
+
+type FunctionCall struct {
+	ID string
+
+	Name      string
+	Arguments string
+}
+
 type CompletionReason string
 
 const (
-	CompletionReasonStop   CompletionReason = "stop"
-	CompletionReasonLength CompletionReason = "length"
+	CompletionReasonStop     CompletionReason = "stop"
+	CompletionReasonLength   CompletionReason = "length"
+	CompletionReasonFunction CompletionReason = "function"
 )
 
 type Completion struct {
+	ID string
+
 	Reason CompletionReason
 
 	Message
+	Functions []FunctionCall
 }
 
 type CompleteOptions struct {
 	Stream chan<- Completion
 
-	Format CompletionFormat
+	Format    CompletionFormat
+	Functions []Function
 
 	Temperature *float32
 	TopP        *float32
