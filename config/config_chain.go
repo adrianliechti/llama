@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/chain"
+	"github.com/adrianliechti/llama/pkg/chain/functioncalling"
 	"github.com/adrianliechti/llama/pkg/chain/rag"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
@@ -68,7 +69,11 @@ func (c *Config) registerChains(f *configFile) error {
 func createChain(cfg chainConfig, embedder provider.Embedder, completer provider.Completer, index index.Provider) (chain.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
 	case "rag":
+
 		return ragChain(cfg, embedder, completer, index)
+	case "functioncalling":
+
+		return functioncallingChain(cfg, completer)
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
 	}
@@ -98,4 +103,14 @@ func ragChain(cfg chainConfig, embedder provider.Embedder, completer provider.Co
 	}
 
 	return rag.New(options...)
+}
+
+func functioncallingChain(cfg chainConfig, completer provider.Completer) (chain.Provider, error) {
+	var options []functioncalling.Option
+
+	if completer != nil {
+		options = append(options, functioncalling.WithCompleter(completer))
+	}
+
+	return functioncalling.New(options...)
 }

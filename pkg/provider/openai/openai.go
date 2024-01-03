@@ -215,6 +215,10 @@ func (p *Provider) convertCompletionRequest(model string, messages []provider.Me
 		req.Tools = append(req.Tools, tool)
 	}
 
+	if options.Stop != nil {
+		req.Stop = options.Stop
+	}
+
 	if options.Temperature != nil {
 		req.Temperature = *options.Temperature
 	}

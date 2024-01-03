@@ -40,8 +40,10 @@ func createIndex(cfg indexConfig, embedder index.Embedder) (index.Provider, erro
 	switch strings.ToLower(cfg.Type) {
 	case "chroma":
 		return chromaIndex(cfg, embedder)
+
 	case "memory":
 		return memoryIndex(cfg, embedder)
+
 	case "weaviate":
 		return weaviateIndex(cfg, embedder)
 
