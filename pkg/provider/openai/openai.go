@@ -228,7 +228,7 @@ func (p *Provider) convertCompletionRequest(model string, messages []provider.Me
 			Role:    convertMessageRole(m.Role),
 			Content: m.Content,
 
-			ToolCallID: m.FunctionID,
+			ToolCallID: m.Function,
 		}
 
 		for _, f := range m.FunctionCalls {
