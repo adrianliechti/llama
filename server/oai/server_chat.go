@@ -74,7 +74,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 							//Role:    fromMessageRole(completion.Role),
 							Content: completion.Message.Content,
 
-							ToolCalls:  oaiToolCalls(completion.Functions),
+							ToolCalls:  oaiToolCalls(completion.Message.FunctionCalls),
 							ToolCallID: completion.Message.Function,
 						},
 					},
