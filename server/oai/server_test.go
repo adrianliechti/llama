@@ -206,7 +206,7 @@ func TestChatCompletionWithTool(t *testing.T) {
 				Type: jsonschema.Object,
 
 				Properties: map[string]jsonschema.Definition{
-					"location": {
+					"query": {
 						Type:        jsonschema.String,
 						Description: "The city and state, e.g. San Francisco, CA",
 					},
@@ -265,14 +265,14 @@ func TestChatCompletionWithTool(t *testing.T) {
 	assert.NotEmpty(t, call.ID)
 
 	type argsGetCurrentWeather struct {
-		Location string `json:"location"`
-		Unit     string `json:"unit"`
+		Query string `json:"query"`
+		Unit  string `json:"unit"`
 	}
 
 	var args argsGetCurrentWeather
 	assert.NoError(t, json.Unmarshal([]byte(call.Function.Arguments), &args))
 
-	assert.NotEmpty(t, args.Location)
+	assert.NotEmpty(t, args.Query)
 
 	dialoge = append(dialoge, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleTool,

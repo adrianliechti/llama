@@ -2,7 +2,6 @@ package functioncalling
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"regexp"
 	"strings"
@@ -51,100 +50,119 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	}
 
 	options.Stop = []string{
+		"\n###",
 		"\nObservation:",
 	}
 
-	// if messages[0].Role == provider.MessageRoleSystem {
-	// 	messages = messages[1:]
-	// }
+	var input strings.Builder
 
-	// system := provider.Message{
-	// 	Role:    provider.MessageRoleSystem,
-	// 	Content: promptSystem,
-	// }
+	input.WriteString(promptSystem)
+	input.WriteString("\n")
+	input.WriteString("\n")
 
-	// lala = append(lala, system)
+	input.WriteString("### Input:\n")
+	input.WriteString(strings.TrimSpace(messages[0].Content))
+	input.WriteString("\n\n")
 
-	var content strings.Builder
-
-	content.WriteString(promptSystem)
-	content.WriteString("\n")
-	content.WriteString("\n")
-
-	content.WriteString("### Input:\n")
-	content.WriteString(strings.TrimSpace(messages[0].Content))
-	content.WriteString("\n\n")
-
-	content.WriteString("### Output:\n")
+	input.WriteString("### Output:\n")
 
 	for _, m := range messages {
 		if m.Role == provider.MessageRoleAssistant {
-			text := strings.TrimSpace(m.Content)
-			content.WriteString(text)
-			content.WriteString("\n")
+			input.WriteString(strings.TrimSpace(m.Content))
+			input.WriteString("\n")
 		}
 
 		if m.Role == provider.MessageRoleFunction {
-			text := strings.TrimSpace(m.Content)
-			content.WriteString("Observation: ")
-			content.WriteString(text)
-			content.WriteString("\n")
+			input.WriteString("Observation: ")
+			input.WriteString(strings.TrimSpace(m.Content))
+			input.WriteString("\n")
 		}
 	}
 
-	println(content.String())
+	println(input.String())
 
-	messsage := provider.Message{
-		Role:    provider.MessageRoleUser,
-		Content: content.String(),
+	inputMesssages := []provider.Message{
+		{
+			Role:    provider.MessageRoleUser,
+			Content: input.String(),
+		},
 	}
 
-	// messages = append([]provider.Message{system}, messages...)
-
-	var msgs []provider.Message
-	msgs = append(msgs, messsage)
-
-	completion, err := p.completer.Complete(ctx, msgs, options)
+	completion, err := p.completer.Complete(ctx, inputMesssages, options)
 
 	if err != nil {
 		return nil, err
 	}
 
-	out := completion.Message
+	content := strings.TrimSpace(completion.Message.Content)
+	context := input.String() + content
 
-	if fn, err := extractAction(out.Content); err == nil {
-		out.FunctionCalls = append(out.FunctionCalls, *fn)
-		completion.Reason = provider.CompletionReasonFunction
+	println(context)
+
+	if result, err := extractAnswer(content); err == nil {
+		return &provider.Completion{
+			ID:     completion.ID,
+			Reason: provider.CompletionReasonStop,
+
+			Message: provider.Message{
+				Role:    provider.MessageRoleAssistant,
+				Content: result,
+			},
+		}, nil
 	}
 
-	completion.Message = out
+	if fn, err := extractAction(content); err == nil {
+		return &provider.Completion{
+			ID:     completion.ID,
+			Reason: provider.CompletionReasonFunction,
 
-	dumpMessages([]provider.Message{out})
+			Message: provider.Message{
+				Role:    provider.MessageRoleFunction,
+				Content: context,
 
-	return completion, err
-}
-
-func dumpMessages(msgs []provider.Message) {
-	for _, m := range msgs {
-		data, _ := json.MarshalIndent(m, "", "  ")
-		println(string(data))
+				FunctionCalls: []provider.FunctionCall{*fn},
+			},
+		}, nil
 	}
+
+	return nil, errors.New("no answer found")
 }
 
 func extractAction(s string) (*provider.FunctionCall, error) {
-	re := regexp.MustCompile(`Action: (.*)\s+Action Input: (.*)$`)
-	matches := re.FindStringSubmatch(s)
+	re := regexp.MustCompile(`Action: (.*)\s+Action Input: (.*)`)
+	matches := re.FindAllStringSubmatch(s, -1)
 
-	if len(matches) != 3 {
-		return nil, errors.New("invalid action")
+	if len(matches) > 0 {
+		match := matches[len(matches)-1]
+
+		if len(match) == 3 {
+			args := "{\"query\": \"" + match[2] + "\"}"
+
+			return &provider.FunctionCall{
+				ID: uuid.NewString(),
+
+				Name:      match[1],
+				Arguments: args,
+			}, nil
+		}
 	}
 
-	return &provider.FunctionCall{
-		ID: uuid.NewString(),
+	return nil, errors.New("no action found")
+}
 
-		Name:      matches[1],
-		Arguments: matches[2],
-	}, nil
+func extractAnswer(s string) (string, error) {
+	re := regexp.MustCompile(`Final Answer: (.*)`)
+	matches := re.FindAllStringSubmatch(s, -1)
+
+	if len(matches) > 0 {
+		match := matches[len(matches)-1]
+
+		if len(match) == 2 {
+			return match[0], nil
+		}
+	}
+
+	return "", errors.New("no answer found")
 }
 
 var promptSystem = `Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
