@@ -224,6 +224,18 @@ func TestChatCompletionWithTool(t *testing.T) {
 
 	dialoge := []openai.ChatCompletionMessage{
 		{
+			Role:    openai.ChatMessageRoleSystem,
+			Content: "You are a helpful assistant.",
+		},
+		{
+			Role:    openai.ChatMessageRoleUser,
+			Content: "Who won the world series in 2020?",
+		},
+		{
+			Role:    openai.ChatMessageRoleAssistant,
+			Content: "The Los Angeles Dodgers won the World Series in 2020.",
+		},
+		{
 			Role:    openai.ChatMessageRoleUser,
 			Content: "What is the weather in Boston today?",
 		},
@@ -309,4 +321,9 @@ func TestChatCompletionWithTool(t *testing.T) {
 
 	assert.Equal(t, openai.ChatMessageRoleAssistant, choice.Message.Role)
 	assert.NotEmpty(t, choice.Message.Content)
+
+	dialoge = append(dialoge, choice.Message)
+
+	output, _ := json.MarshalIndent(dialoge, "", "  ")
+	t.Log(string(output))
 }

@@ -1,4 +1,4 @@
-package functioncalling
+package fn
 
 import (
 	"bytes"

@@ -1,13 +1,13 @@
-package functioncalling
+package fn
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"regexp"
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/google/uuid"
 )
 
 var (
@@ -49,18 +49,12 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		return p.completer.Complete(ctx, messages, options)
 	}
 
-	if messages[0].Role != provider.MessageRoleUser {
-		return nil, errors.New("first message must be from user")
-	}
-
 	stream := options.Stream
 
 	options.Stop = promptStop
 	options.Stream = nil
 
-	data := promptData{
-		Input: strings.TrimSpace(messages[0].Content),
-	}
+	data := promptData{}
 
 	for _, f := range options.Functions {
 		data.Functions = append(data.Functions, promptFunction{
@@ -72,12 +66,32 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	var history strings.Builder
 
 	for _, m := range messages {
+		if m.Role == provider.MessageRoleUser {
+			history.WriteString("Question: ")
+			history.WriteString(strings.TrimSpace(m.Content))
+			history.WriteString("\n")
+
+			data.Input = strings.TrimSpace(m.Content)
+		}
+
 		if m.Role == provider.MessageRoleAssistant {
+			if m.Content == "" {
+				continue
+			}
+
+			history.WriteString("Thought: Do I need to use a tool? No")
+			history.WriteString("\n")
+			history.WriteString("Final Answer: ")
 			history.WriteString(strings.TrimSpace(m.Content))
 			history.WriteString("\n")
 		}
 
 		if m.Role == provider.MessageRoleFunction {
+			if data, err := base64.RawStdEncoding.DecodeString(m.Function); err == nil {
+				history.WriteString(strings.TrimSpace(string(data)))
+				history.WriteString("\n")
+			}
+
 			history.WriteString("Observation: ")
 			history.WriteString(strings.TrimSpace(m.Content))
 			history.WriteString("\n")
@@ -87,8 +101,6 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	data.History = history.String()
 
 	prompt := executePromptTemplate(data)
-
-	println(prompt)
 
 	inputMesssages := []provider.Message{
 		{
@@ -104,48 +116,48 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	}
 
 	content := strings.TrimSpace(completion.Message.Content)
-	context := prompt + content
 
-	println(context)
+	println(prompt + content)
 
-	if result, err := extractAnswer(content); err == nil {
-		c := provider.Completion{
+	if answer, err := extractAnswer(content); err == nil {
+		result := provider.Completion{
 			ID:     completion.ID,
 			Reason: provider.CompletionReasonStop,
 
 			Message: provider.Message{
 				Role:    provider.MessageRoleAssistant,
-				Content: result,
+				Content: answer,
 			},
 		}
 
 		if stream != nil {
-			stream <- c
+			stream <- result
 			close(stream)
 		}
 
-		return &c, nil
+		return &result, nil
 	}
 
 	if fn, err := extractAction(content); err == nil {
-		c := provider.Completion{
+		fn.ID = base64.RawStdEncoding.EncodeToString([]byte(content))
+
+		result := provider.Completion{
 			ID:     completion.ID,
 			Reason: provider.CompletionReasonFunction,
 
 			Message: provider.Message{
-				Role:    provider.MessageRoleFunction,
-				Content: context,
+				Role: provider.MessageRoleAssistant,
 
 				FunctionCalls: []provider.FunctionCall{*fn},
 			},
 		}
 
 		if stream != nil {
-			stream <- c
+			stream <- result
 			close(stream)
 		}
 
-		return &c, nil
+		return &result, nil
 	}
 
 	return nil, errors.New("no answer found")
@@ -162,8 +174,6 @@ func extractAction(s string) (*provider.FunctionCall, error) {
 			args := "{\"query\": \"" + match[2] + "\"}"
 
 			return &provider.FunctionCall{
-				ID: uuid.NewString(),
-
 				Name:      match[1],
 				Arguments: args,
 			}, nil
