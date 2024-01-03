@@ -68,12 +68,12 @@ func (c *Config) registerChains(f *configFile) error {
 
 func createChain(cfg chainConfig, embedder provider.Embedder, completer provider.Completer, index index.Provider) (chain.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
-	case "rag":
-
-		return ragChain(cfg, embedder, completer, index)
-	case "functioncalling":
-
+	case "fn":
 		return fnChain(cfg, completer)
+
+	case "rag":
+		return ragChain(cfg, embedder, completer, index)
+
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
 	}
