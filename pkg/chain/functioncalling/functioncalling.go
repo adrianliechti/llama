@@ -45,46 +45,55 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		options = new(provider.CompleteOptions)
 	}
 
-	if len(options.Functions) > 0 {
-		println("change prompt: inject functions")
+	if len(options.Functions) == 0 {
+		return p.completer.Complete(ctx, messages, options)
 	}
 
-	options.Stop = []string{
-		"\n###",
-		"\nObservation:",
+	if messages[0].Role != provider.MessageRoleUser {
+		return nil, errors.New("first message must be from user")
 	}
 
-	var input strings.Builder
+	stream := options.Stream
 
-	input.WriteString(promptSystem)
-	input.WriteString("\n")
-	input.WriteString("\n")
+	options.Stop = promptStop
+	options.Stream = nil
 
-	input.WriteString("### Input:\n")
-	input.WriteString(strings.TrimSpace(messages[0].Content))
-	input.WriteString("\n\n")
+	data := promptData{
+		Input: strings.TrimSpace(messages[0].Content),
+	}
 
-	input.WriteString("### Output:\n")
+	for _, f := range options.Functions {
+		data.Functions = append(data.Functions, promptFunction{
+			Name:        f.Name,
+			Description: f.Description,
+		})
+	}
+
+	var history strings.Builder
 
 	for _, m := range messages {
 		if m.Role == provider.MessageRoleAssistant {
-			input.WriteString(strings.TrimSpace(m.Content))
-			input.WriteString("\n")
+			history.WriteString(strings.TrimSpace(m.Content))
+			history.WriteString("\n")
 		}
 
 		if m.Role == provider.MessageRoleFunction {
-			input.WriteString("Observation: ")
-			input.WriteString(strings.TrimSpace(m.Content))
-			input.WriteString("\n")
+			history.WriteString("Observation: ")
+			history.WriteString(strings.TrimSpace(m.Content))
+			history.WriteString("\n")
 		}
 	}
 
-	println(input.String())
+	data.History = history.String()
+
+	prompt := executePromptTemplate(data)
+
+	println(prompt)
 
 	inputMesssages := []provider.Message{
 		{
 			Role:    provider.MessageRoleUser,
-			Content: input.String(),
+			Content: prompt,
 		},
 	}
 
@@ -95,12 +104,12 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	}
 
 	content := strings.TrimSpace(completion.Message.Content)
-	context := input.String() + content
+	context := prompt + content
 
 	println(context)
 
 	if result, err := extractAnswer(content); err == nil {
-		return &provider.Completion{
+		c := provider.Completion{
 			ID:     completion.ID,
 			Reason: provider.CompletionReasonStop,
 
@@ -108,11 +117,18 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 				Role:    provider.MessageRoleAssistant,
 				Content: result,
 			},
-		}, nil
+		}
+
+		if stream != nil {
+			stream <- c
+			close(stream)
+		}
+
+		return &c, nil
 	}
 
 	if fn, err := extractAction(content); err == nil {
-		return &provider.Completion{
+		c := provider.Completion{
 			ID:     completion.ID,
 			Reason: provider.CompletionReasonFunction,
 
@@ -122,7 +138,14 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 
 				FunctionCalls: []provider.FunctionCall{*fn},
 			},
-		}, nil
+		}
+
+		if stream != nil {
+			stream <- c
+			close(stream)
+		}
+
+		return &c, nil
 	}
 
 	return nil, errors.New("no answer found")
@@ -158,44 +181,9 @@ func extractAnswer(s string) (string, error) {
 		match := matches[len(matches)-1]
 
 		if len(match) == 2 {
-			return match[0], nil
+			return match[1], nil
 		}
 	}
 
 	return "", errors.New("no answer found")
 }
-
-var promptSystem = `Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
-
-### Instruction:
-Answer the following questions as best you can. You have access to the following tools:
-
-Google Search: A wrapper around Google Search. Useful for when you need to answer questions about current events. The input is the question to search relavant information.
-
-Strictly use the following format:
-
-Question: the input question you must answer
-Thought: you should always think about what to do
-Action: the action to take, should be one of [Google Search]
-Action Input: the input to the action, should be a question.
-Observation: the result of the action
-... (this Thought/Action/Action Input/Observation can repeat N times)
-Thought: I now know the final answer
-Final Answer: the final answer to the original input question
-
-For examples:
-Question: How old is CEO of Microsoft wife?
-Thought: First, I need to find who is the CEO of Microsoft.
-Action: Google Search
-Action Input: Who is the CEO of Microsoft?
-Observation: Satya Nadella is the CEO of Microsoft.
-Thought: Now, I should find out Satya Nadella's wife.
-Action: Google Search
-Action Input: Who is Satya Nadella's wife?
-Observation: Satya Nadella's wife's name is Anupama Nadella.
-Thought: Then, I need to check Anupama Nadella's age.
-Action: Google Search
-Action Input: How old is Anupama Nadella?
-Observation: Anupama Nadella's age is 50.
-Thought: I now know the final answer.
-Final Answer: Anupama Nadella is 50 years old.`
