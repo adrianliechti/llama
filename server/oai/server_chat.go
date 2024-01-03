@@ -15,14 +15,14 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	var req ChatCompletionRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, err)
 		return
 	}
 
 	completer, err := s.Completer(req.Model)
 
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -102,7 +102,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		completion, err := completer.Complete(r.Context(), messages, options)
 
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			writeError(w, http.StatusBadRequest, err)
 			return
 		}
 

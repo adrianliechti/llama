@@ -114,9 +114,9 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 			Message: provider.Message{
 				Role:    provider.MessageRoleAssistant,
 				Content: choice.Message.Content,
-			},
 
-			Functions: toFunctionCalls(choice.Message.ToolCalls),
+				FunctionCalls: toFunctionCalls(choice.Message.ToolCalls),
+			},
 		}, nil
 	} else {
 		defer close(options.Stream)
@@ -158,9 +158,9 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 
 				Message: provider.Message{
 					Content: choice.Delta.Content,
-				},
 
-				Functions: resultFunctions,
+					FunctionCalls: toFunctionCalls(choice.Delta.ToolCalls),
+				},
 			}
 
 			if choice.FinishReason != "" {
@@ -176,9 +176,9 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 			Message: provider.Message{
 				Role:    provider.MessageRoleAssistant,
 				Content: resultText.String(),
-			},
 
-			Functions: resultFunctions,
+				FunctionCalls: resultFunctions,
+			},
 		}
 
 		return &result, nil

@@ -67,8 +67,7 @@ type Completion struct {
 
 	Reason CompletionReason
 
-	Message   Message
-	Functions []FunctionCall
+	Message Message
 }
 
 type CompleteOptions struct {
