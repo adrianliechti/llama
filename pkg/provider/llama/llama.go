@@ -123,8 +123,6 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		return nil, err
 	}
 
-	println(body.Prompt)
-
 	if options.Stream == nil {
 		resp, err := p.client.Post(url, "application/json", jsonReader(body))
 
@@ -145,7 +143,6 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		}
 
 		content := strings.TrimSpace(completion.Content)
-		println(content)
 
 		var resultRole = provider.MessageRoleAssistant
 		var resultReason = toCompletionReason(completion)
@@ -159,29 +156,6 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 				Role:    resultRole,
 				Content: content,
 			},
-		}
-
-		type functionScheme struct {
-			Name      string `json:"name"`
-			Arguments any    `json:"arguments"`
-		}
-
-		var function functionScheme
-
-		if err := json.Unmarshal([]byte(content), &function); err == nil {
-			result.Reason = provider.CompletionReasonFunction
-			result.Message.Content = ""
-
-			args, _ := json.Marshal(function.Arguments)
-
-			result.Message.FunctionCalls = []provider.FunctionCall{
-				{
-					ID: uuid.NewString(),
-
-					Name:      function.Name,
-					Arguments: string(args),
-				},
-			}
 		}
 
 		return &result, nil
@@ -281,52 +255,7 @@ func (p *Provider) convertCompletionRequest(messages []provider.Message, options
 		options = &provider.CompleteOptions{}
 	}
 
-	system := p.system
-
-	if len(options.Functions) > 0 {
-		system = "You have access to the following functions. Use them if required:\n\n"
-
-		type schemaFunctionCall struct {
-			Name        string `json:"name"`
-			Description string `json:"description"`
-			Parameters  any    `json:"parameters"`
-		}
-
-		type schemaFunction struct {
-			Type     string `json:"type"`
-			Function any    `json:"function"`
-		}
-
-		schema := []schemaFunction{}
-
-		for _, f := range options.Functions {
-			schema = append(schema, schemaFunction{
-				Type: "function",
-
-				Function: schemaFunctionCall{
-					Name:        f.Name,
-					Description: f.Description,
-					Parameters:  f.Parameters,
-				},
-			})
-		}
-
-		data, _ := json.MarshalIndent(schema, "", "  ")
-		system += string(data)
-	}
-
-	for i, m := range messages {
-		if m.Role == provider.MessageRoleFunction {
-			content := "Use this information to answer the following question: " + m.Content + "\n\n"
-			content += messages[i-2].Content
-
-			m.Role = provider.MessageRoleUser
-			m.Content = content
-			messages[i] = m
-		}
-	}
-
-	prompt, err := p.template.Prompt(system, messages)
+	prompt, err := p.template.Prompt(p.system, messages)
 
 	if err != nil {
 		return nil, err
