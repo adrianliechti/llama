@@ -6,6 +6,7 @@ Retrieval-Augmented Generation (RAG) for use cases like:
 
 - Enterprise Chat
 - Question/Answering (QA) over Documents and Code
+- AI Workflows / Agents 
 
 
 ## Integrations
@@ -222,4 +223,17 @@ POST http://localhost:8080/api/index/{index-name}
         "content": "content of document..."
     }
 ]
+```
+
+### Function Calling Mimicking
+
+For providers or models not natively supporting Function Calling, a transformator chain can be configured to mimic this functionality
+
+#### Configuration
+
+```yaml
+chains:
+  fn:
+    type: functioncalling
+    model: mistral
 ```
