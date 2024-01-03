@@ -273,6 +273,10 @@ func (p *Provider) convertCompletionRequest(messages []provider.Message, options
 		Stop: p.template.Stop(),
 	}
 
+	if options.Stop != nil {
+		req.Stop = options.Stop
+	}
+
 	if options.Format == provider.CompletionFormatJSON {
 		req.Grammar = grammar.JSON
 	}

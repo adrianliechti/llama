@@ -76,6 +76,8 @@ type CompleteOptions struct {
 	Format    CompletionFormat
 	Functions []Function
 
+	Stop []string
+
 	Temperature *float32
 	TopP        *float32
 	MinP        *float32

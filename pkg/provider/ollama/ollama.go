@@ -218,6 +218,12 @@ func (p *Provider) convertChatRequest(model string, messages []provider.Message,
 	req := &ChatRequest{
 		Model:  model,
 		Stream: &stream,
+
+		Options: map[string]any{},
+	}
+
+	if options.Stop != nil {
+		req.Options["stop"] = options.Stop
 	}
 
 	if options.Format == provider.CompletionFormatJSON {
