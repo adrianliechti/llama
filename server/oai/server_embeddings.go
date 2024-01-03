@@ -9,14 +9,14 @@ func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 	var req EmbeddingsRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, err)
 		return
 	}
 
 	embedder, err := s.Embedder(req.Model)
 
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -30,7 +30,7 @@ func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(inputs) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -44,7 +44,7 @@ func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 		data, err := embedder.Embed(r.Context(), input)
 
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			writeError(w, http.StatusBadRequest, err)
 			return
 		}
 

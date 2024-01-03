@@ -29,6 +29,8 @@ type ChatRequest struct {
 	Format string `json:"format,omitempty"`
 
 	Messages []Message `json:"messages"`
+
+	Options map[string]interface{} `json:"options"`
 }
 
 type ChatResponse struct {

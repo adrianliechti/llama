@@ -29,7 +29,7 @@ func (s *Server) handleModel(w http.ResponseWriter, r *http.Request) {
 	model, err := s.Model(chi.URLParam(r, "id"))
 
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
+		writeError(w, http.StatusNotFound, err)
 		return
 	}
 

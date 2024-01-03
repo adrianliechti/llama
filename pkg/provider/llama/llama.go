@@ -15,6 +15,8 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/llama/grammar"
 	"github.com/adrianliechti/llama/pkg/provider/llama/prompt"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -112,6 +114,8 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		options = &provider.CompleteOptions{}
 	}
 
+	id := uuid.NewString()
+
 	url, _ := url.JoinPath(p.url, "/completion")
 	body, err := p.convertCompletionRequest(messages, options)
 
@@ -144,6 +148,8 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		var resultReason = toCompletionReason(completion)
 
 		result := provider.Completion{
+			ID: id,
+
 			Reason: resultReason,
 
 			Message: provider.Message{
@@ -218,6 +224,8 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 			resultReason = toCompletionReason(completion)
 
 			options.Stream <- provider.Completion{
+				ID: id,
+
 				Reason: resultReason,
 
 				Message: provider.Message{
@@ -228,6 +236,8 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 		}
 
 		result := provider.Completion{
+			ID: id,
+
 			Reason: resultReason,
 
 			Message: provider.Message{
@@ -261,6 +271,10 @@ func (p *Provider) convertCompletionRequest(messages []provider.Message, options
 		MinP:        options.MinP,
 
 		Stop: p.template.Stop(),
+	}
+
+	if options.Stop != nil {
+		req.Stop = options.Stop
 	}
 
 	if options.Format == provider.CompletionFormatJSON {

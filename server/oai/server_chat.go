@@ -9,32 +9,30 @@ import (
 	"time"
 
 	"github.com/adrianliechti/llama/pkg/provider"
-
-	"github.com/google/uuid"
 )
 
 func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	var req ChatCompletionRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, err)
 		return
 	}
 
 	completer, err := s.Completer(req.Model)
 
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, err)
 		return
 	}
-
-	id := uuid.New().String()
 
 	messages := toMessages(req.Messages)
 
 	options := &provider.CompleteOptions{
 		Temperature: req.Temperature,
 		TopP:        req.TopP,
+
+		Functions: toFunctions(req.Tools),
 	}
 
 	if req.Format != nil {
@@ -63,18 +61,22 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 			result := ChatCompletion{
 				Object: "chat.completion.chunk",
 
-				ID: id,
+				ID: completion.ID,
 
 				Model:   req.Model,
 				Created: time.Now().Unix(),
 
 				Choices: []ChatCompletionChoice{
 					{
-						Delta: &ChatCompletionMessage{
-							Content: completion.Message.Content,
-						},
-
 						FinishReason: oaiCompletionReason(completion.Reason),
+
+						Delta: &ChatCompletionMessage{
+							//Role:    fromMessageRole(completion.Role),
+							Content: completion.Message.Content,
+
+							ToolCalls:  oaiToolCalls(completion.Message.FunctionCalls),
+							ToolCallID: completion.Message.Function,
+						},
 					},
 				},
 			}
@@ -100,26 +102,29 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		completion, err := completer.Complete(r.Context(), messages, options)
 
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			writeError(w, http.StatusBadRequest, err)
 			return
 		}
 
 		result := ChatCompletion{
 			Object: "chat.completion",
 
-			ID: id,
+			ID: completion.ID,
 
 			Model:   req.Model,
 			Created: time.Now().Unix(),
 
 			Choices: []ChatCompletionChoice{
 				{
+					FinishReason: oaiCompletionReason(completion.Reason),
+
 					Message: &ChatCompletionMessage{
 						Role:    oaiMessageRole(completion.Message.Role),
 						Content: completion.Message.Content,
-					},
 
-					FinishReason: oaiCompletionReason(completion.Reason),
+						ToolCalls:  oaiToolCalls(completion.Message.FunctionCalls),
+						ToolCallID: completion.Message.Function,
+					},
 				},
 			},
 		}
@@ -135,6 +140,9 @@ func toMessages(s []ChatCompletionMessage) []provider.Message {
 		result = append(result, provider.Message{
 			Role:    toMessageRole(m.Role),
 			Content: m.Content,
+
+			Function:      m.ToolCallID,
+			FunctionCalls: toFuncionCalls(m.ToolCalls),
 		})
 	}
 
@@ -152,9 +160,48 @@ func toMessageRole(r MessageRole) provider.MessageRole {
 	case MessageRoleAssistant:
 		return provider.MessageRoleAssistant
 
+	case MessageRoleTool:
+		return provider.MessageRoleFunction
+
 	default:
 		return ""
 	}
+}
+
+func toFunctions(s []Tool) []provider.Function {
+	var result []provider.Function
+
+	for _, t := range s {
+		if t.Type == ToolTypeFunction && t.ToolFunction != nil {
+			function := provider.Function{
+				Name:       t.ToolFunction.Name,
+				Parameters: t.ToolFunction.Parameters,
+
+				Description: t.ToolFunction.Description,
+			}
+
+			result = append(result, function)
+		}
+	}
+
+	return result
+}
+
+func toFuncionCalls(calls []ToolCall) []provider.FunctionCall {
+	var result []provider.FunctionCall
+
+	for _, c := range calls {
+		if c.Type == ToolTypeFunction && c.Function != nil {
+			result = append(result, provider.FunctionCall{
+				ID: c.ID,
+
+				Name:      c.Function.Name,
+				Arguments: c.Function.Arguments,
+			})
+		}
+	}
+
+	return result
 }
 
 func oaiMessageRole(r provider.MessageRole) MessageRole {
@@ -167,6 +214,9 @@ func oaiMessageRole(r provider.MessageRole) MessageRole {
 
 	case provider.MessageRoleAssistant:
 		return MessageRoleAssistant
+
+	case provider.MessageRoleFunction:
+		return MessageRoleTool
 
 	default:
 		return ""
@@ -181,7 +231,28 @@ func oaiCompletionReason(val provider.CompletionReason) *CompletionReason {
 	case provider.CompletionReasonLength:
 		return &CompletionReasonLength
 
+	case provider.CompletionReasonFunction:
+		return &CompletionReasonToolCalls
+
 	default:
 		return nil
 	}
+}
+
+func oaiToolCalls(calls []provider.FunctionCall) []ToolCall {
+	result := make([]ToolCall, 0)
+
+	for _, c := range calls {
+		result = append(result, ToolCall{
+			ID:   c.ID,
+			Type: ToolTypeFunction,
+
+			Function: &FunctionCall{
+				Name:      c.Name,
+				Arguments: c.Arguments,
+			},
+		})
+	}
+
+	return result
 }

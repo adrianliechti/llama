@@ -39,6 +39,7 @@ var (
 	MessageRoleSystem    MessageRole = "system"
 	MessageRoleUser      MessageRole = "user"
 	MessageRoleAssistant MessageRole = "assistant"
+	MessageRoleTool      MessageRole = "tool"
 )
 
 type ResponseFormat string
@@ -53,10 +54,15 @@ type CompletionReason string
 var (
 	CompletionReasonStop   CompletionReason = "stop"
 	CompletionReasonLength CompletionReason = "length"
+
+	CompletionReasonToolCalls CompletionReason = "tool_calls"
 )
 
 type ChatCompletionRequest struct {
 	Model string `json:"model"`
+
+	Messages []ChatCompletionMessage `json:"messages"`
+	Tools    []Tool                  `json:"tools,omitempty"`
 
 	Stream bool `json:"stream,omitempty"`
 
@@ -64,8 +70,6 @@ type ChatCompletionRequest struct {
 
 	Temperature *float32 `json:"temperature,omitempty"`
 	TopP        *float32 `json:"top_p,omitempty"`
-
-	Messages []ChatCompletionMessage `json:"messages"`
 }
 
 type ChatCompletionResponseFormat struct {
@@ -73,7 +77,7 @@ type ChatCompletionResponseFormat struct {
 }
 
 type ChatCompletion struct {
-	Object string `json:"object"` // "chat.completion"
+	Object string `json:"object"`
 
 	ID string `json:"id"`
 
@@ -95,4 +99,41 @@ type ChatCompletionChoice struct {
 type ChatCompletionMessage struct {
 	Role    MessageRole `json:"role,omitempty"`
 	Content string      `json:"content"`
+
+	ToolCallID string     `json:"tool_call_id,omitempty"`
+	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+}
+
+type ToolType string
+
+var (
+	ToolTypeFunction ToolType = "function"
+)
+
+type Tool struct {
+	Type ToolType `json:"type"`
+
+	ToolFunction *Function `json:"function"`
+}
+
+type ToolCall struct {
+	ID string `json:"id"`
+
+	Type ToolType `json:"type"`
+
+	//Index *int `json:"index,omitempty"`
+
+	Function *FunctionCall `json:"function,omitempty"`
+}
+
+type Function struct {
+	Description string `json:"description,omitempty"`
+
+	Name       string `json:"name"`
+	Parameters any    `json:"parameters"`
+}
+
+type FunctionCall struct {
+	Name      string `json:"name,omitempty"`
+	Arguments string `json:"arguments,omitempty"`
 }

@@ -40,3 +40,7 @@ func writeJson(w http.ResponseWriter, v any) {
 
 	enc.Encode(v)
 }
+
+func writeError(w http.ResponseWriter, code int, err error) {
+	w.WriteHeader(code)
+}
