@@ -271,6 +271,8 @@ func (p *Provider) convertCompletionRequest(messages []provider.Message, options
 		MinP:        options.MinP,
 
 		Stop: p.template.Stop(),
+
+		CachePrompt: true,
 	}
 
 	if options.Stop != nil {

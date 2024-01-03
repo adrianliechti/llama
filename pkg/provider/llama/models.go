@@ -19,6 +19,8 @@ type CompletionRequest struct {
 	MinP        *float32 `json:"min_p,omitempty"`
 
 	Stop []string `json:"stop,omitempty"`
+
+	CachePrompt bool `json:"cache_prompt,omitempty"`
 }
 
 type CompletionResponse struct {
