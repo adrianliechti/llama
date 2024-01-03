@@ -1,7 +1,7 @@
 /bin
 /index
 /models
-/cmd/server/config.yaml
+config.yaml
 
 .DS_Store
 /.vscode

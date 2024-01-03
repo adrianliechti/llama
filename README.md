@@ -234,6 +234,6 @@ For providers or models not natively supporting Function Calling, a transformato
 ```yaml
 chains:
   fn:
-    type: functioncalling
+    type: fn
     model: mistral
 ```
