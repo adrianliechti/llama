@@ -74,8 +74,8 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 							//Role:    fromMessageRole(completion.Role),
 							Content: completion.Message.Content,
 
-							ToolCallID: completion.Message.FunctionID,
 							ToolCalls:  oaiToolCalls(completion.Functions),
+							ToolCallID: completion.Message.Function,
 						},
 					},
 				},
@@ -122,8 +122,8 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 						Role:    oaiMessageRole(completion.Message.Role),
 						Content: completion.Message.Content,
 
-						ToolCallID: completion.Message.FunctionID,
 						ToolCalls:  oaiToolCalls(completion.Message.FunctionCalls),
+						ToolCallID: completion.Message.Function,
 					},
 				},
 			},
@@ -141,7 +141,7 @@ func toMessages(s []ChatCompletionMessage) []provider.Message {
 			Role:    toMessageRole(m.Role),
 			Content: m.Content,
 
-			FunctionID:    m.ToolCallID,
+			Function:      m.ToolCallID,
 			FunctionCalls: toFuncionCalls(m.ToolCalls),
 		})
 	}

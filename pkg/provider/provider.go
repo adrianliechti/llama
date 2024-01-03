@@ -30,7 +30,7 @@ type Message struct {
 	Role    MessageRole
 	Content string
 
-	FunctionID    string
+	Function      string
 	FunctionCalls []FunctionCall
 }
 
