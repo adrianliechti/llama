@@ -137,3 +137,12 @@ type FunctionCall struct {
 	Name      string `json:"name,omitempty"`
 	Arguments string `json:"arguments,omitempty"`
 }
+
+type ErrorResponse struct {
+	Error Error `json:"error,omitempty"`
+}
+
+type Error struct {
+	Type    string `json:"type"`
+	Message string `json:"message"`
+}
