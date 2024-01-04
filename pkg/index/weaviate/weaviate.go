@@ -112,14 +112,14 @@ func (w *Weaviate) Search(ctx context.Context, embedding []float32, options *ind
 
 	limit := 10
 
-	if options.TopK > 0 {
-		limit = options.TopK
+	if options.TopK != nil {
+		limit = *options.TopK
 	}
 
 	var certainty float32 = 0.0
 
-	if options.TopP > 0 {
-		certainty = 1 - options.TopP
+	if options.TopP != nil {
+		certainty = 1 - *options.TopP
 	}
 
 	query := `{

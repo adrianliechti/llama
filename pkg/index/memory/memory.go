@@ -83,9 +83,9 @@ func (m *Memory) Search(ctx context.Context, embedding []float32, options *index
 			Distance: 1 - cosineSimilarity(embedding, d.Embedding),
 		}
 
-		if options.TopP <= 0 || r.Distance > options.TopP {
-			continue
-		}
+		// if options.TopP <= 0 || r.Distance > options.TopP {
+		// 	continue
+		// }
 
 		results = append(results, r)
 	}
@@ -94,13 +94,17 @@ func (m *Memory) Search(ctx context.Context, embedding []float32, options *index
 		return results[i].Distance < results[j].Distance
 	})
 
-	topK := options.TopK
+	if options.TopK != nil {
+		idx := *options.TopK
 
-	if topK > len(results) {
-		topK = len(results)
+		if idx > len(results) {
+			idx = len(results)
+		}
+
+		results = results[:idx]
 	}
 
-	return results[:topK], nil
+	return results, nil
 }
 
 func cosineSimilarity(a []float32, b []float32) float32 {

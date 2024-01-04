@@ -19,8 +19,8 @@ type Provider struct {
 	embedder  provider.Embedder
 	completer provider.Completer
 
-	topK int
-	topP float32
+	topK *int
+	topP *float32
 }
 
 type Option func(*Provider)
@@ -67,13 +67,13 @@ func WithCompleter(completer provider.Completer) Option {
 
 func WithTopK(val int) Option {
 	return func(p *Provider) {
-		p.topK = val
+		p.topK = &val
 	}
 }
 
 func WithTopP(val float32) Option {
 	return func(p *Provider) {
-		p.topP = val
+		p.topP = &val
 	}
 }
 

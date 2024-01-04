@@ -142,9 +142,16 @@ func (c *Chroma) Search(ctx context.Context, embedding []float32, options *index
 		"query_embeddings": [][]float32{
 			embedding,
 		},
+
+		"include": []string{
+			"embeddings",
+			"documents",
+			"metadatas",
+			"distances",
+		},
 	}
 
-	if options.TopK > 0 {
+	if options.TopK != nil {
 		body["n_results"] = options.TopK
 	}
 
@@ -176,16 +183,16 @@ func (c *Chroma) Search(ctx context.Context, embedding []float32, options *index
 				Document: index.Document{
 					ID: result.IDs[i][j],
 
-					// Embedding: float32to64(result.Embeddings[i]),
+					Embedding: toFloat32s(result.Embeddings[i][j]),
 
 					Content:  result.Documents[i][j],
 					Metadata: result.Metadatas[i][j],
 				},
 			}
 
-			if options.TopP <= 0 || r.Distance > options.TopP {
-				continue
-			}
+			// if options.TopP != nil && r.Distance > (1-*options.TopP) {
+			// 	continue
+			// }
 
 			results = append(results, r)
 		}
@@ -247,7 +254,7 @@ type result struct {
 
 	Distances [][]float32 `json:"distances,omitempty"`
 
-	//Embeddings [][][]float32 `json:"embeddings"`
+	Embeddings [][][]float64 `json:"embeddings"`
 
 	Metadatas [][]map[string]any `json:"metadatas"`
 	Documents [][]string         `json:"documents"`
@@ -261,4 +268,14 @@ func jsonReader(v any) io.Reader {
 
 	enc.Encode(v)
 	return b
+}
+
+func toFloat32s(v []float64) []float32 {
+	result := make([]float32, len(v))
+
+	for i, x := range v {
+		result[i] = float32(x)
+	}
+
+	return result
 }

@@ -14,8 +14,8 @@ type Provider interface {
 }
 
 type SearchOptions struct {
-	TopK int
-	TopP float32
+	TopK *int
+	TopP *float32
 }
 
 type Document struct {

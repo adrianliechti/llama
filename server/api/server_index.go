@@ -44,3 +44,51 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (s *Server) handleIndexSearch(w http.ResponseWriter, r *http.Request) {
+	i, err := s.Index(chi.URLParam(r, "index"))
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var request SearchRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if len(request.Embedding) == 0 && len(request.Content) == 0 {
+		writeError(w, http.StatusBadRequest, nil)
+		return
+	}
+
+	if request.Embedding == nil {
+		embedding, err := i.Embed(r.Context(), request.Content)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		request.Embedding = embedding
+	}
+
+	options := &index.SearchOptions{
+		TopK: request.TopK,
+		TopP: request.TopP,
+	}
+
+	result, err := i.Search(r.Context(), request.Embedding, options)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	_ = result
+
+	w.WriteHeader(http.StatusNoContent)
+}
