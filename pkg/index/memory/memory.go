@@ -69,9 +69,9 @@ func (m *Memory) Index(ctx context.Context, documents ...index.Document) error {
 	return nil
 }
 
-func (m *Memory) Search(ctx context.Context, embedding []float32, options *index.SearchOptions) ([]index.Result, error) {
+func (m *Memory) Query(ctx context.Context, embedding []float32, options *index.QueryOptions) ([]index.Result, error) {
 	if options == nil {
-		options = &index.SearchOptions{}
+		options = &index.QueryOptions{}
 	}
 
 	results := make([]index.Result, 0)
@@ -94,14 +94,14 @@ func (m *Memory) Search(ctx context.Context, embedding []float32, options *index
 		return results[i].Distance < results[j].Distance
 	})
 
-	if options.TopK != nil {
-		idx := *options.TopK
+	if options.Limit != nil {
+		limit := *options.Limit
 
-		if idx > len(results) {
-			idx = len(results)
+		if limit > len(results) {
+			limit = len(results)
 		}
 
-		results = results[:idx]
+		results = results[:limit]
 	}
 
 	return results, nil

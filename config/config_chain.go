@@ -98,9 +98,9 @@ func ragChain(cfg chainConfig, embedder provider.Embedder, completer provider.Co
 		options = append(options, rag.WithTopK(*cfg.TopK))
 	}
 
-	if cfg.TopP != nil {
-		options = append(options, rag.WithTopP(*cfg.TopP))
-	}
+	// if cfg.TopP != nil {
+	// 	options = append(options, rag.WithTopP(*cfg.TopP))
+	// }
 
 	return rag.New(options...)
 }

@@ -45,7 +45,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Server) handleIndexSearch(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleIndexQuery(w http.ResponseWriter, r *http.Request) {
 	i, err := s.Index(chi.URLParam(r, "index"))
 
 	if err != nil {
@@ -53,35 +53,35 @@ func (s *Server) handleIndexSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var request SearchRequest
+	var query Query
 
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if len(request.Embedding) == 0 && len(request.Content) == 0 {
+	if len(query.Text) == 0 && len(query.Embedding) == 0 {
 		writeError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if request.Embedding == nil {
-		embedding, err := i.Embed(r.Context(), request.Content)
+	if query.Embedding == nil {
+		embedding, err := i.Embed(r.Context(), query.Text)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		request.Embedding = embedding
+		query.Embedding = embedding
 	}
 
-	options := &index.SearchOptions{
-		TopK: request.TopK,
-		TopP: request.TopP,
+	options := &index.QueryOptions{
+		Limit: query.Limit,
+		//TopP: request.TopP,
 	}
 
-	result, err := i.Search(r.Context(), request.Embedding, options)
+	result, err := i.Query(r.Context(), query.Embedding, options)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

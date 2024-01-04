@@ -125,9 +125,9 @@ func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
 	return nil
 }
 
-func (c *Chroma) Search(ctx context.Context, embedding []float32, options *index.SearchOptions) ([]index.Result, error) {
+func (c *Chroma) Query(ctx context.Context, embedding []float32, options *index.QueryOptions) ([]index.Result, error) {
 	if options == nil {
-		options = &index.SearchOptions{}
+		options = &index.QueryOptions{}
 	}
 
 	col, err := c.createCollection(c.namespace)
@@ -151,8 +151,8 @@ func (c *Chroma) Search(ctx context.Context, embedding []float32, options *index
 		},
 	}
 
-	if options.TopK != nil {
-		body["n_results"] = options.TopK
+	if options.Limit != nil {
+		body["n_results"] = *options.Limit
 	}
 
 	resp, err := c.client.Post(u, "application/json", jsonReader(body))

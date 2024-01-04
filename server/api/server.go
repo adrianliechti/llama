@@ -23,7 +23,7 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	r.Post("/index/{index}", s.handleIndex)
-	r.Post("/index/{index}/search", s.handleIndexSearch)
+	r.Post("/index/{index}/query", s.handleIndexQuery)
 
 	return s, nil
 }

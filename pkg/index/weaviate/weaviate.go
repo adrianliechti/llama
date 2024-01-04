@@ -99,7 +99,7 @@ func (w *Weaviate) Index(ctx context.Context, documents ...index.Document) error
 	return nil
 }
 
-func (w *Weaviate) Search(ctx context.Context, embedding []float32, options *index.SearchOptions) ([]index.Result, error) {
+func (w *Weaviate) Query(ctx context.Context, embedding []float32, options *index.QueryOptions) ([]index.Result, error) {
 	var vector strings.Builder
 
 	for i, v := range embedding {
@@ -111,15 +111,14 @@ func (w *Weaviate) Search(ctx context.Context, embedding []float32, options *ind
 	}
 
 	limit := 10
+	distance := float32(1)
 
-	if options.TopK != nil {
-		limit = *options.TopK
+	if options.Limit != nil {
+		limit = *options.Limit
 	}
 
-	var certainty float32 = 0.0
-
-	if options.TopP != nil {
-		certainty = 1 - *options.TopP
+	if options.Distance != nil {
+		distance = *options.Distance
 	}
 
 	query := `{
@@ -128,12 +127,11 @@ func (w *Weaviate) Search(ctx context.Context, embedding []float32, options *ind
 				limit: ` + fmt.Sprintf("%d", limit) + `
 				nearVector: {
 					vector: [` + vector.String() + `]
-					certainty: ` + fmt.Sprintf("%f", certainty) + `
+					distance: ` + fmt.Sprintf("%f", distance) + `
 				}
 			) {
 				content
 				_additional {
-					certainty
 					distance
 				}
 			}
@@ -231,6 +229,7 @@ func (w *Weaviate) createClass(name string) (*class, error) {
 		"properties": []map[string]any{
 			{
 				"name": "content",
+
 				"dataType": []string{
 					"text",
 				},
