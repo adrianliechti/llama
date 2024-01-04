@@ -119,15 +119,15 @@ func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("bad request")
+		return convertError(resp)
 	}
 
 	return nil
 }
 
-func (c *Chroma) Search(ctx context.Context, embedding []float32, options *index.SearchOptions) ([]index.Result, error) {
+func (c *Chroma) Query(ctx context.Context, embedding []float32, options *index.QueryOptions) ([]index.Result, error) {
 	if options == nil {
-		options = &index.SearchOptions{}
+		options = &index.QueryOptions{}
 	}
 
 	col, err := c.createCollection(c.namespace)
@@ -142,10 +142,17 @@ func (c *Chroma) Search(ctx context.Context, embedding []float32, options *index
 		"query_embeddings": [][]float32{
 			embedding,
 		},
+
+		"include": []string{
+			"embeddings",
+			"documents",
+			"metadatas",
+			"distances",
+		},
 	}
 
-	if options.TopK > 0 {
-		body["n_results"] = options.TopK
+	if options.Limit != nil {
+		body["n_results"] = *options.Limit
 	}
 
 	resp, err := c.client.Post(u, "application/json", jsonReader(body))
@@ -157,7 +164,7 @@ func (c *Chroma) Search(ctx context.Context, embedding []float32, options *index
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("bad request")
+		return nil, convertError(resp)
 	}
 
 	var result result
@@ -176,15 +183,17 @@ func (c *Chroma) Search(ctx context.Context, embedding []float32, options *index
 				Document: index.Document{
 					ID: result.IDs[i][j],
 
-					// Embedding: float32to64(result.Embeddings[i]),
+					Embedding: toFloat32s(result.Embeddings[i][j]),
 
 					Content:  result.Documents[i][j],
 					Metadata: result.Metadatas[i][j],
 				},
 			}
 
-			if options.TopP <= 0 || r.Distance > options.TopP {
-				continue
+			if options.Distance != nil {
+				if r.Distance > *options.Distance {
+					continue
+				}
 			}
 
 			results = append(results, r)
@@ -223,6 +232,26 @@ func (c *Chroma) createCollection(name string) (*collection, error) {
 	return &result, nil
 }
 
+func convertError(resp *http.Response) error {
+	type resultType struct {
+		Errors []errorDetail `json:"detail"`
+	}
+
+	var result resultType
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err == nil {
+		var errs []error
+
+		for _, e := range result.Errors {
+			errs = append(errs, errors.New(e.Message))
+		}
+
+		return errors.Join(errs...)
+	}
+
+	return errors.New(http.StatusText(resp.StatusCode))
+}
+
 type collection struct {
 	ID string `json:"id,omitempty"`
 
@@ -247,10 +276,14 @@ type result struct {
 
 	Distances [][]float32 `json:"distances,omitempty"`
 
-	//Embeddings [][][]float32 `json:"embeddings"`
+	Embeddings [][][]float64 `json:"embeddings"`
 
 	Metadatas [][]map[string]any `json:"metadatas"`
 	Documents [][]string         `json:"documents"`
+}
+
+type errorDetail struct {
+	Message string `json:"msg"`
 }
 
 func jsonReader(v any) io.Reader {
@@ -261,4 +294,14 @@ func jsonReader(v any) io.Reader {
 
 	enc.Encode(v)
 	return b
+}
+
+func toFloat32s(v []float64) []float32 {
+	result := make([]float32, len(v))
+
+	for i, x := range v {
+		result[i] = float32(x)
+	}
+
+	return result
 }

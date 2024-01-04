@@ -111,7 +111,7 @@ providers:
     url: http://localhost:11434
 
     models:
-      mistral:
+      mistral-7b-instruct:
         id: mistral
 ```
 
@@ -160,7 +160,7 @@ indexes:
     type: weaviate
     url: http://localhost:9084
     namespace: Document
-    embedding: multi-qa-minilm-l6-cos-v1  
+    embedding: text-embedding-ada-002
 ```
 
 #### In-Memory
@@ -184,8 +184,8 @@ chains:
     type: rag
     index: docs
     model: mistral-7b-instruct
-    top_k: 5
-    top_p: 0.5
+    limit: 5
+    distance: 0.5
 ```
 
 #### Index Documents
@@ -217,5 +217,5 @@ For providers or models not natively supporting Function Calling, a transformato
 chains:
   fn:
     type: fn
-    model: mistral
+    model: mistral-7b-instruct
 ```

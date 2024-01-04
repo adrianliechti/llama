@@ -24,7 +24,7 @@ type Weaviate struct {
 	client   *http.Client
 	embedder index.Embedder
 
-	class *class
+	class string
 }
 
 type Option func(*Weaviate)
@@ -34,19 +34,13 @@ func New(url, namespace string, options ...Option) (*Weaviate, error) {
 		url: url,
 
 		client: http.DefaultClient,
+
+		class: namespace,
 	}
 
 	for _, option := range options {
 		option(w)
 	}
-
-	class, err := w.getClass(namespace)
-
-	if err != nil {
-		return nil, err
-	}
-
-	w.class = class
 
 	return w, nil
 }
@@ -99,7 +93,13 @@ func (w *Weaviate) Index(ctx context.Context, documents ...index.Document) error
 	return nil
 }
 
-func (w *Weaviate) Search(ctx context.Context, embedding []float32, options *index.SearchOptions) ([]index.Result, error) {
+func (w *Weaviate) Query(ctx context.Context, embedding []float32, options *index.QueryOptions) ([]index.Result, error) {
+	limit := 10
+
+	if options.Limit != nil {
+		limit = *options.Limit
+	}
+
 	var vector strings.Builder
 
 	for i, v := range embedding {
@@ -110,30 +110,17 @@ func (w *Weaviate) Search(ctx context.Context, embedding []float32, options *ind
 		vector.WriteString(fmt.Sprintf("%f", v))
 	}
 
-	limit := 10
-
-	if options.TopK > 0 {
-		limit = options.TopK
-	}
-
-	var certainty float32 = 0.0
-
-	if options.TopP > 0 {
-		certainty = 1 - options.TopP
-	}
-
 	query := `{
 		Get {
-			` + w.class.Class + ` (
+			` + w.class + ` (
 				limit: ` + fmt.Sprintf("%d", limit) + `
 				nearVector: {
 					vector: [` + vector.String() + `]
-					certainty: ` + fmt.Sprintf("%f", certainty) + `
 				}
 			) {
 				content
 				_additional {
-					certainty
+					id
 					distance
 				}
 			}
@@ -161,6 +148,8 @@ func (w *Weaviate) Search(ctx context.Context, embedding []float32, options *ind
 		Data struct {
 			Get map[string][]document `json:"Get"`
 		} `json:"data"`
+
+		Errors []errorDetail `json:"errors"`
 	}
 
 	var result responseType
@@ -169,15 +158,26 @@ func (w *Weaviate) Search(ctx context.Context, embedding []float32, options *ind
 		return nil, err
 	}
 
+	if len(result.Errors) > 0 {
+		var errs []error
+
+		for _, e := range result.Errors {
+			errs = append(errs, errors.New(e.Message))
+		}
+
+		return nil, errors.Join(errs...)
+	}
+
 	results := make([]index.Result, 0)
 
-	for _, d := range result.Data.Get[w.class.Class] {
+	for _, d := range result.Data.Get[w.class] {
 		r := index.Result{
 			Document: index.Document{
+				ID:      d.Additional.ID,
 				Content: d.Content,
 			},
 
-			Distance: 1 - d.Additional.Certainty,
+			Distance: d.Additional.Distance,
 		}
 
 		results = append(results, r)
@@ -194,80 +194,16 @@ func generateID(d index.Document) string {
 	return uuid.NewMD5(uuid.NameSpaceOID, []byte(d.ID)).String()
 }
 
-func (w *Weaviate) getClass(name string) (*class, error) {
-	u, _ := url.JoinPath(w.url, "/v1/schema/"+name)
-
-	resp, err := w.client.Get(u)
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return w.createClass(name)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("bad request")
-	}
-
-	var result class
-
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
-}
-
-func (w *Weaviate) createClass(name string) (*class, error) {
-	u, _ := url.JoinPath(w.url, "/v1/schema")
-
-	body := map[string]any{
-		"class": name,
-
-		"properties": []map[string]any{
-			{
-				"name": "content",
-				"dataType": []string{
-					"text",
-				},
-			},
-		},
-	}
-
-	resp, err := w.client.Post(u, "application/json", jsonReader(body))
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("bad request")
-	}
-
-	var result class
-
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
-}
-
 func (w *Weaviate) createObject(d index.Document) error {
 	body := map[string]any{
 		"id": d.ID,
 
-		"class":  w.class.Class,
+		"class":  w.class,
 		"vector": d.Embedding,
 
 		"properties": map[string]any{
-			"content": d.Content,
+			"content":  d.Content,
+			"metadata": d.Metadata,
 		},
 	}
 
@@ -281,7 +217,7 @@ func (w *Weaviate) createObject(d index.Document) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("bad request")
+		return convertError(resp)
 	}
 
 	return nil
@@ -291,15 +227,16 @@ func (w *Weaviate) updateObject(d index.Document) error {
 	body := map[string]any{
 		"id": d.ID,
 
-		"class":  w.class.Class,
+		"class":  w.class,
 		"vector": d.Embedding,
 
 		"properties": map[string]any{
-			"content": d.Content,
+			"content":  d.Content,
+			"metadata": d.Metadata,
 		},
 	}
 
-	u, _ := url.JoinPath(w.url, "/v1/objects/"+w.class.Class+"/"+d.ID)
+	u, _ := url.JoinPath(w.url, "/v1/objects/"+w.class+"/"+d.ID)
 	req, err := http.NewRequest(http.MethodPut, u, jsonReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -316,14 +253,34 @@ func (w *Weaviate) updateObject(d index.Document) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("bad request")
+		return convertError(resp)
 	}
 
 	return nil
 }
 
-type class struct {
-	Class string `json:"class"`
+func convertError(resp *http.Response) error {
+	type resultType struct {
+		Errors []errorDetail `json:"error"`
+	}
+
+	var result resultType
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err == nil {
+		var errs []error
+
+		for _, e := range result.Errors {
+			errs = append(errs, errors.New(e.Message))
+		}
+
+		return errors.Join(errs...)
+	}
+
+	return errors.New(http.StatusText(resp.StatusCode))
+}
+
+type errorDetail struct {
+	Message string `json:"message"`
 }
 
 type document struct {
@@ -333,8 +290,8 @@ type document struct {
 }
 
 type additional struct {
-	Certainty float32 `json:"certainty"`
-	Distance  float32 `json:"distance"`
+	ID       string  `json:"id"`
+	Distance float32 `json:"distance"`
 }
 
 func jsonReader(v any) io.Reader {

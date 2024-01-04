@@ -98,12 +98,12 @@ func ragChain(cfg chainConfig, embedder provider.Embedder, completer provider.Co
 		options = append(options, rag.WithSystem(cfg.System))
 	}
 
-	if cfg.TopK != nil {
-		options = append(options, rag.WithTopK(*cfg.TopK))
+	if cfg.Limit != nil {
+		options = append(options, rag.WithLimit(*cfg.Limit))
 	}
 
-	if cfg.TopP != nil {
-		options = append(options, rag.WithTopP(*cfg.TopP))
+	if cfg.Distance != nil {
+		options = append(options, rag.WithDistance(*cfg.Distance))
 	}
 
 	return rag.New(options...)

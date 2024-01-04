@@ -10,12 +10,12 @@ type Provider interface {
 	Embedder
 
 	Index(ctx context.Context, documents ...Document) error
-	Search(ctx context.Context, embedding []float32, options *SearchOptions) ([]Result, error)
+	Query(ctx context.Context, embedding []float32, options *QueryOptions) ([]Result, error)
 }
 
-type SearchOptions struct {
-	TopK int
-	TopP float32
+type QueryOptions struct {
+	Limit    *int
+	Distance *float32
 }
 
 type Document struct {

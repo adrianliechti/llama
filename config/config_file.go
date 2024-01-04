@@ -70,8 +70,8 @@ type chainConfig struct {
 
 	System string `yaml:"system"`
 
-	TopK *int     `yaml:"top_k"`
-	TopP *float32 `yaml:"top_p"`
+	Limit    *int     `yaml:"limit"`
+	Distance *float32 `yaml:"distance"`
 }
 
 type indexConfig struct {

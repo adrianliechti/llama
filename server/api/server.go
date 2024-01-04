@@ -23,6 +23,7 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	r.Post("/index/{index}", s.handleIndex)
+	r.Post("/index/{index}/query", s.handleIndexQuery)
 
 	return s, nil
 }
@@ -34,4 +35,9 @@ func writeJson(w http.ResponseWriter, v any) {
 	enc.SetEscapeHTML(false)
 
 	enc.Encode(v)
+}
+
+func writeError(w http.ResponseWriter, code int, err error) {
+	w.WriteHeader(code)
+	w.Write([]byte(err.Error()))
 }

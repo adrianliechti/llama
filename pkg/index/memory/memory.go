@@ -69,9 +69,9 @@ func (m *Memory) Index(ctx context.Context, documents ...index.Document) error {
 	return nil
 }
 
-func (m *Memory) Search(ctx context.Context, embedding []float32, options *index.SearchOptions) ([]index.Result, error) {
+func (m *Memory) Query(ctx context.Context, embedding []float32, options *index.QueryOptions) ([]index.Result, error) {
 	if options == nil {
-		options = &index.SearchOptions{}
+		options = &index.QueryOptions{}
 	}
 
 	results := make([]index.Result, 0)
@@ -80,11 +80,13 @@ func (m *Memory) Search(ctx context.Context, embedding []float32, options *index
 		r := index.Result{
 			Document: d,
 
-			Distance: 1 - cosineSimilarity(embedding, d.Embedding),
+			Distance: 1.0 - cosineSimilarity(embedding, d.Embedding),
 		}
 
-		if options.TopP <= 0 || r.Distance > options.TopP {
-			continue
+		if options.Distance != nil {
+			if r.Distance > *options.Distance {
+				continue
+			}
 		}
 
 		results = append(results, r)
@@ -94,28 +96,30 @@ func (m *Memory) Search(ctx context.Context, embedding []float32, options *index
 		return results[i].Distance < results[j].Distance
 	})
 
-	topK := options.TopK
+	if options.Limit != nil {
+		limit := *options.Limit
 
-	if topK > len(results) {
-		topK = len(results)
+		if limit > len(results) {
+			limit = len(results)
+		}
+
+		results = results[:limit]
 	}
 
-	return results[:topK], nil
+	return results, nil
 }
 
 func cosineSimilarity(a []float32, b []float32) float32 {
 	if len(a) != len(b) {
-		return 0
+		return 0.0
 	}
-
-	count := len(a)
 
 	dotproduct := 0.0
 
 	magnitudeA := 0.0
 	magnitudeB := 0.0
 
-	for k := 0; k < count; k++ {
+	for k := 0; k < len(a); k++ {
 		valA := float64(a[k])
 		valB := float64(b[k])
 
@@ -125,9 +129,9 @@ func cosineSimilarity(a []float32, b []float32) float32 {
 		magnitudeB += math.Pow(valB, 2)
 	}
 
-	magnitudeA = math.Sqrt(magnitudeA)
-	magnitudeB = math.Sqrt(magnitudeB)
+	if magnitudeA == 0 || magnitudeB == 0 {
+		return 0.0
+	}
 
-	cosine := dotproduct / magnitudeA * magnitudeB
-	return float32(cosine)
+	return float32(dotproduct / (math.Sqrt(magnitudeA) * math.Sqrt(magnitudeB)))
 }

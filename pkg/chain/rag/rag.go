@@ -21,8 +21,8 @@ type Provider struct {
 
 	system string
 
-	topK int
-	topP float32
+	limit    *int
+	distance *float32
 }
 
 type Option func(*Provider)
@@ -73,15 +73,15 @@ func WithSystem(val string) Option {
 	}
 }
 
-func WithTopK(val int) Option {
+func WithLimit(val int) Option {
 	return func(p *Provider) {
-		p.topK = val
+		p.limit = &val
 	}
 }
 
-func WithTopP(val float32) Option {
+func WithDistance(val float32) Option {
 	return func(p *Provider) {
-		p.topP = val
+		p.distance = &val
 	}
 }
 
@@ -111,9 +111,9 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		return nil, err
 	}
 
-	results, err := p.index.Search(ctx, embedding, &index.SearchOptions{
-		TopP: p.topP,
-		TopK: p.topK,
+	results, err := p.index.Query(ctx, embedding, &index.QueryOptions{
+		Limit:    p.limit,
+		Distance: p.distance,
 	})
 
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -39,6 +40,10 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+
+		sort.SliceStable(list.Models, func(i, j int) bool {
+			return list.Models[i].ID < list.Models[j].ID
+		})
 
 		for i, m := range list.Models {
 			output.WriteString(fmt.Sprintf("%2d) ", i+1))
