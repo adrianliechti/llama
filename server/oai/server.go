@@ -29,6 +29,12 @@ func New(cfg *config.Config) (*Server, error) {
 
 	r.Post("/v1/chat/completions", s.handleChatCompletions)
 
+	r.Get("/v1/files", s.handleFiles)
+	r.Get("/v1/files/{id}", s.handleFile)
+	r.Get("/v1/files/{id}/content", s.handleFileContent)
+	r.Post("/v1/files", s.handleCreateFile)
+	r.Delete("/v1/files/{id}", s.handleDeleteFile)
+
 	return s, nil
 }
 

@@ -138,6 +138,17 @@ type FunctionCall struct {
 	Arguments string `json:"arguments,omitempty"`
 }
 
+type File struct {
+	ID     string `json:"id"`
+	Object string `json:"object"`
+
+	Purpose   string `json:"purpose"`
+	CreatedAt int    `json:"created_at"`
+
+	Bytes    int    `json:"bytes"`
+	Filename string `json:"filename,omitempty"`
+}
+
 type ErrorResponse struct {
 	Error Error `json:"error,omitempty"`
 }
