@@ -49,6 +49,16 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		return p.completer.Complete(ctx, messages, options)
 	}
 
+	var index int
+
+	for i, m := range messages {
+		if m.Role == provider.MessageRoleUser {
+			index = i
+		}
+	}
+
+	messages = messages[index:]
+
 	stream := options.Stream
 
 	options.Stop = promptStop
@@ -79,7 +89,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 				continue
 			}
 
-			history.WriteString("Thought: Do I need to use a tool? No")
+			history.WriteString("Thought: I now know the final answer.")
 			history.WriteString("\n")
 			history.WriteString("Final Answer: ")
 			history.WriteString(strings.TrimSpace(m.Content))
