@@ -94,6 +94,10 @@ func ragChain(cfg chainConfig, embedder provider.Embedder, completer provider.Co
 		options = append(options, rag.WithCompleter(completer))
 	}
 
+	if cfg.System != "" {
+		options = append(options, rag.WithSystem(cfg.System))
+	}
+
 	if cfg.TopK != nil {
 		options = append(options, rag.WithTopK(*cfg.TopK))
 	}

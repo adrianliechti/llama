@@ -19,6 +19,8 @@ type Provider struct {
 	embedder  provider.Embedder
 	completer provider.Completer
 
+	system string
+
 	topK int
 	topP float32
 }
@@ -65,6 +67,12 @@ func WithCompleter(completer provider.Completer) Option {
 	}
 }
 
+func WithSystem(val string) Option {
+	return func(p *Provider) {
+		p.system = val
+	}
+}
+
 func WithTopK(val int) Option {
 	return func(p *Provider) {
 		p.topK = val
@@ -82,6 +90,19 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 
 	if message.Role != provider.MessageRoleUser {
 		return nil, errors.New("last message must be from user")
+	}
+
+	if p.system != "" {
+		if messages[0].Role == provider.MessageRoleSystem {
+			messages = messages[1:]
+		}
+
+		message := provider.Message{
+			Role:    provider.MessageRoleSystem,
+			Content: p.system,
+		}
+
+		messages = append([]provider.Message{message}, messages...)
 	}
 
 	embedding, err := p.index.Embed(ctx, message.Content)

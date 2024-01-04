@@ -68,6 +68,8 @@ type chainConfig struct {
 	Model     string `yaml:"model"`
 	Embedding string `yaml:"embedding"`
 
+	System string `yaml:"system"`
+
 	TopK *int     `yaml:"top_k"`
 	TopP *float32 `yaml:"top_p"`
 }
