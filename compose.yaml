@@ -11,14 +11,14 @@ services:
         curl -s -L -o /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf
       fi"
     volumes:
-      - ./models:/models:cached
+      - llama-models:/models
              
   llama:
     image: ghcr.io/ggerganov/llama.cpp:full
     pull_policy: always
     command: --server --host 0.0.0.0 --port 8080 --model /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf --alias mistral
     volumes:
-      - ./models:/models:cached
+      - llama-models:/models
     depends_on:
       model:
         condition: service_completed_successfully

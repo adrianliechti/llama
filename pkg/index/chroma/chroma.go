@@ -22,7 +22,7 @@ type Chroma struct {
 	client   *http.Client
 	embedder index.Embedder
 
-	collection *collection
+	namespace string
 }
 
 type Option func(*Chroma)
@@ -32,19 +32,13 @@ func New(url, namespace string, options ...Option) (*Chroma, error) {
 		url: url,
 
 		client: http.DefaultClient,
+
+		namespace: namespace,
 	}
 
 	for _, option := range options {
 		option(chroma)
 	}
-
-	collection, err := chroma.createCollection(namespace)
-
-	if err != nil {
-		return nil, err
-	}
-
-	chroma.collection = collection
 
 	return chroma, nil
 }
@@ -70,7 +64,17 @@ func (c *Chroma) Embed(ctx context.Context, content string) ([]float32, error) {
 }
 
 func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
-	u, _ := url.JoinPath(c.url, "/api/v1/collections/"+c.collection.ID+"/upsert")
+	if len(documents) == 0 {
+		return nil
+	}
+
+	col, err := c.createCollection(c.namespace)
+
+	if err != nil {
+		return err
+	}
+
+	u, _ := url.JoinPath(c.url, "/api/v1/collections/"+col.ID+"/upsert")
 
 	body := embeddings{
 		IDs: make([]string, len(documents)),
@@ -126,7 +130,13 @@ func (c *Chroma) Search(ctx context.Context, embedding []float32, options *index
 		options = &index.SearchOptions{}
 	}
 
-	u, _ := url.JoinPath(c.url, "/api/v1/collections/"+c.collection.ID+"/query")
+	col, err := c.createCollection(c.namespace)
+
+	if err != nil {
+		return nil, err
+	}
+
+	u, _ := url.JoinPath(c.url, "/api/v1/collections/"+col.ID+"/query")
 
 	body := map[string]any{
 		"query_embeddings": [][]float32{
