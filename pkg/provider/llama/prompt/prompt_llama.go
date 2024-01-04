@@ -11,6 +11,8 @@ import (
 type promptLlama struct {
 }
 
+const llamaSystem = "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."
+
 func (t *promptLlama) Prompt(system string, messages []provider.Message) (string, error) {
 	messages = llamaMessageFlattening(messages)
 
@@ -21,6 +23,10 @@ func (t *promptLlama) Prompt(system string, messages []provider.Message) (string
 	if len(messages) > 0 && messages[0].Role == provider.MessageRoleSystem {
 		system = strings.TrimSpace(messages[0].Content)
 		messages = messages[1:]
+	}
+
+	if system == "" {
+		system = llamaSystem
 	}
 
 	var prompt strings.Builder

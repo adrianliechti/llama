@@ -37,24 +37,6 @@ Retrieval-Augmented Generation (RAG) for use cases like:
 - OIDC JWT Tokens
 
 
-## Example Application
-
-The Docker `compose.yaml` file starts a simple web-based [Chatbot UI](https://github.com/mckaywrigley/chatbot-ui)  (port http/3000) and a [LLAMA.CPP](https://github.com/ggerganov/llama.cpp) server. The LLAMA Gateway API is exposed locally (port http/8080) using the static token `changeme`. An OpenAI-compatible API is availabe at http://localhost:8080/oai/v1. 
-
-While starting up, a [Mistral 7B Instruct](https://mistral.ai/news/announcing-mistral-7b/) model file will be downloaded from [Hugging Face](https://huggingface.co) (see ./models) if not already exists.
-
-The sample also starts a sentence-transformer server to provide embedding APIs.
-
-For broad compatibility with existing tools (like the bundled WebUI), the models are aliased as `gpt-3.5-turbo` and `text-embedding-ada-002`.
-
-Run example application
-
-```shell
-$ docker compose up
-```
-
-Browse to http://localhost:3000
-
 ## Configuration
 
 ### Providers
@@ -136,7 +118,7 @@ providers:
 #### Sentence-BERT
 
 ```shell
-$ docker run -it --rm -p 9082:8080 semitechnologies/transformers-inference:sentence-transformers-multi-qa-MiniLM-L6-cos-v1
+$ docker run -it --rm -p 9082:8080 semitechnologies/transformers-inference:sentence-transformers-all-mpnet-base-v2
 ```
 
 ```yaml
@@ -145,8 +127,8 @@ providers:
     url: http://localhost:9082
 
     models:
-      multi-qa-minilm-l6-cos-v1:
-        id: multi-qa-minilm-l6-cos-v1
+      all-mpnet-base-v2:
+        id: all-mpnet-base-v2
 ```
 
 ### Indexes

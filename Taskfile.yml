@@ -48,7 +48,7 @@ tasks:
   
   sbert-server:
     cmds:
-      - docker run -it --rm -p 9082:8080 semitechnologies/transformers-inference:sentence-transformers-multi-qa-MiniLM-L6-cos-v1
+      - docker run -it --rm -p 9082:8080 semitechnologies/transformers-inference:sentence-transformers-all-mpnet-base-v2
 
   chroma-server:
     cmds:
