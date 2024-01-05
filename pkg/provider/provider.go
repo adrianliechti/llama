@@ -84,7 +84,7 @@ type CompleteOptions struct {
 }
 
 func ToEmbbedder(p Provider, model string) Embedder {
-	return &embberder{
+	return &embedder{
 		Provider: p,
 		model:    model,
 	}
@@ -97,12 +97,12 @@ func ToCompleter(p Provider, model string) Completer {
 	}
 }
 
-type embberder struct {
+type embedder struct {
 	Provider
 	model string
 }
 
-func (e *embberder) Embed(ctx context.Context, content string) ([]float32, error) {
+func (e *embedder) Embed(ctx context.Context, content string) ([]float32, error) {
 	return e.Provider.Embed(ctx, e.model, content)
 }
 
