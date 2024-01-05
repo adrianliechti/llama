@@ -127,8 +127,6 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 
 	content := strings.TrimSpace(completion.Message.Content)
 
-	println(prompt + content)
-
 	if answer, err := extractAnswer(content); err == nil {
 		result := provider.Completion{
 			ID:     completion.ID,
