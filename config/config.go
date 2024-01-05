@@ -12,10 +12,11 @@ import (
 )
 
 var (
-	ErrModelNotFound     = errors.New("model not found")
-	ErrIndexNotFound     = errors.New("index not found")
-	ErrEmbedderNotFound  = errors.New("embedder not found")
-	ErrCompleterNotFound = errors.New("completer not found")
+	ErrModelNotFound      = errors.New("model not found")
+	ErrIndexNotFound      = errors.New("index not found")
+	ErrClassifierNotFound = errors.New("classifier not found")
+	ErrEmbedderNotFound   = errors.New("embedder not found")
+	ErrCompleterNotFound  = errors.New("completer not found")
 )
 
 type Config struct {
@@ -103,7 +104,7 @@ func (cfg *Config) Classifier(id string) (classifier.Provider, error) {
 	c, ok := cfg.classifiers[id]
 
 	if !ok {
-		return nil, ErrIndexNotFound
+		return nil, ErrClassifierNotFound
 	}
 
 	return c, nil

@@ -7,6 +7,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/chain/fn"
 	"github.com/adrianliechti/llama/pkg/chain/rag"
+	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
 )
@@ -19,6 +20,8 @@ func (c *Config) registerChains(f *configFile) error {
 
 		var embedder provider.Embedder
 		var completer provider.Completer
+
+		classifiers := map[string]classifier.Provider{}
 
 		if cfg.Model != "" {
 			completer, err = c.Completer(cfg.Model)
@@ -48,7 +51,19 @@ func (c *Config) registerChains(f *configFile) error {
 			}
 		}
 
-		chain, err := createChain(cfg, embedder, completer, index)
+		for _, v := range cfg.Filters {
+			if v.Classifier != "" {
+				classifier, err := c.Classifier(v.Classifier)
+
+				if err != nil {
+					return err
+				}
+
+				classifiers[v.Classifier] = classifier
+			}
+		}
+
+		chain, err := createChain(cfg, embedder, completer, index, classifiers)
 
 		if err != nil {
 			return err
@@ -66,20 +81,20 @@ func (c *Config) registerChains(f *configFile) error {
 	return nil
 }
 
-func createChain(cfg chainConfig, embedder provider.Embedder, completer provider.Completer, index index.Provider) (chain.Provider, error) {
+func createChain(cfg chainConfig, embedder provider.Embedder, completer provider.Completer, index index.Provider, classifiers map[string]classifier.Provider) (chain.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
 	case "fn":
 		return fnChain(cfg, completer)
 
 	case "rag":
-		return ragChain(cfg, embedder, completer, index)
+		return ragChain(cfg, embedder, completer, index, classifiers)
 
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
 	}
 }
 
-func ragChain(cfg chainConfig, embedder provider.Embedder, completer provider.Completer, index index.Provider) (chain.Provider, error) {
+func ragChain(cfg chainConfig, embedder provider.Embedder, completer provider.Completer, index index.Provider, classifiers map[string]classifier.Provider) (chain.Provider, error) {
 	var options []rag.Option
 
 	if index != nil {
@@ -92,6 +107,10 @@ func ragChain(cfg chainConfig, embedder provider.Embedder, completer provider.Co
 
 	if completer != nil {
 		options = append(options, rag.WithCompleter(completer))
+	}
+
+	for k, v := range cfg.Filters {
+		options = append(options, rag.WithFilter(k, classifiers[v.Classifier]))
 	}
 
 	if cfg.System != "" {

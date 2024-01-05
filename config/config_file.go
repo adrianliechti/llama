@@ -92,4 +92,10 @@ type chainConfig struct {
 
 	Limit    *int     `yaml:"limit"`
 	Distance *float32 `yaml:"distance"`
+
+	Filters map[string]filterConfig `yaml:"filters"`
+}
+
+type filterConfig struct {
+	Classifier string `yaml:"classifier"`
 }
