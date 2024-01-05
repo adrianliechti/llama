@@ -108,7 +108,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		}
 	}
 
-	data.History = history.String()
+	data.Response = history.String()
 
 	prompt := executePromptTemplate(data)
 
