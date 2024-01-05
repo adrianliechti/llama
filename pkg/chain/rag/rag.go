@@ -122,20 +122,26 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 
 	var prompt strings.Builder
 
-	prompt.WriteString(message.Content)
-
 	if len(results) > 0 {
-		prompt.WriteString("\n\n")
-		prompt.WriteString("Here is some possibly useful information:")
+		prompt.WriteString("You answer questions based on a provided context.\n")
+		prompt.WriteString("You answer questions as thoroughly as possible using only the provided context.\n")
+		prompt.WriteString("If the context doesn't provide an answer, you indicate that.\n")
+		//prompt.WriteString("You provide citations inline with the answer text.\n")
+		prompt.WriteString("\n")
+
+		prompt.WriteString("### Context\n")
 
 		for _, result := range results {
 			prompt.WriteString("\n\n")
 			prompt.WriteString(result.Content)
-
 		}
+
+		prompt.WriteString("### Input\n")
 	}
 
-	prompt.WriteString(message.Content)
+	prompt.WriteString(strings.TrimSpace(message.Content))
+
+	println(prompt.String())
 
 	messages[len(messages)-1] = provider.Message{
 		Role:    provider.MessageRoleUser,
