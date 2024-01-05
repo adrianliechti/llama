@@ -172,6 +172,20 @@ indexes:
     embedding: text-embedding-ada-002
 ```
 
+### Classifications
+
+#### LLM Lookups
+
+```yaml
+classifiers:
+  {classifier-id}:
+    type: llm
+    model: {model-id}
+    categories:
+      {category-1}: "...Description when to use Category 1..."
+      {category-2}: "...Description when to use Category 2..."
+``````
+
 ## Use Cases
 
 ### Retrieval Augmented Generation (RAG)
@@ -184,8 +198,13 @@ chains:
     type: rag
     index: docs
     model: mistral-7b-instruct
-    limit: 5
-    distance: 0.5
+
+    # limit: 10
+    # distance: 1
+
+    # filters:
+    #  {metadata-key}:
+    #    classifier: {classifier-id}
 ```
 
 #### Index Documents
