@@ -26,7 +26,7 @@ type Document struct {
 	Embedding []float32
 
 	Content  string
-	Metadata map[string]any
+	Metadata map[string]string
 }
 
 type Result struct {

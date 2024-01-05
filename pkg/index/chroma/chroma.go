@@ -82,7 +82,7 @@ func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
 		Embeddings: make([][]float32, len(documents)),
 
 		Documents: make([]string, len(documents)),
-		Metadatas: make([]map[string]any, len(documents)),
+		Metadatas: make([]map[string]string, len(documents)),
 	}
 
 	for i, d := range documents {
@@ -149,6 +149,10 @@ func (c *Chroma) Query(ctx context.Context, embedding []float32, options *index.
 			"metadatas",
 			"distances",
 		},
+	}
+
+	if len(options.Filters) > 0 {
+		body["where"] = options.Filters
 	}
 
 	if options.Limit != nil {
@@ -267,8 +271,8 @@ type embeddings struct {
 
 	Embeddings [][]float32 `json:"embeddings"`
 
-	Metadatas []map[string]any `json:"metadatas"`
-	Documents []string         `json:"documents"`
+	Metadatas []map[string]string `json:"metadatas"`
+	Documents []string            `json:"documents"`
 }
 
 type result struct {
@@ -278,8 +282,8 @@ type result struct {
 
 	Embeddings [][][]float64 `json:"embeddings"`
 
-	Metadatas [][]map[string]any `json:"metadatas"`
-	Documents [][]string         `json:"documents"`
+	Metadatas [][]map[string]string `json:"metadatas"`
+	Documents [][]string            `json:"documents"`
 }
 
 type errorDetail struct {

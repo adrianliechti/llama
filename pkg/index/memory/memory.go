@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"sort"
+	"strings"
 
 	"github.com/adrianliechti/llama/pkg/index"
 
@@ -76,6 +77,7 @@ func (m *Memory) Query(ctx context.Context, embedding []float32, options *index.
 
 	results := make([]index.Result, 0)
 
+DOCUMENTS:
 	for _, d := range m.documents {
 		r := index.Result{
 			Document: d,
@@ -86,6 +88,18 @@ func (m *Memory) Query(ctx context.Context, embedding []float32, options *index.
 		if options.Distance != nil {
 			if r.Distance > *options.Distance {
 				continue
+			}
+		}
+
+		for k, v := range options.Filters {
+			val, ok := d.Metadata[k]
+
+			if !ok {
+				continue DOCUMENTS
+			}
+
+			if !strings.EqualFold(v, val) {
+				continue DOCUMENTS
 			}
 		}
 
