@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"strings"
 
 	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/provider"
@@ -76,11 +77,16 @@ func (p *Provider) Categorize(ctx context.Context, input string) (string, error)
 		return "", err
 	}
 
-	return extractClass(completion.Message.Content)
+	println(prompt)
+
+	class := strings.TrimSpace(completion.Message.Content)
+	class = strings.ReplaceAll(class, "Class:", "")
+
+	return extractClass(class)
 }
 
 func extractClass(s string) (string, error) {
-	re := regexp.MustCompile(`Class: ([a-zA-Z]*)`)
+	re := regexp.MustCompile(`([a-zA-Z]*)`)
 	matches := re.FindAllStringSubmatch(s, -1)
 
 	if len(matches) > 0 {

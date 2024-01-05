@@ -16,6 +16,8 @@ type Provider interface {
 type QueryOptions struct {
 	Limit    *int
 	Distance *float32
+
+	Filters map[string]string
 }
 
 type Document struct {

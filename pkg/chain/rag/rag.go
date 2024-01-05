@@ -114,6 +114,18 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		messages = append([]provider.Message{message}, messages...)
 	}
 
+	filters := map[string]string{}
+
+	for k, c := range p.filters {
+		v, err := c.Categorize(ctx, message.Content)
+
+		if err != nil {
+			return nil, err
+		}
+
+		filters[k] = v
+	}
+
 	embedding, err := p.index.Embed(ctx, message.Content)
 
 	if err != nil {
@@ -123,6 +135,8 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	results, err := p.index.Query(ctx, embedding, &index.QueryOptions{
 		Limit:    p.limit,
 		Distance: p.distance,
+
+		Filters: filters,
 	})
 
 	if err != nil {
