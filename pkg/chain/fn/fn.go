@@ -10,9 +10,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-var (
-	_ provider.Completer = &Provider{}
-)
+var _ provider.Completer = &Provider{}
 
 type Provider struct {
 	completer provider.Completer

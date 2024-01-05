@@ -2,15 +2,15 @@ Below is an instruction that describes a task, paired with an input that provide
 
 
 ### Instruction:
-Classify the input in one of these classes:
+Classify the given input in one of these categories:
 {{ range .Classes }}
 {{ .Name }}: {{ .Description }}
 {{ end }}
 
-You MUST answer only with the class name. Strictly use the following format:
+You MUST answer only with the category name!
 
 Input: the input you must cassify
-Class: [{{$sep := ""}}{{- range .Classes}}{{.Name}}{{$sep = ", "}}{{- end }}]
+Categories: [{{$sep := ""}}{{- range .Categories}}{{.Name}}{{$sep = ", "}}{{- end }}]
 
 
 ### Input:

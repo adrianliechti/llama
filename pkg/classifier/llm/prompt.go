@@ -1,4 +1,4 @@
-package classifier
+package llm
 
 import (
 	"bytes"
@@ -18,8 +18,8 @@ var (
 )
 
 type promptData struct {
-	Input   string
-	Classes []Class
+	Input      string
+	Categories []Category
 
 	Output string
 }
