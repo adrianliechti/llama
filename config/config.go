@@ -2,7 +2,6 @@ package config
 
 import (
 	"errors"
-	"os"
 
 	"github.com/adrianliechti/llama/pkg/authorizer"
 	"github.com/adrianliechti/llama/pkg/chain"
@@ -111,10 +110,6 @@ func (cfg *Config) Classifier(id string) (classifier.Provider, error) {
 }
 
 func Parse(path string) (*Config, error) {
-	if path == "" {
-		path = "config.yaml"
-	}
-
 	file, err := parseFile(path)
 
 	if err != nil {
@@ -122,7 +117,7 @@ func Parse(path string) (*Config, error) {
 	}
 
 	c := &Config{
-		Address: addrFromEnvironment(),
+		Address: ":8080",
 
 		models: make(map[string]Model),
 
@@ -153,14 +148,4 @@ func Parse(path string) (*Config, error) {
 	}
 
 	return c, nil
-}
-
-func addrFromEnvironment() string {
-	port := os.Getenv("PORT")
-
-	if port == "" {
-		port = "8080"
-	}
-
-	return ":" + port
 }

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -15,24 +16,22 @@ import (
 )
 
 func main() {
-	llamaURL := os.Getenv("LLAMA_URL")
-	llamaToken := os.Getenv("LLAMA_TOKEN")
+	urlFlag := flag.String("url", "http://localhost:8080/oai/v1", "server url")
+	tokenFlag := flag.String("token", "", "server token")
+	modelFlag := flag.String("model", "", "model id")
 
-	model := os.Getenv("LLAMA_MODEL")
-
-	if llamaURL == "" {
-		llamaURL = "http://localhost:8080/oai/v1"
-	}
+	flag.Parse()
 
 	ctx := context.Background()
 
 	reader := bufio.NewReader(os.Stdin)
 	output := os.Stdout
 
-	config := openai.DefaultConfig(llamaToken)
-	config.BaseURL = llamaURL
+	config := openai.DefaultConfig(*tokenFlag)
+	config.BaseURL = *urlFlag
 
 	client := openai.NewClientWithConfig(config)
+	model := *modelFlag
 
 	if model == "" {
 		list, err := client.ListModels(ctx)
