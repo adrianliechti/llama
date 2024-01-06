@@ -45,8 +45,9 @@ func (s *Server) handleAudioTranscriptions(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	w.Write([]byte(transcription.Content))
+	result := Transcription{
+		Text: transcription.Content,
+	}
 
-	_ = file
-	_ = header
+	writeJson(w, result)
 }

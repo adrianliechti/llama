@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 
@@ -57,13 +58,28 @@ func (p *Provider) Transcribe(ctx context.Context, input io.Reader, options *pro
 	id := uuid.NewString()
 
 	url, _ := url.JoinPath(p.url, "/inference")
-	body, err := p.convertInferenceRequest(input, options)
+
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+
+	w.WriteField("response-format", "json")
+
+	file, err := w.CreateFormFile("file", options.Name)
 
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := p.client.Post(url, "application/json", jsonReader(body))
+	if _, err := io.Copy(file, input); err != nil {
+		return nil, err
+	}
+
+	w.Close()
+
+	req, _ := http.NewRequest("POST", url, &b)
+	req.Header.Set("Content-Type", w.FormDataContentType())
+
+	resp, err := p.client.Do(req)
 
 	if err != nil {
 		return nil, err
@@ -88,26 +104,4 @@ func (p *Provider) Transcribe(ctx context.Context, input io.Reader, options *pro
 	}
 
 	return &result, nil
-}
-
-func (p *Provider) convertInferenceRequest(input any, options *provider.TranscribeOptions) (*InferenceRequest, error) {
-	if options == nil {
-		options = &provider.TranscribeOptions{}
-	}
-
-	req := &InferenceRequest{
-		Temperature: options.Temperature,
-	}
-
-	return req, nil
-}
-
-func jsonReader(v any) io.Reader {
-	b := new(bytes.Buffer)
-
-	enc := json.NewEncoder(b)
-	enc.SetEscapeHTML(false)
-
-	enc.Encode(v)
-	return b
 }
