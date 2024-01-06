@@ -13,7 +13,9 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-var _ provider.Provider = &Provider{}
+var (
+	_ provider.Embedder = (*Provider)(nil)
+)
 
 type Provider struct {
 	url string
@@ -47,7 +49,7 @@ func WithClient(client *http.Client) Option {
 	}
 }
 
-func (p *Provider) Embed(ctx context.Context, model string, content string) ([]float32, error) {
+func (p *Provider) Embed(ctx context.Context, content string) ([]float32, error) {
 	body := &VectorsRequest{
 		Text: strings.TrimSpace(content),
 	}
@@ -72,10 +74,6 @@ func (p *Provider) Embed(ctx context.Context, model string, content string) ([]f
 	}
 
 	return result.Vector, nil
-}
-
-func (*Provider) Complete(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
-	return nil, errors.ErrUnsupported
 }
 
 func jsonReader(v any) io.Reader {

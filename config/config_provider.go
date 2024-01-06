@@ -12,37 +12,41 @@ import (
 )
 
 func (c *Config) registerProviders(f *configFile) error {
-	for _, cfg := range f.Providers {
-		p, err := createProvider(cfg)
+	for _, p := range f.Providers {
+		for id, m := range p.Models {
+			r, err := createProvider(p, m.ID)
 
-		if err != nil {
-			return err
-		}
-
-		for id, cfg := range cfg.Models {
-			c.models[id] = Model{
-				ID: id,
-
-				model: cfg.ID,
+			if err != nil {
+				return err
 			}
 
-			c.providers[id] = p
+			c.models[id] = provider.Model{
+				ID: id,
+			}
+
+			if embedder, ok := r.(provider.Embedder); ok {
+				c.embedder[id] = embedder
+			}
+
+			if completer, ok := r.(provider.Completer); ok {
+				c.completer[id] = completer
+			}
 		}
 	}
 
 	return nil
 }
 
-func createProvider(cfg providerConfig) (provider.Provider, error) {
+func createProvider(cfg providerConfig, model string) (any, error) {
 	switch strings.ToLower(cfg.Type) {
 	case "openai":
-		return openaiProvider(cfg)
+		return openaiProvider(cfg, model)
 
 	case "llama":
 		return llamaProvider(cfg)
 
 	case "ollama":
-		return ollamaProvider(cfg)
+		return ollamaProvider(cfg, model)
 
 	case "sbert":
 		return sbertProvider(cfg)
@@ -52,7 +56,7 @@ func createProvider(cfg providerConfig) (provider.Provider, error) {
 	}
 }
 
-func openaiProvider(cfg providerConfig) (provider.Provider, error) {
+func openaiProvider(cfg providerConfig, model string) (*openai.Provider, error) {
 	var options []openai.Option
 
 	if cfg.URL != "" {
@@ -63,18 +67,36 @@ func openaiProvider(cfg providerConfig) (provider.Provider, error) {
 		options = append(options, openai.WithToken(cfg.Token))
 	}
 
+	if model != "" {
+		options = append(options, openai.WithModel(model))
+	}
+
 	return openai.New(options...)
 }
 
-func llamaProvider(cfg providerConfig) (provider.Provider, error) {
+func ollamaProvider(cfg providerConfig, model string) (*ollama.Provider, error) {
+	var options []ollama.Option
+
+	if cfg.URL != "" {
+		options = append(options, ollama.WithURL(cfg.URL))
+	}
+
+	if model != "" {
+		options = append(options, ollama.WithModel(model))
+	}
+
+	return ollama.New(options...)
+}
+
+func llamaProvider(cfg providerConfig) (*llama.Provider, error) {
 	var options []llama.Option
 
-	var prompt string
+	var system string
 	var template string
 
 	for _, v := range cfg.Models {
-		if prompt == "" {
-			prompt = v.Prompt
+		if system == "" {
+			system = v.System
 		}
 
 		if template == "" {
@@ -82,8 +104,8 @@ func llamaProvider(cfg providerConfig) (provider.Provider, error) {
 		}
 	}
 
-	if prompt != "" {
-		options = append(options, llama.WithSystem(prompt))
+	if system != "" {
+		options = append(options, llama.WithSystem(system))
 	}
 
 	switch strings.ToLower(template) {
@@ -106,13 +128,7 @@ func llamaProvider(cfg providerConfig) (provider.Provider, error) {
 	return llama.New(cfg.URL, options...)
 }
 
-func ollamaProvider(cfg providerConfig) (provider.Provider, error) {
-	var options []ollama.Option
-
-	return ollama.New(cfg.URL, options...)
-}
-
-func sbertProvider(cfg providerConfig) (provider.Provider, error) {
+func sbertProvider(cfg providerConfig) (*sbert.Provider, error) {
 	var options []sbert.Option
 
 	if len(cfg.Models) > 1 {

@@ -19,7 +19,10 @@ import (
 	"github.com/google/uuid"
 )
 
-var _ provider.Provider = &Provider{}
+var (
+	_ provider.Embedder  = (*Provider)(nil)
+	_ provider.Completer = (*Provider)(nil)
+)
 
 type Provider struct {
 	url string
@@ -80,7 +83,7 @@ func WithTemplate(template Template) Option {
 	}
 }
 
-func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32, error) {
+func (p *Provider) Embed(ctx context.Context, content string) ([]float32, error) {
 	body := &EmbeddingRequest{
 		Content: strings.TrimSpace(content),
 	}
@@ -107,7 +110,7 @@ func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32,
 	return result.Embedding, nil
 }
 
-func (p *Provider) Complete(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+func (p *Provider) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
 	}

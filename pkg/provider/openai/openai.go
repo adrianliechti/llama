@@ -10,11 +10,16 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-var _ provider.Provider = &Provider{}
+var (
+	_ provider.Embedder  = (*Provider)(nil)
+	_ provider.Completer = (*Provider)(nil)
+)
 
 type Provider struct {
-	url   string
+	url string
+
 	token string
+	model string
 
 	client *openai.Client
 }
@@ -22,7 +27,9 @@ type Provider struct {
 type Option func(*Provider)
 
 func New(options ...Option) (*Provider, error) {
-	p := &Provider{}
+	p := &Provider{
+		model: openai.GPT3Dot5Turbo,
+	}
 
 	for _, option := range options {
 		option(p)
@@ -55,7 +62,13 @@ func WithToken(token string) Option {
 	}
 }
 
-func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32, error) {
+func WithModel(model string) Option {
+	return func(p *Provider) {
+		p.model = model
+	}
+}
+
+func (p *Provider) Embed(ctx context.Context, content string) ([]float32, error) {
 	req := openai.EmbeddingRequest{
 		Input: content,
 		Model: openai.AdaEmbeddingV2,
@@ -70,16 +83,12 @@ func (p *Provider) Embed(ctx context.Context, model, content string) ([]float32,
 	return result.Data[0].Embedding, nil
 }
 
-func (p *Provider) Complete(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+func (p *Provider) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
 	}
 
-	if model == "" {
-		return nil, errors.New("missing model")
-	}
-
-	req, err := p.convertCompletionRequest(model, messages, options)
+	req, err := p.convertCompletionRequest(messages, options)
 
 	if err != nil {
 		return nil, err
@@ -179,13 +188,13 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 	}
 }
 
-func (p *Provider) convertCompletionRequest(model string, messages []provider.Message, options *provider.CompleteOptions) (*openai.ChatCompletionRequest, error) {
+func (p *Provider) convertCompletionRequest(messages []provider.Message, options *provider.CompleteOptions) (*openai.ChatCompletionRequest, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
 	}
 
 	req := &openai.ChatCompletionRequest{
-		Model: model,
+		Model: p.model,
 	}
 
 	if options.Format == provider.CompletionFormatJSON {

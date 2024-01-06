@@ -69,10 +69,8 @@ func (c *Config) registerChains(f *configFile) error {
 			return err
 		}
 
-		c.models[id] = Model{
+		c.models[id] = provider.Model{
 			ID: id,
-
-			model: cfg.Model,
 		}
 
 		c.chains[id] = chain

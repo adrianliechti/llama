@@ -4,17 +4,16 @@ import (
 	"context"
 )
 
-type Provider interface {
-	Embed(ctx context.Context, model, content string) ([]float32, error)
-	Complete(ctx context.Context, model string, messages []Message, options *CompleteOptions) (*Completion, error)
-}
-
 type Embedder interface {
 	Embed(ctx context.Context, content string) ([]float32, error)
 }
 
 type Completer interface {
 	Complete(ctx context.Context, messages []Message, options *CompleteOptions) (*Completion, error)
+}
+
+type Model struct {
+	ID string
 }
 
 type MessageRole string
@@ -81,36 +80,4 @@ type CompleteOptions struct {
 	Temperature *float32
 	TopP        *float32
 	MinP        *float32
-}
-
-func ToEmbbedder(p Provider, model string) Embedder {
-	return &embedder{
-		Provider: p,
-		model:    model,
-	}
-}
-
-func ToCompleter(p Provider, model string) Completer {
-	return &completer{
-		Provider: p,
-		model:    model,
-	}
-}
-
-type embedder struct {
-	Provider
-	model string
-}
-
-func (e *embedder) Embed(ctx context.Context, content string) ([]float32, error) {
-	return e.Provider.Embed(ctx, e.model, content)
-}
-
-type completer struct {
-	Provider
-	model string
-}
-
-func (c *completer) Complete(ctx context.Context, messages []Message, options *CompleteOptions) (*Completion, error) {
-	return c.Provider.Complete(ctx, c.model, messages, options)
 }

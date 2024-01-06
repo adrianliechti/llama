@@ -54,7 +54,7 @@ type providerConfig struct {
 type modelConfig struct {
 	ID string `yaml:"id"`
 
-	Prompt   string `yaml:"prompt"`
+	System   string `yaml:"system"`
 	Template string `yaml:"template"`
 
 	Name        string `yaml:"name"`

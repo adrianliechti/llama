@@ -17,20 +17,27 @@ import (
 	"github.com/google/uuid"
 )
 
-var _ provider.Provider = &Provider{}
+var (
+	_ provider.Embedder  = (*Provider)(nil)
+	_ provider.Completer = (*Provider)(nil)
+)
 
 type Provider struct {
 	url string
+
+	model  string
+	system string
 
 	client *http.Client
 }
 
 type Option func(*Provider)
 
-func New(url string, options ...Option) (*Provider, error) {
+func New(options ...Option) (*Provider, error) {
 	p := &Provider{
-		url: url,
+		url: "http://localhost:11434",
 
+		model:  "llama2",
 		client: http.DefaultClient,
 	}
 
@@ -51,9 +58,27 @@ func WithClient(client *http.Client) Option {
 	}
 }
 
-func (p *Provider) Embed(ctx context.Context, model string, content string) ([]float32, error) {
+func WithURL(url string) Option {
+	return func(p *Provider) {
+		p.url = url
+	}
+}
+
+func WithModel(model string) Option {
+	return func(p *Provider) {
+		p.model = model
+	}
+}
+
+func WithSystem(system string) Option {
+	return func(p *Provider) {
+		p.system = system
+	}
+}
+
+func (p *Provider) Embed(ctx context.Context, content string) ([]float32, error) {
 	body := &EmbeddingRequest{
-		Model:  model,
+		Model:  p.model,
 		Prompt: strings.TrimSpace(content),
 	}
 
@@ -79,7 +104,7 @@ func (p *Provider) Embed(ctx context.Context, model string, content string) ([]f
 	return toFloat32s(result.Embedding), nil
 }
 
-func (p *Provider) Complete(ctx context.Context, model string, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+func (p *Provider) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
 	}
@@ -87,7 +112,7 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 	id := uuid.NewString()
 
 	url, _ := url.JoinPath(p.url, "/api/chat")
-	body, err := p.convertChatRequest(model, messages, options)
+	body, err := p.convertChatRequest(messages, options)
 
 	if err != nil {
 		return nil, err
@@ -206,15 +231,24 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 	}
 }
 
-func (p *Provider) convertChatRequest(model string, messages []provider.Message, options *provider.CompleteOptions) (*ChatRequest, error) {
+func (p *Provider) convertChatRequest(messages []provider.Message, options *provider.CompleteOptions) (*ChatRequest, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
+	}
+
+	if p.system != "" && len(messages) > 0 && messages[0].Role != provider.MessageRoleSystem {
+		message := provider.Message{
+			Role:    provider.MessageRoleSystem,
+			Content: p.system,
+		}
+
+		messages = append([]provider.Message{message}, messages...)
 	}
 
 	stream := options.Stream != nil
 
 	req := &ChatRequest{
-		Model:  model,
+		Model:  p.model,
 		Stream: &stream,
 
 		Options: map[string]any{},

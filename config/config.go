@@ -23,22 +23,18 @@ type Config struct {
 
 	Authorizers []authorizer.Provider
 
-	models map[string]Model
+	models map[string]provider.Model
 
-	providers   map[string]provider.Provider
+	embedder  map[string]provider.Embedder
+	completer map[string]provider.Completer
+
 	indexes     map[string]index.Provider
 	classifiers map[string]classifier.Provider
 	chains      map[string]chain.Provider
 }
 
-type Model struct {
-	ID string
-
-	model string
-}
-
-func (cfg *Config) Models() []Model {
-	var result []Model
+func (cfg *Config) Models() []provider.Model {
+	var result []provider.Model
 
 	for _, m := range cfg.models {
 		result = append(result, m)
@@ -47,7 +43,7 @@ func (cfg *Config) Models() []Model {
 	return result
 }
 
-func (cfg *Config) Model(id string) (*Model, error) {
+func (cfg *Config) Model(id string) (*provider.Model, error) {
 	m, ok := cfg.models[id]
 
 	if !ok {
@@ -58,28 +54,16 @@ func (cfg *Config) Model(id string) (*Model, error) {
 }
 
 func (cfg *Config) Embedder(model string) (provider.Embedder, error) {
-	m, err := cfg.Model(model)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if p, ok := cfg.providers[model]; ok {
-		return provider.ToEmbbedder(p, m.model), nil
+	if e, ok := cfg.embedder[model]; ok {
+		return e, nil
 	}
 
 	return nil, ErrEmbedderNotFound
 }
 
 func (cfg *Config) Completer(model string) (provider.Completer, error) {
-	m, err := cfg.Model(model)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if p, ok := cfg.providers[model]; ok {
-		return provider.ToCompleter(p, m.model), nil
+	if c, ok := cfg.completer[model]; ok {
+		return c, nil
 	}
 
 	if c, ok := cfg.chains[model]; ok {
@@ -119,9 +103,11 @@ func Parse(path string) (*Config, error) {
 	c := &Config{
 		Address: ":8080",
 
-		models: make(map[string]Model),
+		models: make(map[string]provider.Model),
 
-		providers:   make(map[string]provider.Provider),
+		embedder:  make(map[string]provider.Embedder),
+		completer: make(map[string]provider.Completer),
+
 		indexes:     make(map[string]index.Provider),
 		classifiers: make(map[string]classifier.Provider),
 		chains:      make(map[string]chain.Provider),
