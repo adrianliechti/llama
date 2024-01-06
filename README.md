@@ -17,11 +17,10 @@ Retrieval-Augmented Generation (RAG) for use cases like:
   - [OpenAI Platform](https://platform.openai.com/docs/introduction)
   - [Azure OpenAI Service](https://azure.microsoft.com/en-us/products/ai-services/openai-service)
   - [vLLM](https://docs.vllm.ai)
-  - ...
 
 - Local Models
-  - [LLAMA.CPP](https://github.com/ggerganov/llama.cpp)
   - [Ollama](https://ollama.ai/)
+  - [LLAMA.CPP](https://github.com/ggerganov/llama.cpp)
   - [Sentence BERT](https://www.sbert.net) 
 
 
@@ -80,10 +79,10 @@ providers:
 #### LLAMA.CPP
 
 ```shell
-$ server --port 9081 --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
-```
+# using taskfile.dev
+$ task llama-server
 
-```shell
+# using Docker (might be slow)
 $ docker run -it --rm -p 9081:9081 -v ./models/:/models/ ghcr.io/ggerganov/llama.cpp:full --server --host 0.0.0.0 --port 9081 --model /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
 ```
 
@@ -118,6 +117,10 @@ providers:
 #### Sentence-BERT
 
 ```shell
+# using taskfile.dev
+task sbert-server
+
+# using Docker
 $ docker run -it --rm -p 9082:8080 semitechnologies/transformers-inference:sentence-transformers-all-mpnet-base-v2
 ```
 
@@ -136,7 +139,11 @@ providers:
 #### Chroma
 
 ```shell
-$ docker run -it --rm -p 9083:8000 ghcr.io/chroma-core/chroma
+# using taskfile.dev
+$ task chroma-server
+
+# using Docker
+$ docker run -it --rm -p 9083:8000 -v chroma-data:/chroma/chroma ghcr.io/chroma-core/chroma
 ```
 
 ```yaml
@@ -151,7 +158,11 @@ indexes:
 #### Weaviate
 
 ```shell
-$ docker run -it --rm -p 9084:8080 -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true -e PERSISTENCE_DATA_PATH=/data semitechnologies/weaviate
+# using taskfile.dev
+$ task weaviate-server
+
+# using Docker
+$ docker run -it --rm -p 9084:8080 -v weaviate-data:/var/lib/weaviate -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true -e PERSISTENCE_DATA_PATH=/var/lib/weaviate semitechnologies/weaviate
 ```
 
 ```yaml
