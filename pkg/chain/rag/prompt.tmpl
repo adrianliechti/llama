@@ -1,0 +1,15 @@
+{{- if .Results }}
+You answer questions based on a provided context.
+You answer questions as thoroughly as possible using only the provided context.
+If the context doesn't provide an answer, you indicate that.
+
+### Context
+{{- range .Results }}
+- {{ .Content }}
+{{- end }}
+{{- end }}
+
+### Input
+{{ .Input }}
+
+### Response
