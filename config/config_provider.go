@@ -9,6 +9,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 	"github.com/adrianliechti/llama/pkg/provider/sbert"
+	"github.com/adrianliechti/llama/pkg/provider/whisper"
 )
 
 func (c *Config) registerProviders(f *configFile) error {
@@ -31,6 +32,10 @@ func (c *Config) registerProviders(f *configFile) error {
 			if completer, ok := r.(provider.Completer); ok {
 				c.completer[id] = completer
 			}
+
+			if transcriber, ok := r.(provider.Transcriber); ok {
+				c.transcriber[id] = transcriber
+			}
 		}
 	}
 
@@ -44,6 +49,9 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 
 	case "llama":
 		return llamaProvider(cfg)
+
+	case "whisper":
+		return whisperProvider(cfg)
 
 	case "ollama":
 		return ollamaProvider(cfg, model)
@@ -126,6 +134,12 @@ func llamaProvider(cfg providerConfig) (*llama.Provider, error) {
 	}
 
 	return llama.New(cfg.URL, options...)
+}
+
+func whisperProvider(cfg providerConfig) (*whisper.Provider, error) {
+	var options []whisper.Option
+
+	return whisper.New(cfg.URL, options...)
 }
 
 func sbertProvider(cfg providerConfig) (*sbert.Provider, error) {

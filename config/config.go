@@ -11,11 +11,14 @@ import (
 )
 
 var (
-	ErrModelNotFound      = errors.New("model not found")
+	ErrModelNotFound = errors.New("model not found")
+
+	ErrEmbedderNotFound    = errors.New("embedder not found")
+	ErrCompleterNotFound   = errors.New("completer not found")
+	ErrTranscriberNotFound = errors.New("transcriber not found")
+
 	ErrIndexNotFound      = errors.New("index not found")
 	ErrClassifierNotFound = errors.New("classifier not found")
-	ErrEmbedderNotFound   = errors.New("embedder not found")
-	ErrCompleterNotFound  = errors.New("completer not found")
 )
 
 type Config struct {
@@ -25,12 +28,14 @@ type Config struct {
 
 	models map[string]provider.Model
 
-	embedder  map[string]provider.Embedder
-	completer map[string]provider.Completer
+	embedder    map[string]provider.Embedder
+	completer   map[string]provider.Completer
+	transcriber map[string]provider.Transcriber
 
 	indexes     map[string]index.Provider
 	classifiers map[string]classifier.Provider
-	chains      map[string]chain.Provider
+
+	chains map[string]chain.Provider
 }
 
 func (cfg *Config) Models() []provider.Model {
@@ -73,6 +78,14 @@ func (cfg *Config) Completer(model string) (provider.Completer, error) {
 	return nil, ErrCompleterNotFound
 }
 
+func (cfg *Config) Transcriber(model string) (provider.Transcriber, error) {
+	if c, ok := cfg.transcriber[model]; ok {
+		return c, nil
+	}
+
+	return nil, ErrTranscriberNotFound
+}
+
 func (cfg *Config) Index(id string) (index.Provider, error) {
 	i, ok := cfg.indexes[id]
 
@@ -105,12 +118,14 @@ func Parse(path string) (*Config, error) {
 
 		models: make(map[string]provider.Model),
 
-		embedder:  make(map[string]provider.Embedder),
-		completer: make(map[string]provider.Completer),
+		embedder:    make(map[string]provider.Embedder),
+		completer:   make(map[string]provider.Completer),
+		transcriber: make(map[string]provider.Transcriber),
 
 		indexes:     make(map[string]index.Provider),
 		classifiers: make(map[string]classifier.Provider),
-		chains:      make(map[string]chain.Provider),
+
+		chains: make(map[string]chain.Provider),
 	}
 
 	if err := c.registerAuthorizer(file); err != nil {

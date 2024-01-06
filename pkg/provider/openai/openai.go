@@ -7,12 +7,14 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
 )
 
 var (
-	_ provider.Embedder  = (*Provider)(nil)
-	_ provider.Completer = (*Provider)(nil)
+	_ provider.Embedder    = (*Provider)(nil)
+	_ provider.Completer   = (*Provider)(nil)
+	_ provider.Transcriber = (*Provider)(nil)
 )
 
 type Provider struct {
@@ -186,6 +188,37 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 
 		return &result, nil
 	}
+}
+
+func (p *Provider) Transcribe(ctx context.Context, input io.Reader, options *provider.TranscribeOptions) (*provider.Transcription, error) {
+	if options == nil {
+		options = &provider.TranscribeOptions{}
+	}
+
+	id := uuid.NewString()
+
+	req := openai.AudioRequest{
+		Model: openai.Whisper1,
+
+		Language: options.Language,
+
+		Reader:   input,
+		FilePath: options.Name,
+	}
+
+	transcription, err := p.client.CreateTranscription(ctx, req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	result := provider.Transcription{
+		ID: id,
+
+		Content: transcription.Text,
+	}
+
+	return &result, nil
 }
 
 func (p *Provider) convertCompletionRequest(messages []provider.Message, options *provider.CompleteOptions) (*openai.ChatCompletionRequest, error) {

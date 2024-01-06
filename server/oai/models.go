@@ -138,6 +138,10 @@ type FunctionCall struct {
 	Arguments string `json:"arguments,omitempty"`
 }
 
+type Transcription struct {
+	Text string `json:"text"`
+}
+
 type ErrorResponse struct {
 	Error Error `json:"error,omitempty"`
 }

@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"io"
 )
 
 type Embedder interface {
@@ -10,6 +11,10 @@ type Embedder interface {
 
 type Completer interface {
 	Complete(ctx context.Context, messages []Message, options *CompleteOptions) (*Completion, error)
+}
+
+type Transcriber interface {
+	Transcribe(ctx context.Context, input io.Reader, options *TranscribeOptions) (*Transcription, error)
 }
 
 type Model struct {
@@ -80,4 +85,21 @@ type CompleteOptions struct {
 	Temperature *float32
 	TopP        *float32
 	MinP        *float32
+}
+
+type Transcription struct {
+	ID string
+
+	Content string
+}
+
+type TranscribeOptions struct {
+	Name string
+
+	Language    string
+	Temperature *float32
+}
+
+type Audio struct {
+	Content io.Reader
 }
