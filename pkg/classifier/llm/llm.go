@@ -77,16 +77,16 @@ func (p *Provider) Categorize(ctx context.Context, input string) (string, error)
 		return "", err
 	}
 
-	println(prompt)
-
 	class := strings.TrimSpace(completion.Message.Content)
-	class = strings.ReplaceAll(class, "Class:", "")
+	class = strings.ToLower(class)
+	class = strings.ReplaceAll(class, "class:", "")
+	class = strings.ReplaceAll(class, "category:", "")
 
 	return extractClass(class)
 }
 
 func extractClass(s string) (string, error) {
-	re := regexp.MustCompile(`([a-zA-Z]*)`)
+	re := regexp.MustCompile(`([a-zA-Z]*).*`)
 	matches := re.FindAllStringSubmatch(s, -1)
 
 	if len(matches) > 0 {

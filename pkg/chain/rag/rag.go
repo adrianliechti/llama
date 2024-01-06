@@ -119,8 +119,8 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	for k, c := range p.filters {
 		v, err := c.Categorize(ctx, message.Content)
 
-		if err != nil {
-			return nil, err
+		if err != nil || v == "" {
+			continue
 		}
 
 		filters[k] = v

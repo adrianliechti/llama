@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"strings"
@@ -94,12 +95,6 @@ func (w *Weaviate) Index(ctx context.Context, documents ...index.Document) error
 }
 
 func (w *Weaviate) Query(ctx context.Context, embedding []float32, options *index.QueryOptions) ([]index.Result, error) {
-	limit := 10
-
-	if options.Limit != nil {
-		limit = *options.Limit
-	}
-
 	var vector strings.Builder
 
 	for i, v := range embedding {
@@ -110,22 +105,14 @@ func (w *Weaviate) Query(ctx context.Context, embedding []float32, options *inde
 		vector.WriteString(fmt.Sprintf("%f", v))
 	}
 
-	query := `{
-		Get {
-			` + w.class + ` (
-				limit: ` + fmt.Sprintf("%d", limit) + `
-				nearVector: {
-					vector: [` + vector.String() + `]
-				}
-			) {
-				content
-				_additional {
-					id
-					distance
-				}
-			}
-		}
-	}`
+	query := executeQueryTemplate(queryData{
+		Class: w.class,
+
+		Vector: embedding,
+
+		Limit: options.Limit,
+		Where: options.Filters,
+	})
 
 	body := map[string]any{
 		"query": query,
@@ -195,16 +182,16 @@ func generateID(d index.Document) string {
 }
 
 func (w *Weaviate) createObject(d index.Document) error {
+	properties := maps.Clone(d.Metadata)
+	properties["content"] = d.Content
+
 	body := map[string]any{
 		"id": d.ID,
 
 		"class":  w.class,
 		"vector": d.Embedding,
 
-		"properties": map[string]any{
-			"content":  d.Content,
-			"metadata": d.Metadata,
-		},
+		"properties": properties,
 	}
 
 	u, _ := url.JoinPath(w.url, "/v1/objects")
@@ -224,16 +211,16 @@ func (w *Weaviate) createObject(d index.Document) error {
 }
 
 func (w *Weaviate) updateObject(d index.Document) error {
+	properties := maps.Clone(d.Metadata)
+	properties["content"] = d.Content
+
 	body := map[string]any{
 		"id": d.ID,
 
 		"class":  w.class,
 		"vector": d.Embedding,
 
-		"properties": map[string]any{
-			"content":  d.Content,
-			"metadata": d.Metadata,
-		},
+		"properties": properties,
 	}
 
 	u, _ := url.JoinPath(w.url, "/v1/objects/"+w.class+"/"+d.ID)
