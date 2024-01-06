@@ -12,6 +12,10 @@ type Completer interface {
 	Complete(ctx context.Context, messages []Message, options *CompleteOptions) (*Completion, error)
 }
 
+type Transcriber interface {
+	Transcribe(ctx context.Context, input any, options *TranscribeOptions) (*Transcription, error)
+}
+
 type Model struct {
 	ID string
 }
@@ -80,4 +84,14 @@ type CompleteOptions struct {
 	Temperature *float32
 	TopP        *float32
 	MinP        *float32
+}
+
+type Transcription struct {
+	ID string
+
+	Content string
+}
+
+type TranscribeOptions struct {
+	Temperature *float32
 }

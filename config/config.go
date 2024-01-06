@@ -25,12 +25,14 @@ type Config struct {
 
 	models map[string]provider.Model
 
-	embedder  map[string]provider.Embedder
-	completer map[string]provider.Completer
+	embedder    map[string]provider.Embedder
+	completer   map[string]provider.Completer
+	transcriber map[string]provider.Transcriber
 
 	indexes     map[string]index.Provider
 	classifiers map[string]classifier.Provider
-	chains      map[string]chain.Provider
+
+	chains map[string]chain.Provider
 }
 
 func (cfg *Config) Models() []provider.Model {
@@ -105,12 +107,14 @@ func Parse(path string) (*Config, error) {
 
 		models: make(map[string]provider.Model),
 
-		embedder:  make(map[string]provider.Embedder),
-		completer: make(map[string]provider.Completer),
+		embedder:    make(map[string]provider.Embedder),
+		completer:   make(map[string]provider.Completer),
+		transcriber: make(map[string]provider.Transcriber),
 
 		indexes:     make(map[string]index.Provider),
 		classifiers: make(map[string]classifier.Provider),
-		chains:      make(map[string]chain.Provider),
+
+		chains: make(map[string]chain.Provider),
 	}
 
 	if err := c.registerAuthorizer(file); err != nil {

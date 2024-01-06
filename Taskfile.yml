@@ -5,9 +5,6 @@ version: '3'
 vars:
   REPOSITORY: adrianliechti/llama-openai:2
 
-  MODEL: mistral-7b-instruct-v0.2.Q4_K_M.gguf
-  MODEL_URL: https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf
-
 tasks:
   publish:
     cmds:
@@ -24,7 +21,15 @@ tasks:
   llama-server:
     deps: [download-llama-server, download-llama-model]
     cmds:
-      - bin/llama-server --port 9081 --log-disable --embedding --model ./models/{{.MODEL}} 
+      - bin/llama-server --port 9081 --log-disable --embedding --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+  
+  download-llama-model:
+    cmds:
+      - mkdir -p models
+      - curl -s -L -o models/mistral-7b-instruct-v0.2.Q4_K_M.gguf https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+
+    status:
+      - test -f models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
   
   download-llama-server:
     cmds:
@@ -39,14 +44,32 @@ tasks:
 
     status:
       - test -f bin/llama-server
-  
-  download-llama-model:
+        
+  whisper-server:
+    deps: [download-whisper-server, download-whisper-model]
+    cmds:
+      - bin/whisper-server --port 9085 --convert --model ./models/whisper-ggml-medium.bin
+    
+  download-whisper-model:
     cmds:
       - mkdir -p models
-      - curl -s -L -o models/{{.MODEL}} {{.MODEL_URL}}
+      - curl -s -L -o models/whisper-ggml-medium.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin
+    
+    status:
+      - test -f models/whisper-ggml-medium.bin
+  
+  download-whisper-server:
+    cmds:
+      - mkdir -p bin
+      - rm -rf tmp/whisper.cpp
+      - git clone https://github.com/ggerganov/whisper.cpp tmp/whisper.cpp
+      - make -C tmp/whisper.cpp/ server
+      - cp tmp/whisper.cpp/server bin/whisper-server
+      - rm -rf tmp/whisper.cpp
+      - rm -rf tmp
 
     status:
-      - test -f models/{{.MODEL}}
+      - test -f bin/whisper-server
   
   sbert-server:
     cmds:
