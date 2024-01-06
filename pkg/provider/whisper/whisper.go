@@ -49,7 +49,7 @@ func WithClient(client *http.Client) Option {
 	}
 }
 
-func (p *Provider) Transcribe(ctx context.Context, input any, options *provider.TranscribeOptions) (*provider.Transcription, error) {
+func (p *Provider) Transcribe(ctx context.Context, input io.Reader, options *provider.TranscribeOptions) (*provider.Transcription, error) {
 	if options == nil {
 		options = &provider.TranscribeOptions{}
 	}

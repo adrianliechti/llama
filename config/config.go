@@ -11,11 +11,14 @@ import (
 )
 
 var (
-	ErrModelNotFound      = errors.New("model not found")
+	ErrModelNotFound = errors.New("model not found")
+
+	ErrEmbedderNotFound    = errors.New("embedder not found")
+	ErrCompleterNotFound   = errors.New("completer not found")
+	ErrTranscriberNotFound = errors.New("transcriber not found")
+
 	ErrIndexNotFound      = errors.New("index not found")
 	ErrClassifierNotFound = errors.New("classifier not found")
-	ErrEmbedderNotFound   = errors.New("embedder not found")
-	ErrCompleterNotFound  = errors.New("completer not found")
 )
 
 type Config struct {
@@ -73,6 +76,14 @@ func (cfg *Config) Completer(model string) (provider.Completer, error) {
 	}
 
 	return nil, ErrCompleterNotFound
+}
+
+func (cfg *Config) Transcriber(model string) (provider.Transcriber, error) {
+	if c, ok := cfg.transcriber[model]; ok {
+		return c, nil
+	}
+
+	return nil, ErrTranscriberNotFound
 }
 
 func (cfg *Config) Index(id string) (index.Provider, error) {
