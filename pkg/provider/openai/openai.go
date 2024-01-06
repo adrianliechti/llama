@@ -10,13 +10,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-var (
-	_ provider.Provider = &Provider{}
-)
-
-var (
-	ErrInvalidModelMapping = errors.New("invalid model mapping")
-)
+var _ provider.Provider = &Provider{}
 
 type Provider struct {
 	url   string
@@ -82,7 +76,7 @@ func (p *Provider) Complete(ctx context.Context, model string, messages []provid
 	}
 
 	if model == "" {
-		return nil, ErrInvalidModelMapping
+		return nil, errors.New("missing model")
 	}
 
 	req, err := p.convertCompletionRequest(model, messages, options)

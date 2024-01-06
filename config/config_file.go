@@ -27,7 +27,8 @@ type configFile struct {
 
 	Providers []providerConfig `yaml:"providers"`
 
-	Indexes map[string]indexConfig `yaml:"indexes"`
+	Indexes     map[string]indexConfig      `yaml:"indexes"`
+	Classifiers map[string]classifierConfig `yaml:"classifiers"`
 
 	Chains map[string]chainConfig `yaml:"chains"`
 }
@@ -60,6 +61,25 @@ type modelConfig struct {
 	Description string `yaml:"description"`
 }
 
+type indexConfig struct {
+	Type string `yaml:"type"`
+
+	URL   string `yaml:"url"`
+	Token string `yaml:"token"`
+
+	Namespace string `yaml:"namespace"`
+	Embedding string `yaml:"embedding"`
+}
+
+type classifierConfig struct {
+	Type string `yaml:"type"`
+
+	Model     string `yaml:"model"`
+	Embedding string `yaml:"embedding"`
+
+	Categories map[string]string `yaml:"categories"`
+}
+
 type chainConfig struct {
 	Type string `yaml:"type"`
 
@@ -72,14 +92,10 @@ type chainConfig struct {
 
 	Limit    *int     `yaml:"limit"`
 	Distance *float32 `yaml:"distance"`
+
+	Filters map[string]filterConfig `yaml:"filters"`
 }
 
-type indexConfig struct {
-	Type string `yaml:"type"`
-
-	URL   string `yaml:"url"`
-	Token string `yaml:"token"`
-
-	Namespace string `yaml:"namespace"`
-	Embedding string `yaml:"embedding"`
+type filterConfig struct {
+	Classifier string `yaml:"classifier"`
 }

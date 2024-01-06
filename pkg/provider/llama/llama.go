@@ -19,9 +19,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var (
-	_ provider.Provider = &Provider{}
-)
+var _ provider.Provider = &Provider{}
 
 type Provider struct {
 	url string

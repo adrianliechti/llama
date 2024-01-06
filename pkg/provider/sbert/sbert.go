@@ -13,9 +13,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-var (
-	_ provider.Provider = &Provider{}
-)
+var _ provider.Provider = &Provider{}
 
 type Provider struct {
 	url string

@@ -1,4 +1,4 @@
-package fn
+package llm
 
 import (
 	"bytes"
@@ -13,20 +13,15 @@ var (
 
 	promptStop = []string{
 		"\n###",
-		"\nObservation:",
+		"\nClass:",
 	}
 )
 
 type promptData struct {
-	Input     string
-	Functions []promptFunction
+	Input      string
+	Categories []Category
 
-	Response string
-}
-
-type promptFunction struct {
-	Name        string
-	Description string
+	Output string
 }
 
 func executePromptTemplate(data promptData) string {

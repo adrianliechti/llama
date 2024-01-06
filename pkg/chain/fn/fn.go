@@ -10,9 +10,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-var (
-	_ provider.Completer = &Provider{}
-)
+var _ provider.Completer = &Provider{}
 
 type Provider struct {
 	completer provider.Completer
@@ -108,7 +106,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		}
 	}
 
-	data.History = history.String()
+	data.Response = history.String()
 
 	prompt := executePromptTemplate(data)
 

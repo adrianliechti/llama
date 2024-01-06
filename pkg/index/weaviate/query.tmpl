@@ -1,0 +1,36 @@
+{
+  Get {
+    {{ .Class }} (
+      {{- if .Limit }}
+      limit: {{ .Limit }}
+      {{ end }}
+
+      {{- if .Where }}
+      where: {
+        operator: And,
+        operands: [
+          {{- $sep := "" }}
+          {{- range $key, $value := .Where }}
+          {
+            path: ["{{ $key }}"],
+            operator: Equal,
+            valueText: "{{ $value }}",
+          }
+          {{- $sep = "," }}
+          {{- end }}
+        ]
+      }
+      {{- end }}
+      
+      nearVector: {
+        vector: {{ .Vector }}
+      }
+    ) {
+      content
+      _additional {
+        id
+        distance
+      }
+    }
+  }
+}

@@ -5,13 +5,12 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-var (
-	_ provider.Completer = &Provider{}
-)
+var _ provider.Completer = &Provider{}
 
 type Provider struct {
 	index index.Provider
@@ -23,12 +22,16 @@ type Provider struct {
 
 	limit    *int
 	distance *float32
+
+	filters map[string]classifier.Provider
 }
 
 type Option func(*Provider)
 
 func New(options ...Option) (*Provider, error) {
-	p := &Provider{}
+	p := &Provider{
+		filters: map[string]classifier.Provider{},
+	}
 
 	for _, option := range options {
 		option(p)
@@ -64,6 +67,12 @@ func WithEmbedder(embedder provider.Embedder) Option {
 func WithCompleter(completer provider.Completer) Option {
 	return func(p *Provider) {
 		p.completer = completer
+	}
+}
+
+func WithFilter(name string, classifier classifier.Provider) Option {
+	return func(p *Provider) {
+		p.filters[name] = classifier
 	}
 }
 
@@ -105,6 +114,18 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		messages = append([]provider.Message{message}, messages...)
 	}
 
+	filters := map[string]string{}
+
+	for k, c := range p.filters {
+		v, err := c.Categorize(ctx, message.Content)
+
+		if err != nil || v == "" {
+			continue
+		}
+
+		filters[k] = v
+	}
+
 	embedding, err := p.index.Embed(ctx, message.Content)
 
 	if err != nil {
@@ -114,6 +135,8 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	results, err := p.index.Query(ctx, embedding, &index.QueryOptions{
 		Limit:    p.limit,
 		Distance: p.distance,
+
+		Filters: filters,
 	})
 
 	if err != nil {
@@ -140,8 +163,6 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	}
 
 	prompt.WriteString(strings.TrimSpace(message.Content))
-
-	println(prompt.String())
 
 	messages[len(messages)-1] = provider.Message{
 		Role:    provider.MessageRoleUser,
