@@ -50,7 +50,7 @@ func WithClient(client *http.Client) Option {
 	}
 }
 
-func (p *Provider) Transcribe(ctx context.Context, input io.Reader, options *provider.TranscribeOptions) (*provider.Transcription, error) {
+func (p *Provider) Transcribe(ctx context.Context, input provider.File, options *provider.TranscribeOptions) (*provider.Transcription, error) {
 	if options == nil {
 		options = &provider.TranscribeOptions{}
 	}
@@ -64,13 +64,13 @@ func (p *Provider) Transcribe(ctx context.Context, input io.Reader, options *pro
 
 	w.WriteField("response-format", "json")
 
-	file, err := w.CreateFormFile("file", options.Name)
+	file, err := w.CreateFormFile("file", input.Name)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := io.Copy(file, input); err != nil {
+	if _, err := io.Copy(file, input.Content); err != nil {
 		return nil, err
 	}
 

@@ -14,7 +14,7 @@ type Completer interface {
 }
 
 type Transcriber interface {
-	Transcribe(ctx context.Context, input io.Reader, options *TranscribeOptions) (*Transcription, error)
+	Transcribe(ctx context.Context, input File, options *TranscribeOptions) (*Transcription, error)
 }
 
 type Model struct {
@@ -43,6 +43,13 @@ type CompletionFormat string
 const (
 	CompletionFormatJSON CompletionFormat = "json"
 )
+
+type File struct {
+	ID string
+
+	Name    string
+	Content io.Reader
+}
 
 type Function struct {
 	Name       string
@@ -77,7 +84,9 @@ type Completion struct {
 type CompleteOptions struct {
 	Stream chan<- Completion
 
-	Format    CompletionFormat
+	Format CompletionFormat
+
+	Files     []File
 	Functions []Function
 
 	Stop []string
@@ -94,12 +103,6 @@ type Transcription struct {
 }
 
 type TranscribeOptions struct {
-	Name string
-
 	Language    string
 	Temperature *float32
-}
-
-type Audio struct {
-	Content io.Reader
 }

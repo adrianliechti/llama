@@ -190,7 +190,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	}
 }
 
-func (p *Provider) Transcribe(ctx context.Context, input io.Reader, options *provider.TranscribeOptions) (*provider.Transcription, error) {
+func (p *Provider) Transcribe(ctx context.Context, input provider.File, options *provider.TranscribeOptions) (*provider.Transcription, error) {
 	if options == nil {
 		options = &provider.TranscribeOptions{}
 	}
@@ -202,8 +202,8 @@ func (p *Provider) Transcribe(ctx context.Context, input io.Reader, options *pro
 
 		Language: options.Language,
 
-		Reader:   input,
-		FilePath: options.Name,
+		Reader:   input.Content,
+		FilePath: input.Name,
 	}
 
 	transcription, err := p.client.CreateTranscription(ctx, req)
