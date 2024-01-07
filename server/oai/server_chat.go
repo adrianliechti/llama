@@ -218,9 +218,15 @@ func toFile(url string) (*provider.File, error) {
 			return nil, err
 		}
 
-		return &provider.File{
+		file := provider.File{
 			Content: bytes.NewReader(data),
-		}, nil
+		}
+
+		if ext, _ := mime.ExtensionsByType(resp.Header.Get("Content-Type")); len(ext) > 0 {
+			file.Name = uuid.New().String() + ext[0]
+		}
+
+		return &file, nil
 	}
 
 	if strings.HasPrefix(url, "data:") {
