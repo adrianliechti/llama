@@ -21,7 +21,12 @@ type promptData struct {
 	Input     string
 	Functions []promptFunction
 
-	Response string
+	Messages []promptMessage
+}
+
+type promptMessage struct {
+	Type    string
+	Content string
 }
 
 type promptFunction struct {

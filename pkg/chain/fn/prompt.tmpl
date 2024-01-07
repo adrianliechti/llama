@@ -3,14 +3,14 @@ Below is an instruction that describes a task, paired with an input that provide
 ### Instruction
 Answer the following questions as best you can. You have access to the following tools if needed:
 {{ range .Functions }}
-{{ .Name }}: {{ .Description }}
-{{ end }}
+- {{ .Name }}: {{ .Description }}
+{{- end }}
 
-Strictly use the following format:
+Do not make up new Tools! Strictly use the following format.
 
 Question: the input question you must answer
 Thought: you should always think about what to do
-Action: the action to take, should be one of [{{$sep := ""}}{{- range .Functions}}{{.Name}}{{$sep = ", "}}{{- end }}]
+Action: the action to take, should be one of [{{ $sep := "" }}{{- range .Functions}}{{ $sep }}{{.Name}}{{ $sep = ", " }}{{- end }}]
 Action Input: the input to the action, should be a question.
 Observation: the result of the action
 ... (this Thought/Action/Action Input/Observation can repeat N times)
@@ -39,4 +39,6 @@ Final Answer: Anupama Nadella is 50 years old.
 {{ .Input }}
 
 ### Response
-{{ .Response }}
+{{- range .Messages }}
+{{ .Type }}: {{ .Content }}
+{{- end }}

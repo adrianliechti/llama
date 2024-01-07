@@ -1,0 +1,20 @@
+providers:
+  - type: llama
+    url: http://localhost:9081
+
+    models:
+      mistral:
+        id: default
+        template: mistral
+
+  # - type: ollama
+  #   url: http://localhost:11434
+
+  #   models:
+  #     mistral:
+  #       id: mistral
+
+chains:
+  mistral-fn:
+    type: fn
+    model: mistral

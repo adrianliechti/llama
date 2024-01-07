@@ -47,16 +47,6 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		return p.completer.Complete(ctx, messages, options)
 	}
 
-	var index int
-
-	for i, m := range messages {
-		if m.Role == provider.MessageRoleUser {
-			index = i
-		}
-	}
-
-	messages = messages[index:]
-
 	stream := options.Stream
 
 	options.Stop = promptStop
@@ -71,13 +61,14 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		})
 	}
 
-	var history strings.Builder
+	var history []promptMessage
 
 	for _, m := range messages {
 		if m.Role == provider.MessageRoleUser {
-			history.WriteString("Question: ")
-			history.WriteString(strings.TrimSpace(m.Content))
-			history.WriteString("\n")
+			history = append(history, promptMessage{
+				Type:    "Question",
+				Content: strings.TrimSpace(m.Content),
+			})
 
 			data.Input = strings.TrimSpace(m.Content)
 		}
@@ -87,28 +78,57 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 				continue
 			}
 
-			history.WriteString("Thought: I now know the final answer.")
-			history.WriteString("\n")
-			history.WriteString("Final Answer: ")
-			history.WriteString(strings.TrimSpace(m.Content))
-			history.WriteString("\n")
+			history = append(history,
+				promptMessage{
+					Type:    "Thought",
+					Content: "I now know the final answer.",
+				},
+				promptMessage{
+					Type:    "Final Answer",
+					Content: strings.TrimSpace(m.Content),
+				})
 		}
 
 		if m.Role == provider.MessageRoleFunction {
 			if data, err := base64.RawStdEncoding.DecodeString(m.Function); err == nil {
-				history.WriteString(strings.TrimSpace(string(data)))
-				history.WriteString("\n")
+				parts := strings.Split(strings.TrimSpace(string(data)), "\n")
+
+				for _, part := range parts {
+					part = strings.TrimSpace(part)
+
+					if part == "" {
+						continue
+					}
+
+					parts := strings.SplitN(part, ":", 2)
+
+					if len(parts) != 2 {
+						continue
+					}
+
+					history = append(history,
+						promptMessage{
+							Type:    strings.TrimSpace(parts[0]),
+							Content: strings.TrimSpace(parts[1]),
+						},
+					)
+				}
 			}
 
-			history.WriteString("Observation: ")
-			history.WriteString(strings.TrimSpace(m.Content))
-			history.WriteString("\n")
+			history = append(history,
+				promptMessage{
+					Type:    "Observation",
+					Content: strings.TrimSpace(m.Content),
+				},
+			)
 		}
 	}
 
-	data.Response = history.String()
+	data.Messages = history
 
 	prompt := executePromptTemplate(data)
+
+	println(prompt)
 
 	inputMesssages := []provider.Message{
 		{
