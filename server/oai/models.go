@@ -1,5 +1,10 @@
 package oai
 
+import (
+	"encoding/json"
+	"errors"
+)
+
 type Model struct {
 	Object string `json:"object"` // "model"
 
@@ -97,11 +102,90 @@ type ChatCompletionChoice struct {
 }
 
 type ChatCompletionMessage struct {
-	Role    MessageRole `json:"role,omitempty"`
-	Content string      `json:"content"`
+	Role MessageRole `json:"role,omitempty"`
+
+	Content  string                  `json:"content"`
+	Contents []ChatCompletionContent `json:"-"`
 
 	ToolCallID string     `json:"tool_call_id,omitempty"`
 	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+}
+
+type ChatCompletionContent struct {
+	Type string `json:"type,omitempty"`
+	Text string `json:"text,omitempty"`
+
+	ImageURL *ChatCompletionFile `json:"image_url,omitempty"`
+}
+
+type ChatCompletionFile struct {
+	URL string `json:"url"`
+}
+
+func (m *ChatCompletionMessage) MarshalJSON() ([]byte, error) {
+	if m.Content != "" && m.Contents != nil {
+		return nil, errors.New("cannot have both content and contents")
+	}
+
+	if len(m.Contents) > 0 {
+		msg := struct {
+			Role MessageRole `json:"role"`
+
+			Content  string                  `json:"-"`
+			Contents []ChatCompletionContent `json:"content,omitempty"`
+
+			ToolCallID string     `json:"tool_call_id,omitempty"`
+			ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+		}(*m)
+
+		return json.Marshal(msg)
+	}
+
+	msg := struct {
+		Role MessageRole `json:"role"`
+
+		Content  string                  `json:"content"`
+		Contents []ChatCompletionContent `json:"-"`
+
+		ToolCallID string     `json:"tool_call_id,omitempty"`
+		ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+	}(*m)
+
+	return json.Marshal(msg)
+}
+
+func (m *ChatCompletionMessage) UnmarshalJSON(data []byte) error {
+	m1 := struct {
+		Role MessageRole `json:"role"`
+
+		Content  string `json:"content"`
+		Contents []ChatCompletionContent
+
+		ToolCallID string     `json:"tool_call_id,omitempty"`
+		ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+	}{}
+
+	if err := json.Unmarshal(data, &m1); err == nil {
+		*m = ChatCompletionMessage(m1)
+		return nil
+	}
+
+	m2 := struct {
+		Role MessageRole `json:"role"`
+
+		Content  string
+		Contents []ChatCompletionContent `json:"content"`
+
+		ToolCallID string     `json:"tool_call_id,omitempty"`
+		ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+	}{}
+
+	if err := json.Unmarshal(data, &m2); err == nil {
+		*m = ChatCompletionMessage(m2)
+		return err
+	}
+
+	return nil
 }
 
 type ToolType string

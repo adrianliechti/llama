@@ -2,10 +2,13 @@ package oai
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/adrianliechti/llama/pkg/provider"
@@ -137,13 +140,62 @@ func toMessages(s []ChatCompletionMessage) []provider.Message {
 	result := make([]provider.Message, 0)
 
 	for _, m := range s {
+		content := m.Content
+		files := make([]provider.File, 0)
+
+		for _, c := range m.Contents {
+			if c.Type == "text" {
+				content = c.Text
+			}
+
+			if c.Type == "image_url" && c.ImageURL != nil {
+				url := c.ImageURL.URL
+
+				if strings.HasPrefix(url, "http") {
+					resp, err := http.Get(url)
+
+					if err != nil {
+						continue
+					}
+
+					defer resp.Body.Close()
+
+					data, err := io.ReadAll(resp.Body)
+
+					if err != nil {
+						continue
+					}
+
+					files = append(files, provider.File{
+						Content: bytes.NewReader(data),
+					})
+				}
+
+				if strings.HasPrefix(url, "data:") {
+					parts := strings.Fields(url)
+					data, err := base64.StdEncoding.DecodeString(parts[1])
+
+					if err != nil {
+						continue
+					}
+
+					files = append(files, provider.File{
+						Content: bytes.NewReader(data),
+					})
+				}
+			}
+		}
+
 		result = append(result, provider.Message{
 			Role:    toMessageRole(m.Role),
-			Content: m.Content,
+			Content: content,
+
+			Files: files,
 
 			Function:      m.ToolCallID,
 			FunctionCalls: toFuncionCalls(m.ToolCalls),
 		})
+
 	}
 
 	return result
