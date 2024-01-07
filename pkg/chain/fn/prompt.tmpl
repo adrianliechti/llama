@@ -3,15 +3,15 @@ Below is an instruction that describes a task, paired with an input that provide
 ### Instruction:
 Answer the following questions as best you can. You have access to the following tools if needed:
 {{ range .Functions }}
-- {{ .Name }}: {{ .Description }}
+Tool '{{ .Name }}': {{ .Description }}
 {{- end }}
 
-Do not make up new Tools! Strictly use the following format.
+Strictly use the following format:
 
 Question: the input question you must answer
 Thought: you should always think about what to do
-Action: the action to take, should be one of [{{ $sep := "" }}{{- range .Functions}}{{ $sep }}{{.Name}}{{ $sep = ", " }}{{- end }}]
-Action Input: the input to the action, should be a question.
+Action: the action to take, should be one of {{ $sep := "" }}{{- range .Functions}}{{ $sep }}[{{.Name}}]{{ $sep = ", " }}{{- end }}]
+Action Input: the input to the action, should be a question or task.
 Observation: the result of the action
 ... (this Thought/Action/Action Input/Observation can repeat N times)
 Thought: I now know the final answer
@@ -35,12 +35,9 @@ Observation: Anupama Nadella's age is 50.
 Thought: I now know the final answer.
 Final Answer: Anupama Nadella is 50 years old.
 
-Previous Conversation History:
+### Input:
 {{- range .Messages }}
 {{ .Type }}: {{ .Content }}
 {{- end }}
-
-### Input:
-{{ .Input }}
 
 ### Response:

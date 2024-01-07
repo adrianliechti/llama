@@ -221,5 +221,17 @@ func extractAnswer(s string) (string, error) {
 		}
 	}
 
+	var other bool
+
+	for _, p := range []string{"Question:", "Thought:", "Action:", "Action Input:", "Final Answer:"} {
+		if strings.HasPrefix(s, p) {
+			other = true
+		}
+	}
+
+	if !other {
+		return s, nil
+	}
+
 	return "", errors.New("no answer found")
 }
