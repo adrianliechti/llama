@@ -10,8 +10,12 @@ type Template interface {
 }
 
 var (
-	Simple     Template = &promptSimple{}
-	ChatML     Template = &promptChatML{}
+	None   Template = &promptNone{}
+	Simple Template = &promptSimple{}
+
+	ChatML Template = &promptChatML{}
+	ToRA   Template = &promptToRA{}
+
 	Llama      Template = &promptLlama{}
 	LlamaGuard Template = &promptLlamaGuard{}
 	Mistral    Template = &promptMistral{}

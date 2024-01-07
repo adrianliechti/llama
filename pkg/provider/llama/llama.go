@@ -38,8 +38,12 @@ type Option func(*Provider)
 type Template = prompt.Template
 
 var (
-	TemplateSimple     = prompt.Simple
-	TemplateChatML     = prompt.ChatML
+	TemplateNone   = prompt.None
+	TemplateSimple = prompt.Simple
+
+	TemplateChatML = prompt.ChatML
+	TemplateToRA   = prompt.ToRA
+
 	TemplateLlama      = prompt.Llama
 	TemplateLlamaGuard = prompt.LlamaGuard
 	TemplateMistral    = prompt.Mistral
