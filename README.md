@@ -102,6 +102,12 @@ https://github.com/ggerganov/llama.cpp/tree/master/examples/server
 # using taskfile.dev
 $ task llama-server
 
+# LLAMA.CPP Server
+$ bin/llama-server --port 9081 --log-disable --embedding --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+
+# LLAMA.CPP Server (Multimodal Model)
+$ bin/llama-server --port 9081 --log-disable --embedding --model ./models/llava-v1.5-7b-Q4_K.gguf --mmproj ./models/llava-v1.5-7b-mmproj-Q4_0.gguf
+
 # using Docker (might be slow)
 $ docker run -it --rm -p 9081:9081 -v ./models/:/models/ ghcr.io/ggerganov/llama.cpp:full --server --host 0.0.0.0 --port 9081 --model /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
 ```

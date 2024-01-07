@@ -34,6 +34,8 @@ type Message struct {
 	Role    MessageRole
 	Content string
 
+	Files []File
+
 	Function      string
 	FunctionCalls []FunctionCall
 }
@@ -86,7 +88,6 @@ type CompleteOptions struct {
 
 	Format CompletionFormat
 
-	Files     []File
 	Functions []Function
 
 	Stop []string

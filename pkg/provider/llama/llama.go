@@ -38,6 +38,7 @@ type Option func(*Provider)
 type Template = prompt.Template
 
 var (
+	TemplateSimple     = prompt.Simple
 	TemplateChatML     = prompt.ChatML
 	TemplateLlama      = prompt.Llama
 	TemplateLlamaGuard = prompt.LlamaGuard
@@ -274,6 +275,22 @@ func (p *Provider) convertCompletionRequest(messages []provider.Message, options
 		Stop: p.template.Stop(),
 
 		CachePrompt: true,
+	}
+
+	for _, m := range messages {
+		for i, f := range m.Files {
+			data, err := io.ReadAll(f.Content)
+
+			if err != nil {
+				return nil, err
+			}
+			_ = i
+
+			req.Images = append(req.Images, CompletionImage{
+				ID:   i + 1,
+				Data: data,
+			})
+		}
 	}
 
 	if options.Stop != nil {

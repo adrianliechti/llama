@@ -14,6 +14,8 @@ type CompletionRequest struct {
 	Stream  bool   `json:"stream,omitempty"`
 	Grammar string `json:"grammar,omitempty"`
 
+	Images []CompletionImage `json:"image_data,omitempty"`
+
 	Temperature *float32 `json:"temperature,omitempty"`
 	TopP        *float32 `json:"top_p,omitempty"`
 	MinP        *float32 `json:"min_p,omitempty"`
@@ -21,6 +23,11 @@ type CompletionRequest struct {
 	Stop []string `json:"stop,omitempty"`
 
 	CachePrompt bool `json:"cache_prompt,omitempty"`
+}
+
+type CompletionImage struct {
+	ID   int    `json:"id"`
+	Data []byte `json:"data"`
 }
 
 type CompletionResponse struct {

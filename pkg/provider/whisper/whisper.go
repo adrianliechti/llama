@@ -11,6 +11,7 @@ import (
 	"net/url"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"github.com/google/uuid"
 )
 

@@ -2,11 +2,15 @@ package openai
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"io"
+	"mime"
+	"path/filepath"
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
 )
@@ -269,6 +273,35 @@ func (p *Provider) convertCompletionRequest(messages []provider.Message, options
 			Content: m.Content,
 
 			ToolCallID: m.Function,
+		}
+
+		if len(m.Files) > 0 {
+			message.Content = ""
+
+			message.MultiContent = []openai.ChatMessagePart{
+				{
+					Type: openai.ChatMessagePartTypeText,
+					Text: m.Content,
+				},
+			}
+
+			for _, f := range m.Files {
+				mime := mime.TypeByExtension(filepath.Ext(f.Name))
+				data, err := io.ReadAll(f.Content)
+
+				if err != nil {
+					return nil, err
+				}
+
+				content := base64.StdEncoding.EncodeToString(data)
+
+				message.MultiContent = append(message.MultiContent, openai.ChatMessagePart{
+					Type: openai.ChatMessagePartTypeImageURL,
+					ImageURL: &openai.ChatMessageImageURL{
+						URL: "data:" + mime + ";base64," + content,
+					},
+				})
+			}
 		}
 
 		for _, f := range m.FunctionCalls {

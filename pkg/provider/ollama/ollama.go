@@ -268,6 +268,16 @@ func (p *Provider) convertChatRequest(messages []provider.Message, options *prov
 			Content: m.Content,
 		}
 
+		for _, f := range m.Files {
+			data, err := io.ReadAll(f.Content)
+
+			if err != nil {
+				return nil, err
+			}
+
+			message.Images = append(message.Images, data)
+		}
+
 		req.Messages = append(req.Messages, message)
 	}
 
