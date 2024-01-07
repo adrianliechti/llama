@@ -129,6 +129,9 @@ func llamaProvider(cfg providerConfig) (*llama.Provider, error) {
 	case "mistral":
 		options = append(options, llama.WithTemplate(llama.TemplateMistral))
 
+	case "simple":
+		options = append(options, llama.WithTemplate(llama.TemplateSimple))
+
 	default:
 		return nil, errors.New("invalid prompt template: " + template)
 	}
