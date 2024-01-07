@@ -17,9 +17,13 @@ var (
 	MessageRoleAssistant MessageRole = "assistant"
 )
 
+type MessageImage []byte
+
 type Message struct {
 	Role    MessageRole `json:"role"`
 	Content string      `json:"content"`
+
+	Images []MessageImage `json:"images,omitempty"`
 }
 
 type ChatRequest struct {
