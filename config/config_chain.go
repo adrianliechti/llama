@@ -7,6 +7,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/chain/rag"
 	"github.com/adrianliechti/llama/pkg/chain/react"
+	"github.com/adrianliechti/llama/pkg/chain/refine"
 	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
@@ -87,6 +88,9 @@ func createChain(cfg chainConfig, embedder provider.Embedder, completer provider
 	case "rag":
 		return ragChain(cfg, embedder, completer, index, classifiers)
 
+	case "refine":
+		return refineChain(cfg, embedder, completer, index, classifiers)
+
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
 	}
@@ -111,10 +115,6 @@ func ragChain(cfg chainConfig, embedder provider.Embedder, completer provider.Co
 		options = append(options, rag.WithFilter(k, classifiers[v.Classifier]))
 	}
 
-	if cfg.System != "" {
-		options = append(options, rag.WithSystem(cfg.System))
-	}
-
 	if cfg.Limit != nil {
 		options = append(options, rag.WithLimit(*cfg.Limit))
 	}
@@ -124,6 +124,36 @@ func ragChain(cfg chainConfig, embedder provider.Embedder, completer provider.Co
 	}
 
 	return rag.New(options...)
+}
+
+func refineChain(cfg chainConfig, embedder provider.Embedder, completer provider.Completer, index index.Provider, classifiers map[string]classifier.Provider) (chain.Provider, error) {
+	var options []refine.Option
+
+	if index != nil {
+		options = append(options, refine.WithIndex(index))
+	}
+
+	if embedder != nil {
+		options = append(options, refine.WithEmbedder(embedder))
+	}
+
+	if completer != nil {
+		options = append(options, refine.WithCompleter(completer))
+	}
+
+	for k, v := range cfg.Filters {
+		options = append(options, refine.WithFilter(k, classifiers[v.Classifier]))
+	}
+
+	if cfg.Limit != nil {
+		options = append(options, refine.WithLimit(*cfg.Limit))
+	}
+
+	if cfg.Distance != nil {
+		options = append(options, refine.WithDistance(*cfg.Distance))
+	}
+
+	return refine.New(options...)
 }
 
 func reactChain(cfg chainConfig, completer provider.Completer) (chain.Provider, error) {

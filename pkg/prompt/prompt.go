@@ -33,5 +33,10 @@ func New(text string) (*Prompt, error) {
 
 func (t *Prompt) Execute(data any) (string, error) {
 	var buffer bytes.Buffer
-	return buffer.String(), t.tmpl.Execute(&buffer, data)
+
+	if err := t.tmpl.Execute(&buffer, data); err != nil {
+		return "", err
+	}
+
+	return buffer.String(), nil
 }

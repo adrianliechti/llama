@@ -1,9 +1,8 @@
-package rag
+package refine
 
 import (
 	_ "embed"
 
-	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/prompt"
 )
 
@@ -15,5 +14,7 @@ var (
 
 type promptData struct {
 	Input   string
-	Results []index.Result
+	Context string
+
+	Answer string
 }

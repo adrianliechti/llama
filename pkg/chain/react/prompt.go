@@ -12,8 +12,8 @@ var (
 	promptTemplate     = prompt.MustNew(promptTemplateText)
 
 	promptStop = []string{
-		"\n###",
 		"\nObservation:",
+		"\nFinal Answer:",
 	}
 )
 
