@@ -65,6 +65,8 @@ func (p *Provider) Categorize(ctx context.Context, input string) (string, error)
 		return "", err
 	}
 
+	println(prompt)
+
 	temperature := float32(0.1)
 
 	completion, err := p.completer.Complete(ctx, []provider.Message{
@@ -90,7 +92,7 @@ func (p *Provider) Categorize(ctx context.Context, input string) (string, error)
 }
 
 func extractClass(s string) (string, error) {
-	re := regexp.MustCompile(`([a-zA-Z]*).*`)
+	re := regexp.MustCompile(`([a-zA-Z_]*).*`)
 	matches := re.FindAllStringSubmatch(s, -1)
 
 	if len(matches) > 0 {

@@ -2,14 +2,14 @@ Below is an instruction that describes a task, paired with an input that provide
 
 ### Instruction:
 Classify the given input in one of these categories:
-{{ range .Categories }}
+{{- range .Categories }}
 {{ .Name }}: {{ .Description }}
-{{ end }}
+{{- end }}
 
 You MUST answer only with the category name!
 
 Input: the input you must cassify
-Category: one of [{{ $sep := "" }}{{- range .Categories }}{{ $sep }}{{ .Name }}{ {$sep = ", " }}{{- end }}]
+Category: one of [{{ $sep := "" }}{{- range .Categories }}{{ $sep }}{{ .Name }}{{ $sep = ", " }}{{- end }}]
 
 ### Input:
 {{ .Input }}
