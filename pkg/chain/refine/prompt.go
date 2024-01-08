@@ -1,4 +1,4 @@
-package llm
+package refine
 
 import (
 	_ "embed"
@@ -10,14 +10,11 @@ var (
 	//go:embed prompt.tmpl
 	promptTemplateText string
 	promptTemplate     = prompt.MustNew(promptTemplateText)
-
-	promptStop = []string{
-		"\n###",
-		"\nCategory:",
-	}
 )
 
 type promptData struct {
-	Input      string
-	Categories []Category
+	Input   string
+	Context string
+
+	Answer string
 }

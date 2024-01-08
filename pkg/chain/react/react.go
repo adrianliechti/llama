@@ -47,11 +47,6 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		return p.completer.Complete(ctx, messages, options)
 	}
 
-	stream := options.Stream
-
-	options.Stop = promptStop
-	options.Stream = nil
-
 	data := promptData{}
 
 	for _, f := range options.Functions {
@@ -126,7 +121,11 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 
 	data.Messages = history
 
-	prompt := executePromptTemplate(data)
+	prompt, err := promptTemplate.Execute(data)
+
+	if err != nil {
+		return nil, err
+	}
 
 	println(prompt)
 
@@ -137,7 +136,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		},
 	}
 
-	completion, err := p.completer.Complete(ctx, inputMesssages, options)
+	completion, err := p.completer.Complete(ctx, inputMesssages, nil)
 
 	if err != nil {
 		return nil, err
@@ -156,11 +155,6 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 			},
 		}
 
-		if stream != nil {
-			stream <- result
-			close(stream)
-		}
-
 		return &result, nil
 	}
 
@@ -176,11 +170,6 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 
 				FunctionCalls: []provider.FunctionCall{*action},
 			},
-		}
-
-		if stream != nil {
-			stream <- result
-			close(stream)
 		}
 
 		return &result, nil

@@ -59,7 +59,11 @@ func (p *Provider) Categorize(ctx context.Context, input string) (string, error)
 		Categories: p.categories,
 	}
 
-	prompt := executePromptTemplate(data)
+	prompt, err := promptTemplate.Execute(data)
+
+	if err != nil {
+		return "", err
+	}
 
 	println(prompt)
 

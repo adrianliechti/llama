@@ -1,27 +1,27 @@
 package react
 
 import (
-	"bytes"
 	_ "embed"
-	"text/template"
+
+	"github.com/adrianliechti/llama/pkg/prompt"
 )
 
 var (
 	//go:embed prompt.tmpl
 	promptTemplateText string
-	promptTemplate     = template.Must(template.New("prompt").Parse(promptTemplateText))
+	promptTemplate     = prompt.MustNew(promptTemplateText)
 
 	promptStop = []string{
-		"\n###",
 		"\nObservation:",
+		"\nFinal Answer:",
 	}
 )
 
 type promptData struct {
-	Input     string
-	Functions []promptFunction
+	Input string
 
-	Messages []promptMessage
+	Messages  []promptMessage
+	Functions []promptFunction
 }
 
 type promptMessage struct {
@@ -32,11 +32,4 @@ type promptMessage struct {
 type promptFunction struct {
 	Name        string
 	Description string
-}
-
-func executePromptTemplate(data promptData) string {
-	var buffer bytes.Buffer
-	promptTemplate.Execute(&buffer, data)
-
-	return buffer.String()
 }

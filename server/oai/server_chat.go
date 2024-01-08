@@ -62,14 +62,24 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		done := make(chan error)
 		stream := make(chan provider.Completion)
 
+		var chunks int
+
 		go func() {
 			options.Stream = stream
 
-			_, err := completer.Complete(r.Context(), messages, options)
+			completion, err := completer.Complete(r.Context(), messages, options)
+
+			if chunks == 0 && err == nil {
+				stream <- *completion
+				close(stream)
+			}
+
 			done <- err
 		}()
 
 		for completion := range stream {
+			chunks++
+
 			result := ChatCompletion{
 				Object: "chat.completion.chunk",
 

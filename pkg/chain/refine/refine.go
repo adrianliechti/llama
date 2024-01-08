@@ -1,4 +1,4 @@
-package rag
+package refine
 
 import (
 	"context"
@@ -93,12 +93,6 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		return nil, errors.New("last message must be from user")
 	}
 
-	embedding, err := p.index.Embed(ctx, message.Content)
-
-	if err != nil {
-		return nil, err
-	}
-
 	filters := map[string]string{}
 
 	for k, c := range p.filters {
@@ -109,6 +103,12 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		}
 
 		filters[k] = v
+	}
+
+	embedding, err := p.index.Embed(ctx, message.Content)
+
+	if err != nil {
+		return nil, err
 	}
 
 	results, err := p.index.Query(ctx, embedding, &index.QueryOptions{
@@ -122,25 +122,39 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		return nil, err
 	}
 
-	data := promptData{
-		Input:   strings.TrimSpace(message.Content),
-		Results: results,
+	var answer string
+	var result *provider.Completion
+
+	for _, r := range results {
+		data := promptData{
+			Input:   strings.TrimSpace(message.Content),
+			Context: strings.TrimSpace(r.Content),
+
+			Answer: answer,
+		}
+
+		prompt, err := promptTemplate.Execute(data)
+
+		if err != nil {
+			return nil, err
+		}
+
+		println(prompt)
+
+		m := provider.Message{
+			Role:    provider.MessageRoleUser,
+			Content: prompt,
+		}
+
+		completion, err := p.completer.Complete(ctx, []provider.Message{m}, nil)
+
+		if err != nil {
+			return nil, err
+		}
+
+		answer = strings.TrimSpace(completion.Message.Content)
+		result = completion
 	}
 
-	prompt, err := promptTemplate.Execute(data)
-
-	if err != nil {
-		return nil, err
-	}
-
-	println(prompt)
-
-	message = provider.Message{
-		Role:    provider.MessageRoleUser,
-		Content: prompt,
-	}
-
-	messages[len(messages)-1] = message
-
-	return p.completer.Complete(ctx, messages, options)
+	return result, nil
 }
