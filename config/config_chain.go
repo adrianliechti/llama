@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/chain"
-	"github.com/adrianliechti/llama/pkg/chain/fn"
 	"github.com/adrianliechti/llama/pkg/chain/rag"
+	"github.com/adrianliechti/llama/pkg/chain/react"
 	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
@@ -81,8 +81,8 @@ func (c *Config) registerChains(f *configFile) error {
 
 func createChain(cfg chainConfig, embedder provider.Embedder, completer provider.Completer, index index.Provider, classifiers map[string]classifier.Provider) (chain.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
-	case "fn":
-		return fnChain(cfg, completer)
+	case "fn", "react":
+		return reactChain(cfg, completer)
 
 	case "rag":
 		return ragChain(cfg, embedder, completer, index, classifiers)
@@ -126,12 +126,12 @@ func ragChain(cfg chainConfig, embedder provider.Embedder, completer provider.Co
 	return rag.New(options...)
 }
 
-func fnChain(cfg chainConfig, completer provider.Completer) (chain.Provider, error) {
-	var options []fn.Option
+func reactChain(cfg chainConfig, completer provider.Completer) (chain.Provider, error) {
+	var options []react.Option
 
 	if completer != nil {
-		options = append(options, fn.WithCompleter(completer))
+		options = append(options, react.WithCompleter(completer))
 	}
 
-	return fn.New(options...)
+	return react.New(options...)
 }

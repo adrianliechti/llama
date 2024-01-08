@@ -1,4 +1,4 @@
-package fn
+package react
 
 import (
 	"context"
@@ -164,8 +164,8 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		return &result, nil
 	}
 
-	if fn, err := extractAction(content); err == nil {
-		fn.ID = base64.RawStdEncoding.EncodeToString([]byte(content))
+	if action, err := extractAction(content); err == nil {
+		action.ID = base64.RawStdEncoding.EncodeToString([]byte(content))
 
 		result := provider.Completion{
 			ID:     completion.ID,
@@ -174,7 +174,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 			Message: provider.Message{
 				Role: provider.MessageRoleAssistant,
 
-				FunctionCalls: []provider.FunctionCall{*fn},
+				FunctionCalls: []provider.FunctionCall{*action},
 			},
 		}
 
@@ -219,18 +219,6 @@ func extractAnswer(s string) (string, error) {
 		if len(match) == 2 {
 			return match[1], nil
 		}
-	}
-
-	var other bool
-
-	for _, p := range []string{"Question:", "Thought:", "Action:", "Action Input:", "Final Answer:"} {
-		if strings.HasPrefix(s, p) {
-			other = true
-		}
-	}
-
-	if !other {
-		return s, nil
 	}
 
 	return "", errors.New("no answer found")
