@@ -1,12 +1,17 @@
+You are an assistant for question-answering tasks.
+If you don't know the answer, just say that you don't know.
+
 {{- if .Results }}
-Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+Use the following pieces of retrieved context to answer.
+Ignore the context if it doesn't help answer the question but mention it.
 
+### Context:
 {{- range .Results }}
-- {{ .Content }}
+{{ .Content }}
 {{- end }}
 {{- end }}
 
-### Input:
+### Question:
 {{ .Input }}
 
-### Response:
+### Answer:
