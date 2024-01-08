@@ -1,7 +1,6 @@
 Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 
-### Instruction
-
+### Instruction:
 Classify the given input in one of these categories:
 {{ range .Categories }}
 {{ .Name }}: {{ .Description }}
@@ -10,7 +9,9 @@ Classify the given input in one of these categories:
 You MUST answer only with the category name!
 
 Input: the input you must cassify
-Categories: [{{$sep := ""}}{{- range .Categories}}{{.Name}}{{$sep = ", "}}{{- end }}]
+Category: one of [{{ $sep := "" }}{{- range .Categories }}{{ $sep }}{{ .Name }}{ {$sep = ", " }}{{- end }}]
 
-### Input
+### Input:
 {{ .Input }}
+
+### Response:

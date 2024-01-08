@@ -1,4 +1,4 @@
-package fn
+package react
 
 import (
 	"context"
@@ -164,8 +164,8 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		return &result, nil
 	}
 
-	if fn, err := extractAction(content); err == nil {
-		fn.ID = base64.RawStdEncoding.EncodeToString([]byte(content))
+	if action, err := extractAction(content); err == nil {
+		action.ID = base64.RawStdEncoding.EncodeToString([]byte(content))
 
 		result := provider.Completion{
 			ID:     completion.ID,
@@ -174,7 +174,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 			Message: provider.Message{
 				Role: provider.MessageRoleAssistant,
 
-				FunctionCalls: []provider.FunctionCall{*fn},
+				FunctionCalls: []provider.FunctionCall{*action},
 			},
 		}
 

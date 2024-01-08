@@ -150,6 +150,8 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 
 	prompt := executePromptTemplate(data)
 
+	println(prompt)
+
 	messages[len(messages)-1] = provider.Message{
 		Role:    provider.MessageRoleUser,
 		Content: prompt,
