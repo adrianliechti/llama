@@ -13,7 +13,7 @@ var (
 
 	promptStop = []string{
 		"\n###",
-		"\nClass:",
+		"\nCategory:",
 	}
 )
 
