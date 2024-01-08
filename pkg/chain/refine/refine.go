@@ -123,11 +123,12 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	}
 
 	var answer string
+	var result *provider.Completion
 
-	for _, result := range results {
+	for _, r := range results {
 		data := promptData{
 			Input:   strings.TrimSpace(message.Content),
-			Context: strings.TrimSpace(result.Content),
+			Context: strings.TrimSpace(r.Content),
 
 			Answer: answer,
 		}
@@ -152,7 +153,8 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		}
 
 		answer = strings.TrimSpace(completion.Message.Content)
+		result = completion
 	}
 
-	return p.completer.Complete(ctx, messages, options)
+	return result, nil
 }

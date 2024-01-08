@@ -69,6 +69,7 @@ func main() {
 
 	var messages []openai.ChatCompletionMessage
 
+LOOP:
 	for {
 		output.WriteString(">>> ")
 		input, err := reader.ReadString('\n')
@@ -77,9 +78,23 @@ func main() {
 			panic(err)
 		}
 
+		input = strings.TrimSpace(input)
+
+		if strings.HasPrefix(input, "/") {
+			switch strings.ToLower(input) {
+			case "/reset":
+				messages = nil
+				continue LOOP
+
+			default:
+				output.WriteString("Unknown command\n")
+				continue LOOP
+			}
+		}
+
 		messages = append(messages, openai.ChatCompletionMessage{
 			Role:    openai.ChatMessageRoleUser,
-			Content: strings.TrimSpace(input),
+			Content: input,
 		})
 
 		req := openai.ChatCompletionRequest{
@@ -90,7 +105,8 @@ func main() {
 		stream, err := client.CreateChatCompletionStream(ctx, req)
 
 		if err != nil {
-			panic(err)
+			output.WriteString(err.Error() + "\n")
+			continue LOOP
 		}
 
 		defer stream.Close()
@@ -105,7 +121,8 @@ func main() {
 			}
 
 			if err != nil {
-				panic(err)
+				output.WriteString(err.Error() + "\n")
+				continue LOOP
 			}
 
 			content := resp.Choices[0].Delta.Content

@@ -71,6 +71,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 			if chunks == 0 && err == nil {
 				stream <- *completion
+				close(stream)
 			}
 
 			done <- err
