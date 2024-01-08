@@ -1,17 +1,16 @@
 package rag
 
 import (
-	"bytes"
 	_ "embed"
-	"text/template"
 
 	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/llama/pkg/prompt"
 )
 
 var (
 	//go:embed prompt.tmpl
 	promptTemplateText string
-	promptTemplate     = template.Must(template.New("prompt").Parse(promptTemplateText))
+	promptTemplate     = prompt.MustNew(promptTemplateText)
 )
 
 type promptData struct {
@@ -22,11 +21,4 @@ type promptData struct {
 type promptFunction struct {
 	Name        string
 	Description string
-}
-
-func executePromptTemplate(data promptData) string {
-	var buffer bytes.Buffer
-	promptTemplate.Execute(&buffer, data)
-
-	return buffer.String()
 }

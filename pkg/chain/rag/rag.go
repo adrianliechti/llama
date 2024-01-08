@@ -148,7 +148,11 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		Results: results,
 	}
 
-	prompt := executePromptTemplate(data)
+	prompt, err := promptTemplate.Execute(data)
+
+	if err != nil {
+		return nil, err
+	}
 
 	println(prompt)
 
