@@ -9,7 +9,7 @@ Classify the given input in one of these categories:
 You MUST answer only with the category name!
 
 Input: the input you must cassify
-Category: On of [{{ $sep := "" }}{{- range .Categories }}{{ $sep }}{{ .Name }}{ {$sep = ", " }}{{- end }}]
+Category: one of [{{ $sep := "" }}{{- range .Categories }}{{ $sep }}{{ .Name }}{ {$sep = ", " }}{{- end }}]
 
 ### Input:
 {{ .Input }}
