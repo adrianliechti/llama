@@ -136,7 +136,11 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		},
 	}
 
-	completion, err := p.completer.Complete(ctx, inputMesssages, nil)
+	inputOptions := &provider.CompleteOptions{
+		Stop: promptStop,
+	}
+
+	completion, err := p.completer.Complete(ctx, inputMesssages, inputOptions)
 
 	if err != nil {
 		return nil, err
