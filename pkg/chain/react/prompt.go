@@ -13,7 +13,6 @@ var (
 
 	promptStop = []string{
 		"\nObservation:",
-		"\nFinal Answer:",
 	}
 )
 
