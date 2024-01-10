@@ -1,9 +1,5 @@
 package jsonschema
 
-import (
-	"encoding/json"
-)
-
 type DataType string
 
 const (
@@ -20,28 +16,14 @@ type FunctionDefinition struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 
-	Parameters any `json:"parameters"`
+	Parameters any `json:"parameters,omitempty"`
 }
 
 type Definition struct {
 	Type        DataType              `json:"type,omitempty"`
 	Description string                `json:"description,omitempty"`
 	Enum        []string              `json:"enum,omitempty"`
-	Properties  map[string]Definition `json:"properties"`
+	Properties  map[string]Definition `json:"properties,omitempty"`
 	Required    []string              `json:"required,omitempty"`
 	Items       *Definition           `json:"items,omitempty"`
-}
-
-func (d Definition) MarshalJSON() ([]byte, error) {
-	if d.Properties == nil {
-		d.Properties = make(map[string]Definition)
-	}
-
-	type Alias Definition
-
-	return json.Marshal(struct {
-		Alias
-	}{
-		Alias: (Alias)(d),
-	})
 }

@@ -25,41 +25,30 @@ func (t *promptGorilla) Prompt(system string, messages []provider.Message, optio
 
 	var prompt strings.Builder
 
-	for _, message := range messages {
-		if message.Role == provider.MessageRoleUser {
-			prompt.WriteString("USER: <<question>> ")
-			prompt.WriteString(strings.TrimSpace(message.Content))
+	prompt.WriteString("USER: <<question>> ")
+	prompt.WriteString(strings.TrimSpace(message.Content))
 
-			if len(options.Functions) > 0 {
-				prompt.WriteString("<<function>> ")
+	if len(options.Functions) > 0 {
+		prompt.WriteString(" <<function>> ")
 
-				var functions []jsonschema.FunctionDefinition
+		var functions []jsonschema.FunctionDefinition
 
-				for _, f := range options.Functions {
-					function := jsonschema.FunctionDefinition{
-						Name:        f.Name,
-						Description: f.Description,
+		for _, f := range options.Functions {
+			function := jsonschema.FunctionDefinition{
+				Name:        f.Name,
+				Description: f.Description,
 
-						Parameters: f.Parameters,
-					}
-
-					functions = append(functions, function)
-				}
-
-				data, _ := json.Marshal(functions)
-				prompt.WriteString(string(data))
+				Parameters: f.Parameters,
 			}
 
-			prompt.WriteString("\n")
+			functions = append(functions, function)
 		}
 
-		if message.Role == provider.MessageRoleAssistant {
-			prompt.WriteString("ASSSISTANT: ")
-			prompt.WriteString(strings.TrimSpace(message.Content))
-			prompt.WriteString("\n")
-
-		}
+		data, _ := json.Marshal(functions)
+		prompt.WriteString(string(data))
 	}
+
+	prompt.WriteString("\n")
 
 	prompt.WriteString("ASSSISTANT: ")
 
