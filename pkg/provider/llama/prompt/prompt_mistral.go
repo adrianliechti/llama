@@ -9,8 +9,14 @@ import (
 type promptMistral struct {
 }
 
-func (t *promptMistral) Prompt(system string, messages []provider.Message) (string, error) {
-	messages = llamaMessageFlattening(messages)
+func (t *promptMistral) Prompt(system string, messages []provider.Message, options *TemplateOptions) (string, error) {
+	if options == nil {
+		options = new(TemplateOptions)
+	}
+
+	if len(options.Functions) > 0 {
+		return "", ErrFunctionsUnsupported
+	}
 
 	if err := llamaMessageOrder(messages); err != nil {
 		return "", err

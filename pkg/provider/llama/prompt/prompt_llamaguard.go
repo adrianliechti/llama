@@ -9,7 +9,15 @@ import (
 type promptLlamaGuard struct {
 }
 
-func (t *promptLlamaGuard) Prompt(system string, messages []provider.Message) (string, error) {
+func (t *promptLlamaGuard) Prompt(system string, messages []provider.Message, options *TemplateOptions) (string, error) {
+	if options == nil {
+		options = new(TemplateOptions)
+	}
+
+	if len(options.Functions) > 0 {
+		return "", ErrFunctionsUnsupported
+	}
+
 	var task = "Task: Check if there is unsafe content in conversations according our safety policy with the below categories."
 
 	var categories = `

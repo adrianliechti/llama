@@ -13,8 +13,14 @@ type promptLlama struct {
 
 const llamaSystem = "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."
 
-func (t *promptLlama) Prompt(system string, messages []provider.Message) (string, error) {
-	messages = llamaMessageFlattening(messages)
+func (t *promptLlama) Prompt(system string, messages []provider.Message, options *TemplateOptions) (string, error) {
+	if options == nil {
+		options = new(TemplateOptions)
+	}
+
+	if len(options.Functions) > 0 {
+		return "", ErrFunctionsUnsupported
+	}
 
 	if err := llamaMessageOrder(messages); err != nil {
 		return "", err
@@ -68,21 +74,6 @@ func (t *promptLlama) Stop() []string {
 		"<<SYS>>",
 		"<</SYS>>",
 	}
-}
-
-func llamaMessageFlattening(messages []provider.Message) []provider.Message {
-	result := make([]provider.Message, 0)
-
-	for _, m := range messages {
-		if len(result) > 0 && result[len(result)-1].Role == m.Role {
-			result[len(result)-1].Content += "\n" + m.Content
-			continue
-		}
-
-		result = append(result, m)
-	}
-
-	return result
 }
 
 func llamaMessageOrder(messages []provider.Message) error {

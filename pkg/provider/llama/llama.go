@@ -47,6 +47,7 @@ var (
 	TemplateLlama      = prompt.Llama
 	TemplateLlamaGuard = prompt.LlamaGuard
 	TemplateMistral    = prompt.Mistral
+	TemplateNexusRaven = prompt.NexusRaven
 )
 
 func New(url string, options ...Option) (*Provider, error) {
@@ -261,7 +262,7 @@ func (p *Provider) convertCompletionRequest(messages []provider.Message, options
 		options = &provider.CompleteOptions{}
 	}
 
-	prompt, err := p.template.Prompt(p.system, messages)
+	prompt, err := p.template.Prompt(p.system, messages, toTemplateOptions(options))
 
 	if err != nil {
 		return nil, err
@@ -318,6 +319,16 @@ func toCompletionReason(resp CompletionResponse) provider.CompletionReason {
 	}
 
 	return ""
+}
+
+func toTemplateOptions(options *provider.CompleteOptions) *prompt.TemplateOptions {
+	if options == nil {
+		return nil
+	}
+
+	return &prompt.TemplateOptions{
+		Functions: options.Functions,
+	}
 }
 
 func jsonReader(v any) io.Reader {

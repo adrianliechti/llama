@@ -9,7 +9,15 @@ import (
 type promptChatML struct {
 }
 
-func (t *promptChatML) Prompt(system string, messages []provider.Message) (string, error) {
+func (t *promptChatML) Prompt(system string, messages []provider.Message, options *TemplateOptions) (string, error) {
+	if options == nil {
+		options = new(TemplateOptions)
+	}
+
+	if len(options.Functions) > 0 {
+		return "", ErrFunctionsUnsupported
+	}
+
 	if err := llamaMessageOrder(messages); err != nil {
 		return "", err
 	}
