@@ -44,10 +44,12 @@ var (
 	TemplateChatML = prompt.ChatML
 	TemplateToRA   = prompt.ToRA
 
-	TemplateLlama      = prompt.Llama
-	TemplateLlamaGuard = prompt.LlamaGuard
-	TemplateMistral    = prompt.Mistral
+	TemplateLlama   = prompt.Llama
+	TemplateMistral = prompt.Mistral
+
+	TemplateGorilla    = prompt.Gorilla
 	TemplateNexusRaven = prompt.NexusRaven
+	TemplateLlamaGuard = prompt.LlamaGuard
 )
 
 func New(url string, options ...Option) (*Provider, error) {

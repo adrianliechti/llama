@@ -132,14 +132,17 @@ func llamaProvider(cfg providerConfig) (*llama.Provider, error) {
 	case "llama":
 		options = append(options, llama.WithTemplate(llama.TemplateLlama))
 
-	case "llamaguard":
-		options = append(options, llama.WithTemplate(llama.TemplateLlamaGuard))
-
 	case "mistral":
 		options = append(options, llama.WithTemplate(llama.TemplateMistral))
 
+	case "gorilla":
+		options = append(options, llama.WithTemplate(llama.TemplateGorilla))
+
 	case "nexusraven":
 		options = append(options, llama.WithTemplate(llama.TemplateNexusRaven))
+
+	case "llamaguard":
+		options = append(options, llama.WithTemplate(llama.TemplateLlamaGuard))
 
 	default:
 		return nil, errors.New("invalid prompt template: " + template)
