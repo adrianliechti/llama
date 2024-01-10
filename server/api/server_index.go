@@ -60,20 +60,9 @@ func (s *Server) handleIndexQuery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(query.Text) == 0 && len(query.Embedding) == 0 {
+	if len(query.Text) == 0 {
 		writeError(w, http.StatusBadRequest, nil)
 		return
-	}
-
-	if query.Embedding == nil {
-		embedding, err := i.Embed(r.Context(), query.Text)
-
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		query.Embedding = embedding
 	}
 
 	options := &index.QueryOptions{
@@ -81,7 +70,7 @@ func (s *Server) handleIndexQuery(w http.ResponseWriter, r *http.Request) {
 		Distance: query.Distance,
 	}
 
-	result, err := i.Query(r.Context(), query.Embedding, options)
+	result, err := i.Query(r.Context(), query.Text, options)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

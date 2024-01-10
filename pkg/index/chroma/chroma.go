@@ -125,12 +125,18 @@ func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
 	return nil
 }
 
-func (c *Chroma) Query(ctx context.Context, embedding []float32, options *index.QueryOptions) ([]index.Result, error) {
+func (c *Chroma) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
 	if options == nil {
 		options = &index.QueryOptions{}
 	}
 
 	col, err := c.createCollection(c.namespace)
+
+	if err != nil {
+		return nil, err
+	}
+
+	embedding, err := c.Embed(ctx, query)
 
 	if err != nil {
 		return nil, err

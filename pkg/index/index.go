@@ -10,7 +10,7 @@ type Provider interface {
 	Embedder
 
 	Index(ctx context.Context, documents ...Document) error
-	Query(ctx context.Context, embedding []float32, options *QueryOptions) ([]Result, error)
+	Query(ctx context.Context, query string, options *QueryOptions) ([]Result, error)
 }
 
 type QueryOptions struct {

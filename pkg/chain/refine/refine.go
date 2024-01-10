@@ -105,13 +105,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		filters[k] = v
 	}
 
-	embedding, err := p.index.Embed(ctx, message.Content)
-
-	if err != nil {
-		return nil, err
-	}
-
-	results, err := p.index.Query(ctx, embedding, &index.QueryOptions{
+	results, err := p.index.Query(ctx, message.Content, &index.QueryOptions{
 		Limit:    p.limit,
 		Distance: p.distance,
 

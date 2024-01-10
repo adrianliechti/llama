@@ -70,9 +70,15 @@ func (m *Memory) Index(ctx context.Context, documents ...index.Document) error {
 	return nil
 }
 
-func (m *Memory) Query(ctx context.Context, embedding []float32, options *index.QueryOptions) ([]index.Result, error) {
+func (m *Memory) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
 	if options == nil {
 		options = &index.QueryOptions{}
+	}
+
+	embedding, err := m.Embed(ctx, query)
+
+	if err != nil {
+		return nil, err
 	}
 
 	results := make([]index.Result, 0)

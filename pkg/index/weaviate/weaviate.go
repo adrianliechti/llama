@@ -94,8 +94,14 @@ func (w *Weaviate) Index(ctx context.Context, documents ...index.Document) error
 	return nil
 }
 
-func (w *Weaviate) Query(ctx context.Context, embedding []float32, options *index.QueryOptions) ([]index.Result, error) {
+func (w *Weaviate) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
 	var vector strings.Builder
+
+	embedding, err := w.Embed(ctx, query)
+
+	if err != nil {
+		return nil, err
+	}
 
 	for i, v := range embedding {
 		if i > 0 {
@@ -105,9 +111,10 @@ func (w *Weaviate) Query(ctx context.Context, embedding []float32, options *inde
 		vector.WriteString(fmt.Sprintf("%f", v))
 	}
 
-	query := executeQueryTemplate(queryData{
+	data := executeQueryTemplate(queryData{
 		Class: w.class,
 
+		Query:  query,
 		Vector: embedding,
 
 		Limit: options.Limit,
@@ -115,7 +122,7 @@ func (w *Weaviate) Query(ctx context.Context, embedding []float32, options *inde
 	})
 
 	body := map[string]any{
-		"query": query,
+		"query": data,
 	}
 
 	u, _ := url.JoinPath(w.url, "/v1/graphql")

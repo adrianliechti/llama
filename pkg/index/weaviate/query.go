@@ -13,7 +13,9 @@ var (
 )
 
 type queryData struct {
-	Class  string
+	Class string
+
+	Query  string
 	Vector []float32
 
 	Limit *int

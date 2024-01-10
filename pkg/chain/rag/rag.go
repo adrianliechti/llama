@@ -93,12 +93,6 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		return nil, errors.New("last message must be from user")
 	}
 
-	embedding, err := p.index.Embed(ctx, message.Content)
-
-	if err != nil {
-		return nil, err
-	}
-
 	filters := map[string]string{}
 
 	for k, c := range p.filters {
@@ -111,7 +105,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		filters[k] = v
 	}
 
-	results, err := p.index.Query(ctx, embedding, &index.QueryOptions{
+	results, err := p.index.Query(ctx, message.Content, &index.QueryOptions{
 		Limit:    p.limit,
 		Distance: p.distance,
 

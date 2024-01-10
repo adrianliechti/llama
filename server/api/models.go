@@ -13,8 +13,7 @@ type Result struct {
 }
 
 type Query struct {
-	Text      string    `json:"text,omitempty"`
-	Embedding []float32 `json:"embedding,omitempty"`
+	Text string `json:"text,omitempty"`
 
 	Limit    *int     `json:"limit,omitempty"`
 	Distance *float32 `json:"distance,omitempty"`
