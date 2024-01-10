@@ -148,6 +148,8 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 
 	content := strings.TrimSpace(completion.Message.Content)
 
+	println("> " + content)
+
 	if answer, err := extractAnswer(content); err == nil {
 		result := provider.Completion{
 			ID:     completion.ID,
@@ -190,7 +192,8 @@ func extractAction(s string) (*provider.FunctionCall, error) {
 		match := matches[len(matches)-1]
 
 		if len(match) == 3 {
-			args := "{\"query\": \"" + match[2] + "\"}"
+			args := match[2]
+			//args := "{\"query\": \"" + match[2] + "\"}"
 
 			return &provider.FunctionCall{
 				Name:      match[1],
