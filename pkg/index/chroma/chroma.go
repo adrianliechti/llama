@@ -40,6 +40,10 @@ func New(url, namespace string, options ...Option) (*Chroma, error) {
 		option(chroma)
 	}
 
+	if chroma.embedder == nil {
+		return nil, errors.New("embedder is required")
+	}
+
 	return chroma, nil
 }
 
@@ -53,14 +57,6 @@ func WithEmbedder(embedder index.Embedder) Option {
 	return func(c *Chroma) {
 		c.embedder = embedder
 	}
-}
-
-func (c *Chroma) Embed(ctx context.Context, content string) ([]float32, error) {
-	if c.embedder == nil {
-		return nil, errors.New("no embedder configured")
-	}
-
-	return c.embedder.Embed(ctx, content)
 }
 
 func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
@@ -136,7 +132,7 @@ func (c *Chroma) Query(ctx context.Context, query string, options *index.QueryOp
 		return nil, err
 	}
 
-	embedding, err := c.Embed(ctx, query)
+	embedding, err := c.embedder.Embed(ctx, query)
 
 	if err != nil {
 		return nil, err

@@ -31,6 +31,10 @@ func New(options ...Option) (*Memory, error) {
 		option(m)
 	}
 
+	if m.embedder == nil {
+		return nil, errors.New("embedder is required")
+	}
+
 	return m, nil
 }
 

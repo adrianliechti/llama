@@ -43,6 +43,10 @@ func New(url, namespace string, options ...Option) (*Weaviate, error) {
 		option(w)
 	}
 
+	if w.embedder == nil {
+		return nil, errors.New("embedder is required")
+	}
+
 	return w, nil
 }
 
@@ -56,14 +60,6 @@ func WithEmbedder(embedder index.Embedder) Option {
 	return func(w *Weaviate) {
 		w.embedder = embedder
 	}
-}
-
-func (w *Weaviate) Embed(ctx context.Context, content string) ([]float32, error) {
-	if w.embedder == nil {
-		return nil, errors.New("no embedder configured")
-	}
-
-	return w.embedder.Embed(ctx, content)
 }
 
 func (w *Weaviate) Index(ctx context.Context, documents ...index.Document) error {
@@ -97,7 +93,7 @@ func (w *Weaviate) Index(ctx context.Context, documents ...index.Document) error
 func (w *Weaviate) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
 	var vector strings.Builder
 
-	embedding, err := w.Embed(ctx, query)
+	embedding, err := w.embedder.Embed(ctx, query)
 
 	if err != nil {
 		return nil, err

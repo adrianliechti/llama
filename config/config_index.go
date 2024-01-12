@@ -6,6 +6,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/index/chroma"
+	"github.com/adrianliechti/llama/pkg/index/elasticsearch"
 	"github.com/adrianliechti/llama/pkg/index/memory"
 	"github.com/adrianliechti/llama/pkg/index/weaviate"
 )
@@ -47,6 +48,9 @@ func createIndex(cfg indexConfig, embedder index.Embedder) (index.Provider, erro
 	case "weaviate":
 		return weaviateIndex(cfg, embedder)
 
+	case "elasticsearch":
+		return elasticsearchIndex(cfg)
+
 	default:
 		return nil, errors.New("invalid index type: " + cfg.Type)
 	}
@@ -80,4 +84,10 @@ func weaviateIndex(cfg indexConfig, embedder index.Embedder) (index.Provider, er
 	}
 
 	return weaviate.New(cfg.URL, cfg.Namespace, options...)
+}
+
+func elasticsearchIndex(cfg indexConfig) (index.Provider, error) {
+	var options []elasticsearch.Option
+
+	return elasticsearch.New(cfg.URL, cfg.Namespace, options...)
 }

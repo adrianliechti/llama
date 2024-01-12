@@ -227,6 +227,25 @@ indexes:
 ```
 
 
+##### OpenSearch / Elasticsearch
+
+```shell
+# using taskfile.dev
+$ task opensearch-server
+
+# using Docker
+docker run -d -p 9200:9200 -v opensearch-data:/usr/share/opensearch/data -e "discovery.type=single-node" -e DISABLE_SECURITY_PLUGIN=true opensearchproject/opensearch:latest
+```
+
+```yaml
+indexes:
+  docs:
+    type: elasticsearch
+    url: http://localhost:9200
+    namespace: insight
+```
+
+
 ### Classifications
 
 Use classifiers to categorize prompts and dispatch or filter data in chains
@@ -248,7 +267,7 @@ classifiers:
     categories:
       {category-1}: "...Description when to use Category 1..."
       {category-2}: "...Description when to use Category 2..."
-``````
+```
 
 ## Use Cases
 
@@ -323,11 +342,9 @@ Function calling is the ability to reliably connect LLMs to external tools to en
 
 Example using OpenAI API https://platform.openai.com/docs/guides/function-calling
 
-#### Compatibility Layer
+#### ReAct
 
 For providers or models not natively supporting Function Calling, a transformator chain can be configured to mimic this functionality.
-
-#### Configuration
 
 ```yaml
 chains:

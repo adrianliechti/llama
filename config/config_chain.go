@@ -46,10 +46,6 @@ func (c *Config) registerChains(f *configFile) error {
 			if err != nil {
 				return err
 			}
-
-			if embedder == nil {
-				embedder = index
-			}
 		}
 
 		for _, v := range cfg.Filters {
@@ -86,25 +82,21 @@ func createChain(cfg chainConfig, embedder provider.Embedder, completer provider
 		return reactChain(cfg, completer)
 
 	case "rag":
-		return ragChain(cfg, embedder, completer, index, classifiers)
+		return ragChain(cfg, completer, index, classifiers)
 
 	case "refine":
-		return refineChain(cfg, embedder, completer, index, classifiers)
+		return refineChain(cfg, completer, index, classifiers)
 
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
 	}
 }
 
-func ragChain(cfg chainConfig, embedder provider.Embedder, completer provider.Completer, index index.Provider, classifiers map[string]classifier.Provider) (chain.Provider, error) {
+func ragChain(cfg chainConfig, completer provider.Completer, index index.Provider, classifiers map[string]classifier.Provider) (chain.Provider, error) {
 	var options []rag.Option
 
 	if index != nil {
 		options = append(options, rag.WithIndex(index))
-	}
-
-	if embedder != nil {
-		options = append(options, rag.WithEmbedder(embedder))
 	}
 
 	if completer != nil {
@@ -126,15 +118,11 @@ func ragChain(cfg chainConfig, embedder provider.Embedder, completer provider.Co
 	return rag.New(options...)
 }
 
-func refineChain(cfg chainConfig, embedder provider.Embedder, completer provider.Completer, index index.Provider, classifiers map[string]classifier.Provider) (chain.Provider, error) {
+func refineChain(cfg chainConfig, completer provider.Completer, index index.Provider, classifiers map[string]classifier.Provider) (chain.Provider, error) {
 	var options []refine.Option
 
 	if index != nil {
 		options = append(options, refine.WithIndex(index))
-	}
-
-	if embedder != nil {
-		options = append(options, refine.WithEmbedder(embedder))
 	}
 
 	if completer != nil {

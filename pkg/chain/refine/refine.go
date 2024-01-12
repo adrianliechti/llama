@@ -15,7 +15,6 @@ var _ provider.Completer = &Provider{}
 type Provider struct {
 	index index.Provider
 
-	embedder  provider.Embedder
 	completer provider.Completer
 
 	limit    *int
@@ -39,10 +38,6 @@ func New(options ...Option) (*Provider, error) {
 		return nil, errors.New("missing index provider")
 	}
 
-	if p.embedder == nil {
-		return nil, errors.New("missing embedder provider")
-	}
-
 	if p.completer == nil {
 		return nil, errors.New("missing completer provider")
 	}
@@ -53,12 +48,6 @@ func New(options ...Option) (*Provider, error) {
 func WithIndex(index index.Provider) Option {
 	return func(p *Provider) {
 		p.index = index
-	}
-}
-
-func WithEmbedder(embedder provider.Embedder) Option {
-	return func(p *Provider) {
-		p.embedder = embedder
 	}
 }
 
