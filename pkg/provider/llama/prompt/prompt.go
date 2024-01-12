@@ -26,8 +26,10 @@ var (
 	ChatML Template = &promptChatML{}
 	ToRA   Template = &promptToRA{}
 
-	Llama      Template = &promptLlama{}
-	LlamaGuard Template = &promptLlamaGuard{}
-	Mistral    Template = &promptMistral{}
+	Llama   Template = &promptLlama{}
+	Mistral Template = &promptMistral{}
+
+	Gorilla    Template = &promptGorilla{}
 	NexusRaven Template = &promptNexusRaven{}
+	LlamaGuard Template = &promptLlamaGuard{}
 )
