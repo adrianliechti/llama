@@ -83,8 +83,10 @@ func (e *Elasticsearch) Query(ctx context.Context, query string, options *index.
 
 	body := map[string]any{
 		"query": map[string]any{
-			"match": map[string]any{
-				"content": query,
+			"multi_match": map[string]any{
+				"query":    query,
+				"fields":   []string{"content", "metadata.*"},
+				"analyzer": "english",
 			},
 		},
 	}
