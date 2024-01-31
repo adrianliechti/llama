@@ -246,6 +246,17 @@ indexes:
 ```
 
 
+#### Unstructured
+
+```shell
+# using taskfile.dev
+$ task unstructured-server
+
+# using Docker
+docker run -it --rm -p 9085:8000 downloads.unstructured.io/unstructured-io/unstructured-api:latest --port 8000 --host 0.0.0.0
+```
+
+
 ### Classifications
 
 Use classifiers to categorize prompts and dispatch or filter data in chains
