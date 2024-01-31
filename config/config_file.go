@@ -28,6 +28,7 @@ type configFile struct {
 	Providers []providerConfig `yaml:"providers"`
 
 	Indexes     map[string]indexConfig      `yaml:"indexes"`
+	Extracters  map[string]extracterConfig  `yaml:"extracters"`
 	Classifiers map[string]classifierConfig `yaml:"classifiers"`
 
 	Chains map[string]chainConfig `yaml:"chains"`
@@ -69,6 +70,13 @@ type indexConfig struct {
 
 	Namespace string `yaml:"namespace"`
 	Embedding string `yaml:"embedding"`
+}
+
+type extracterConfig struct {
+	Type string `yaml:"type"`
+
+	URL   string `yaml:"url"`
+	Token string `yaml:"token"`
 }
 
 type classifierConfig struct {

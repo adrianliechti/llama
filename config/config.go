@@ -6,6 +6,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/authorizer"
 	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/classifier"
+	"github.com/adrianliechti/llama/pkg/extracter"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
 )
@@ -18,6 +19,7 @@ var (
 	ErrTranscriberNotFound = errors.New("transcriber not found")
 
 	ErrIndexNotFound      = errors.New("index not found")
+	ErrExtracterNotFound  = errors.New("extracter not found")
 	ErrClassifierNotFound = errors.New("classifier not found")
 )
 
@@ -33,6 +35,7 @@ type Config struct {
 	transcriber map[string]provider.Transcriber
 
 	indexes     map[string]index.Provider
+	extracters  map[string]extracter.Provider
 	classifiers map[string]classifier.Provider
 
 	chains map[string]chain.Provider
@@ -96,6 +99,16 @@ func (cfg *Config) Index(id string) (index.Provider, error) {
 	return i, nil
 }
 
+func (cfg *Config) Extracter(id string) (extracter.Provider, error) {
+	e, ok := cfg.extracters[id]
+
+	if !ok {
+		return nil, ErrExtracterNotFound
+	}
+
+	return e, nil
+}
+
 func (cfg *Config) Classifier(id string) (classifier.Provider, error) {
 	c, ok := cfg.classifiers[id]
 
@@ -123,6 +136,7 @@ func Parse(path string) (*Config, error) {
 		transcriber: make(map[string]provider.Transcriber),
 
 		indexes:     make(map[string]index.Provider),
+		extracters:  make(map[string]extracter.Provider),
 		classifiers: make(map[string]classifier.Provider),
 
 		chains: make(map[string]chain.Provider),
@@ -137,6 +151,10 @@ func Parse(path string) (*Config, error) {
 	}
 
 	if err := c.registerIndexes(file); err != nil {
+		return nil, err
+	}
+
+	if err := c.registerExtracters(file); err != nil {
 		return nil, err
 	}
 
