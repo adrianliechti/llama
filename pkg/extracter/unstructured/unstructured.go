@@ -10,8 +10,10 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/adrianliechti/llama/pkg/converter"
+	"github.com/adrianliechti/llama/pkg/extracter"
 )
+
+var _ extracter.Provider = &Provider{}
 
 type Provider struct {
 	url string
@@ -49,9 +51,9 @@ func WithURL(url string) Option {
 	}
 }
 
-func (p *Provider) Convert(ctx context.Context, input converter.File, options *converter.ConvertOptions) (*converter.Text, error) {
+func (p *Provider) Extract(ctx context.Context, input extracter.File, options *extracter.ExtractOptions) (*extracter.Document, error) {
 	if options == nil {
-		options = &converter.ConvertOptions{}
+		options = &extracter.ExtractOptions{}
 	}
 
 	url, _ := url.JoinPath(p.url, "/general/v0/general")
@@ -92,7 +94,15 @@ func (p *Provider) Convert(ctx context.Context, input converter.File, options *c
 		return nil, err
 	}
 
-	result := converter.Text{}
+	result := extracter.Document{}
+
+	for _, e := range elements {
+		block := extracter.Block{
+			Text: e.Text,
+		}
+
+		result.Blocks = append(result.Blocks, block)
+	}
 
 	return &result, nil
 }
