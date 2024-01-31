@@ -28,6 +28,7 @@ func New(cfg *config.Config) (*Server, error) {
 
 	r.Post("/index/{index}", s.handleIndex)
 	r.Post("/index/{index}/query", s.handleIndexQuery)
+	r.Post("/index/{index}/{extracter}", s.handleIndexWithExtracter)
 
 	return s, nil
 }
