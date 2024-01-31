@@ -5,7 +5,7 @@ type Document struct {
 
 	Content string `json:"content,omitempty"`
 
-	Blocks   []Block           `json:"blocks,omitempty"`
+	Pages    []Page            `json:"pages,omitempty"`
 	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
@@ -21,6 +21,10 @@ type Query struct {
 	Distance *float32 `json:"distance,omitempty"`
 }
 
+type Page struct {
+	Blocks []Block `json:"blocks,omitempty"`
+}
+
 type Block struct {
-	Text string `json:"text,omitempty"`
+	Content string `json:"text,omitempty"`
 }

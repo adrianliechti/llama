@@ -1,7 +1,9 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/extracter"
@@ -42,22 +44,33 @@ func (s *Server) handleIndexWithExtracter(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var content strings.Builder
+	var documents []index.Document
 
-	for _, b := range data.Blocks {
-		content.WriteString(b.Text)
-		content.WriteString("\n")
+	for i, p := range data.Pages {
+		var content strings.Builder
+
+		for _, b := range p.Blocks {
+			content.WriteString(b.Text)
+			content.WriteString("\n")
+		}
+
+		page := i + 1
+
+		document := index.Document{
+			ID:      fmt.Sprintf("%s#%d", file.Name, page),
+			Content: content.String(),
+
+			Metadata: map[string]string{
+				"filename": file.Name,
+				"page":     strconv.Itoa(page),
+			},
+		}
+
+		documents = append(documents, document)
+
 	}
 
-	document := index.Document{
-		Content: content.String(),
-
-		Metadata: map[string]string{
-			"filename": file.Name,
-		},
-	}
-
-	if err := i.Index(r.Context(), document); err != nil {
+	if err := i.Index(r.Context(), documents...); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

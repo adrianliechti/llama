@@ -96,12 +96,21 @@ func (p *Provider) Extract(ctx context.Context, input extracter.File, options *e
 
 	result := extracter.Document{}
 
+	page := extracter.Page{}
+
 	for _, e := range elements {
+		if e.Metadata.PageNumber > len(result.Pages) {
+			if len(page.Blocks) > 0 {
+				result.Pages = append(result.Pages, page)
+				page = extracter.Page{}
+			}
+		}
+
 		block := extracter.Block{
 			Text: e.Text,
 		}
 
-		result.Blocks = append(result.Blocks, block)
+		page.Blocks = append(page.Blocks, block)
 	}
 
 	return &result, nil

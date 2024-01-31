@@ -26,7 +26,7 @@ func (s *Server) handleExtract(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	document, err := e.Extract(r.Context(), file, nil)
+	data, err := e.Extract(r.Context(), file, nil)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -35,12 +35,18 @@ func (s *Server) handleExtract(w http.ResponseWriter, r *http.Request) {
 
 	var result Document
 
-	for _, b := range document.Blocks {
-		block := Block{
-			Text: b.Text,
+	for _, p := range data.Pages {
+		page := Page{}
+
+		for _, b := range p.Blocks {
+			block := Block{
+				Content: b.Text,
+			}
+
+			page.Blocks = append(page.Blocks, block)
 		}
 
-		result.Blocks = append(result.Blocks, block)
+		result.Pages = append(result.Pages, page)
 	}
 
 	writeJson(w, result)

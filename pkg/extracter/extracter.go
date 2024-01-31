@@ -20,6 +20,10 @@ type File struct {
 }
 
 type Document struct {
+	Pages []Page
+}
+
+type Page struct {
 	Blocks []Block
 }
 
