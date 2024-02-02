@@ -30,7 +30,7 @@ services:
       ENABLE_CUDA: 0
 
   gateway:
-    image: adrianliechti/llama-openai:2
+    image: adrianliechti/llama-platform
     build:
       context: .
       dockerfile: Dockerfile

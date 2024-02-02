@@ -3,7 +3,7 @@
 version: '3'
 
 vars:
-  REPOSITORY: adrianliechti/llama-openai:2
+  REPOSITORY: adrianliechti/llama-platform
 
 tasks:
   publish:
