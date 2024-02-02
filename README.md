@@ -245,6 +245,25 @@ indexes:
     namespace: insight
 ```
 
+### Extracters
+
+#### Unstructured
+
+```shell
+# using taskfile.dev
+$ task unstructured-server
+
+# using Docker
+docker run -it --rm -p 9085:8000 downloads.unstructured.io/unstructured-io/unstructured-api:latest --port 8000 --host 0.0.0.0
+```
+
+```yaml
+extracters:
+  unstructured:
+    type: unstructured
+    url: http://localhost:9085
+```
+
 
 ### Classifications
 

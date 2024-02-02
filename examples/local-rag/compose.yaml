@@ -1,0 +1,93 @@
+version: "3"
+
+services:
+  platform:
+    image: adrianliechti/llama-platform
+    pull_policy: always
+    ports:
+      - 8080:8080
+    configs:
+      - source: platform
+        target: /config.yaml
+    depends_on:
+      - sbert
+      - chroma
+      - unstructured
+  
+  chroma:
+    image: ghcr.io/chroma-core/chroma:0.4.22
+    pull_policy: always
+    volumes:
+       - chroma-data:/chroma/chroma
+  
+  sbert:
+    image: semitechnologies/transformers-inference:sentence-transformers-all-mpnet-base-v2
+    pull_policy: always
+    environment:
+      ENABLE_CUDA: 0
+  
+  unstructured:
+    image: downloads.unstructured.io/unstructured-io/unstructured-api:latest    
+    pull_policy: always
+    command: --port 8000 --host 0.0.0.0
+  
+  web:
+    image: adrianliechti/llama-ui
+    pull_policy: always
+    ports:
+      - 3000:3000
+    environment:
+      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+    configs:
+      - source: web
+        target: /config.yaml    
+    depends_on:
+      - platform
+  
+configs:
+  platform:
+    content: |
+      providers:
+        - type: ollama
+          url: http://host.docker.internal:11434
+          models:
+            mistral-7b-instruct:
+              id: mistral
+
+        - type: sbert
+          url: http://sbert:8080
+          models:
+            all-mpnet-base-v2:
+              id: all-mpnet-base-v2
+      
+      indexes:
+        docs:
+          type: chroma
+          url: http://chroma:8000
+          namespace: docs
+          embedding: all-mpnet-base-v2
+      
+      extracters:
+        unstructured:
+          type: unstructured
+          url: http://unstructured:8000
+      
+      chains:
+        docs:
+          type: rag
+          index: docs
+          model: mistral-7b-instruct
+  
+  web:
+    content: |
+      contexts:
+        - name: Chat
+          models:
+            - id: mistral-7b-instruct        
+
+        - name: Documents
+          models:
+            - id: docs
+
+volumes:
+  chroma-data:

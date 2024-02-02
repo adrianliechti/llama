@@ -3,7 +3,7 @@
 version: '3'
 
 vars:
-  REPOSITORY: adrianliechti/llama-openai:2
+  REPOSITORY: adrianliechti/llama-platform
 
 tasks:
   publish:
@@ -85,7 +85,11 @@ tasks:
 
   opensearch-server:
     cmds:
-      - docker run -d -p 9200:9200 -v opensearch-data:/usr/share/opensearch/data -e "discovery.type=single-node" -e DISABLE_SECURITY_PLUGIN=true opensearchproject/opensearch:latest
+      - docker run -it --rm -p 9200:9200 -v opensearch-data:/usr/share/opensearch/data -e "discovery.type=single-node" -e DISABLE_SECURITY_PLUGIN=true opensearchproject/opensearch:latest
+  
+  unstructured-server:
+    cmds:
+      - docker run -it --rm -p 9085:8000 downloads.unstructured.io/unstructured-io/unstructured-api:latest --port 8000 --host 0.0.0.0
 
   chatbot-server:
     cmds:
