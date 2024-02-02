@@ -1,0 +1,50 @@
+version: "3"
+
+services:
+  platform:
+    image: adrianliechti/llama-platform
+    pull_policy: always
+    ports:
+      - 8080:8080
+    configs:
+      - source: platform
+        target: /config.yaml
+  
+  web:
+    image: adrianliechti/llama-ui
+    pull_policy: always
+    ports:
+      - 3000:3000
+    environment:
+      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+    configs:
+      - source: web
+        target: /config.yaml
+    depends_on:
+      - platform
+  
+configs:
+  platform:
+    content: |
+      providers:
+        - type: openai
+          url: https://xxxxxxxx.openai.azure.com
+          token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
+          models:
+            gpt-3.5-turbo:
+              id: gpt-35-turbo-16k
+ 
+            gpt-4-turbo:
+              id: gpt-4-32k
+
+  web:
+    content: |
+      contexts:
+        - name: GPT 3.5
+          models:
+            - id: gpt-3.5-turbo
+
+        - name: GPT 4
+          models:
+            - id: gpt-4-turbo
