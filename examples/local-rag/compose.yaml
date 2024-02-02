@@ -36,12 +36,11 @@ services:
     pull_policy: always
     ports:
       - 3000:3000
+    environment:
+      - OPENAI_BASE_URL=http://platform:8080/oai/v1
     configs:
       - source: web
-        target: /config.yaml
-    environment:
-      - BASE_URL=http://localhost:3000
-      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+        target: /config.yaml    
     depends_on:
       - platform
   
