@@ -6,8 +6,8 @@ require (
 	github.com/coreos/go-oidc/v3 v3.9.0
 	github.com/go-chi/chi/v5 v5.0.11
 	github.com/go-chi/cors v1.2.1
-	github.com/google/uuid v1.5.0
-	github.com/sashabaranov/go-openai v1.17.10
+	github.com/google/uuid v1.6.0
+	github.com/sashabaranov/go-openai v1.19.1
 	github.com/stretchr/testify v1.8.4
 	gopkg.in/yaml.v3 v3.0.1
 )

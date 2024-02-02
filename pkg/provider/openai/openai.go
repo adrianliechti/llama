@@ -25,7 +25,9 @@ type Provider struct {
 	url string
 
 	token string
-	model string
+
+	model     string
+	embedding string
 
 	client *openai.Client
 }
@@ -34,7 +36,8 @@ type Option func(*Provider)
 
 func New(options ...Option) (*Provider, error) {
 	p := &Provider{
-		model: openai.GPT3Dot5Turbo,
+		model:     openai.GPT3Dot5Turbo,
+		embedding: string(openai.AdaEmbeddingV2),
 	}
 
 	for _, option := range options {
@@ -74,10 +77,16 @@ func WithModel(model string) Option {
 	}
 }
 
+func WithEmbedding(embedding string) Option {
+	return func(p *Provider) {
+		p.embedding = embedding
+	}
+}
+
 func (p *Provider) Embed(ctx context.Context, content string) ([]float32, error) {
 	req := openai.EmbeddingRequest{
 		Input: content,
-		Model: openai.AdaEmbeddingV2,
+		Model: openai.EmbeddingModel(p.embedding),
 	}
 
 	result, err := p.client.CreateEmbeddings(ctx, req)
