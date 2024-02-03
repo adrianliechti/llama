@@ -21,13 +21,13 @@ services:
        - chroma-data:/chroma/chroma
   
   sbert:
-    image: semitechnologies/transformers-inference:sentence-transformers-all-mpnet-base-v2
+    image: adrianliechti/sentence-transformers:nomic-embed-text-v1
     pull_policy: always
     environment:
       ENABLE_CUDA: 0
   
   unstructured:
-    image: downloads.unstructured.io/unstructured-io/unstructured-api:latest    
+    image: downloads.unstructured.io/unstructured-io/unstructured-api:latest
     pull_policy: always
     command: --port 8000 --host 0.0.0.0
   
@@ -57,15 +57,15 @@ configs:
         - type: sbert
           url: http://sbert:8080
           models:
-            all-mpnet-base-v2:
-              id: all-mpnet-base-v2
+            nomic-embed-text-v1:
+              id: nomic-embed-text-v1
       
       indexes:
         docs:
           type: chroma
           url: http://chroma:8000
           namespace: docs
-          embedding: all-mpnet-base-v2
+          embedding: nomic-embed-text-v1
       
       extracters:
         unstructured:
@@ -83,7 +83,7 @@ configs:
       contexts:
         - name: Chat
           models:
-            - id: mistral-7b-instruct        
+            - id: mistral-7b-instruct
 
         - name: Documents
           models:
