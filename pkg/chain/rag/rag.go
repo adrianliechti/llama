@@ -20,6 +20,8 @@ type Provider struct {
 	limit    *int
 	distance *float32
 
+	contextualization provider.Completer
+
 	filters map[string]classifier.Provider
 }
 
@@ -75,11 +77,32 @@ func WithDistance(val float32) Option {
 	}
 }
 
+func WithContextualization(val provider.Completer) Option {
+	return func(p *Provider) {
+		p.contextualization = val
+	}
+}
+
 func (p *Provider) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	message := messages[len(messages)-1]
 
 	if message.Role != provider.MessageRoleUser {
 		return nil, errors.New("last message must be from user")
+	}
+
+	if p.contextualization != nil && len(messages) > 1 {
+		result, err := p.contextualization.Complete(ctx, messages, nil)
+
+		if err != nil {
+			return nil, err
+		}
+
+		message = provider.Message{
+			Role:    provider.MessageRoleUser,
+			Content: strings.TrimSpace(result.Message.Content),
+		}
+
+		messages = []provider.Message{message}
 	}
 
 	filters := map[string]string{}
