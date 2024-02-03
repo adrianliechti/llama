@@ -61,6 +61,9 @@ func (p *Provider) Extract(ctx context.Context, input extracter.File, options *e
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 
+	w.WriteField("strategy", "auto")
+	w.WriteField("languages", "eng")
+	w.WriteField("pdf_infer_table_structure", "true")
 	w.WriteField("chunking_strategy", "by_title")
 
 	file, err := w.CreateFormFile("files", input.Name)
