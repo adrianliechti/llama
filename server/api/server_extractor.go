@@ -33,20 +33,22 @@ func (s *Server) handleExtract(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var result Document
+	var result []Document
 
-	for _, p := range data.Pages {
-		page := Page{}
+	for _, p := range data.Blocks {
+		metadata := map[string]string{}
 
-		for _, b := range p.Blocks {
-			block := Block{
-				Content: b.Text,
-			}
-
-			page.Blocks = append(page.Blocks, block)
+		if data.Name != "" {
+			metadata["filename"] = data.Name
 		}
 
-		result.Pages = append(result.Pages, page)
+		document := Document{
+			Metadata: metadata,
+
+			Content: p.Content,
+		}
+
+		result = append(result, document)
 	}
 
 	writeJson(w, result)

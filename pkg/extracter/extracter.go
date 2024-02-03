@@ -20,13 +20,11 @@ type File struct {
 }
 
 type Document struct {
-	Pages []Page
-}
+	Name string
 
-type Page struct {
 	Blocks []Block
 }
 
 type Block struct {
-	Text string
+	Content string
 }

@@ -3,8 +3,6 @@ package api
 import (
 	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/adrianliechti/llama/pkg/extracter"
 	"github.com/adrianliechti/llama/pkg/index"
@@ -46,28 +44,17 @@ func (s *Server) handleIndexWithExtracter(w http.ResponseWriter, r *http.Request
 
 	var documents []index.Document
 
-	for i, p := range data.Pages {
-		var content strings.Builder
-
-		for _, b := range p.Blocks {
-			content.WriteString(b.Text)
-			content.WriteString("\n")
-		}
-
-		page := i + 1
-
+	for i, p := range data.Blocks {
 		document := index.Document{
-			ID:      fmt.Sprintf("%s#%d", file.Name, page),
-			Content: content.String(),
+			ID:      fmt.Sprintf("%s#%d", file.Name, i),
+			Content: p.Content,
 
 			Metadata: map[string]string{
 				"filename": file.Name,
-				"page":     strconv.Itoa(page),
 			},
 		}
 
 		documents = append(documents, document)
-
 	}
 
 	if err := i.Index(r.Context(), documents...); err != nil {

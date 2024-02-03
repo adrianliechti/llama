@@ -61,6 +61,8 @@ func (p *Provider) Extract(ctx context.Context, input extracter.File, options *e
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 
+	w.WriteField("chunking_strategy", "by_title")
+
 	file, err := w.CreateFormFile("files", input.Name)
 
 	if err != nil {
@@ -96,21 +98,16 @@ func (p *Provider) Extract(ctx context.Context, input extracter.File, options *e
 
 	result := extracter.Document{}
 
-	page := extracter.Page{}
+	if len(elements) > 0 {
+		result.Name = elements[0].Metadata.Filename
+	}
 
 	for _, e := range elements {
-		if e.Metadata.PageNumber > len(result.Pages) {
-			if len(page.Blocks) > 0 {
-				result.Pages = append(result.Pages, page)
-				page = extracter.Page{}
-			}
-		}
-
 		block := extracter.Block{
-			Text: e.Text,
+			Content: e.Text,
 		}
 
-		page.Blocks = append(page.Blocks, block)
+		result.Blocks = append(result.Blocks, block)
 	}
 
 	return &result, nil
