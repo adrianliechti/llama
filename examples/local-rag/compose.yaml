@@ -4,6 +4,9 @@ services:
   platform:
     image: adrianliechti/llama-platform
     pull_policy: always
+    build:
+      context: ../../
+      dockerfile: Dockerfile
     ports:
       - 8080:8080
     configs:
@@ -51,21 +54,21 @@ configs:
         - type: ollama
           url: http://host.docker.internal:11434
           models:
-            mistral-7b-instruct:
-              id: mistral
+            mistral:
+              id: mistral:latest
 
         - type: sbert
           url: http://sbert:8080
           models:
-            nomic-embed-text-v1:
-              id: nomic-embed-text-v1
+            embed-text-v1:
+              id: embed-text-v1
       
       indexes:
         docs:
           type: chroma
           url: http://chroma:8000
           namespace: docs
-          embedding: nomic-embed-text-v1
+          embedding: embed-text-v1
       
       extracters:
         unstructured:
@@ -76,14 +79,14 @@ configs:
         docs:
           type: rag
           index: docs
-          model: mistral-7b-instruct
+          model: mistral
   
   web:
     content: |
       contexts:
         - name: Chat
           models:
-            - id: mistral-7b-instruct
+            - id: mistral
 
         - name: Documents
           models:

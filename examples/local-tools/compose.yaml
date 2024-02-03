@@ -4,6 +4,9 @@ services:
   platform:
     image: adrianliechti/llama-platform
     pull_policy: always
+    build:
+      context: ../../
+      dockerfile: Dockerfile
     ports:
       - 8080:8080
     configs:
@@ -17,10 +20,10 @@ configs:
         - type: ollama
           url: http://host.docker.internal:11434
           models:
-            mistral-7b-instruct:
-              id: mistral
+            mistral:
+              id: mistral:latest
 
       chains:
         mistral-fn:
           type: react
-          model: mistral-7b-instruct
+          model: mistral
