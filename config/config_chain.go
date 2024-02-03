@@ -8,6 +8,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/chain/rag"
 	"github.com/adrianliechti/llama/pkg/chain/react"
 	"github.com/adrianliechti/llama/pkg/chain/refine"
+	"github.com/adrianliechti/llama/pkg/chain/summarize"
 	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
@@ -87,6 +88,9 @@ func createChain(cfg chainConfig, embedder provider.Embedder, completer provider
 	case "refine":
 		return refineChain(cfg, completer, index, classifiers)
 
+	case "summarize":
+		return summarizeChain(cfg, completer)
+
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
 	}
@@ -152,4 +156,14 @@ func reactChain(cfg chainConfig, completer provider.Completer) (chain.Provider, 
 	}
 
 	return react.New(options...)
+}
+
+func summarizeChain(cfg chainConfig, completer provider.Completer) (chain.Provider, error) {
+	var options []summarize.Option
+
+	if completer != nil {
+		options = append(options, summarize.WithCompleter(completer))
+	}
+
+	return summarize.New(options...)
 }

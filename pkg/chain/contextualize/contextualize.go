@@ -1,4 +1,4 @@
-package contextualization
+package contextualize
 
 import (
 	"context"

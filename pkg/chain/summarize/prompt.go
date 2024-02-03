@@ -1,10 +1,9 @@
-package contextualization
+package summarize
 
 import (
 	_ "embed"
 
 	"github.com/adrianliechti/llama/pkg/prompt"
-	"github.com/adrianliechti/llama/pkg/provider"
 )
 
 var (
@@ -14,6 +13,5 @@ var (
 )
 
 type promptData struct {
-	Input    string
-	Messages []provider.Message
+	Input string
 }
