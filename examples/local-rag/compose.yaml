@@ -21,7 +21,9 @@ services:
     image: semitechnologies/weaviate:1.23.7
     pull_policy: always
     environment:
+      - CLUSTER_HOSTNAME=weaviate
       - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+      - DEFAULT_VECTORIZER_MODULE=none
       - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
     volumes:
        - weaviate-data:/var/lib/weaviate

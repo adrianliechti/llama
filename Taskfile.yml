@@ -1,6 +1,6 @@
 # https://taskfile.dev
 
-version: '3'
+version: "3"
 
 vars:
   REPOSITORY: adrianliechti/llama-platform
@@ -9,7 +9,7 @@ tasks:
   publish:
     cmds:
       - docker buildx build . --push --platform linux/amd64,linux/arm64 --tag {{.REPOSITORY}}
-  
+
   server:
     cmds:
       - go run cmd/server/main.go
@@ -18,11 +18,15 @@ tasks:
     cmds:
       - go run cmd/client/main.go
 
+  webui:
+    cmds:
+      - docker run -it --rm -p 3000:3000 -e OPENAI_BASE_URL=http://host.docker.internal:8080/oai/v1 -e OPENAI_MODEL=mistral adrianliechti/llama-ui
+
   llama-server:
     deps: [download-llama-server, download-llama-model]
     cmds:
-      - bin/llama-server --port 9081 --log-disable --embedding --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
-  
+      - bin/llama-server --port 9081 --log-disable --ctx-size 8192 --embedding --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+
   download-llama-model:
     cmds:
       - mkdir -p models
@@ -30,7 +34,7 @@ tasks:
 
     status:
       - test -f models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
-  
+
   download-llama-server:
     cmds:
       - mkdir -p bin
@@ -44,20 +48,20 @@ tasks:
 
     status:
       - test -f bin/llama-server
-        
+
   whisper-server:
     deps: [download-whisper-server, download-whisper-model]
     cmds:
       - bin/whisper-server --port 9085 --convert --model ./models/whisper-ggml-medium.bin
-    
+
   download-whisper-model:
     cmds:
       - mkdir -p models
       - curl -s -L -o models/whisper-ggml-medium.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin
-    
+
     status:
       - test -f models/whisper-ggml-medium.bin
-  
+
   download-whisper-server:
     cmds:
       - mkdir -p bin
@@ -70,7 +74,7 @@ tasks:
 
     status:
       - test -f bin/whisper-server
-  
+
   sbert-server:
     cmds:
       - docker run -it --rm -p 9082:8080 semitechnologies/transformers-inference:sentence-transformers-all-mpnet-base-v2
@@ -83,14 +87,10 @@ tasks:
     cmds:
       - docker run -it --rm -p 9084:8080 -v weaviate-data:/var/lib/weaviate -e CLUSTER_HOSTNAME=node1 -e DEFAULT_VECTORIZER_MODULE=none -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true -e PERSISTENCE_DATA_PATH=/var/lib/weaviate semitechnologies/weaviate
 
+  unstructured-server:
+    cmds:
+      - docker run -it --rm -p 9085:8000 downloads.unstructured.io/unstructured-io/unstructured-api --port 8000 --host 0.0.0.0
+
   opensearch-server:
     cmds:
       - docker run -it --rm -p 9200:9200 -v opensearch-data:/usr/share/opensearch/data -e "discovery.type=single-node" -e DISABLE_SECURITY_PLUGIN=true opensearchproject/opensearch:latest
-  
-  unstructured-server:
-    cmds:
-      - docker run -it --rm -p 9085:8000 downloads.unstructured.io/unstructured-io/unstructured-api:latest --port 8000 --host 0.0.0.0
-
-  chatbot-server:
-    cmds:
-      - docker run -it --rm -p 3000:3000 -e OPENAI_API_HOST=http://host.docker.internal:8080/oai -e OPENAI_API_KEY=changeme ghcr.io/mckaywrigley/chatbot-ui:main
