@@ -26,5 +26,6 @@ type Document struct {
 }
 
 type Block struct {
+	ID      string
 	Content string
 }

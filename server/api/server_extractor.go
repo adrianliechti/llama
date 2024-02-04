@@ -35,7 +35,7 @@ func (s *Server) handleExtract(w http.ResponseWriter, r *http.Request) {
 
 	var result []Document
 
-	for _, p := range data.Blocks {
+	for _, b := range data.Blocks {
 		metadata := map[string]string{}
 
 		if data.Name != "" {
@@ -43,9 +43,10 @@ func (s *Server) handleExtract(w http.ResponseWriter, r *http.Request) {
 		}
 
 		document := Document{
+			ID:       b.ID,
 			Metadata: metadata,
 
-			Content: p.Content,
+			Content: b.Content,
 		}
 
 		result = append(result, document)

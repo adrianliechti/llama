@@ -78,7 +78,7 @@ func main() {
 
 		defer resp.Body.Close()
 
-		if resp.StatusCode != 204 {
+		if !(resp.StatusCode == 200 || resp.StatusCode == 204) {
 			slog.Error("failed to index document", "path", filepath, "status", resp.Status)
 			return nil
 		}

@@ -10,8 +10,15 @@ type Element struct {
 }
 
 type ElementMetadata struct {
-	Languages  []string `json:"languages"`
-	PageNumber int      `json:"page_number"`
-	Filename   string   `json:"filename"`
-	Filetype   string   `json:"filetype"`
+	FileName string `json:"filename"`
+	FileType string `json:"filetype"`
+
+	Languages []string `json:"languages"`
+
+	// PageName   string `json:"page_name"`
+	// PageNumber int    `json:"page_number"`
+
+	// MailSender    string `json:"sent_from"`
+	// MailRecipient string `json:"sent_to"`
+	// MailSubject   string `json:"subject"`
 }

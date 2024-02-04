@@ -14,14 +14,17 @@ services:
         target: /config.yaml
     depends_on:
       - sbert
-      - chroma
+      - weaviate
       - unstructured
   
-  chroma:
-    image: ghcr.io/chroma-core/chroma:0.4.22
+  weaviate:
+    image: semitechnologies/weaviate:1.23.7
     pull_policy: always
+    environment:
+      - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
     volumes:
-       - chroma-data:/chroma/chroma
+       - weaviate-data:/var/lib/weaviate
   
   sbert:
     image: adrianliechti/sentence-transformers:nomic-embed-text-v1
@@ -65,9 +68,9 @@ configs:
       
       indexes:
         docs:
-          type: chroma
-          url: http://chroma:8000
-          namespace: docs
+          type: weaviate
+          url: http://weaviate:8080
+          namespace: Document
           embedding: embed-text-v1
       
       extracters:
@@ -93,4 +96,4 @@ configs:
             - id: docs
 
 volumes:
-  chroma-data:
+  weaviate-data:

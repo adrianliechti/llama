@@ -102,11 +102,12 @@ func (p *Provider) Extract(ctx context.Context, input extracter.File, options *e
 	result := extracter.Document{}
 
 	if len(elements) > 0 {
-		result.Name = elements[0].Metadata.Filename
+		result.Name = elements[0].Metadata.FileName
 	}
 
 	for _, e := range elements {
 		block := extracter.Block{
+			ID:      e.ID,
 			Content: e.Text,
 		}
 
