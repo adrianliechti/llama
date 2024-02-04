@@ -23,7 +23,9 @@ Start Example Application
 docker compose up
 ```
 
-## Transcribe File
+## Transcription API
+
+The Transcription API provides compatibility for the OpenAI API standard, allowing easier integrations into existing applications. (Documentation: https://platform.openai.com/docs/api-reference/audio/createTranscription)
 
 ```shell
 # Download Sample File

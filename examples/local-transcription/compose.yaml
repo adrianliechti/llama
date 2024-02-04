@@ -10,11 +10,11 @@ services:
     ports:
       - 8080:8080
     configs:
-      - source: config
+      - source: platform
         target: /config.yaml
   
 configs:
-  config:
+  platform:
     content: |
       providers:
         - type: whisper

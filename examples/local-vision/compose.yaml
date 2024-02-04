@@ -20,7 +20,9 @@ services:
       - 3000:3000
     environment:
       - OPENAI_BASE_URL=http://platform:8080/oai/v1
-      - OPENAI_MODEL=mistral
+    configs:
+      - source: web
+        target: /config.yaml    
     depends_on:
       - platform
   
@@ -31,5 +33,16 @@ configs:
         - type: ollama
           url: http://host.docker.internal:11434
           models:
-            mistral:
-              id: mistral:latest
+            llava:
+              id: llava:latest
+  
+  web:
+    content: |
+      contexts:
+        - name: Chat
+        
+          capabilities:
+            - images
+
+          models:
+            - id: llava
