@@ -1,0 +1,25 @@
+version: "3"
+
+services:
+  platform:
+    image: adrianliechti/llama-platform
+    pull_policy: always
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    configs:
+      - source: config
+        target: /config.yaml
+  
+configs:
+  config:
+    content: |
+      providers:
+        - type: whisper
+          url: http://host.docker.internal:8000
+
+          models:
+            whisper:
+              id: whisper
