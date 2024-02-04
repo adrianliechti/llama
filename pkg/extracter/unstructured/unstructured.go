@@ -11,6 +11,7 @@ import (
 	"net/url"
 
 	"github.com/adrianliechti/llama/pkg/extracter"
+	"github.com/adrianliechti/llama/pkg/text"
 )
 
 var _ extracter.Provider = &Provider{}
@@ -108,7 +109,7 @@ func (p *Provider) Extract(ctx context.Context, input extracter.File, options *e
 	for _, e := range elements {
 		block := extracter.Block{
 			ID:      e.ID,
-			Content: e.Text,
+			Content: text.Normalize(e.Text),
 		}
 
 		result.Blocks = append(result.Blocks, block)
