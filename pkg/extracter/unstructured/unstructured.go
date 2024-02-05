@@ -100,7 +100,9 @@ func (p *Provider) Extract(ctx context.Context, input extracter.File, options *e
 		return nil, err
 	}
 
-	result := extracter.Document{}
+	result := extracter.Document{
+		Name: input.Name,
+	}
 
 	if len(elements) > 0 {
 		result.Name = elements[0].Metadata.FileName
