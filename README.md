@@ -247,6 +247,23 @@ indexes:
 
 ### Extracters
 
+#### Tesseract
+
+```shell
+# using taskfile.dev
+$ task tesseract-server
+
+# using Docker
+docker run -it --rm -p 9086:8884 hertzg/tesseract-server:latest
+```
+
+```yaml
+extracters:
+  tesseract:
+    type: tesseract
+    url: http://localhost:9086
+```
+
 #### Unstructured
 
 ```shell

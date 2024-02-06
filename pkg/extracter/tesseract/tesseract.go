@@ -107,15 +107,24 @@ func (p *Provider) Extract(ctx context.Context, input extracter.File, options *e
 		Name: input.Name,
 	}
 
-	chunks := text.Split(data.Data.Stdout)
+	output := text.Normalize(data.Data.Stdout)
 
-	for i, c := range chunks {
-		text := strings.TrimLeft(c, ". ")
+	var lines []string
+
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimLeft(line, ". ")
+		lines = append(lines, line)
+	}
+
+	chunks := text.Split(strings.Join(lines, "\n"))
+
+	for i, chunk := range chunks {
+		chunk = strings.ReplaceAll(chunk, "\n\n", "\n")
 
 		block := []extracter.Block{
 			{
 				ID:      fmt.Sprintf("%s#%d", result.Name, i),
-				Content: text,
+				Content: chunk,
 			},
 		}
 
