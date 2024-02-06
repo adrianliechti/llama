@@ -19,8 +19,8 @@ services:
       dockerfile: Dockerfile
     environment:
       - OPENAI_API_BASE=http://platform:8080/oai/v1
-      - OPENAI_API_KEY=none
-      - OPENAI_MODEL=mistral
+      - OPENAI_API_KEY=NA
+      - MODEL_NAME=mistral
     ports:
       - 8000:8000
   

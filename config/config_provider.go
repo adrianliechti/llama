@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/provider/custom"
 	"github.com/adrianliechti/llama/pkg/provider/langchain"
 	"github.com/adrianliechti/llama/pkg/provider/llama"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
@@ -62,6 +63,9 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 
 	case "langchain":
 		return langchainProvider(cfg, model)
+
+	case "custom":
+		return customProvider(cfg, model)
 
 	default:
 		return nil, errors.New("invalid provider type: " + cfg.Type)
@@ -167,6 +171,12 @@ func langchainProvider(cfg providerConfig, model string) (*langchain.Provider, e
 	// }
 
 	return langchain.New(cfg.URL, options...)
+}
+
+func customProvider(cfg providerConfig, model string) (*custom.Provider, error) {
+	var options []custom.Option
+
+	return custom.New(cfg.URL, options...)
 }
 
 func whisperProvider(cfg providerConfig) (*whisper.Provider, error) {

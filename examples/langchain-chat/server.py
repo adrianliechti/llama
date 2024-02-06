@@ -16,7 +16,7 @@ app = FastAPI(
 
 add_routes(
     app,
-    ChatOpenAI(model_name=os.environ['OPENAI_MODEL']),
+    ChatOpenAI(model_name=os.environ['MODEL_NAME']),
     path="/default",
 )
 

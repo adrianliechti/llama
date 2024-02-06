@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+option go_package = "github.com/adrianliechti/llama/pkg/provider/custom;custom";
+
+package completer;
+
+service completer {
+  rpc Complete (CompletionRequest) returns (stream Completion) {}
+}
+
+message Completion {
+  string id = 1;
+  Message message = 2;
+}
+
+message Message {
+  Role role = 1;
+  string content = 2;
+}
+
+message CompletionRequest {
+  string model = 1;
+  repeated Message messages = 2;
+
+  optional float temperature = 3;
+  optional float topP = 4;
+  optional float minP = 5;
+}
+
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_SYSTEM = 1;
+  ROLE_USER = 2;
+  ROLE_ASSISTANT = 3;
+}
