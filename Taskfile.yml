@@ -77,7 +77,7 @@ tasks:
 
   sbert-server:
     cmds:
-      - docker run -it --rm -p 9082:8080 semitechnologies/transformers-inference:sentence-transformers-all-mpnet-base-v2
+      - docker run -it --rm -p 9082:8080 adrianliechti/sentence-transformers:nomic-embed-text-v1
 
   chroma-server:
     cmds:

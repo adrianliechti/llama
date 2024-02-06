@@ -51,6 +51,7 @@ func (s *Server) handleIndexWithExtracter(w http.ResponseWriter, r *http.Request
 
 			Metadata: map[string]string{
 				"filename": file.Name,
+				"filepart": fmt.Sprintf("%d", i),
 			},
 		}
 

@@ -26,7 +26,8 @@ func New(cfg *config.Config) (*Server, error) {
 
 	r.Post("/extract/{extracter}", s.handleExtract)
 
-	r.Post("/index/{index}", s.handleIndex)
+	r.Get("/index/{index}", s.handleIndexList)
+	r.Post("/index/{index}", s.handleIndexIngest)
 	r.Post("/index/{index}/query", s.handleIndexQuery)
 	r.Post("/index/{index}/{extracter}", s.handleIndexWithExtracter)
 

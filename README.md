@@ -242,7 +242,7 @@ indexes:
   docs:
     type: elasticsearch
     url: http://localhost:9200
-    namespace: insight
+    namespace: docs
 ```
 
 ### Extracters

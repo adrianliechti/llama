@@ -59,6 +59,51 @@ func WithEmbedder(embedder index.Embedder) Option {
 	}
 }
 
+func (c *Chroma) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+	col, err := c.createCollection(c.namespace)
+
+	if err != nil {
+		return nil, err
+	}
+
+	u, _ := url.JoinPath(c.url, "/api/v1/collections/"+col.ID+"/get")
+
+	body := map[string]any{}
+
+	resp, err := c.client.Post(u, "application/json", jsonReader(body))
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, convertError(resp)
+	}
+
+	var result getResult
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	results := make([]index.Document, 0)
+
+	for i := range result.IDs {
+		r := index.Document{
+			ID: result.IDs[i],
+
+			Content:  result.Documents[i],
+			Metadata: result.Metadatas[i],
+		}
+
+		results = append(results, r)
+	}
+
+	return results, nil
+}
+
 func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
 	if len(documents) == 0 {
 		return nil
@@ -173,7 +218,7 @@ func (c *Chroma) Query(ctx context.Context, query string, options *index.QueryOp
 		return nil, convertError(resp)
 	}
 
-	var result result
+	var result queryResult
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
@@ -277,7 +322,18 @@ type embeddings struct {
 	Documents []string            `json:"documents"`
 }
 
-type result struct {
+type getResult struct {
+	IDs []string `json:"ids"`
+
+	Distances []float32 `json:"distances,omitempty"`
+
+	Embeddings [][]float64 `json:"embeddings"`
+
+	Metadatas []map[string]string `json:"metadatas"`
+	Documents []string            `json:"documents"`
+}
+
+type queryResult struct {
 	IDs [][]string `json:"ids"`
 
 	Distances [][]float32 `json:"distances,omitempty"`

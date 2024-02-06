@@ -48,6 +48,49 @@ func WithClient(client *http.Client) Option {
 	}
 }
 
+func (e *Elasticsearch) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+	u, _ := url.JoinPath(e.url, "/"+e.namespace+"/_search")
+
+	body := map[string]any{
+		"size": 10000,
+		"from": 0,
+		"query": map[string]any{
+			"match_all": map[string]any{},
+		},
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, u, jsonReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := e.client.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, convertError(resp)
+	}
+
+	var result SearchResult
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	var results []index.Document
+
+	for _, hit := range result.Hits.Hits {
+		results = append(results, index.Document{
+			ID:       hit.Document.ID,
+			Content:  hit.Document.Content,
+			Metadata: hit.Document.Metadata,
+		})
+	}
+
+	return results, nil
+}
+
 func (e *Elasticsearch) Index(ctx context.Context, documents ...index.Document) error {
 	if len(documents) == 0 {
 		return nil

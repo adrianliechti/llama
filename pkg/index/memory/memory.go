@@ -52,6 +52,16 @@ func (m *Memory) Embed(ctx context.Context, content string) ([]float32, error) {
 	return m.embedder.Embed(ctx, content)
 }
 
+func (m *Memory) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+	result := make([]index.Document, 0, len(m.documents))
+
+	for _, d := range m.documents {
+		result = append(result, d)
+	}
+
+	return result, nil
+}
+
 func (m *Memory) Index(ctx context.Context, documents ...index.Document) error {
 	for _, d := range documents {
 		if d.ID == "" {

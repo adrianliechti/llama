@@ -10,6 +10,7 @@ import (
 	"maps"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/index"
@@ -60,6 +61,76 @@ func WithEmbedder(embedder index.Embedder) Option {
 	return func(w *Weaviate) {
 		w.embedder = embedder
 	}
+}
+
+func (w *Weaviate) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+	if options == nil {
+		options = new(index.ListOptions)
+	}
+
+	limit := 50
+	cursor := ""
+
+	results := make([]index.Document, 0)
+
+	type pageType struct {
+		Objects []Object `json:"objects"`
+	}
+
+	for {
+		query := url.Values{}
+		query.Set("class", w.class)
+		query.Set("limit", fmt.Sprintf("%d", limit))
+
+		if cursor != "" {
+			query.Set("after", cursor)
+		}
+
+		u, _ := url.JoinPath(w.url, "/v1/objects")
+		u += "?" + query.Encode()
+
+		resp, err := w.client.Get(u)
+
+		if err != nil {
+			return nil, err
+		}
+
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, errors.New("bad request")
+		}
+
+		var page pageType
+
+		if err := json.NewDecoder(resp.Body).Decode(&page); err != nil {
+			return nil, err
+		}
+
+		for _, o := range page.Objects {
+			id := o.ID
+			content := o.Properties["content"]
+
+			metadata := maps.Clone(o.Properties)
+			delete(metadata, "content")
+
+			d := index.Document{
+				ID:      id,
+				Content: content,
+			}
+
+			cursor = id
+			results = append(results, d)
+		}
+
+		if len(page.Objects) < limit {
+			break
+		}
+	}
+
+	slices.Reverse(results)
+
+	return results, nil
 }
 
 func (w *Weaviate) Index(ctx context.Context, documents ...index.Document) error {

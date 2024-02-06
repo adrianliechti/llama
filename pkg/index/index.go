@@ -7,8 +7,13 @@ import (
 )
 
 type Provider interface {
+	List(ctx context.Context, options *ListOptions) ([]Document, error)
+
 	Index(ctx context.Context, documents ...Document) error
 	Query(ctx context.Context, query string, options *QueryOptions) ([]Result, error)
+}
+
+type ListOptions struct {
 }
 
 type QueryOptions struct {
