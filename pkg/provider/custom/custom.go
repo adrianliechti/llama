@@ -65,6 +65,10 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		options = &provider.CompleteOptions{}
 	}
 
+	if options.Stream != nil {
+		defer close(options.Stream)
+	}
+
 	stream, err := p.client.Complete(ctx, &CompletionRequest{
 		Model: p.model,
 
