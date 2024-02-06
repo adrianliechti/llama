@@ -48,7 +48,7 @@ services:
       - OPENAI_BASE_URL=http://platform:8080/oai/v1
     configs:
       - source: web
-        target: /config.yaml    
+        target: /config.yaml
     depends_on:
       - platform
   

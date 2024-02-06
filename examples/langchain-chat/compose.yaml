@@ -1,0 +1,65 @@
+version: "3"
+
+services:
+  platform:
+    image: adrianliechti/llama-platform
+    pull_policy: always
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    configs:
+      - source: platform
+        target: /config.yaml
+  
+  langserve:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - OPENAI_API_BASE=http://platform:8080/oai/v1
+      - OPENAI_API_KEY=none
+      - OPENAI_MODEL=mistral
+    ports:
+      - 8000:8000
+  
+  web:
+    image: adrianliechti/llama-ui
+    pull_policy: always
+    ports:
+      - 3000:3000
+    environment:
+      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+    configs:
+      - source: web
+        target: /config.yaml
+    depends_on:
+      - platform
+  
+configs:
+  platform:
+    content: |
+      providers:
+        - type: ollama
+          url: http://host.docker.internal:11434
+          models:
+            mistral:
+              id: mistral:latest
+        
+        - type: langchain
+          url: http://langserve:8000/default
+          models:
+            langchain:
+              id: default
+
+  web:
+    content: |
+      contexts:
+        - name: Mistral
+          models:
+            - id: mistral
+
+        - name: LangChain
+          models:
+            - id: langchain

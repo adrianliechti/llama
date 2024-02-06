@@ -37,7 +37,6 @@ func New(options ...Option) (*Provider, error) {
 	p := &Provider{
 		url: "http://localhost:11434",
 
-		model:  "llama2",
 		client: http.DefaultClient,
 	}
 
