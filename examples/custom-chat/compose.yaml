@@ -1,0 +1,40 @@
+version: "3"
+
+services:
+  platform:
+    image: adrianliechti/llama-platform
+    pull_policy: always
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    configs:
+      - source: platform
+        target: /config.yaml
+  
+  custom:
+    build:
+      context: .
+      dockerfile: Dockerfile
+  
+  web:
+    image: adrianliechti/llama-ui
+    pull_policy: always
+    ports:
+      - 3000:3000
+    environment:
+      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+      - OPENAI_MODEL=custom
+    depends_on:
+      - platform
+  
+configs:
+  platform:
+    content: |
+      providers:
+        - type: custom
+          url: grpc://custom:50051
+          models:
+            custom:
+              id: default
