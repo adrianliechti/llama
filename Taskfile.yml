@@ -91,6 +91,10 @@ tasks:
     cmds:
       - docker run -it --rm -p 9085:8000 downloads.unstructured.io/unstructured-io/unstructured-api --port 8000 --host 0.0.0.0
 
+  tesseract-server:
+    cmds:
+      - docker run -it --rm -p 9086:8884 hertzg/tesseract-server:latest
+
   opensearch-server:
     cmds:
       - docker run -it --rm -p 9200:9200 -v opensearch-data:/usr/share/opensearch/data -e "discovery.type=single-node" -e DISABLE_SECURITY_PLUGIN=true opensearchproject/opensearch:latest

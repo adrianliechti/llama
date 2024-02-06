@@ -1,14 +1,16 @@
-package unstructured
+package tesseract
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/adrianliechti/llama/pkg/extracter"
 	"github.com/adrianliechti/llama/pkg/text"
@@ -57,17 +59,14 @@ func (p *Provider) Extract(ctx context.Context, input extracter.File, options *e
 		options = &extracter.ExtractOptions{}
 	}
 
-	url, _ := url.JoinPath(p.url, "/general/v0/general")
+	url, _ := url.JoinPath(p.url, "/tesseract")
 
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 
-	w.WriteField("strategy", "auto")
-	w.WriteField("languages", "eng")
-	w.WriteField("pdf_infer_table_structure", "true")
-	w.WriteField("chunking_strategy", "by_title")
+	w.WriteField("options", p.optionsJSON())
 
-	file, err := w.CreateFormFile("files", input.Name)
+	file, err := w.CreateFormFile("file", input.Name)
 
 	if err != nil {
 		return nil, err
@@ -94,28 +93,54 @@ func (p *Provider) Extract(ctx context.Context, input extracter.File, options *e
 
 	defer resp.Body.Close()
 
-	var elements []Element
+	var data Result
 
-	if err := json.NewDecoder(resp.Body).Decode(&elements); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		return nil, err
+	}
+
+	if data.Data.Stderr != "" {
+		return nil, errors.New(data.Data.Stderr)
 	}
 
 	result := extracter.Document{
 		Name: input.Name,
 	}
 
-	if len(elements) > 0 {
-		result.Name = elements[0].Metadata.FileName
+	output := text.Normalize(data.Data.Stdout)
+
+	var lines []string
+
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimLeft(line, ". ")
+		lines = append(lines, line)
 	}
 
-	for _, e := range elements {
-		block := extracter.Block{
-			ID:      e.ID,
-			Content: text.Normalize(e.Text),
+	chunks := text.Split(strings.Join(lines, "\n"))
+
+	for i, chunk := range chunks {
+		chunk = strings.ReplaceAll(chunk, "\n\n", "\n")
+
+		block := []extracter.Block{
+			{
+				ID:      fmt.Sprintf("%s#%d", result.Name, i),
+				Content: chunk,
+			},
 		}
 
-		result.Blocks = append(result.Blocks, block)
+		result.Blocks = append(result.Blocks, block...)
 	}
 
 	return &result, nil
+}
+
+func (p *Provider) optionsJSON() string {
+	options := map[string]any{
+		"languages": []string{
+			"eng",
+		},
+	}
+
+	value, _ := json.Marshal(options)
+	return string(value)
 }
