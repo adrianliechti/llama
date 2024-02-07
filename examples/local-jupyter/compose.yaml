@@ -22,6 +22,19 @@ services:
     volumes:
       - ./work:/home/jovyan/work
   
+  web:
+    image: adrianliechti/llama-ui
+    pull_policy: always
+    ports:
+      - 3000:3000
+    environment:
+      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+    configs:
+      - source: web
+        target: /config.yaml
+    depends_on:
+      - platform
+  
 configs:
   platform:
     content: |
@@ -37,3 +50,14 @@ configs:
           models:
             jupyter:
               id: default
+
+  web:
+    content: |
+      contexts:
+        - name: Mistral
+          models:
+            - id: mistral
+
+        - name: Jupyter
+          models:
+            - id: jupyter
