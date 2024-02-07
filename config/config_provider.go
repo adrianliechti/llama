@@ -110,15 +110,18 @@ func llamaProvider(cfg providerConfig) (*llama.Provider, error) {
 	var system string
 	var template string
 
-	for _, v := range cfg.Models {
-		if system == "" {
-			system = v.System
-		}
-
-		if template == "" {
-			template = v.Template
-		}
+	if len(cfg.Models) != 1 {
+		return nil, errors.New("llama supports exactly one model")
 	}
+
+	var model modelConfig
+
+	for _, m := range cfg.Models {
+		model = m
+	}
+
+	system = model.System
+	template = model.Template
 
 	if system != "" {
 		options = append(options, llama.WithSystem(system))
