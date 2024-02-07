@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"os"
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/chain"
@@ -11,6 +12,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/chain/summarize"
 	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
@@ -19,6 +21,8 @@ func (c *Config) registerChains(f *configFile) error {
 		var err error
 
 		var index index.Provider
+
+		var prompt *prompt.Prompt
 
 		var embedder provider.Embedder
 		var completer provider.Completer
@@ -49,6 +53,14 @@ func (c *Config) registerChains(f *configFile) error {
 			}
 		}
 
+		if cfg.Template != "" {
+			prompt, err = parsePrompt(cfg.Template)
+
+			if err != nil {
+				return err
+			}
+		}
+
 		for _, v := range cfg.Filters {
 			if v.Classifier != "" {
 				classifier, err := c.Classifier(v.Classifier)
@@ -61,7 +73,7 @@ func (c *Config) registerChains(f *configFile) error {
 			}
 		}
 
-		chain, err := createChain(cfg, embedder, completer, index, classifiers)
+		chain, err := createChain(cfg, prompt, embedder, completer, index, classifiers)
 
 		if err != nil {
 			return err
@@ -77,30 +89,34 @@ func (c *Config) registerChains(f *configFile) error {
 	return nil
 }
 
-func createChain(cfg chainConfig, embedder provider.Embedder, completer provider.Completer, index index.Provider, classifiers map[string]classifier.Provider) (chain.Provider, error) {
+func createChain(cfg chainConfig, prompt *prompt.Prompt, embedder provider.Embedder, completer provider.Completer, index index.Provider, classifiers map[string]classifier.Provider) (chain.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
 	case "fn", "react":
-		return reactChain(cfg, completer)
+		return reactChain(cfg, prompt, completer)
 
 	case "rag":
-		return ragChain(cfg, completer, index, classifiers)
+		return ragChain(cfg, index, prompt, completer, classifiers)
 
 	case "refine":
-		return refineChain(cfg, completer, index, classifiers)
+		return refineChain(cfg, index, prompt, completer, classifiers)
 
 	case "summarize":
-		return summarizeChain(cfg, completer)
+		return summarizeChain(cfg, prompt, completer)
 
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
 	}
 }
 
-func ragChain(cfg chainConfig, completer provider.Completer, index index.Provider, classifiers map[string]classifier.Provider) (chain.Provider, error) {
+func ragChain(cfg chainConfig, index index.Provider, prompt *prompt.Prompt, completer provider.Completer, classifiers map[string]classifier.Provider) (chain.Provider, error) {
 	var options []rag.Option
 
 	if index != nil {
 		options = append(options, rag.WithIndex(index))
+	}
+
+	if prompt != nil {
+		options = append(options, rag.WithPrompt(prompt))
 	}
 
 	if completer != nil {
@@ -122,13 +138,16 @@ func ragChain(cfg chainConfig, completer provider.Completer, index index.Provide
 	return rag.New(options...)
 }
 
-func refineChain(cfg chainConfig, completer provider.Completer, index index.Provider, classifiers map[string]classifier.Provider) (chain.Provider, error) {
+func refineChain(cfg chainConfig, index index.Provider, prompt *prompt.Prompt, completer provider.Completer, classifiers map[string]classifier.Provider) (chain.Provider, error) {
 	var options []refine.Option
 
 	if index != nil {
 		options = append(options, refine.WithIndex(index))
 	}
 
+	if prompt != nil {
+		options = append(options, refine.WithPrompt(prompt))
+	}
 	if completer != nil {
 		options = append(options, refine.WithCompleter(completer))
 	}
@@ -148,8 +167,12 @@ func refineChain(cfg chainConfig, completer provider.Completer, index index.Prov
 	return refine.New(options...)
 }
 
-func reactChain(cfg chainConfig, completer provider.Completer) (chain.Provider, error) {
+func reactChain(cfg chainConfig, prompt *prompt.Prompt, completer provider.Completer) (chain.Provider, error) {
 	var options []react.Option
+
+	if prompt != nil {
+		options = append(options, react.WithPrompt(prompt))
+	}
 
 	if completer != nil {
 		options = append(options, react.WithCompleter(completer))
@@ -158,12 +181,28 @@ func reactChain(cfg chainConfig, completer provider.Completer) (chain.Provider, 
 	return react.New(options...)
 }
 
-func summarizeChain(cfg chainConfig, completer provider.Completer) (chain.Provider, error) {
+func summarizeChain(cfg chainConfig, prompt *prompt.Prompt, completer provider.Completer) (chain.Provider, error) {
 	var options []summarize.Option
+
+	if prompt != nil {
+		options = append(options, summarize.WithPrompt(prompt))
+	}
 
 	if completer != nil {
 		options = append(options, summarize.WithCompleter(completer))
 	}
 
 	return summarize.New(options...)
+}
+
+func parsePrompt(val string) (*prompt.Prompt, error) {
+	if val == "" {
+		return nil, errors.New("empty prompt")
+	}
+
+	if data, err := os.ReadFile(val); err == nil {
+		return prompt.New(string(data))
+	}
+
+	return prompt.New(val)
 }
