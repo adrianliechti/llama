@@ -2,6 +2,7 @@ package prompt
 
 import (
 	"bytes"
+	"os"
 	"text/template"
 )
 
@@ -17,6 +18,16 @@ func MustNew(text string) *Prompt {
 	}
 
 	return prompt
+}
+
+func FromFile(path string) (*Prompt, error) {
+	data, err := os.ReadFile(path)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return New(string(data))
 }
 
 func New(text string) (*Prompt, error) {

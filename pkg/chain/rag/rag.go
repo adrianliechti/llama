@@ -7,6 +7,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
@@ -15,11 +16,12 @@ var _ provider.Completer = &Provider{}
 type Provider struct {
 	index index.Provider
 
-	completer provider.Completer
+	prompt *prompt.Prompt
 
 	limit    *int
 	distance *float32
 
+	completer      provider.Completer
 	contextualizer provider.Completer
 
 	filters map[string]classifier.Provider
@@ -29,6 +31,8 @@ type Option func(*Provider)
 
 func New(options ...Option) (*Provider, error) {
 	p := &Provider{
+		prompt: prompt.MustNew(promptTemplate),
+
 		filters: map[string]classifier.Provider{},
 	}
 
@@ -53,15 +57,9 @@ func WithIndex(index index.Provider) Option {
 	}
 }
 
-func WithCompleter(completer provider.Completer) Option {
+func WithPrompt(prompt *prompt.Prompt) Option {
 	return func(p *Provider) {
-		p.completer = completer
-	}
-}
-
-func WithFilter(name string, classifier classifier.Provider) Option {
-	return func(p *Provider) {
-		p.filters[name] = classifier
+		p.prompt = prompt
 	}
 }
 
@@ -77,9 +75,21 @@ func WithDistance(val float32) Option {
 	}
 }
 
+func WithCompleter(completer provider.Completer) Option {
+	return func(p *Provider) {
+		p.completer = completer
+	}
+}
+
 func WithContextualizer(val provider.Completer) Option {
 	return func(p *Provider) {
 		p.contextualizer = val
+	}
+}
+
+func WithFilter(name string, classifier classifier.Provider) Option {
+	return func(p *Provider) {
+		p.filters[name] = classifier
 	}
 }
 
@@ -129,11 +139,17 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	}
 
 	data := promptData{
-		Input:   strings.TrimSpace(message.Content),
-		Results: results,
+		Input: strings.TrimSpace(message.Content),
 	}
 
-	prompt, err := promptTemplate.Execute(data)
+	for _, r := range results {
+		data.Results = append(data.Results, promptResult{
+			Metadata: r.Metadata,
+			Content:  strings.TrimSpace(r.Content),
+		})
+	}
+
+	prompt, err := p.prompt.Execute(data)
 
 	if err != nil {
 		return nil, err

@@ -2,18 +2,19 @@ package contextualize
 
 import (
 	_ "embed"
-
-	"github.com/adrianliechti/llama/pkg/prompt"
-	"github.com/adrianliechti/llama/pkg/provider"
 )
 
 var (
 	//go:embed prompt.tmpl
-	promptTemplateText string
-	promptTemplate     = prompt.MustNew(promptTemplateText)
+	promptTemplate string
 )
 
 type promptData struct {
 	Input    string
-	Messages []provider.Message
+	Messages []promptMessage
+}
+
+type promptMessage struct {
+	Role    string
+	Content string
 }

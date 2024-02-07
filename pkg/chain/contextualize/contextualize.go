@@ -4,19 +4,24 @@ import (
 	"context"
 	"errors"
 
+	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
 var _ provider.Completer = &Provider{}
 
 type Provider struct {
+	prompt *prompt.Prompt
+
 	completer provider.Completer
 }
 
 type Option func(*Provider)
 
 func New(options ...Option) (*Provider, error) {
-	p := &Provider{}
+	p := &Provider{
+		prompt: prompt.MustNew(promptTemplate),
+	}
 
 	for _, option := range options {
 		option(p)
@@ -27,6 +32,12 @@ func New(options ...Option) (*Provider, error) {
 	}
 
 	return p, nil
+}
+
+func WithPrompt(prompt *prompt.Prompt) Option {
+	return func(p *Provider) {
+		p.prompt = prompt
+	}
 }
 
 func WithCompleter(completer provider.Completer) Option {
@@ -43,11 +54,17 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	}
 
 	data := promptData{
-		Input:    message.Content,
-		Messages: messages[:len(messages)-1],
+		Input: message.Content,
 	}
 
-	prompt, err := promptTemplate.Execute(data)
+	for _, message := range messages[:len(messages)-1] {
+		data.Messages = append(data.Messages, promptMessage{
+			Role:    string(message.Role),
+			Content: message.Content,
+		})
+	}
+
+	prompt, err := p.prompt.Execute(data)
 
 	if err != nil {
 		return nil, err

@@ -7,19 +7,24 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
 var _ provider.Completer = &Provider{}
 
 type Provider struct {
+	prompt *prompt.Prompt
+
 	completer provider.Completer
 }
 
 type Option func(*Provider)
 
 func New(options ...Option) (*Provider, error) {
-	p := &Provider{}
+	p := &Provider{
+		prompt: prompt.MustNew(promptTemplate),
+	}
 
 	for _, option := range options {
 		option(p)
@@ -30,6 +35,12 @@ func New(options ...Option) (*Provider, error) {
 	}
 
 	return p, nil
+}
+
+func WithPrompt(prompt *prompt.Prompt) Option {
+	return func(p *Provider) {
+		p.prompt = prompt
+	}
 }
 
 func WithCompleter(completer provider.Completer) Option {
@@ -121,7 +132,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 
 	data.Messages = history
 
-	prompt, err := promptTemplate.Execute(data)
+	prompt, err := p.prompt.Execute(data)
 
 	if err != nil {
 		return nil, err

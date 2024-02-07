@@ -96,7 +96,8 @@ type chainConfig struct {
 	Model     string `yaml:"model"`
 	Embedding string `yaml:"embedding"`
 
-	System string `yaml:"system"`
+	System   string `yaml:"system"`
+	Template string `yaml:"template"`
 
 	Limit    *int     `yaml:"limit"`
 	Distance *float32 `yaml:"distance"`
