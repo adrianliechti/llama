@@ -18,6 +18,7 @@ services:
     command: start-notebook.sh --NotebookApp.token='' -ServerApp.root_dir=/home/jovyan/work  
     ports:
       - 8888:8888
+      - 9999:9999
     volumes:
       - ./work:/home/jovyan/work
   
@@ -30,3 +31,9 @@ configs:
           models:
             mistral:
               id: mistral:latest
+        
+        - type: langchain
+          url: http://jupyter:9999
+          models:
+            jupyter:
+              id: default
