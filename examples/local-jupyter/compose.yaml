@@ -1,0 +1,32 @@
+version: "3"
+
+services:
+  platform:
+    image: adrianliechti/llama-platform
+    pull_policy: always
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    configs:
+      - source: platform
+        target: /config.yaml
+  
+  jupyter:
+    image: quay.io/jupyter/datascience-notebook:2024-01-15
+    command: start-notebook.sh --NotebookApp.token='' -ServerApp.root_dir=/home/jovyan/work  
+    ports:
+      - 8888:8888
+    volumes:
+      - ./work:/home/jovyan/work
+  
+configs:
+  platform:
+    content: |
+      providers:
+        - type: ollama
+          url: http://host.docker.internal:11434
+          models:
+            mistral:
+              id: mistral:latest
