@@ -48,7 +48,7 @@ configs:
               id: mistral:latest
         
         - type: langchain
-          url: http://langserve:8000/default
+          url: http://langserve:8000
           models:
             langchain:
               id: default

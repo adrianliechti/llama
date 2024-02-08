@@ -135,6 +135,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 
 			data = bytes.TrimSpace(data)
 
+
 			if bytes.EqualFold(data, []byte("event: end")) {
 				resultReason = provider.CompletionReasonStop
 
@@ -154,29 +155,34 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 				continue
 			}
 
-			// if bytes.HasPrefix(data, errorPrefix) {
-			// }
-
 			data = bytes.TrimPrefix(data, []byte("data: "))
 
 			if len(data) == 0 {
 				continue
 			}
 
-			var completion RunData
+			var run RunData
 
-			if err := json.Unmarshal([]byte(data), &completion); err != nil {
+			if err := json.Unmarshal([]byte(data), &run); err != nil {
 				return nil, err
 			}
 
-			var content = completion.Content
+			var content = run.Output
+
+			if content == "" {
+				content = run.Content
+			}
 
 			if i == 0 {
 				content = strings.TrimLeftFunc(content, unicode.IsSpace)
 			}
 
+			if content == "" {
+				continue
+			}
+
 			resultText.WriteString(content)
-			resultRole = toMessageRole(completion)
+			resultRole = toMessageRole(run)
 
 			options.Stream <- provider.Completion{
 				ID: id,
@@ -210,40 +216,23 @@ func (p *Provider) convertRunInput(messages []provider.Message, options *provide
 		options = &provider.CompleteOptions{}
 	}
 
-	result := &RunInput{}
+	if len(messages) == 0 {
+		return nil, errors.New("no messages")
+	}
 
-	for _, m := range messages {
-		if m.Role == provider.MessageRoleSystem {
-			result.Input = append(result.Input, Input{
-				Type:    InputTypeSystem,
-				Content: m.Content,
-			})
-		}
+	message := messages[len(messages)-1]
 
-		if m.Role == provider.MessageRoleUser {
-			result.Input = append(result.Input, Input{
-				Type:    InputTypeHuman,
-				Content: m.Content,
-			})
-		}
-
-		if m.Role == provider.MessageRoleAssistant {
-			result.Input = append(result.Input, Input{
-				Type:    InputTypeAI,
-				Content: m.Content,
-			})
-		}
+	result := &RunInput{
+		Input: Input{
+			Input: message.Content,
+		},
 	}
 
 	return result, nil
 }
 
-func toMessageRole(resp RunData) provider.MessageRole {
-	if resp.Type == DataTypeAIMessageChunk {
-		return provider.MessageRoleAssistant
-	}
-
-	return ""
+func toMessageRole(run RunData) provider.MessageRole {
+	return provider.MessageRoleAssistant
 }
 
 func jsonReader(v any) io.Reader {

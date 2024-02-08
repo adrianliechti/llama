@@ -1,29 +1,29 @@
 package langchain
 
-type InputType string
+type MessageType string
 
 var (
-	InputTypeSystem InputType = "system"
-	InputTypeHuman  InputType = "human"
-	InputTypeAI     InputType = "ai"
+	MessageTypeSystem MessageType = "system"
+	MessageTypeHuman  MessageType = "human"
+	MessageTypeAI     MessageType = "ai"
 )
 
+type Message struct {
+	Type    MessageType `json:"type"`
+	Content string      `json:"content"`
+}
+
 type Input struct {
-	Type    InputType `json:"type"`
-	Content string    `json:"content"`
+	Input string `json:"input"`
 }
 
 type RunInput struct {
-	Input []Input `json:"input"`
+	Input Input `json:"input"`
 }
 
-type DataType string
-
-var (
-	DataTypeAIMessageChunk DataType = "AIMessageChunk"
-)
-
 type RunData struct {
-	Type    DataType `json:"type"`
-	Content string   `json:"content"`
+	Output  string `json:"output"`
+	Content string `json:"content"`
+
+	Messages []Message `json:"messages"`
 }

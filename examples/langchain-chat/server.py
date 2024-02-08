@@ -1,26 +1,36 @@
 #!/usr/bin/env python
-"""Example LangChain server exposes multiple runnables (LLMs in this case)."""
-
 import os
+import uvicorn
 
+from typing import Any
 from fastapi import FastAPI
-from langchain_openai import ChatOpenAI
-
 from langserve import add_routes
 
-app = FastAPI(
-    title="LangChain Server",
-    version="1.0",
-    description="Spin up a simple api server using Langchain's Runnable interfaces",
-)
+from langchain import hub
+from langchain_openai import ChatOpenAI
+from langchain.agents import AgentExecutor, create_openai_tools_agent
 
-add_routes(
-    app,
-    ChatOpenAI(model_name=os.environ['MODEL_NAME']),
-    path="/default",
-)
+from langchain.pydantic_v1 import BaseModel
+from langchain_community.tools import DuckDuckGoSearchResults
+
+llm = ChatOpenAI(model_name=os.environ['MODEL_NAME'], streaming=True)
+
+prompt = hub.pull("hwchase17/openai-tools-agent")
+
+tools = [DuckDuckGoSearchResults(max_results=1)]
+agent = create_openai_tools_agent(llm, tools, prompt)
+
+runnable = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+app = FastAPI(title="LangChain Server")
+
+class Input(BaseModel):
+    input: str
+
+class Output(BaseModel):
+    output: Any
+
+add_routes(app, runnable.with_types(input_type=Input, output_type=Output))
 
 if __name__ == "__main__":
-    import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=8000)
