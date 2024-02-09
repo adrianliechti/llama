@@ -86,6 +86,14 @@ LOOP:
 				messages = nil
 				continue LOOP
 
+			case "/repeat":
+				if len(messages) == 0 {
+					continue LOOP
+				}
+
+				input = messages[len(messages)-1].Content
+				messages = messages[:len(messages)-1]
+
 			default:
 				output.WriteString("Unknown command\n")
 				continue LOOP

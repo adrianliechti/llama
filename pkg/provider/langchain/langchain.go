@@ -135,6 +135,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 
 			data = bytes.TrimSpace(data)
 
+			println(string(data))
 
 			if bytes.EqualFold(data, []byte("event: end")) {
 				resultReason = provider.CompletionReasonStop
@@ -220,15 +221,50 @@ func (p *Provider) convertRunInput(messages []provider.Message, options *provide
 		return nil, errors.New("no messages")
 	}
 
-	message := messages[len(messages)-1]
+	if messages[len(messages)-1].Role != provider.MessageRoleUser {
+		return nil, errors.New("last message must be from user")
+	}
+
+	var input string
+	var history []Message
+
+	for _, m := range messages {
+		messsage := Message{
+			Type:    toRole(m.Role),
+			Content: strings.TrimSpace(m.Content),
+		}
+
+		if messsage.Type == "" {
+			continue
+		}
+
+		history = append(history, messsage)
+	}
+
+	input = history[len(history)-1].Content
+	history = history[:len(history)-1]
 
 	result := &RunInput{
 		Input: Input{
-			Input: message.Content,
+			Input:   input,
+			History: history,
 		},
 	}
 
 	return result, nil
+}
+
+func toRole(role provider.MessageRole) MessageType {
+	switch role {
+	case provider.MessageRoleSystem:
+		return MessageTypeHuman
+	case provider.MessageRoleUser:
+		return MessageTypeHuman
+	case provider.MessageRoleAssistant:
+		return MessageTypeAI
+	default:
+		return ""
+	}
 }
 
 func toMessageRole(run RunData) provider.MessageRole {

@@ -4,3 +4,4 @@ langchain-community
 langchainhub
 langserve[all]
 duckduckgo-search
+pydantic==1.10.13

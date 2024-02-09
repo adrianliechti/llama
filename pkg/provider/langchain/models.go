@@ -14,7 +14,8 @@ type Message struct {
 }
 
 type Input struct {
-	Input string `json:"input"`
+	Input   string    `json:"input"`
+	History []Message `json:"chat_history"`
 }
 
 type RunInput struct {
