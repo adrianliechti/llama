@@ -8,17 +8,17 @@ from langserve import add_routes
 
 from langchain import hub
 from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain.agents import AgentExecutor, create_react_agent
 
 from langchain.pydantic_v1 import BaseModel
 from langchain_community.tools import DuckDuckGoSearchResults
 
 llm = ChatOpenAI(model_name=os.environ['MODEL_NAME'], streaming=True)
 
-prompt = hub.pull("hwchase17/openai-tools-agent")
+prompt = hub.pull("hwchase17/react")
 
 tools = [DuckDuckGoSearchResults(max_results=1)]
-agent = create_openai_tools_agent(llm, tools, prompt)
+agent = create_react_agent(llm, tools, prompt)
 
 runnable = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
