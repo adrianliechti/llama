@@ -5,6 +5,9 @@ import (
 )
 
 var (
+	//go:embed system.tmpl
+	systemTemplate string
+
 	//go:embed prompt.tmpl
 	promptTemplate string
 
@@ -16,8 +19,8 @@ var (
 type promptData struct {
 	Input string
 
-	Messages  []promptMessage
-	Functions []promptFunction
+	Tools    []promptTool
+	Messages []promptMessage
 }
 
 type promptMessage struct {
@@ -25,7 +28,7 @@ type promptMessage struct {
 	Content string
 }
 
-type promptFunction struct {
+type promptTool struct {
 	Name        string
 	Description string
 }
