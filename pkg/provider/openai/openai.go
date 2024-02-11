@@ -26,8 +26,7 @@ type Provider struct {
 
 	token string
 
-	model     string
-	embedding string
+	model string
 
 	client *openai.Client
 }
@@ -36,8 +35,7 @@ type Option func(*Provider)
 
 func New(options ...Option) (*Provider, error) {
 	p := &Provider{
-		model:     openai.GPT3Dot5Turbo,
-		embedding: string(openai.AdaEmbeddingV2),
+		model: openai.GPT3Dot5Turbo,
 	}
 
 	for _, option := range options {
@@ -77,16 +75,10 @@ func WithModel(model string) Option {
 	}
 }
 
-func WithEmbedding(embedding string) Option {
-	return func(p *Provider) {
-		p.embedding = embedding
-	}
-}
-
 func (p *Provider) Embed(ctx context.Context, content string) ([]float32, error) {
 	req := openai.EmbeddingRequest{
 		Input: content,
-		Model: openai.EmbeddingModel(p.embedding),
+		Model: openai.EmbeddingModel(p.model),
 	}
 
 	result, err := p.client.CreateEmbeddings(ctx, req)
@@ -211,7 +203,7 @@ func (p *Provider) Transcribe(ctx context.Context, input provider.File, options 
 	id := uuid.NewString()
 
 	req := openai.AudioRequest{
-		Model: openai.Whisper1,
+		Model: p.model,
 
 		Language: options.Language,
 
