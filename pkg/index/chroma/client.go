@@ -14,9 +14,9 @@ import (
 	"github.com/google/uuid"
 )
 
-var _ index.Provider = &Chroma{}
+var _ index.Provider = &Client{}
 
-type Chroma struct {
+type Client struct {
 	url string
 
 	client   *http.Client
@@ -25,10 +25,10 @@ type Chroma struct {
 	namespace string
 }
 
-type Option func(*Chroma)
+type Option func(*Client)
 
-func New(url, namespace string, options ...Option) (*Chroma, error) {
-	chroma := &Chroma{
+func New(url, namespace string, options ...Option) (*Client, error) {
+	chroma := &Client{
 		url: url,
 
 		client: http.DefaultClient,
@@ -48,18 +48,18 @@ func New(url, namespace string, options ...Option) (*Chroma, error) {
 }
 
 func WithClient(client *http.Client) Option {
-	return func(c *Chroma) {
+	return func(c *Client) {
 		c.client = client
 	}
 }
 
 func WithEmbedder(embedder index.Embedder) Option {
-	return func(c *Chroma) {
+	return func(c *Client) {
 		c.embedder = embedder
 	}
 }
 
-func (c *Chroma) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
 	col, err := c.createCollection(c.namespace)
 
 	if err != nil {
@@ -104,7 +104,7 @@ func (c *Chroma) List(ctx context.Context, options *index.ListOptions) ([]index.
 	return results, nil
 }
 
-func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
+func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 	if len(documents) == 0 {
 		return nil
 	}
@@ -166,7 +166,7 @@ func (c *Chroma) Index(ctx context.Context, documents ...index.Document) error {
 	return nil
 }
 
-func (c *Chroma) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
+func (c *Client) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
 	if options == nil {
 		options = &index.QueryOptions{}
 	}
@@ -234,10 +234,10 @@ func (c *Chroma) Query(ctx context.Context, query string, options *index.QueryOp
 				Document: index.Document{
 					ID: result.IDs[i][j],
 
-					Embedding: toFloat32s(result.Embeddings[i][j]),
-
 					Content:  result.Documents[i][j],
 					Metadata: result.Metadatas[i][j],
+
+					Embedding: toFloat32s(result.Embeddings[i][j]),
 				},
 			}
 
@@ -254,7 +254,7 @@ func (c *Chroma) Query(ctx context.Context, query string, options *index.QueryOp
 	return results, nil
 }
 
-func (c *Chroma) createCollection(name string) (*collection, error) {
+func (c *Client) createCollection(name string) (*collection, error) {
 	u, _ := url.JoinPath(c.url, "/api/v1/collections")
 
 	body := map[string]any{
@@ -301,51 +301,6 @@ func convertError(resp *http.Response) error {
 	}
 
 	return errors.New(http.StatusText(resp.StatusCode))
-}
-
-type collection struct {
-	ID string `json:"id,omitempty"`
-
-	Tenant   string `json:"tenant,omitempty"`
-	Database string `json:"database,omitempty"`
-
-	Name     string         `json:"name,omitempty"`
-	Metadata map[string]any `json:"metadata,omitempty"`
-}
-
-type embeddings struct {
-	IDs []string `json:"ids"`
-
-	Embeddings [][]float32 `json:"embeddings"`
-
-	Metadatas []map[string]string `json:"metadatas"`
-	Documents []string            `json:"documents"`
-}
-
-type getResult struct {
-	IDs []string `json:"ids"`
-
-	Distances []float32 `json:"distances,omitempty"`
-
-	Embeddings [][]float64 `json:"embeddings"`
-
-	Metadatas []map[string]string `json:"metadatas"`
-	Documents []string            `json:"documents"`
-}
-
-type queryResult struct {
-	IDs [][]string `json:"ids"`
-
-	Distances [][]float32 `json:"distances,omitempty"`
-
-	Embeddings [][][]float64 `json:"embeddings"`
-
-	Metadatas [][]map[string]string `json:"metadatas"`
-	Documents [][]string            `json:"documents"`
-}
-
-type errorDetail struct {
-	Message string `json:"msg"`
 }
 
 func jsonReader(v any) io.Reader {

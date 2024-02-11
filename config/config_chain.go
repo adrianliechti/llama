@@ -9,7 +9,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/chain/rag"
 	"github.com/adrianliechti/llama/pkg/chain/react"
 	"github.com/adrianliechti/llama/pkg/chain/refine"
-	"github.com/adrianliechti/llama/pkg/chain/summarize"
 	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/prompt"
@@ -91,17 +90,14 @@ func (c *Config) registerChains(f *configFile) error {
 
 func createChain(cfg chainConfig, prompt *prompt.Prompt, embedder provider.Embedder, completer provider.Completer, index index.Provider, classifiers map[string]classifier.Provider) (chain.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
-	case "fn", "react":
-		return reactChain(cfg, prompt, completer)
-
 	case "rag":
 		return ragChain(cfg, index, prompt, completer, classifiers)
 
 	case "refine":
 		return refineChain(cfg, index, prompt, completer, classifiers)
 
-	case "summarize":
-		return summarizeChain(cfg, prompt, completer)
+	case "fn", "react":
+		return reactChain(cfg, prompt, completer)
 
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
@@ -179,20 +175,6 @@ func reactChain(cfg chainConfig, prompt *prompt.Prompt, completer provider.Compl
 	}
 
 	return react.New(options...)
-}
-
-func summarizeChain(cfg chainConfig, prompt *prompt.Prompt, completer provider.Completer) (chain.Provider, error) {
-	var options []summarize.Option
-
-	if prompt != nil {
-		options = append(options, summarize.WithPrompt(prompt))
-	}
-
-	if completer != nil {
-		options = append(options, summarize.WithCompleter(completer))
-	}
-
-	return summarize.New(options...)
 }
 
 func parsePrompt(val string) (*prompt.Prompt, error) {

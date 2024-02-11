@@ -5,7 +5,9 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/llama/pkg/index/bing"
 	"github.com/adrianliechti/llama/pkg/index/chroma"
+	"github.com/adrianliechti/llama/pkg/index/duckduckgo"
 	"github.com/adrianliechti/llama/pkg/index/elasticsearch"
 	"github.com/adrianliechti/llama/pkg/index/memory"
 	"github.com/adrianliechti/llama/pkg/index/weaviate"
@@ -48,6 +50,12 @@ func createIndex(cfg indexConfig, embedder index.Embedder) (index.Provider, erro
 	case "weaviate":
 		return weaviateIndex(cfg, embedder)
 
+	case "bing":
+		return bingIndex(cfg)
+
+	case "duckduckgo":
+		return duckduckgoIndex(cfg)
+
 	case "elasticsearch":
 		return elasticsearchIndex(cfg)
 
@@ -84,6 +92,18 @@ func weaviateIndex(cfg indexConfig, embedder index.Embedder) (index.Provider, er
 	}
 
 	return weaviate.New(cfg.URL, cfg.Namespace, options...)
+}
+
+func bingIndex(cfg indexConfig) (index.Provider, error) {
+	var options []bing.Option
+
+	return bing.New(cfg.Token, options...)
+}
+
+func duckduckgoIndex(cfg indexConfig) (index.Provider, error) {
+	var options []duckduckgo.Option
+
+	return duckduckgo.New(options...)
 }
 
 func elasticsearchIndex(cfg indexConfig) (index.Provider, error) {

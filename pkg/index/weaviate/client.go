@@ -18,9 +18,9 @@ import (
 	"github.com/google/uuid"
 )
 
-var _ index.Provider = &Weaviate{}
+var _ index.Provider = &Client{}
 
-type Weaviate struct {
+type Client struct {
 	url string
 
 	client   *http.Client
@@ -29,10 +29,10 @@ type Weaviate struct {
 	class string
 }
 
-type Option func(*Weaviate)
+type Option func(*Client)
 
-func New(url, namespace string, options ...Option) (*Weaviate, error) {
-	w := &Weaviate{
+func New(url, namespace string, options ...Option) (*Client, error) {
+	c := &Client{
 		url: url,
 
 		client: http.DefaultClient,
@@ -41,29 +41,29 @@ func New(url, namespace string, options ...Option) (*Weaviate, error) {
 	}
 
 	for _, option := range options {
-		option(w)
+		option(c)
 	}
 
-	if w.embedder == nil {
+	if c.embedder == nil {
 		return nil, errors.New("embedder is required")
 	}
 
-	return w, nil
+	return c, nil
 }
 
 func WithClient(client *http.Client) Option {
-	return func(w *Weaviate) {
-		w.client = client
+	return func(c *Client) {
+		c.client = client
 	}
 }
 
 func WithEmbedder(embedder index.Embedder) Option {
-	return func(w *Weaviate) {
-		w.embedder = embedder
+	return func(c *Client) {
+		c.embedder = embedder
 	}
 }
 
-func (w *Weaviate) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
 	if options == nil {
 		options = new(index.ListOptions)
 	}
@@ -79,17 +79,17 @@ func (w *Weaviate) List(ctx context.Context, options *index.ListOptions) ([]inde
 
 	for {
 		query := url.Values{}
-		query.Set("class", w.class)
+		query.Set("class", c.class)
 		query.Set("limit", fmt.Sprintf("%d", limit))
 
 		if cursor != "" {
 			query.Set("after", cursor)
 		}
 
-		u, _ := url.JoinPath(w.url, "/v1/objects")
+		u, _ := url.JoinPath(c.url, "/v1/objects")
 		u += "?" + query.Encode()
 
-		resp, err := w.client.Get(u)
+		resp, err := c.client.Get(u)
 
 		if err != nil {
 			return nil, err
@@ -133,12 +133,12 @@ func (w *Weaviate) List(ctx context.Context, options *index.ListOptions) ([]inde
 	return results, nil
 }
 
-func (w *Weaviate) Index(ctx context.Context, documents ...index.Document) error {
+func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 	for _, d := range documents {
 		d.ID = generateID(d)
 
-		if len(d.Embedding) == 0 && w.embedder != nil {
-			embedding, err := w.embedder.Embed(ctx, d.Content)
+		if len(d.Embedding) == 0 && c.embedder != nil {
+			embedding, err := c.embedder.Embed(ctx, d.Content)
 
 			if err != nil {
 				return err
@@ -147,10 +147,10 @@ func (w *Weaviate) Index(ctx context.Context, documents ...index.Document) error
 			d.Embedding = embedding
 		}
 
-		err := w.createObject(d)
+		err := c.createObject(d)
 
 		if err != nil {
-			err = w.updateObject(d)
+			err = c.updateObject(d)
 		}
 
 		if err != nil {
@@ -161,10 +161,10 @@ func (w *Weaviate) Index(ctx context.Context, documents ...index.Document) error
 	return nil
 }
 
-func (w *Weaviate) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
+func (c *Client) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
 	var vector strings.Builder
 
-	embedding, err := w.embedder.Embed(ctx, query)
+	embedding, err := c.embedder.Embed(ctx, query)
 
 	if err != nil {
 		return nil, err
@@ -179,7 +179,7 @@ func (w *Weaviate) Query(ctx context.Context, query string, options *index.Query
 	}
 
 	data := executeQueryTemplate(queryData{
-		Class: w.class,
+		Class: c.class,
 
 		Query:  query,
 		Vector: embedding,
@@ -192,8 +192,8 @@ func (w *Weaviate) Query(ctx context.Context, query string, options *index.Query
 		"query": data,
 	}
 
-	u, _ := url.JoinPath(w.url, "/v1/graphql")
-	resp, err := w.client.Post(u, "application/json", jsonReader(body))
+	u, _ := url.JoinPath(c.url, "/v1/graphql")
+	resp, err := c.client.Post(u, "application/json", jsonReader(body))
 
 	if err != nil {
 		return nil, err
@@ -231,7 +231,7 @@ func (w *Weaviate) Query(ctx context.Context, query string, options *index.Query
 
 	results := make([]index.Result, 0)
 
-	for _, d := range result.Data.Get[w.class] {
+	for _, d := range result.Data.Get[c.class] {
 		r := index.Result{
 			Document: index.Document{
 				ID:      d.Additional.ID,
@@ -255,21 +255,21 @@ func generateID(d index.Document) string {
 	return uuid.NewMD5(uuid.NameSpaceOID, []byte(d.ID)).String()
 }
 
-func (w *Weaviate) createObject(d index.Document) error {
+func (c *Client) createObject(d index.Document) error {
 	properties := maps.Clone(d.Metadata)
 	properties["content"] = d.Content
 
 	body := map[string]any{
 		"id": d.ID,
 
-		"class":  w.class,
+		"class":  c.class,
 		"vector": d.Embedding,
 
 		"properties": properties,
 	}
 
-	u, _ := url.JoinPath(w.url, "/v1/objects")
-	resp, err := w.client.Post(u, "application/json", jsonReader(body))
+	u, _ := url.JoinPath(c.url, "/v1/objects")
+	resp, err := c.client.Post(u, "application/json", jsonReader(body))
 
 	if err != nil {
 		return err
@@ -284,20 +284,20 @@ func (w *Weaviate) createObject(d index.Document) error {
 	return nil
 }
 
-func (w *Weaviate) updateObject(d index.Document) error {
+func (c *Client) updateObject(d index.Document) error {
 	properties := maps.Clone(d.Metadata)
 	properties["content"] = d.Content
 
 	body := map[string]any{
 		"id": d.ID,
 
-		"class":  w.class,
+		"class":  c.class,
 		"vector": d.Embedding,
 
 		"properties": properties,
 	}
 
-	u, _ := url.JoinPath(w.url, "/v1/objects/"+w.class+"/"+d.ID)
+	u, _ := url.JoinPath(c.url, "/v1/objects/"+c.class+"/"+d.ID)
 	req, err := http.NewRequest(http.MethodPut, u, jsonReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -305,7 +305,7 @@ func (w *Weaviate) updateObject(d index.Document) error {
 		return err
 	}
 
-	resp, err := w.client.Do(req)
+	resp, err := c.client.Do(req)
 
 	if err != nil {
 		return err

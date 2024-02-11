@@ -14,9 +14,9 @@ import (
 	"github.com/google/uuid"
 )
 
-var _ index.Provider = &Elasticsearch{}
+var _ index.Provider = &Client{}
 
-type Elasticsearch struct {
+type Client struct {
 	url string
 
 	client *http.Client
@@ -24,10 +24,10 @@ type Elasticsearch struct {
 	namespace string
 }
 
-type Option func(*Elasticsearch)
+type Option func(*Client)
 
-func New(url, namespace string, options ...Option) (*Elasticsearch, error) {
-	elasticsearch := &Elasticsearch{
+func New(url, namespace string, options ...Option) (*Client, error) {
+	c := &Client{
 		url: url,
 
 		client: http.DefaultClient,
@@ -36,20 +36,20 @@ func New(url, namespace string, options ...Option) (*Elasticsearch, error) {
 	}
 
 	for _, option := range options {
-		option(elasticsearch)
+		option(c)
 	}
 
-	return elasticsearch, nil
+	return c, nil
 }
 
 func WithClient(client *http.Client) Option {
-	return func(c *Elasticsearch) {
+	return func(c *Client) {
 		c.client = client
 	}
 }
 
-func (e *Elasticsearch) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
-	u, _ := url.JoinPath(e.url, "/"+e.namespace+"/_search")
+func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+	u, _ := url.JoinPath(c.url, "/"+c.namespace+"/_search")
 
 	body := map[string]any{
 		"size": 10000,
@@ -62,7 +62,7 @@ func (e *Elasticsearch) List(ctx context.Context, options *index.ListOptions) ([
 	req, _ := http.NewRequest(http.MethodGet, u, jsonReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := e.client.Do(req)
+	resp, err := c.client.Do(req)
 
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (e *Elasticsearch) List(ctx context.Context, options *index.ListOptions) ([
 	return results, nil
 }
 
-func (e *Elasticsearch) Index(ctx context.Context, documents ...index.Document) error {
+func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 	if len(documents) == 0 {
 		return nil
 	}
@@ -106,8 +106,8 @@ func (e *Elasticsearch) Index(ctx context.Context, documents ...index.Document) 
 			Metadata: d.Metadata,
 		}
 
-		u, _ := url.JoinPath(e.url, "/"+e.namespace+"/_doc/"+d.ID)
-		resp, err := e.client.Post(u, "application/json", jsonReader(body))
+		u, _ := url.JoinPath(c.url, "/"+c.namespace+"/_doc/"+d.ID)
+		resp, err := c.client.Post(u, "application/json", jsonReader(body))
 
 		if err != nil {
 			return err
@@ -121,8 +121,8 @@ func (e *Elasticsearch) Index(ctx context.Context, documents ...index.Document) 
 	return nil
 }
 
-func (e *Elasticsearch) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
-	u, _ := url.JoinPath(e.url, "/"+e.namespace+"/_search")
+func (c *Client) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
+	u, _ := url.JoinPath(c.url, "/"+c.namespace+"/_search")
 
 	body := map[string]any{
 		"query": map[string]any{
@@ -137,7 +137,7 @@ func (e *Elasticsearch) Query(ctx context.Context, query string, options *index.
 	req, _ := http.NewRequest(http.MethodGet, u, jsonReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := e.client.Do(req)
+	resp, err := c.client.Do(req)
 
 	if err != nil {
 		return nil, err
@@ -198,24 +198,4 @@ func convertError(resp *http.Response) error {
 	}
 
 	return errors.New(http.StatusText(resp.StatusCode))
-}
-
-type Document struct {
-	ID string `json:"id"`
-
-	Content  string            `json:"content"`
-	Metadata map[string]string `json:"metadata"`
-}
-
-type SearchResult struct {
-	Hits SearchHits `json:"hits"`
-}
-
-type SearchHits struct {
-	Hits []SearchHit `json:"hits"`
-}
-
-type SearchHit struct {
-	Score    float32  `json:"_score"`
-	Document Document `json:"_source"`
 }

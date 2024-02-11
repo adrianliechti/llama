@@ -12,64 +12,56 @@ import (
 	"github.com/google/uuid"
 )
 
-var _ index.Provider = &Memory{}
+var _ index.Provider = &Client{}
 
-type Memory struct {
+type Client struct {
 	embedder index.Embedder
 
 	documents map[string]index.Document
 }
 
-type Option func(*Memory)
+type Option func(*Client)
 
-func New(options ...Option) (*Memory, error) {
-	m := &Memory{
+func New(options ...Option) (*Client, error) {
+	c := &Client{
 		documents: make(map[string]index.Document),
 	}
 
 	for _, option := range options {
-		option(m)
+		option(c)
 	}
 
-	if m.embedder == nil {
+	if c.embedder == nil {
 		return nil, errors.New("embedder is required")
 	}
 
-	return m, nil
+	return c, nil
 }
 
 func WithEmbedder(embedder index.Embedder) Option {
-	return func(m *Memory) {
-		m.embedder = embedder
+	return func(c *Client) {
+		c.embedder = embedder
 	}
 }
 
-func (m *Memory) Embed(ctx context.Context, content string) ([]float32, error) {
-	if m.embedder == nil {
-		return nil, errors.New("no embedder configured")
-	}
+func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+	result := make([]index.Document, 0, len(c.documents))
 
-	return m.embedder.Embed(ctx, content)
-}
-
-func (m *Memory) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
-	result := make([]index.Document, 0, len(m.documents))
-
-	for _, d := range m.documents {
+	for _, d := range c.documents {
 		result = append(result, d)
 	}
 
 	return result, nil
 }
 
-func (m *Memory) Index(ctx context.Context, documents ...index.Document) error {
+func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 	for _, d := range documents {
 		if d.ID == "" {
 			d.ID = uuid.NewString()
 		}
 
-		if len(d.Embedding) == 0 && m.embedder != nil {
-			embedding, err := m.embedder.Embed(ctx, d.Content)
+		if len(d.Embedding) == 0 && c.embedder != nil {
+			embedding, err := c.embedder.Embed(ctx, d.Content)
 
 			if err != nil {
 				return err
@@ -78,18 +70,22 @@ func (m *Memory) Index(ctx context.Context, documents ...index.Document) error {
 			d.Embedding = embedding
 		}
 
-		m.documents[d.ID] = d
+		c.documents[d.ID] = d
 	}
 
 	return nil
 }
 
-func (m *Memory) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
+func (c *Client) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
 	if options == nil {
 		options = &index.QueryOptions{}
 	}
 
-	embedding, err := m.Embed(ctx, query)
+	if c.embedder == nil {
+		return nil, errors.New("no embedder configured")
+	}
+
+	embedding, err := c.embedder.Embed(ctx, query)
 
 	if err != nil {
 		return nil, err
@@ -98,7 +94,7 @@ func (m *Memory) Query(ctx context.Context, query string, options *index.QueryOp
 	results := make([]index.Result, 0)
 
 DOCUMENTS:
-	for _, d := range m.documents {
+	for _, d := range c.documents {
 		r := index.Result{
 			Document: d,
 
