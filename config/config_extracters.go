@@ -6,6 +6,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/extracter"
 	"github.com/adrianliechti/llama/pkg/extracter/tesseract"
+	"github.com/adrianliechti/llama/pkg/extracter/text"
 	"github.com/adrianliechti/llama/pkg/extracter/unstructured"
 )
 
@@ -25,6 +26,9 @@ func (c *Config) registerExtracters(f *configFile) error {
 
 func createExtracter(cfg extracterConfig) (extracter.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
+	case "text":
+		return textExtracter(cfg)
+
 	case "tesseract":
 		return tesseractExtracter(cfg)
 
@@ -34,6 +38,12 @@ func createExtracter(cfg extracterConfig) (extracter.Provider, error) {
 	default:
 		return nil, errors.New("invalid extracter type: " + cfg.Type)
 	}
+}
+
+func textExtracter(cfg extracterConfig) (extracter.Provider, error) {
+	var options []text.Option
+
+	return text.New(options...)
 }
 
 func tesseractExtracter(cfg extracterConfig) (extracter.Provider, error) {
