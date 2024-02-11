@@ -1,9 +1,11 @@
-package bing
+package tavily
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -55,15 +57,16 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 }
 
 func (c *Client) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
-	u, _ := url.Parse("https://api.bing.microsoft.com/v7.0/search")
+	u, _ := url.Parse("https://api.tavily.com/search")
 
-	values := u.Query()
-	values.Set("q", query)
+	body := map[string]any{
+		"api_key":      c.token,
+		"query":        query,
+		"search_depth": "basic",
+	}
 
-	u.RawQuery = values.Encode()
-
-	req, _ := http.NewRequest("GET", u.String(), nil)
-	req.Header.Set("Ocp-Apim-Subscription-Key", c.token)
+	req, _ := http.NewRequest(http.MethodPost, u.String(), jsonReader(body))
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.client.Do(req)
 
@@ -71,9 +74,11 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		return nil, err
 	}
 
-	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, convertError(resp)
+	}
 
-	var data SearchResponse
+	var data SearchResult
 
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		return nil, err
@@ -81,14 +86,12 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 	var results []index.Result
 
-	for _, p := range data.WebPages.Value {
+	for _, r := range data.Results {
 		result := index.Result{
 			Document: index.Document{
-				ID: p.ID,
-
-				Title:    p.Name,
-				Content:  p.Snippet,
-				Location: p.URL,
+				Title:    r.Title,
+				Content:  r.Content,
+				Location: r.URL,
 			},
 		}
 
@@ -96,4 +99,18 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	}
 
 	return results, nil
+}
+
+func jsonReader(v any) io.Reader {
+	b := new(bytes.Buffer)
+
+	enc := json.NewEncoder(b)
+	enc.SetEscapeHTML(false)
+
+	enc.Encode(v)
+	return b
+}
+
+func convertError(resp *http.Response) error {
+	return errors.New(http.StatusText(resp.StatusCode))
 }

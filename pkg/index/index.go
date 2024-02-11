@@ -24,10 +24,12 @@ type QueryOptions struct {
 }
 
 type Document struct {
-	ID  string
-	URL string
+	ID string
 
+	Title    string
 	Content  string
+	Location string
+
 	Metadata map[string]string
 
 	Embedding []float32
