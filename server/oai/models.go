@@ -211,10 +211,10 @@ type ToolCall struct {
 }
 
 type Function struct {
+	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 
-	Name       string `json:"name"`
-	Parameters any    `json:"parameters"`
+	Parameters any `json:"parameters"`
 }
 
 type FunctionCall struct {

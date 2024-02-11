@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"io"
+
+	"github.com/adrianliechti/llama/pkg/jsonschema"
 )
 
 type Embedder interface {
@@ -54,10 +56,10 @@ type File struct {
 }
 
 type Function struct {
-	Name       string
-	Parameters any
-
+	Name        string
 	Description string
+
+	Parameters jsonschema.Definition
 }
 
 type FunctionCall struct {

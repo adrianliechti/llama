@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/jsonschema"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -23,6 +24,24 @@ func main() {
 		Function: openai.FunctionDefinition{
 			Name:        "find_flight",
 			Description: "Use this tool to find flight numbers form a city to another city",
+
+			Parameters: jsonschema.Definition{
+				Type: jsonschema.DataTypeObject,
+
+				Properties: map[string]jsonschema.Definition{
+					"departure": {
+						Type:        jsonschema.DataTypeString,
+						Description: "Departure Airport Code or Name",
+					},
+
+					"arrival": {
+						Type:        jsonschema.DataTypeString,
+						Description: "Arrival Airport Code or Name",
+					},
+				},
+
+				Required: []string{"departure", "arrival"},
+			},
 		},
 	}
 
@@ -32,6 +51,29 @@ func main() {
 		Function: openai.FunctionDefinition{
 			Name:        "book_flight",
 			Description: "Use this tool to make a reservation for a flight",
+
+			Parameters: jsonschema.Definition{
+				Type: jsonschema.DataTypeObject,
+
+				Properties: map[string]jsonschema.Definition{
+					"departure": {
+						Type:        jsonschema.DataTypeString,
+						Description: "Departure Airport Code or Name",
+					},
+
+					"arrival": {
+						Type:        jsonschema.DataTypeString,
+						Description: "Arrival Airport Code or Name",
+					},
+
+					"time": {
+						Type:        jsonschema.DataTypeString,
+						Description: "Desired Departure Time",
+					},
+				},
+
+				Required: []string{"departure", "arrival", "time"},
+			},
 		},
 	}
 
@@ -57,16 +99,18 @@ func main() {
 
 				if strings.Contains(c.Function.Name, "find") {
 					message = &openai.ChatCompletionMessage{
-						Role:    openai.ChatMessageRoleTool,
-						Content: "14:00 ZRHLON14, 18:00 ZRHLON18, 21:00 ZRHLON21",
+						Role: openai.ChatMessageRoleTool,
 
 						ToolCallID: c.ID,
+						Content:    `[ { "id": "ZRHLON14", "time": "14:00" }, { "id": "ZRHLON18", "time": "18:00" }, { "id": "ZRHLON21", "time": "21:00" } ]`,
 					}
 
 				} else if strings.Contains(c.Function.Name, "book") {
 					message = &openai.ChatCompletionMessage{
-						Role:    openai.ChatMessageRoleTool,
-						Content: "Flight is booked!",
+						Role: openai.ChatMessageRoleTool,
+
+						ToolCallID: c.ID,
+						Content:    `{ "status": "booked" }`,
 					}
 				}
 			}
@@ -100,11 +144,11 @@ func main() {
 
 		completion, err := client.CreateChatCompletion(ctx, req)
 
-		result := completion.Choices[0].Message
-
 		if err != nil {
 			panic(err)
 		}
+
+		result := completion.Choices[0].Message
 
 		if result.Role == openai.ChatMessageRoleAssistant && len(result.Content) > 0 {
 			output.WriteString(strings.TrimSpace(result.Content))

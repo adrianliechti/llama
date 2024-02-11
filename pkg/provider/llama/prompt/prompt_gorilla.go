@@ -5,7 +5,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/jsonschema"
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
@@ -31,14 +30,28 @@ func (t *promptGorilla) Prompt(system string, messages []provider.Message, optio
 	if len(options.Functions) > 0 {
 		prompt.WriteString(" <<function>> ")
 
-		var functions []jsonschema.FunctionDefinition
+		var functions []function
 
 		for _, f := range options.Functions {
-			function := jsonschema.FunctionDefinition{
+			function := function{
+				Call: f.Name,
+
 				Name:        f.Name,
 				Description: f.Description,
 
-				Parameters: f.Parameters,
+				Parameters: []functionParameter{},
+			}
+
+			for k, v := range f.Parameters.Properties {
+				parameter := functionParameter{
+					Name: k,
+
+					Enum:        v.Enum,
+					Description: v.Description,
+				}
+
+				function.Parameters = append(function.Parameters, parameter)
+
 			}
 
 			functions = append(functions, function)
@@ -62,4 +75,20 @@ func (t *promptGorilla) Stop() []string {
 		"USER:",
 		"ASSSISTANT:",
 	}
+}
+
+type function struct {
+	Call string `json:"api_call,omitempty"`
+
+	Name        string `json:"name,omitempty"`
+	Description string `json:"description,omitempty"`
+
+	Parameters []functionParameter `json:"parameters,omitempty"`
+}
+
+type functionParameter struct {
+	Name string `json:"name,omitempty"`
+
+	Enum        []string `json:"enum,omitempty"`
+	Description string   `json:"description,omitempty"`
 }

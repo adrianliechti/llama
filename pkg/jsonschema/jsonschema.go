@@ -12,13 +12,6 @@ const (
 	DataTypeBoolean DataType = "boolean"
 )
 
-type FunctionDefinition struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-
-	Parameters any `json:"parameters,omitempty"`
-}
-
 type Definition struct {
 	Type        DataType              `json:"type,omitempty"`
 	Description string                `json:"description,omitempty"`

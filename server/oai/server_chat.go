@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/adrianliechti/llama/pkg/jsonschema"
 	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/google/uuid"
@@ -40,11 +41,18 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	functions, err := toFunctions(req.Tools)
+
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+
 	options := &provider.CompleteOptions{
 		Temperature: req.Temperature,
 		TopP:        req.TopP,
 
-		Functions: toFunctions(req.Tools),
+		Functions: functions,
 	}
 
 	if req.Format != nil {
@@ -270,23 +278,37 @@ func toFile(url string) (*provider.File, error) {
 	return nil, fmt.Errorf("invalid url")
 }
 
-func toFunctions(s []Tool) []provider.Function {
+func toFunctions(tools []Tool) ([]provider.Function, error) {
 	var result []provider.Function
 
-	for _, t := range s {
+	for _, t := range tools {
 		if t.Type == ToolTypeFunction && t.ToolFunction != nil {
 			function := provider.Function{
-				Name:       t.ToolFunction.Name,
-				Parameters: t.ToolFunction.Parameters,
-
+				Name:        t.ToolFunction.Name,
 				Description: t.ToolFunction.Description,
+			}
+
+			if t.ToolFunction.Parameters != nil {
+				input, err := json.Marshal(t.ToolFunction.Parameters)
+
+				if err != nil {
+					return nil, err
+				}
+
+				var params jsonschema.Definition
+
+				if err := json.Unmarshal(input, &params); err != nil {
+					return nil, err
+				}
+
+				function.Parameters = params
 			}
 
 			result = append(result, function)
 		}
 	}
 
-	return result
+	return result, nil
 }
 
 func toFuncionCalls(calls []ToolCall) []provider.FunctionCall {
