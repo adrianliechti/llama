@@ -9,10 +9,13 @@ import (
 	"github.com/adrianliechti/llama/pkg/chain/rag"
 	"github.com/adrianliechti/llama/pkg/chain/react"
 	"github.com/adrianliechti/llama/pkg/chain/refine"
+	"github.com/adrianliechti/llama/pkg/chain/toolbox"
 	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/to"
+	"github.com/adrianliechti/llama/pkg/tool"
 )
 
 func (c *Config) registerChains(f *configFile) error {
@@ -26,6 +29,7 @@ func (c *Config) registerChains(f *configFile) error {
 		var embedder provider.Embedder
 		var completer provider.Completer
 
+		tools := map[string]tool.Tool{}
 		classifiers := map[string]classifier.Provider{}
 
 		if cfg.Model != "" {
@@ -60,6 +64,16 @@ func (c *Config) registerChains(f *configFile) error {
 			}
 		}
 
+		for _, t := range cfg.Tools {
+			tool, err := c.Tool(t)
+
+			if err != nil {
+				return err
+			}
+
+			tools[tool.Name()] = tool
+		}
+
 		for _, v := range cfg.Filters {
 			if v.Classifier != "" {
 				classifier, err := c.Classifier(v.Classifier)
@@ -72,7 +86,7 @@ func (c *Config) registerChains(f *configFile) error {
 			}
 		}
 
-		chain, err := createChain(cfg, prompt, embedder, completer, index, classifiers)
+		chain, err := createChain(cfg, prompt, embedder, completer, index, tools, classifiers)
 
 		if err != nil {
 			return err
@@ -88,7 +102,7 @@ func (c *Config) registerChains(f *configFile) error {
 	return nil
 }
 
-func createChain(cfg chainConfig, prompt *prompt.Prompt, embedder provider.Embedder, completer provider.Completer, index index.Provider, classifiers map[string]classifier.Provider) (chain.Provider, error) {
+func createChain(cfg chainConfig, prompt *prompt.Prompt, embedder provider.Embedder, completer provider.Completer, index index.Provider, tools map[string]tool.Tool, classifiers map[string]classifier.Provider) (chain.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
 	case "rag":
 		return ragChain(cfg, index, prompt, completer, classifiers)
@@ -96,8 +110,11 @@ func createChain(cfg chainConfig, prompt *prompt.Prompt, embedder provider.Embed
 	case "refine":
 		return refineChain(cfg, index, prompt, completer, classifiers)
 
-	case "fn", "react":
+	case "react":
 		return reactChain(cfg, prompt, completer)
+
+	case "toolbox":
+		return toolboxChain(cfg, prompt, completer, tools)
 
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
@@ -175,6 +192,21 @@ func reactChain(cfg chainConfig, prompt *prompt.Prompt, completer provider.Compl
 	}
 
 	return react.New(options...)
+}
+
+func toolboxChain(cfg chainConfig, prompt *prompt.Prompt, completer provider.Completer, tools map[string]tool.Tool) (chain.Provider, error) {
+	var options []toolbox.Option
+
+	if tools != nil {
+		options = append(options, toolbox.WithTools(to.Values(tools)...))
+
+	}
+
+	if completer != nil {
+		options = append(options, toolbox.WithCompleter(completer))
+	}
+
+	return toolbox.New(options...)
 }
 
 func parsePrompt(val string) (*prompt.Prompt, error) {

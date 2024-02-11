@@ -31,6 +31,7 @@ type configFile struct {
 	Extracters  map[string]extracterConfig  `yaml:"extracters"`
 	Classifiers map[string]classifierConfig `yaml:"classifiers"`
 
+	Tools  map[string]toolConfig  `yaml:"tools"`
 	Chains map[string]chainConfig `yaml:"chains"`
 }
 
@@ -102,7 +103,16 @@ type chainConfig struct {
 	Limit    *int     `yaml:"limit"`
 	Distance *float32 `yaml:"distance"`
 
+	Tools []string `yaml:"tools"`
+
 	Filters map[string]filterConfig `yaml:"filters"`
+}
+
+type toolConfig struct {
+	Type string `yaml:"type"`
+
+	URL   string `yaml:"url"`
+	Token string `yaml:"token"`
 }
 
 type filterConfig struct {

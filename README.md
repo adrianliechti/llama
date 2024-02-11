@@ -400,6 +400,6 @@ For providers or models not natively supporting Function Calling, a transformato
 ```yaml
 chains:
   fn:
-    type: fn
+    type: react
     model: mistral-7b-instruct
 ```
