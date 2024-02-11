@@ -92,9 +92,8 @@ type classifierConfig struct {
 type chainConfig struct {
 	Type string `yaml:"type"`
 
-	Index string `yaml:"index"`
-
 	Model     string `yaml:"model"`
+	Index     string `yaml:"index"`
 	Embedding string `yaml:"embedding"`
 
 	System   string `yaml:"system"`
@@ -113,6 +112,10 @@ type toolConfig struct {
 
 	URL   string `yaml:"url"`
 	Token string `yaml:"token"`
+
+	Model     string `yaml:"model"`
+	Index     string `yaml:"index"`
+	Embedding string `yaml:"embedding"`
 }
 
 type filterConfig struct {

@@ -23,7 +23,6 @@ func (c *Config) registerChains(f *configFile) error {
 		var err error
 
 		var index index.Provider
-
 		var prompt *prompt.Prompt
 
 		var embedder provider.Embedder
@@ -31,22 +30,6 @@ func (c *Config) registerChains(f *configFile) error {
 
 		tools := map[string]tool.Tool{}
 		classifiers := map[string]classifier.Provider{}
-
-		if cfg.Model != "" {
-			completer, err = c.Completer(cfg.Model)
-
-			if err != nil {
-				return err
-			}
-		}
-
-		if cfg.Embedding != "" {
-			embedder, err = c.Embedder(cfg.Embedding)
-
-			if err != nil {
-				return err
-			}
-		}
 
 		if cfg.Index != "" {
 			index, err = c.Index(cfg.Index)
@@ -58,6 +41,22 @@ func (c *Config) registerChains(f *configFile) error {
 
 		if cfg.Template != "" {
 			prompt, err = parsePrompt(cfg.Template)
+
+			if err != nil {
+				return err
+			}
+		}
+
+		if cfg.Model != "" {
+			completer, err = c.Completer(cfg.Model)
+
+			if err != nil {
+				return err
+			}
+		}
+
+		if cfg.Embedding != "" {
+			embedder, err = c.Embedder(cfg.Embedding)
 
 			if err != nil {
 				return err

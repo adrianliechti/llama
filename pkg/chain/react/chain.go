@@ -222,7 +222,7 @@ func extractAction(s string) (*provider.FunctionCall, error) {
 		match := matches[len(matches)-1]
 
 		if len(match) == 3 {
-			args := "{\"" + match[1] + "\": \"" + match[2] + "\"}"
+			args := "{\"query\": \"" + match[2] + "\"}"
 
 			return &provider.FunctionCall{
 				Name:      match[1],
