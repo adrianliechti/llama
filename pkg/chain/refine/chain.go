@@ -119,7 +119,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 	filters := map[string]string{}
 
 	for k, c := range c.filters {
-		v, err := c.Categorize(ctx, message.Content)
+		v, err := c.Classify(ctx, message.Content)
 
 		if err != nil || v == "" {
 			continue

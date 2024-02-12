@@ -61,7 +61,9 @@ func New(cfg *config.Config) (*Server, error) {
 
 	r.Use(s.handleAuth)
 
+	r.Mount("/v1", api)
 	r.Mount("/api", api)
+
 	r.Mount("/oai", oai)
 
 	return s, nil

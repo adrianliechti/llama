@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"mime"
 	"net/http"
+	"path"
 
 	"github.com/adrianliechti/llama/config"
 	"github.com/google/uuid"
@@ -49,22 +50,52 @@ func writeError(w http.ResponseWriter, code int, err error) {
 }
 
 func detectFileName(r *http.Request) string {
-	var name string
-
 	contentType := r.Header.Get("Content-Type")
 	contentDisposition := r.Header.Get("Content-Disposition")
 
-	if val, _, err := mime.ParseMediaType(contentType); err == nil {
-		if vals, _ := mime.ExtensionsByType(val); err == nil && len(vals) > 0 {
-			name = uuid.NewString() + vals[0]
-		}
-	}
-
 	if _, params, err := mime.ParseMediaType(contentDisposition); err == nil {
-		if val := params["filename"]; val != "" {
-			name = val
+		if val, ok := params["filename"]; ok && path.Ext(val) != "" {
+			return val
 		}
 	}
 
-	return name
+	if val, _, err := mime.ParseMediaType(contentType); err == nil {
+		if val, ok := typeExtensions[val]; ok {
+			return uuid.NewString() + val
+		}
+
+		if vals, _ := mime.ExtensionsByType(val); err == nil && len(vals) > 0 {
+			return uuid.NewString() + vals[0]
+		}
+	}
+
+	return ""
+}
+
+var typeExtensions = map[string]string{
+	"text/plain": ".txt",
+	"text/csv":   ".csv",
+
+	"text/markdown": ".md",
+	"text/x-rst":    ".rst",
+
+	"text/rtf":        ".rtf",
+	"application/rtf": ".rtf",
+
+	"application/epub+zip": ".epub",
+
+	"message/rfc822":             ".eml",
+	"application/vnd.ms-outlook": ".msg",
+
+	"application/msword":            ".doc",
+	"application/vnd.ms-excel":      ".xls",
+	"application/vnd.ms-powerpoint": ".ppt",
+
+	"application/vnd.oasis.opendocument.text":         ".odt",
+	"application/vnd.oasis.opendocument.spreadsheet":  ".ods",
+	"application/vnd.oasis.opendocument.presentation": ".odp",
+
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document":   ".docx",
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":         ".xlsx",
+	"application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
 }

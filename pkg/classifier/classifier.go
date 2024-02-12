@@ -5,5 +5,11 @@ import (
 )
 
 type Provider interface {
-	Categorize(ctx context.Context, input string) (string, error)
+	Classify(ctx context.Context, input string) (string, error)
+}
+
+type Class struct {
+	Name string
+
+	Description string
 }
