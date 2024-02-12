@@ -7,64 +7,65 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/to"
 )
 
-var _ provider.Completer = &Provider{}
+var _ chain.Provider = &Chain{}
 
-type Provider struct {
+type Chain struct {
 	system *prompt.Prompt
 	prompt *prompt.Prompt
 
 	completer provider.Completer
 }
 
-type Option func(*Provider)
+type Option func(*Chain)
 
-func New(options ...Option) (*Provider, error) {
-	p := &Provider{
+func New(options ...Option) (*Chain, error) {
+	c := &Chain{
 		system: prompt.MustNew(systemTemplate),
 		prompt: prompt.MustNew(promptTemplate),
 	}
 
 	for _, option := range options {
-		option(p)
+		option(c)
 	}
 
-	if p.completer == nil {
+	if c.completer == nil {
 		return nil, errors.New("missing completer provider")
 	}
 
-	return p, nil
+	return c, nil
 }
 
 func WithSystem(prompt *prompt.Prompt) Option {
-	return func(p *Provider) {
-		p.system = prompt
+	return func(c *Chain) {
+		c.system = prompt
 	}
 }
 
 func WithPrompt(prompt *prompt.Prompt) Option {
-	return func(p *Provider) {
-		p.prompt = prompt
+	return func(c *Chain) {
+		c.prompt = prompt
 	}
 }
 
 func WithCompleter(completer provider.Completer) Option {
-	return func(p *Provider) {
-		p.completer = completer
+	return func(c *Chain) {
+		c.completer = completer
 	}
 }
 
-func (p *Provider) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+func (c *Chain) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
 	}
 
 	if len(options.Functions) == 0 {
-		return p.completer.Complete(ctx, messages, options)
+		return c.completer.Complete(ctx, messages, options)
 	}
 
 	data := promptData{}
@@ -138,7 +139,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		}
 	}
 
-	prompt, err := p.prompt.Execute(data)
+	prompt, err := c.prompt.Execute(data)
 
 	if err != nil {
 		return nil, err
@@ -148,8 +149,8 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 
 	var inputMesssages []provider.Message
 
-	if p.system != nil {
-		system, err := p.system.Execute(map[string]any{})
+	if c.system != nil {
+		system, err := c.system.Execute(map[string]any{})
 
 		if err != nil {
 			return nil, err
@@ -171,7 +172,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		Temperature: to.Ptr(float32(0)),
 	}
 
-	completion, err := p.completer.Complete(ctx, inputMesssages, inputOptions)
+	completion, err := c.completer.Complete(ctx, inputMesssages, inputOptions)
 
 	if err != nil {
 		return nil, err
@@ -221,7 +222,7 @@ func extractAction(s string) (*provider.FunctionCall, error) {
 		match := matches[len(matches)-1]
 
 		if len(match) == 3 {
-			args := "{\"" + match[1] + "\": \"" + match[2] + "\"}"
+			args := "{\"query\": \"" + match[2] + "\"}"
 
 			return &provider.FunctionCall{
 				Name:      match[1],

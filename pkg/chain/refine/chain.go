@@ -5,15 +5,16 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-var _ provider.Completer = &Provider{}
+var _ chain.Provider = &Chain{}
 
-type Provider struct {
+type Chain struct {
 	index index.Provider
 
 	prompt *prompt.Prompt
@@ -27,81 +28,81 @@ type Provider struct {
 	filters map[string]classifier.Provider
 }
 
-type Option func(*Provider)
+type Option func(*Chain)
 
-func New(options ...Option) (*Provider, error) {
-	p := &Provider{
+func New(options ...Option) (*Chain, error) {
+	c := &Chain{
 		prompt: prompt.MustNew(promptTemplate),
 
 		filters: map[string]classifier.Provider{},
 	}
 
 	for _, option := range options {
-		option(p)
+		option(c)
 	}
 
-	if p.index == nil {
+	if c.index == nil {
 		return nil, errors.New("missing index provider")
 	}
 
-	if p.completer == nil {
+	if c.completer == nil {
 		return nil, errors.New("missing completer provider")
 	}
 
-	return p, nil
+	return c, nil
 }
 
 func WithIndex(index index.Provider) Option {
-	return func(p *Provider) {
-		p.index = index
+	return func(c *Chain) {
+		c.index = index
 	}
 }
 
 func WithPrompt(prompt *prompt.Prompt) Option {
-	return func(p *Provider) {
-		p.prompt = prompt
+	return func(c *Chain) {
+		c.prompt = prompt
 	}
 }
 
 func WithLimit(val int) Option {
-	return func(p *Provider) {
-		p.limit = &val
+	return func(c *Chain) {
+		c.limit = &val
 	}
 }
 
 func WithDistance(val float32) Option {
-	return func(p *Provider) {
-		p.distance = &val
+	return func(c *Chain) {
+		c.distance = &val
 	}
 }
 
 func WithCompleter(completer provider.Completer) Option {
-	return func(p *Provider) {
-		p.completer = completer
+	return func(c *Chain) {
+		c.completer = completer
 	}
 }
 
 func WithContextualizer(val provider.Completer) Option {
-	return func(p *Provider) {
-		p.contextualizer = val
+	return func(c *Chain) {
+		c.contextualizer = val
 	}
 }
 
 func WithFilter(name string, classifier classifier.Provider) Option {
-	return func(p *Provider) {
-		p.filters[name] = classifier
+	return func(c *Chain) {
+		c.filters[name] = classifier
 	}
 }
 
-func (p *Provider) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+func (c *Chain) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	message := messages[len(messages)-1]
 
 	if message.Role != provider.MessageRoleUser {
 		return nil, errors.New("last message must be from user")
 	}
 
-	if p.contextualizer != nil && len(messages) > 1 {
-		result, err := p.contextualizer.Complete(ctx, messages, nil)
+	if c.contextualizer != nil && len(messages) > 1 {
+		result, err := c.contextualizer.Complete(ctx, messages, nil)
 
 		if err != nil {
 			return nil, err
@@ -117,7 +118,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 
 	filters := map[string]string{}
 
-	for k, c := range p.filters {
+	for k, c := range c.filters {
 		v, err := c.Classify(ctx, message.Content)
 
 		if err != nil || v == "" {
@@ -127,9 +128,9 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		filters[k] = v
 	}
 
-	results, err := p.index.Query(ctx, message.Content, &index.QueryOptions{
-		Limit:    p.limit,
-		Distance: p.distance,
+	results, err := c.index.Query(ctx, message.Content, &index.QueryOptions{
+		Limit:    c.limit,
+		Distance: c.distance,
 
 		Filters: filters,
 	})
@@ -154,7 +155,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 			},
 		}
 
-		prompt, err := p.prompt.Execute(data)
+		prompt, err := c.prompt.Execute(data)
 
 		if err != nil {
 			return nil, err
@@ -167,7 +168,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 			Content: prompt,
 		}
 
-		completion, err := p.completer.Complete(ctx, []provider.Message{m}, nil)
+		completion, err := c.completer.Complete(ctx, []provider.Message{m}, nil)
 
 		if err != nil {
 			return nil, err
