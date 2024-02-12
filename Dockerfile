@@ -14,7 +14,7 @@ RUN CGO_ENABLED=0 GOEXPERIMENT=loopvar go build -o server
 
 FROM alpine
 
-RUN apk add --no-cache tini ca-certificates
+RUN apk add --no-cache tini ca-certificates mailcap
 
 WORKDIR /
 COPY --from=build /src/cmd/server/server .
