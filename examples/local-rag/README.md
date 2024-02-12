@@ -32,7 +32,7 @@ docker compose up
 | Documents | `.doc`, `.docx`, `.ppt`, `.pptx`, `.pdf`, `.odt`, `.epub`, `.csv`, `.tsv`, `.xlsx` |
 
 ```shell
-curl http://localhost:8080/api/index/docs/unstructured \
+curl http://localhost:8080/v1/index/docs/unstructured \
   --header 'Content-Disposition: attachment; filename="presentation.pdf"' \
   --data-binary "@presentation.pdf"
 ```
