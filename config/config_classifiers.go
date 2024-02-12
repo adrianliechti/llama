@@ -57,17 +57,17 @@ func createClassifier(cfg classifierConfig, embedder provider.Embedder, complete
 func llmClassifier(cfg classifierConfig, completer provider.Completer) (classifier.Provider, error) {
 	var options []llm.Option
 
-	if cfg.Categories != nil {
-		var categories []llm.Category
+	if cfg.Classes != nil {
+		var classes []classifier.Class
 
-		for k, v := range cfg.Categories {
-			categories = append(categories, llm.Category{
+		for k, v := range cfg.Classes {
+			classes = append(classes, classifier.Class{
 				Name:        k,
 				Description: v,
 			})
 		}
 
-		options = append(options, llm.WithCategories(categories...))
+		options = append(options, llm.WithClasses(classes...))
 	}
 
 	if completer != nil {

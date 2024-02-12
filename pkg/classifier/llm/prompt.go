@@ -3,6 +3,7 @@ package llm
 import (
 	_ "embed"
 
+	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/prompt"
 )
 
@@ -13,11 +14,12 @@ var (
 
 	promptStop = []string{
 		"\n###",
+		"\nClass:",
 		"\nCategory:",
 	}
 )
 
 type promptData struct {
-	Input      string
-	Categories []Category
+	Input   string
+	Classes []classifier.Class
 }

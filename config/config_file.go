@@ -85,7 +85,7 @@ type classifierConfig struct {
 	Model     string `yaml:"model"`
 	Embedding string `yaml:"embedding"`
 
-	Categories map[string]string `yaml:"categories"`
+	Classes map[string]string `yaml:"classes"`
 }
 
 type chainConfig struct {

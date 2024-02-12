@@ -15,13 +15,7 @@ var _ classifier.Provider = &Provider{}
 type Provider struct {
 	completer provider.Completer
 
-	categories []Category
-}
-
-type Category struct {
-	Name string
-
-	Description string
+	classes []classifier.Class
 }
 
 type Option func(*Provider)
@@ -37,6 +31,10 @@ func New(options ...Option) (*Provider, error) {
 		return nil, errors.New("missing completer provider")
 	}
 
+	if len(p.classes) == 0 {
+		return nil, errors.New("no classes provided")
+	}
+
 	return p, nil
 }
 
@@ -46,17 +44,17 @@ func WithCompleter(completer provider.Completer) Option {
 	}
 }
 
-func WithCategories(categories ...Category) Option {
+func WithClasses(classes ...classifier.Class) Option {
 	return func(p *Provider) {
-		p.categories = categories
+		p.classes = classes
 	}
 }
 
-func (p *Provider) Categorize(ctx context.Context, input string) (string, error) {
+func (p *Provider) Classify(ctx context.Context, input string) (string, error) {
 	data := promptData{
 		Input: input,
 
-		Categories: p.categories,
+		Classes: p.classes,
 	}
 
 	prompt, err := promptTemplate.Execute(data)
@@ -83,26 +81,13 @@ func (p *Provider) Categorize(ctx context.Context, input string) (string, error)
 		return "", err
 	}
 
-	class := strings.TrimSpace(completion.Message.Content)
-	class = strings.ToLower(class)
-	class = strings.ReplaceAll(class, "class:", "")
-	class = strings.ReplaceAll(class, "category:", "")
+	re := regexp.MustCompile(`[^a-z0-9:-_]+`)
 
-	return extractClass(class)
-}
+	result := strings.ToLower(completion.Message.Content)
+	result = re.ReplaceAllString(result, "")
+	result = strings.ReplaceAll(result, "class:", "")
+	result = strings.ReplaceAll(result, "category:", "")
+	result = strings.TrimSpace(result)
 
-func extractClass(s string) (string, error) {
-	re := regexp.MustCompile(`([a-zA-Z_]*).*`)
-	matches := re.FindAllStringSubmatch(s, -1)
-
-	if len(matches) > 0 {
-		match := matches[len(matches)-1]
-
-		if len(match) == 2 {
-			class := match[1]
-			return class, nil
-		}
-	}
-
-	return "", errors.New("no class found")
+	return result, nil
 }

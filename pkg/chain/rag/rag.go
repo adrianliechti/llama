@@ -118,7 +118,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	filters := map[string]string{}
 
 	for k, c := range p.filters {
-		v, err := c.Categorize(ctx, message.Content)
+		v, err := c.Classify(ctx, message.Content)
 
 		if err != nil || v == "" {
 			continue
