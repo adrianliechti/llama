@@ -9,18 +9,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/extracter"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
-)
-
-var (
-	ErrModelNotFound = errors.New("model not found")
-
-	ErrEmbedderNotFound    = errors.New("embedder not found")
-	ErrCompleterNotFound   = errors.New("completer not found")
-	ErrTranscriberNotFound = errors.New("transcriber not found")
-
-	ErrIndexNotFound      = errors.New("index not found")
-	ErrExtracterNotFound  = errors.New("extracter not found")
-	ErrClassifierNotFound = errors.New("classifier not found")
+	"github.com/adrianliechti/llama/pkg/tool"
 )
 
 type Config struct {
@@ -38,6 +27,7 @@ type Config struct {
 	extracters  map[string]extracter.Provider
 	classifiers map[string]classifier.Provider
 
+	tools  map[string]tool.Tool
 	chains map[string]chain.Provider
 }
 
@@ -55,7 +45,7 @@ func (cfg *Config) Model(id string) (*provider.Model, error) {
 	m, ok := cfg.models[id]
 
 	if !ok {
-		return nil, ErrModelNotFound
+		return nil, errors.New("model not found: " + id)
 	}
 
 	return &m, nil
@@ -66,7 +56,7 @@ func (cfg *Config) Embedder(model string) (provider.Embedder, error) {
 		return e, nil
 	}
 
-	return nil, ErrEmbedderNotFound
+	return nil, errors.New("embedder not found: " + model)
 }
 
 func (cfg *Config) Completer(model string) (provider.Completer, error) {
@@ -78,7 +68,7 @@ func (cfg *Config) Completer(model string) (provider.Completer, error) {
 		return c, nil
 	}
 
-	return nil, ErrCompleterNotFound
+	return nil, errors.New("completer not found: " + model)
 }
 
 func (cfg *Config) Transcriber(model string) (provider.Transcriber, error) {
@@ -86,14 +76,14 @@ func (cfg *Config) Transcriber(model string) (provider.Transcriber, error) {
 		return c, nil
 	}
 
-	return nil, ErrTranscriberNotFound
+	return nil, errors.New("transcriber not found: " + model)
 }
 
 func (cfg *Config) Index(id string) (index.Provider, error) {
 	i, ok := cfg.indexes[id]
 
 	if !ok {
-		return nil, ErrIndexNotFound
+		return nil, errors.New("index not found: " + id)
 	}
 
 	return i, nil
@@ -103,17 +93,27 @@ func (cfg *Config) Extracter(id string) (extracter.Provider, error) {
 	e, ok := cfg.extracters[id]
 
 	if !ok {
-		return nil, ErrExtracterNotFound
+		return nil, errors.New("extracter not found: " + id)
 	}
 
 	return e, nil
+}
+
+func (cfg *Config) Tool(id string) (tool.Tool, error) {
+	t, ok := cfg.tools[id]
+
+	if !ok {
+		return nil, errors.New("tool not found: " + id)
+	}
+
+	return t, nil
 }
 
 func (cfg *Config) Classifier(id string) (classifier.Provider, error) {
 	c, ok := cfg.classifiers[id]
 
 	if !ok {
-		return nil, ErrClassifierNotFound
+		return nil, errors.New("classifier not found: " + id)
 	}
 
 	return c, nil
@@ -139,6 +139,7 @@ func Parse(path string) (*Config, error) {
 		extracters:  make(map[string]extracter.Provider),
 		classifiers: make(map[string]classifier.Provider),
 
+		tools:  make(map[string]tool.Tool),
 		chains: make(map[string]chain.Provider),
 	}
 
@@ -159,6 +160,10 @@ func Parse(path string) (*Config, error) {
 	}
 
 	if err := c.registerClassifiers(file); err != nil {
+		return nil, err
+	}
+
+	if err := c.registerTools(file); err != nil {
 		return nil, err
 	}
 
