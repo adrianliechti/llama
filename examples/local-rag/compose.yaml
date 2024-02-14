@@ -13,8 +13,8 @@ services:
       - source: platform
         target: /config.yaml
     depends_on:
-      - sbert
       - weaviate
+      - embedding
       - unstructured
   
   weaviate:
@@ -28,11 +28,9 @@ services:
     volumes:
        - weaviate-data:/var/lib/weaviate
   
-  sbert:
-    image: adrianliechti/sentence-transformers:nomic-embed-text-v1
+  embedding:
+    image: adrianliechti/nomic-embed-text-v1
     pull_policy: always
-    environment:
-      ENABLE_CUDA: 0
   
   unstructured:
     image: downloads.unstructured.io/unstructured-io/unstructured-api:latest
@@ -62,18 +60,18 @@ configs:
             mistral:
               id: mistral:latest
 
-        - type: sbert
-          url: http://sbert:8080
+        - type: tgi
+          url: http://embedding:8080
           models:
-            embed-text-v1:
-              id: embed-text-v1
+            nomic-embed-text-v1:
+              id: nomic-embed-text-v1
       
       indexes:
         docs:
           type: weaviate
           url: http://weaviate:8080
           namespace: Document
-          embedding: embed-text-v1
+          embedding: nomic-embed-text-v1
       
       extracters:
         unstructured:
