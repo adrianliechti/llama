@@ -2,16 +2,15 @@ package prompt
 
 import (
 	"bytes"
-	"os"
 	"text/template"
 )
 
-type Prompt struct {
+type Template struct {
 	tmpl *template.Template
 }
 
-func MustNew(text string) *Prompt {
-	prompt, err := New(text)
+func MustTemplate(text string) *Template {
+	prompt, err := NewTemplate(text)
 
 	if err != nil {
 		panic(err)
@@ -20,29 +19,23 @@ func MustNew(text string) *Prompt {
 	return prompt
 }
 
-func FromFile(path string) (*Prompt, error) {
-	data, err := os.ReadFile(path)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return New(string(data))
-}
-
-func New(text string) (*Prompt, error) {
+func NewTemplate(text string) (*Template, error) {
 	tmpl, err := template.New("prompt").Parse(text)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &Prompt{
+	return &Template{
 		tmpl: tmpl,
 	}, nil
 }
 
-func (t *Prompt) Execute(data any) (string, error) {
+func (t *Template) Execute(data any) (string, error) {
+	if data == nil {
+		data = map[string]any{}
+	}
+
 	var buffer bytes.Buffer
 
 	if err := t.tmpl.Execute(&buffer, data); err != nil {

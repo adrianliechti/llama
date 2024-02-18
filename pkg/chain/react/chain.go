@@ -16,18 +16,17 @@ import (
 var _ chain.Provider = &Chain{}
 
 type Chain struct {
-	system *prompt.Prompt
-	prompt *prompt.Prompt
-
 	completer provider.Completer
+
+	template *prompt.Template
+	messages []provider.Message
 }
 
 type Option func(*Chain)
 
 func New(options ...Option) (*Chain, error) {
 	c := &Chain{
-		system: prompt.MustNew(systemTemplate),
-		prompt: prompt.MustNew(promptTemplate),
+		template: prompt.MustTemplate(promptTemplate),
 	}
 
 	for _, option := range options {
@@ -41,21 +40,21 @@ func New(options ...Option) (*Chain, error) {
 	return c, nil
 }
 
-func WithSystem(prompt *prompt.Prompt) Option {
-	return func(c *Chain) {
-		c.system = prompt
-	}
-}
-
-func WithPrompt(prompt *prompt.Prompt) Option {
-	return func(c *Chain) {
-		c.prompt = prompt
-	}
-}
-
 func WithCompleter(completer provider.Completer) Option {
 	return func(c *Chain) {
 		c.completer = completer
+	}
+}
+
+func WithTemplate(template *prompt.Template) Option {
+	return func(c *Chain) {
+		c.template = template
+	}
+}
+
+func WithMessages(messages ...provider.Message) Option {
+	return func(c *Chain) {
+		c.messages = messages
 	}
 }
 
@@ -143,7 +142,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		}
 	}
 
-	prompt, err := c.prompt.Execute(data)
+	prompt, err := c.template.Execute(data)
 
 	if err != nil {
 		return nil, err
@@ -151,22 +150,9 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	println(prompt)
 
-	var inputMesssages []provider.Message
+	var input []provider.Message
 
-	if c.system != nil {
-		system, err := c.system.Execute(map[string]any{})
-
-		if err != nil {
-			return nil, err
-		}
-
-		inputMesssages = append(inputMesssages, provider.Message{
-			Role:    provider.MessageRoleSystem,
-			Content: strings.TrimSpace(system),
-		})
-	}
-
-	inputMesssages = append(inputMesssages, provider.Message{
+	input = append(input, provider.Message{
 		Role:    provider.MessageRoleUser,
 		Content: strings.TrimSpace(prompt),
 	})
@@ -176,7 +162,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		Temperature: to.Ptr(float32(0)),
 	}
 
-	completion, err := c.completer.Complete(ctx, inputMesssages, inputOptions)
+	completion, err := c.completer.Complete(ctx, input, inputOptions)
 
 	if err != nil {
 		return nil, err

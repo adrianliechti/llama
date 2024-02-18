@@ -2,10 +2,10 @@ package config
 
 import (
 	"errors"
-	"os"
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/chain"
+	"github.com/adrianliechti/llama/pkg/chain/assistant"
 	"github.com/adrianliechti/llama/pkg/chain/rag"
 	"github.com/adrianliechti/llama/pkg/chain/react"
 	"github.com/adrianliechti/llama/pkg/chain/refine"
@@ -18,47 +18,56 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool"
 )
 
+type chainContext struct {
+	Index index.Provider
+
+	Embedder  provider.Embedder
+	Completer provider.Completer
+
+	Template *prompt.Template
+	Messages []provider.Message
+
+	Tools map[string]tool.Tool
+
+	Classifiers map[string]classifier.Provider
+}
+
 func (c *Config) registerChains(f *configFile) error {
 	for id, cfg := range f.Chains {
 		var err error
 
-		var index index.Provider
-		var prompt *prompt.Prompt
-
-		var embedder provider.Embedder
-		var completer provider.Completer
-
-		tools := map[string]tool.Tool{}
-		classifiers := map[string]classifier.Provider{}
-
-		if cfg.Index != "" {
-			index, err = c.Index(cfg.Index)
-
-			if err != nil {
-				return err
-			}
+		context := chainContext{
+			Tools:       make(map[string]tool.Tool),
+			Messages:    make([]provider.Message, 0),
+			Classifiers: make(map[string]classifier.Provider),
 		}
 
-		if cfg.Template != "" {
-			prompt, err = parsePrompt(cfg.Template)
-
-			if err != nil {
+		if cfg.Index != "" {
+			if context.Index, err = c.Index(cfg.Index); err != nil {
 				return err
 			}
 		}
 
 		if cfg.Model != "" {
-			completer, err = c.Completer(cfg.Model)
-
-			if err != nil {
+			if context.Completer, err = c.Completer(cfg.Model); err != nil {
 				return err
 			}
 		}
 
 		if cfg.Embedding != "" {
-			embedder, err = c.Embedder(cfg.Embedding)
+			if context.Embedder, err = c.Embedder(cfg.Embedding); err != nil {
+				return err
+			}
+		}
 
-			if err != nil {
+		if cfg.Template != "" {
+			if context.Template, err = parseTemplate(cfg.Template); err != nil {
+				return err
+			}
+		}
+
+		if cfg.Messages != nil {
+			if context.Messages, err = parseMessages(cfg.Messages); err != nil {
 				return err
 			}
 		}
@@ -70,7 +79,7 @@ func (c *Config) registerChains(f *configFile) error {
 				return err
 			}
 
-			tools[tool.Name()] = tool
+			context.Tools[tool.Name()] = tool
 		}
 
 		for _, v := range cfg.Filters {
@@ -81,11 +90,11 @@ func (c *Config) registerChains(f *configFile) error {
 					return err
 				}
 
-				classifiers[v.Classifier] = classifier
+				context.Classifiers[v.Classifier] = classifier
 			}
 		}
 
-		chain, err := createChain(cfg, prompt, embedder, completer, index, tools, classifiers)
+		chain, err := createChain(cfg, context)
 
 		if err != nil {
 			return err
@@ -101,42 +110,63 @@ func (c *Config) registerChains(f *configFile) error {
 	return nil
 }
 
-func createChain(cfg chainConfig, prompt *prompt.Prompt, embedder provider.Embedder, completer provider.Completer, index index.Provider, tools map[string]tool.Tool, classifiers map[string]classifier.Provider) (chain.Provider, error) {
+func createChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
+	case "assistant":
+		return assistantChain(cfg, context)
+
 	case "rag":
-		return ragChain(cfg, index, prompt, completer, classifiers)
+		return ragChain(cfg, context)
 
 	case "refine":
-		return refineChain(cfg, index, prompt, completer, classifiers)
+		return refineChain(cfg, context)
 
 	case "react":
-		return reactChain(cfg, prompt, completer)
+		return reactChain(cfg, context)
 
 	case "toolbox":
-		return toolboxChain(cfg, prompt, completer, tools)
+		return toolboxChain(cfg, context)
 
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
 	}
 }
 
-func ragChain(cfg chainConfig, index index.Provider, prompt *prompt.Prompt, completer provider.Completer, classifiers map[string]classifier.Provider) (chain.Provider, error) {
+func assistantChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
+	var options []assistant.Option
+
+	if context.Completer != nil {
+		options = append(options, assistant.WithCompleter(context.Completer))
+	}
+
+	if context.Template != nil {
+		options = append(options, assistant.WithTemplate(context.Template))
+	}
+
+	if context.Messages != nil {
+		options = append(options, assistant.WithMessages(context.Messages...))
+	}
+
+	return assistant.New(options...)
+}
+
+func ragChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	var options []rag.Option
 
-	if index != nil {
-		options = append(options, rag.WithIndex(index))
+	if context.Completer != nil {
+		options = append(options, rag.WithCompleter(context.Completer))
 	}
 
-	if prompt != nil {
-		options = append(options, rag.WithPrompt(prompt))
+	if context.Template != nil {
+		options = append(options, rag.WithTemplate(context.Template))
 	}
 
-	if completer != nil {
-		options = append(options, rag.WithCompleter(completer))
+	if context.Messages != nil {
+		options = append(options, rag.WithMessages(context.Messages...))
 	}
 
-	for k, v := range cfg.Filters {
-		options = append(options, rag.WithFilter(k, classifiers[v.Classifier]))
+	if context.Index != nil {
+		options = append(options, rag.WithIndex(context.Index))
 	}
 
 	if cfg.Limit != nil {
@@ -147,25 +177,30 @@ func ragChain(cfg chainConfig, index index.Provider, prompt *prompt.Prompt, comp
 		options = append(options, rag.WithDistance(*cfg.Distance))
 	}
 
+	for k, v := range cfg.Filters {
+		options = append(options, rag.WithFilter(k, context.Classifiers[v.Classifier]))
+	}
+
 	return rag.New(options...)
 }
 
-func refineChain(cfg chainConfig, index index.Provider, prompt *prompt.Prompt, completer provider.Completer, classifiers map[string]classifier.Provider) (chain.Provider, error) {
+func refineChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	var options []refine.Option
 
-	if index != nil {
-		options = append(options, refine.WithIndex(index))
+	if context.Completer != nil {
+		options = append(options, refine.WithCompleter(context.Completer))
 	}
 
-	if prompt != nil {
-		options = append(options, refine.WithPrompt(prompt))
-	}
-	if completer != nil {
-		options = append(options, refine.WithCompleter(completer))
+	if context.Template != nil {
+		options = append(options, refine.WithTemplate(context.Template))
 	}
 
-	for k, v := range cfg.Filters {
-		options = append(options, refine.WithFilter(k, classifiers[v.Classifier]))
+	if context.Messages != nil {
+		options = append(options, refine.WithMessages(context.Messages...))
+	}
+
+	if context.Index != nil {
+		options = append(options, refine.WithIndex(context.Index))
 	}
 
 	if cfg.Limit != nil {
@@ -176,46 +211,41 @@ func refineChain(cfg chainConfig, index index.Provider, prompt *prompt.Prompt, c
 		options = append(options, refine.WithDistance(*cfg.Distance))
 	}
 
+	for k, v := range cfg.Filters {
+		options = append(options, refine.WithFilter(k, context.Classifiers[v.Classifier]))
+	}
+
 	return refine.New(options...)
 }
 
-func reactChain(cfg chainConfig, prompt *prompt.Prompt, completer provider.Completer) (chain.Provider, error) {
+func reactChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	var options []react.Option
 
-	if prompt != nil {
-		options = append(options, react.WithPrompt(prompt))
+	if context.Completer != nil {
+		options = append(options, react.WithCompleter(context.Completer))
 	}
 
-	if completer != nil {
-		options = append(options, react.WithCompleter(completer))
+	if context.Template != nil {
+		options = append(options, react.WithTemplate(context.Template))
+	}
+
+	if context.Messages != nil {
+		options = append(options, react.WithMessages(context.Messages...))
 	}
 
 	return react.New(options...)
 }
 
-func toolboxChain(cfg chainConfig, prompt *prompt.Prompt, completer provider.Completer, tools map[string]tool.Tool) (chain.Provider, error) {
+func toolboxChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	var options []toolbox.Option
 
-	if tools != nil {
-		options = append(options, toolbox.WithTools(to.Values(tools)...))
-
+	if context.Completer != nil {
+		options = append(options, toolbox.WithCompleter(context.Completer))
 	}
 
-	if completer != nil {
-		options = append(options, toolbox.WithCompleter(completer))
+	if context.Tools != nil {
+		options = append(options, toolbox.WithTools(to.Values(context.Tools)...))
 	}
 
 	return toolbox.New(options...)
-}
-
-func parsePrompt(val string) (*prompt.Prompt, error) {
-	if val == "" {
-		return nil, errors.New("empty prompt")
-	}
-
-	if data, err := os.ReadFile(val); err == nil {
-		return prompt.New(string(data))
-	}
-
-	return prompt.New(val)
 }
