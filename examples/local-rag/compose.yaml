@@ -13,10 +13,14 @@ services:
       - source: platform
         target: /config.yaml
     depends_on:
-      - sbert
+      - tgi
       - weaviate
       - unstructured
-  
+
+  tgi:
+    image: adrianliechti/sentence-transformers:bge-base-en-v1
+    pull_policy: always
+
   weaviate:
     image: semitechnologies/weaviate:1.23.7
     pull_policy: always
@@ -26,19 +30,13 @@ services:
       - DEFAULT_VECTORIZER_MODULE=none
       - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
     volumes:
-       - weaviate-data:/var/lib/weaviate
-  
-  sbert:
-    image: adrianliechti/sentence-transformers:nomic-embed-text-v1
-    pull_policy: always
-    environment:
-      ENABLE_CUDA: 0
-  
+      - weaviate-data:/var/lib/weaviate
+
   unstructured:
     image: downloads.unstructured.io/unstructured-io/unstructured-api:latest
     pull_policy: always
     command: --port 8000 --host 0.0.0.0
-  
+
   web:
     image: adrianliechti/llama-ui
     pull_policy: always
@@ -51,7 +49,7 @@ services:
         target: /config.yaml
     depends_on:
       - platform
-  
+
 configs:
   platform:
     content: |
@@ -62,30 +60,30 @@ configs:
             mistral:
               id: mistral:latest
 
-        - type: sbert
-          url: http://sbert:8080
+        - type: tgi
+          url: http://tgi:8000
           models:
-            embed-text-v1:
-              id: embed-text-v1
-      
+            bge-base-en-v1:
+              id: bge-base-en-v1
+
       indexes:
         docs:
           type: weaviate
           url: http://weaviate:8080
           namespace: Document
-          embedding: embed-text-v1
-      
+          embedding: bge-base-en-v1
+
       extracters:
         unstructured:
           type: unstructured
           url: http://unstructured:8000
-      
+
       chains:
         docs:
           type: rag
           index: docs
           model: mistral
-  
+
   web:
     content: |
       contexts:

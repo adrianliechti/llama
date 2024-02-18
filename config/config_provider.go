@@ -11,6 +11,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 	"github.com/adrianliechti/llama/pkg/provider/sbert"
+	"github.com/adrianliechti/llama/pkg/provider/tgi"
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
 )
 
@@ -57,6 +58,9 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 
 	case "ollama":
 		return ollamaProvider(cfg, model)
+
+	case "tgi":
+		return tgiProvider(cfg)
 
 	case "sbert":
 		return sbertProvider(cfg)
@@ -186,6 +190,16 @@ func whisperProvider(cfg providerConfig) (*whisper.Provider, error) {
 	var options []whisper.Option
 
 	return whisper.New(cfg.URL, options...)
+}
+
+func tgiProvider(cfg providerConfig) (*tgi.Client, error) {
+	var options []tgi.Option
+
+	if len(cfg.Models) > 1 {
+		return nil, errors.New("multiple models not supported for tgi provider")
+	}
+
+	return tgi.New(cfg.URL, options...)
 }
 
 func sbertProvider(cfg providerConfig) (*sbert.Provider, error) {
