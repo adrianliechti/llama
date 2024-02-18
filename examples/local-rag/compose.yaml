@@ -13,10 +13,14 @@ services:
       - source: platform
         target: /config.yaml
     depends_on:
+      - tgi
       - weaviate
-      - embedding
       - unstructured
-  
+
+  tgi:
+    image: adrianliechti/sentence-transformers:nomic-embed-text-v1
+    pull_policy: always
+
   weaviate:
     image: semitechnologies/weaviate:1.23.7
     pull_policy: always
@@ -26,17 +30,13 @@ services:
       - DEFAULT_VECTORIZER_MODULE=none
       - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
     volumes:
-       - weaviate-data:/var/lib/weaviate
-  
-  embedding:
-    image: adrianliechti/nomic-embed-text-v1
-    pull_policy: always
-  
+      - weaviate-data:/var/lib/weaviate
+
   unstructured:
     image: downloads.unstructured.io/unstructured-io/unstructured-api:latest
     pull_policy: always
     command: --port 8000 --host 0.0.0.0
-  
+
   web:
     image: adrianliechti/llama-ui
     pull_policy: always
@@ -49,7 +49,7 @@ services:
         target: /config.yaml
     depends_on:
       - platform
-  
+
 configs:
   platform:
     content: |
@@ -61,29 +61,29 @@ configs:
               id: mistral:latest
 
         - type: tgi
-          url: http://embedding:8080
+          url: http://tgi:8000
           models:
             nomic-embed-text-v1:
               id: nomic-embed-text-v1
-      
+
       indexes:
         docs:
           type: weaviate
           url: http://weaviate:8080
           namespace: Document
           embedding: nomic-embed-text-v1
-      
+
       extracters:
         unstructured:
           type: unstructured
           url: http://unstructured:8000
-      
+
       chains:
         docs:
           type: rag
           index: docs
           model: mistral
-  
+
   web:
     content: |
       contexts:
