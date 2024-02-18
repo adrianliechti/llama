@@ -75,9 +75,9 @@ tasks:
     status:
       - test -f bin/whisper-server
 
-  sbert-server:
+  tgi-server:
     cmds:
-      - docker run -it --rm -p 9082:8080 adrianliechti/sentence-transformers:nomic-embed-text-v1
+      - docker run -it --rm -p 9082:8000 adrianliechti/sentence-transformers:bge-base-en-v1
 
   chroma-server:
     cmds:

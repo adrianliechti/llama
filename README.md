@@ -117,27 +117,27 @@ providers:
         id: whisper
 ```
 
-#### Sentence-BERT (text2vec-transformers)
 
-https://www.sbert.net  
-https://github.com/weaviate/t2v-transformers-models
+#### Text Generation Inference (TGI)
+
+https://huggingface.co/docs/text-generation-inference/
 
 ```shell
 # using taskfile.dev
-task sbert-server
+task tgi-server
 
 # using Docker
-$ docker run -it --rm -p 9082:8080 semitechnologies/transformers-inference:sentence-transformers-all-mpnet-base-v2
+$ docker run -it --rm -p 9082:8000 adrianliechti/sentence-transformers:bge-base-en-v1
 ```
 
 ```yaml
 providers:
-  - type: sbert
-    url: http://localhost:9082
+  - type: tgi
+    url: http://tgi:9082
 
     models:
-      all-mpnet-base-v2:
-        id: all-mpnet-base-v2
+      bge-base-en-v1:
+        id: bge-base-en-v1
 ```
 
 
