@@ -1,8 +1,12 @@
 package config
 
 import (
+	"errors"
 	"os"
+	"strings"
 
+	"github.com/adrianliechti/llama/pkg/prompt"
+	"github.com/adrianliechti/llama/pkg/provider"
 	"gopkg.in/yaml.v3"
 )
 
@@ -83,8 +87,10 @@ type extracterConfig struct {
 type classifierConfig struct {
 	Type string `yaml:"type"`
 
-	Model     string `yaml:"model"`
-	Embedding string `yaml:"embedding"`
+	Model string `yaml:"model"`
+
+	Template string    `yaml:"template"`
+	Messages []message `yaml:"messages"`
 
 	Classes map[string]string `yaml:"classes"`
 }
@@ -96,13 +102,13 @@ type chainConfig struct {
 	Index     string `yaml:"index"`
 	Embedding string `yaml:"embedding"`
 
-	System   string `yaml:"system"`
-	Template string `yaml:"template"`
+	Template string    `yaml:"template"`
+	Messages []message `yaml:"messages"`
+
+	Tools []string `yaml:"tools"`
 
 	Limit    *int     `yaml:"limit"`
 	Distance *float32 `yaml:"distance"`
-
-	Tools []string `yaml:"tools"`
 
 	Filters map[string]filterConfig `yaml:"filters"`
 }
@@ -113,11 +119,69 @@ type toolConfig struct {
 	URL   string `yaml:"url"`
 	Token string `yaml:"token"`
 
-	Model     string `yaml:"model"`
-	Index     string `yaml:"index"`
-	Embedding string `yaml:"embedding"`
+	Model string `yaml:"model"`
+	Index string `yaml:"index"`
 }
 
 type filterConfig struct {
 	Classifier string `yaml:"classifier"`
+}
+
+type message struct {
+	Role    string `yaml:"role"`
+	Content string `yaml:"content"`
+}
+
+func parseTemplate(val string) (*prompt.Template, error) {
+	if val == "" {
+		return nil, errors.New("empty prompt")
+	}
+
+	if data, err := os.ReadFile(val); err == nil {
+		return prompt.NewTemplate(string(data))
+	}
+
+	return prompt.NewTemplate(val)
+}
+
+func parseMessages(messages []message) ([]provider.Message, error) {
+	result := make([]provider.Message, 0)
+
+	for _, m := range messages {
+		message, err := parseMessage(m)
+
+		if err != nil {
+			return nil, err
+
+		}
+
+		result = append(result, *message)
+	}
+
+	return result, nil
+}
+
+func parseMessage(message message) (*provider.Message, error) {
+	var role provider.MessageRole
+
+	if strings.EqualFold(message.Role, string(provider.MessageRoleSystem)) {
+		role = provider.MessageRoleSystem
+	}
+
+	if strings.EqualFold(message.Role, string(provider.MessageRoleUser)) {
+		role = provider.MessageRoleUser
+	}
+
+	if strings.EqualFold(message.Role, string(provider.MessageRoleAssistant)) {
+		role = provider.MessageRoleAssistant
+	}
+
+	if role == "" {
+		return nil, errors.New("invalid message role: " + message.Role)
+	}
+
+	return &provider.Message{
+		Role:    role,
+		Content: message.Content,
+	}, nil
 }

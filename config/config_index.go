@@ -14,21 +14,23 @@ import (
 	"github.com/adrianliechti/llama/pkg/index/weaviate"
 )
 
+type indexContext struct {
+	Embedder index.Embedder
+}
+
 func (c *Config) registerIndexes(f *configFile) error {
 	for id, cfg := range f.Indexes {
-		var embedder index.Embedder
+		var err error
+
+		context := indexContext{}
 
 		if cfg.Embedding != "" {
-			e, err := c.Embedder(cfg.Embedding)
-
-			if err != nil {
+			if context.Embedder, err = c.Embedder(cfg.Embedding); err != nil {
 				return err
 			}
-
-			embedder = e
 		}
 
-		i, err := createIndex(cfg, embedder)
+		i, err := createIndex(cfg, context)
 
 		if err != nil {
 			return err
@@ -40,16 +42,16 @@ func (c *Config) registerIndexes(f *configFile) error {
 	return nil
 }
 
-func createIndex(cfg indexConfig, embedder index.Embedder) (index.Provider, error) {
+func createIndex(cfg indexConfig, context indexContext) (index.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
 	case "chroma":
-		return chromaIndex(cfg, embedder)
+		return chromaIndex(cfg, context)
 
 	case "memory":
-		return memoryIndex(cfg, embedder)
+		return memoryIndex(cfg, context)
 
 	case "weaviate":
-		return weaviateIndex(cfg, embedder)
+		return weaviateIndex(cfg, context)
 
 	case "bing":
 		return bingIndex(cfg)
@@ -68,31 +70,31 @@ func createIndex(cfg indexConfig, embedder index.Embedder) (index.Provider, erro
 	}
 }
 
-func chromaIndex(cfg indexConfig, embedder index.Embedder) (index.Provider, error) {
+func chromaIndex(cfg indexConfig, context indexContext) (index.Provider, error) {
 	var options []chroma.Option
 
-	if embedder != nil {
-		options = append(options, chroma.WithEmbedder(embedder))
+	if context.Embedder != nil {
+		options = append(options, chroma.WithEmbedder(context.Embedder))
 	}
 
 	return chroma.New(cfg.URL, cfg.Namespace, options...)
 }
 
-func memoryIndex(cfg indexConfig, embedder index.Embedder) (index.Provider, error) {
+func memoryIndex(cfg indexConfig, context indexContext) (index.Provider, error) {
 	var options []memory.Option
 
-	if embedder != nil {
-		options = append(options, memory.WithEmbedder(embedder))
+	if context.Embedder != nil {
+		options = append(options, memory.WithEmbedder(context.Embedder))
 	}
 
 	return memory.New(options...)
 }
 
-func weaviateIndex(cfg indexConfig, embedder index.Embedder) (index.Provider, error) {
+func weaviateIndex(cfg indexConfig, context indexContext) (index.Provider, error) {
 	var options []weaviate.Option
 
-	if embedder != nil {
-		options = append(options, weaviate.WithEmbedder(embedder))
+	if context.Embedder != nil {
+		options = append(options, weaviate.WithEmbedder(context.Embedder))
 	}
 
 	return weaviate.New(cfg.URL, cfg.Namespace, options...)
