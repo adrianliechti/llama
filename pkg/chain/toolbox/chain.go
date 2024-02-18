@@ -72,14 +72,14 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		functions[f.Name] = f
 	}
 
-	inputMessages := slices.Clone(messages)
+	input := slices.Clone(messages)
 
 	inputOptions := &provider.CompleteOptions{
 		Functions: to.Values(functions),
 	}
 
 	for {
-		completion, err := c.completer.Complete(ctx, inputMessages, inputOptions)
+		completion, err := c.completer.Complete(ctx, input, inputOptions)
 
 		if err != nil {
 			return nil, err
@@ -88,7 +88,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		var loop bool
 
 		if completion.Reason == provider.CompletionReasonFunction {
-			inputMessages = append(inputMessages, provider.Message{
+			input = append(input, provider.Message{
 				Role: provider.MessageRoleAssistant,
 
 				Content:       completion.Message.Content,
@@ -120,7 +120,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 					return nil, err
 				}
 
-				inputMessages = append(inputMessages, provider.Message{
+				input = append(input, provider.Message{
 					Role: provider.MessageRoleFunction,
 
 					Function: f.ID,

@@ -10,39 +10,30 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool/search"
 )
 
+type toolContext struct {
+	Index     index.Provider
+	Completer provider.Completer
+}
+
 func (c *Config) registerTools(f *configFile) error {
 	for id, cfg := range f.Tools {
 		var err error
 
-		var index index.Provider
-		var embedder provider.Embedder
-		var completer provider.Completer
+		context := toolContext{}
 
 		if cfg.Index != "" {
-			index, err = c.Index(cfg.Index)
-
-			if err != nil {
+			if context.Index, err = c.Index(cfg.Index); err != nil {
 				return err
 			}
 		}
 
 		if cfg.Model != "" {
-			completer, err = c.Completer(cfg.Model)
-
-			if err != nil {
+			if context.Completer, err = c.Completer(cfg.Model); err != nil {
 				return err
 			}
 		}
 
-		if cfg.Embedding != "" {
-			embedder, err = c.Embedder(cfg.Embedding)
-
-			if err != nil {
-				return err
-			}
-		}
-
-		t, err := createTool(cfg, embedder, completer, index)
+		t, err := createTool(cfg, context)
 
 		if err != nil {
 			return err
@@ -54,16 +45,16 @@ func (c *Config) registerTools(f *configFile) error {
 	return nil
 }
 
-func createTool(cfg toolConfig, embedder provider.Embedder, completer provider.Completer, index index.Provider) (tool.Tool, error) {
+func createTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	switch strings.ToLower(cfg.Type) {
 	case "search":
-		return searchTool(cfg, index)
+		return searchTool(cfg, context)
 
 	default:
 		return nil, errors.New("invalid tool type: " + cfg.Type)
 	}
 }
 
-func searchTool(cfg toolConfig, index index.Provider) (tool.Tool, error) {
-	return search.New(index)
+func searchTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+	return search.New(context.Index)
 }

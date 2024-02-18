@@ -6,33 +6,42 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/classifier/llm"
+	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
 )
+
+type classifierContext struct {
+	Completer provider.Completer
+
+	Template *prompt.Template
+	Messages []provider.Message
+}
 
 func (c *Config) registerClassifiers(f *configFile) error {
 	for id, cfg := range f.Classifiers {
 		var err error
 
-		var embedder provider.Embedder
-		var completer provider.Completer
+		context := classifierContext{}
 
 		if cfg.Model != "" {
-			completer, err = c.Completer(cfg.Model)
-
-			if err != nil {
+			if context.Completer, err = c.Completer(cfg.Model); err != nil {
 				return err
 			}
 		}
 
-		if cfg.Embedding != "" {
-			embedder, err = c.Embedder(cfg.Embedding)
-
-			if err != nil {
+		if cfg.Template != "" {
+			if context.Template, err = parseTemplate(cfg.Template); err != nil {
 				return err
 			}
 		}
 
-		classifier, err := createClassifier(cfg, embedder, completer)
+		if cfg.Messages != nil {
+			if context.Messages, err = parseMessages(cfg.Messages); err != nil {
+				return err
+			}
+		}
+
+		classifier, err := createClassifier(cfg, context)
 
 		if err != nil {
 			return err
@@ -44,18 +53,22 @@ func (c *Config) registerClassifiers(f *configFile) error {
 	return nil
 }
 
-func createClassifier(cfg classifierConfig, embedder provider.Embedder, completer provider.Completer) (classifier.Provider, error) {
+func createClassifier(cfg classifierConfig, context classifierContext) (classifier.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
 	case "llm":
-		return llmClassifier(cfg, completer)
+		return llmClassifier(cfg, context)
 
 	default:
 		return nil, errors.New("invalid index type: " + cfg.Type)
 	}
 }
 
-func llmClassifier(cfg classifierConfig, completer provider.Completer) (classifier.Provider, error) {
+func llmClassifier(cfg classifierConfig, context classifierContext) (classifier.Provider, error) {
 	var options []llm.Option
+
+	if context.Completer != nil {
+		options = append(options, llm.WithCompleter(context.Completer))
+	}
 
 	if cfg.Classes != nil {
 		var classes []classifier.Class
@@ -68,10 +81,6 @@ func llmClassifier(cfg classifierConfig, completer provider.Completer) (classifi
 		}
 
 		options = append(options, llm.WithClasses(classes...))
-	}
-
-	if completer != nil {
-		options = append(options, llm.WithCompleter(completer))
 	}
 
 	return llm.New(options...)

@@ -15,15 +15,15 @@ import (
 var _ chain.Provider = &Chain{}
 
 type Chain struct {
-	index index.Provider
+	completer provider.Completer
 
-	prompt *prompt.Prompt
+	template *prompt.Template
+	messages []provider.Message
+
+	index index.Provider
 
 	limit    *int
 	distance *float32
-
-	completer      provider.Completer
-	contextualizer provider.Completer
 
 	filters map[string]classifier.Provider
 }
@@ -32,7 +32,7 @@ type Option func(*Chain)
 
 func New(options ...Option) (*Chain, error) {
 	c := &Chain{
-		prompt: prompt.MustNew(promptTemplate),
+		template: prompt.MustTemplate(promptTemplate),
 
 		filters: map[string]classifier.Provider{},
 	}
@@ -52,15 +52,27 @@ func New(options ...Option) (*Chain, error) {
 	return c, nil
 }
 
-func WithIndex(index index.Provider) Option {
+func WithCompleter(completer provider.Completer) Option {
 	return func(c *Chain) {
-		c.index = index
+		c.completer = completer
 	}
 }
 
-func WithPrompt(prompt *prompt.Prompt) Option {
+func WithTemplate(template *prompt.Template) Option {
 	return func(c *Chain) {
-		c.prompt = prompt
+		c.template = template
+	}
+}
+
+func WithMessages(messages ...provider.Message) Option {
+	return func(c *Chain) {
+		c.messages = messages
+	}
+}
+
+func WithIndex(index index.Provider) Option {
+	return func(c *Chain) {
+		c.index = index
 	}
 }
 
@@ -76,18 +88,6 @@ func WithDistance(val float32) Option {
 	}
 }
 
-func WithCompleter(completer provider.Completer) Option {
-	return func(c *Chain) {
-		c.completer = completer
-	}
-}
-
-func WithContextualizer(val provider.Completer) Option {
-	return func(c *Chain) {
-		c.contextualizer = val
-	}
-}
-
 func WithFilter(name string, classifier classifier.Provider) Option {
 	return func(c *Chain) {
 		c.filters[name] = classifier
@@ -99,21 +99,6 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	if message.Role != provider.MessageRoleUser {
 		return nil, errors.New("last message must be from user")
-	}
-
-	if c.contextualizer != nil && len(messages) > 1 {
-		result, err := c.contextualizer.Complete(ctx, messages, nil)
-
-		if err != nil {
-			return nil, err
-		}
-
-		message = provider.Message{
-			Role:    provider.MessageRoleUser,
-			Content: strings.TrimSpace(result.Message.Content),
-		}
-
-		//messages = []provider.Message{message}
 	}
 
 	filters := map[string]string{}
@@ -155,7 +140,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 			},
 		}
 
-		prompt, err := c.prompt.Execute(data)
+		prompt, err := c.template.Execute(data)
 
 		if err != nil {
 			return nil, err
