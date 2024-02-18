@@ -18,7 +18,7 @@ services:
       - unstructured
 
   tgi:
-    image: adrianliechti/sentence-transformers:nomic-embed-text-v1
+    image: adrianliechti/sentence-transformers:bge-base-en-v1
     pull_policy: always
 
   weaviate:
@@ -63,15 +63,15 @@ configs:
         - type: tgi
           url: http://tgi:8000
           models:
-            nomic-embed-text-v1:
-              id: nomic-embed-text-v1
+            bge-base-en-v1:
+              id: bge-base-en-v1
 
       indexes:
         docs:
           type: weaviate
           url: http://weaviate:8080
           namespace: Document
-          embedding: nomic-embed-text-v1
+          embedding: bge-base-en-v1
 
       extracters:
         unstructured:
