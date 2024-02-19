@@ -7,6 +7,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/tool"
+	"github.com/adrianliechti/llama/pkg/tool/custom"
 	"github.com/adrianliechti/llama/pkg/tool/search"
 )
 
@@ -50,6 +51,9 @@ func createTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	case "search":
 		return searchTool(cfg, context)
 
+	case "custom":
+		return customTool(cfg, context)
+
 	default:
 		return nil, errors.New("invalid tool type: " + cfg.Type)
 	}
@@ -57,4 +61,10 @@ func createTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 
 func searchTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	return search.New(context.Index)
+}
+
+func customTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+	var options []custom.Option
+
+	return custom.New(cfg.URL, options...)
 }
