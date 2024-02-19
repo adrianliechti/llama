@@ -1,87 +1,62 @@
 package tgi
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
-	"io"
-	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
 var (
-	_ provider.Embedder = (*Client)(nil)
+	_ provider.Completer = (*Client)(nil)
 )
 
 type Client struct {
 	url string
 
-	client *http.Client
+	client *openai.Client
 }
 
 type Option func(*Client)
 
 func New(url string, options ...Option) (*Client, error) {
+	if url == "" {
+		return nil, errors.New("invalid url")
+	}
+
+	url = strings.TrimRight(url, "/")
+
+	if !strings.HasSuffix(url, "/v1") {
+		url += "/v1"
+	}
+
 	p := &Client{
 		url: url,
-
-		client: http.DefaultClient,
 	}
 
 	for _, option := range options {
 		option(p)
 	}
 
-	if p.url == "" {
-		return nil, errors.New("invalid url")
+	opts := []openai.Option{
+		openai.WithURL(url),
+		openai.WithToken("-"),
+		openai.WithModel("tgi"),
 	}
 
-	return p, nil
-}
-
-func WithClient(client *http.Client) Option {
-	return func(c *Client) {
-		c.client = client
-	}
-}
-
-func (c *Client) Embed(ctx context.Context, content string) ([]float32, error) {
-	body := map[string]any{
-		"inputs": strings.TrimSpace(content),
-	}
-
-	u, _ := url.JoinPath(c.url, "/generate")
-	resp, err := c.client.Post(u, "application/json", jsonReader(body))
+	client, err := openai.New(opts...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("unable to encode input")
-	}
+	p.client = client
 
-	defer resp.Body.Close()
-
-	var result []float32
-
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return p, nil
 }
 
-func jsonReader(v any) io.Reader {
-	b := new(bytes.Buffer)
-
-	enc := json.NewEncoder(b)
-	enc.SetEscapeHTML(false)
-
-	enc.Encode(v)
-	return b
+func (c *Client) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+	return c.client.Complete(ctx, messages, options)
 }

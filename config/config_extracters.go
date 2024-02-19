@@ -49,19 +49,11 @@ func textExtracter(cfg extracterConfig) (extracter.Provider, error) {
 func tesseractExtracter(cfg extracterConfig) (extracter.Provider, error) {
 	var options []tesseract.Option
 
-	if cfg.URL != "" {
-		options = append(options, tesseract.WithURL(cfg.URL))
-	}
-
-	return tesseract.New(options...)
+	return tesseract.New(cfg.URL, options...)
 }
 
 func unstructuredExtracter(cfg extracterConfig) (extracter.Provider, error) {
 	var options []unstructured.Option
 
-	if cfg.URL != "" {
-		options = append(options, unstructured.WithURL(cfg.URL))
-	}
-
-	return unstructured.New(options...)
+	return unstructured.New(cfg.URL, options...)
 }

@@ -16,55 +16,51 @@ import (
 	"github.com/adrianliechti/llama/pkg/text"
 )
 
-var _ extracter.Provider = &Provider{}
+var _ extracter.Provider = &Client{}
 
-type Provider struct {
+type Client struct {
 	url string
 
 	client *http.Client
 }
 
-type Option func(*Provider)
+type Option func(*Client)
 
-func New(options ...Option) (*Provider, error) {
-	p := &Provider{
+func New(url string, options ...Option) (*Client, error) {
+	if url == "" {
+		return nil, errors.New("invalid url")
+	}
+
+	c := &Client{
+		url: url,
+
 		client: http.DefaultClient,
 	}
 
 	for _, option := range options {
-		option(p)
+		option(c)
 	}
 
-	if p.url == "" {
-		return nil, errors.New("invalid url")
-	}
-
-	return p, nil
+	return c, nil
 }
 
 func WithClient(client *http.Client) Option {
-	return func(p *Provider) {
-		p.client = client
+	return func(c *Client) {
+		c.client = client
 	}
 }
 
-func WithURL(url string) Option {
-	return func(p *Provider) {
-		p.url = url
-	}
-}
-
-func (p *Provider) Extract(ctx context.Context, input extracter.File, options *extracter.ExtractOptions) (*extracter.Document, error) {
+func (c *Client) Extract(ctx context.Context, input extracter.File, options *extracter.ExtractOptions) (*extracter.Document, error) {
 	if options == nil {
 		options = &extracter.ExtractOptions{}
 	}
 
-	url, _ := url.JoinPath(p.url, "/tesseract")
+	url, _ := url.JoinPath(c.url, "/tesseract")
 
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 
-	w.WriteField("options", p.optionsJSON())
+	w.WriteField("options", c.optionsJSON())
 
 	file, err := w.CreateFormFile("file", input.Name)
 
@@ -81,7 +77,7 @@ func (p *Provider) Extract(ctx context.Context, input extracter.File, options *e
 	req, _ := http.NewRequest("POST", url, &b)
 	req.Header.Set("Content-Type", w.FormDataContentType())
 
-	resp, err := p.client.Do(req)
+	resp, err := c.client.Do(req)
 
 	if err != nil {
 		return nil, err
@@ -134,7 +130,7 @@ func (p *Provider) Extract(ctx context.Context, input extracter.File, options *e
 	return &result, nil
 }
 
-func (p *Provider) optionsJSON() string {
+func (c *Client) optionsJSON() string {
 	options := map[string]any{
 		"languages": []string{
 			"eng",

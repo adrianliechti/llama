@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"mime"
+	"net/http"
 	"path/filepath"
 	"strings"
 
@@ -16,72 +17,83 @@ import (
 )
 
 var (
-	_ provider.Embedder    = (*Provider)(nil)
-	_ provider.Completer   = (*Provider)(nil)
-	_ provider.Transcriber = (*Provider)(nil)
+	_ provider.Embedder    = (*Client)(nil)
+	_ provider.Completer   = (*Client)(nil)
+	_ provider.Transcriber = (*Client)(nil)
 )
 
-type Provider struct {
+type Client struct {
 	url string
 
 	token string
 
 	model string
 
+	http   *http.Client
 	client *openai.Client
 }
 
-type Option func(*Provider)
+type Option func(*Client)
 
-func New(options ...Option) (*Provider, error) {
-	p := &Provider{
+func New(options ...Option) (*Client, error) {
+	c := &Client{
 		model: openai.GPT3Dot5Turbo,
 	}
 
 	for _, option := range options {
-		option(p)
+		option(c)
 	}
 
-	config := openai.DefaultConfig(p.token)
+	config := openai.DefaultConfig(c.token)
 
-	if p.url != "" {
-		config.BaseURL = p.url
+	if c.url != "" {
+		config.BaseURL = c.url
 	}
 
-	if strings.Contains(p.url, "openai.azure.com") {
-		config = openai.DefaultAzureConfig(p.token, p.url)
+	if c.http != nil {
+		config.HTTPClient = c.http
 	}
 
-	p.client = openai.NewClientWithConfig(config)
+	if strings.Contains(c.url, "openai.azure.com") {
+		config = openai.DefaultAzureConfig(c.token, c.url)
+	}
 
-	return p, nil
+	c.client = openai.NewClientWithConfig(config)
+
+	return c, nil
+}
+
+func WithClient(client *http.Client) Option {
+	return func(c *Client) {
+		c.http = client
+	}
 }
 
 func WithURL(url string) Option {
-	return func(p *Provider) {
-		p.url = url
+	return func(c *Client) {
+		c.url = url
 	}
 }
 
 func WithToken(token string) Option {
-	return func(p *Provider) {
-		p.token = token
+	return func(c *Client) {
+		c.token = token
 	}
 }
 
 func WithModel(model string) Option {
-	return func(p *Provider) {
-		p.model = model
+	return func(c *Client) {
+		c.model = model
 	}
 }
 
-func (p *Provider) Embed(ctx context.Context, content string) ([]float32, error) {
+func (c *Client) Embed(ctx context.Context, content string) ([]float32, error) {
 	req := openai.EmbeddingRequest{
 		Input: content,
-		Model: openai.EmbeddingModel(p.model),
+		Model: openai.EmbeddingModel(c.model),
 	}
 
-	result, err := p.client.CreateEmbeddings(ctx, req)
+	result, err := c.client.CreateEmbeddings(ctx, req)
 
 	if err != nil {
 		return nil, err
@@ -90,19 +102,19 @@ func (p *Provider) Embed(ctx context.Context, content string) ([]float32, error)
 	return result.Data[0].Embedding, nil
 }
 
-func (p *Provider) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+func (c *Client) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
-		options = &provider.CompleteOptions{}
+		options = new(provider.CompleteOptions)
 	}
 
-	req, err := p.convertCompletionRequest(messages, options)
+	req, err := c.convertCompletionRequest(messages, options)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if options.Stream == nil {
-		completion, err := p.client.CreateChatCompletion(ctx, *req)
+		completion, err := c.client.CreateChatCompletion(ctx, *req)
 
 		if err != nil {
 			var oaierr *openai.APIError
@@ -131,7 +143,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	} else {
 		defer close(options.Stream)
 
-		stream, err := p.client.CreateChatCompletionStream(ctx, *req)
+		stream, err := c.client.CreateChatCompletionStream(ctx, *req)
 
 		if err != nil {
 			return nil, err
@@ -195,15 +207,15 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	}
 }
 
-func (p *Provider) Transcribe(ctx context.Context, input provider.File, options *provider.TranscribeOptions) (*provider.Transcription, error) {
+func (c *Client) Transcribe(ctx context.Context, input provider.File, options *provider.TranscribeOptions) (*provider.Transcription, error) {
 	if options == nil {
-		options = &provider.TranscribeOptions{}
+		options = new(provider.TranscribeOptions)
 	}
 
 	id := uuid.NewString()
 
 	req := openai.AudioRequest{
-		Model: p.model,
+		Model: c.model,
 
 		Language: options.Language,
 
@@ -211,7 +223,7 @@ func (p *Provider) Transcribe(ctx context.Context, input provider.File, options 
 		FilePath: input.Name,
 	}
 
-	transcription, err := p.client.CreateTranscription(ctx, req)
+	transcription, err := c.client.CreateTranscription(ctx, req)
 
 	if err != nil {
 		return nil, err
@@ -226,13 +238,13 @@ func (p *Provider) Transcribe(ctx context.Context, input provider.File, options 
 	return &result, nil
 }
 
-func (p *Provider) convertCompletionRequest(messages []provider.Message, options *provider.CompleteOptions) (*openai.ChatCompletionRequest, error) {
+func (c *Client) convertCompletionRequest(messages []provider.Message, options *provider.CompleteOptions) (*openai.ChatCompletionRequest, error) {
 	if options == nil {
-		options = &provider.CompleteOptions{}
+		options = new(provider.CompleteOptions)
 	}
 
 	req := &openai.ChatCompletionRequest{
-		Model: p.model,
+		Model: c.model,
 	}
 
 	if options.Format == provider.CompletionFormatJSON {

@@ -13,10 +13,10 @@ import (
 )
 
 var (
-	_ provider.Completer = (*Provider)(nil)
+	_ provider.Completer = (*Client)(nil)
 )
 
-type Provider struct {
+type Client struct {
 	url string
 
 	model string
@@ -24,22 +24,22 @@ type Provider struct {
 	client CompleterClient
 }
 
-type Option func(*Provider)
+type Option func(*Client)
 
-func New(url string, options ...Option) (*Provider, error) {
-	p := &Provider{
+func New(url string, options ...Option) (*Client, error) {
+	if url == "" || !strings.HasPrefix(url, "grpc://") {
+		return nil, errors.New("invalid url")
+	}
+
+	c := &Client{
 		url: url,
 	}
 
 	for _, option := range options {
-		option(p)
+		option(c)
 	}
 
-	if p.url == "" || !strings.HasPrefix(p.url, "grpc://") {
-		return nil, errors.New("invalid url")
-	}
-
-	url = strings.TrimPrefix(p.url, "grpc://")
+	url = strings.TrimPrefix(c.url, "grpc://")
 
 	conn, err := grpc.Dial(url,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -49,18 +49,18 @@ func New(url string, options ...Option) (*Provider, error) {
 		return nil, err
 	}
 
-	p.client = NewCompleterClient(conn)
+	c.client = NewCompleterClient(conn)
 
-	return p, nil
+	return c, nil
 }
 
 func WithModel(model string) Option {
-	return func(p *Provider) {
-		p.model = model
+	return func(c *Client) {
+		c.model = model
 	}
 }
 
-func (p *Provider) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+func (c *Client) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
 	}
@@ -69,8 +69,8 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		defer close(options.Stream)
 	}
 
-	stream, err := p.client.Complete(ctx, &CompletionRequest{
-		Model: p.model,
+	stream, err := c.client.Complete(ctx, &CompletionRequest{
+		Model: c.model,
 
 		Messages: fromMessages(messages),
 

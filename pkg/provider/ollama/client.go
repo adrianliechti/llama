@@ -18,11 +18,11 @@ import (
 )
 
 var (
-	_ provider.Embedder  = (*Provider)(nil)
-	_ provider.Completer = (*Provider)(nil)
+	_ provider.Embedder  = (*Client)(nil)
+	_ provider.Completer = (*Client)(nil)
 )
 
-type Provider struct {
+type Client struct {
 	url string
 
 	model  string
@@ -31,58 +31,58 @@ type Provider struct {
 	client *http.Client
 }
 
-type Option func(*Provider)
+type Option func(*Client)
 
-func New(options ...Option) (*Provider, error) {
-	p := &Provider{
+func New(options ...Option) (*Client, error) {
+	c := &Client{
 		url: "http://localhost:11434",
 
 		client: http.DefaultClient,
 	}
 
 	for _, option := range options {
-		option(p)
+		option(c)
 	}
 
-	if p.url == "" {
+	if c.url == "" {
 		return nil, errors.New("invalid url")
 	}
 
-	return p, nil
+	return c, nil
 }
 
 func WithClient(client *http.Client) Option {
-	return func(p *Provider) {
-		p.client = client
+	return func(c *Client) {
+		c.client = client
 	}
 }
 
 func WithURL(url string) Option {
-	return func(p *Provider) {
-		p.url = url
+	return func(c *Client) {
+		c.url = url
 	}
 }
 
 func WithModel(model string) Option {
-	return func(p *Provider) {
-		p.model = model
+	return func(c *Client) {
+		c.model = model
 	}
 }
 
 func WithSystem(system string) Option {
-	return func(p *Provider) {
-		p.system = system
+	return func(c *Client) {
+		c.system = system
 	}
 }
 
-func (p *Provider) Embed(ctx context.Context, content string) ([]float32, error) {
+func (c *Client) Embed(ctx context.Context, content string) ([]float32, error) {
 	body := &EmbeddingRequest{
-		Model:  p.model,
+		Model:  c.model,
 		Prompt: strings.TrimSpace(content),
 	}
 
-	u, _ := url.JoinPath(p.url, "/api/embeddings")
-	resp, err := p.client.Post(u, "application/json", jsonReader(body))
+	u, _ := url.JoinPath(c.url, "/api/embeddings")
+	resp, err := c.client.Post(u, "application/json", jsonReader(body))
 
 	if err != nil {
 		return nil, err
@@ -103,22 +103,22 @@ func (p *Provider) Embed(ctx context.Context, content string) ([]float32, error)
 	return toFloat32s(result.Embedding), nil
 }
 
-func (p *Provider) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+func (c *Client) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
-		options = &provider.CompleteOptions{}
+		options = new(provider.CompleteOptions)
 	}
 
 	id := uuid.NewString()
 
-	url, _ := url.JoinPath(p.url, "/api/chat")
-	body, err := p.convertChatRequest(messages, options)
+	url, _ := url.JoinPath(c.url, "/api/chat")
+	body, err := c.convertChatRequest(messages, options)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if options.Stream == nil {
-		resp, err := p.client.Post(url, "application/json", jsonReader(body))
+		resp, err := c.client.Post(url, "application/json", jsonReader(body))
 
 		if err != nil {
 			return nil, err
@@ -155,7 +155,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/x-ndjson")
 
-		resp, err := p.client.Do(req)
+		resp, err := c.client.Do(req)
 
 		if err != nil {
 			return nil, err
@@ -230,15 +230,15 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	}
 }
 
-func (p *Provider) convertChatRequest(messages []provider.Message, options *provider.CompleteOptions) (*ChatRequest, error) {
+func (c *Client) convertChatRequest(messages []provider.Message, options *provider.CompleteOptions) (*ChatRequest, error) {
 	if options == nil {
-		options = &provider.CompleteOptions{}
+		options = new(provider.CompleteOptions)
 	}
 
-	if p.system != "" && len(messages) > 0 && messages[0].Role != provider.MessageRoleSystem {
+	if c.system != "" && len(messages) > 0 && messages[0].Role != provider.MessageRoleSystem {
 		message := provider.Message{
 			Role:    provider.MessageRoleSystem,
-			Content: p.system,
+			Content: c.system,
 		}
 
 		messages = append([]provider.Message{message}, messages...)
@@ -247,7 +247,7 @@ func (p *Provider) convertChatRequest(messages []provider.Message, options *prov
 	stream := options.Stream != nil
 
 	req := &ChatRequest{
-		Model:  p.model,
+		Model:  c.model,
 		Stream: &stream,
 
 		Options: map[string]any{},

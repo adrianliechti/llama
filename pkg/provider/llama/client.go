@@ -20,11 +20,11 @@ import (
 )
 
 var (
-	_ provider.Embedder  = (*Provider)(nil)
-	_ provider.Completer = (*Provider)(nil)
+	_ provider.Embedder  = (*Client)(nil)
+	_ provider.Completer = (*Client)(nil)
 )
 
-type Provider struct {
+type Client struct {
 	url string
 
 	client *http.Client
@@ -33,7 +33,7 @@ type Provider struct {
 	template prompt.Template
 }
 
-type Option func(*Provider)
+type Option func(*Client)
 
 type Template = prompt.Template
 
@@ -52,8 +52,12 @@ var (
 	TemplateLlamaGuard = prompt.LlamaGuard
 )
 
-func New(url string, options ...Option) (*Provider, error) {
-	p := &Provider{
+func New(url string, options ...Option) (*Client, error) {
+	if url == "" {
+		return nil, errors.New("invalid url")
+	}
+
+	p := &Client{
 		url: url,
 
 		client: http.DefaultClient,
@@ -66,38 +70,34 @@ func New(url string, options ...Option) (*Provider, error) {
 		option(p)
 	}
 
-	if p.url == "" {
-		return nil, errors.New("invalid url")
-	}
-
 	return p, nil
 }
 
 func WithClient(client *http.Client) Option {
-	return func(p *Provider) {
-		p.client = client
+	return func(c *Client) {
+		c.client = client
 	}
 }
 
 func WithSystem(system string) Option {
-	return func(p *Provider) {
-		p.system = system
+	return func(c *Client) {
+		c.system = system
 	}
 }
 
 func WithTemplate(template Template) Option {
-	return func(p *Provider) {
-		p.template = template
+	return func(c *Client) {
+		c.template = template
 	}
 }
 
-func (p *Provider) Embed(ctx context.Context, content string) ([]float32, error) {
+func (c *Client) Embed(ctx context.Context, content string) ([]float32, error) {
 	body := &EmbeddingRequest{
 		Content: strings.TrimSpace(content),
 	}
 
-	u, _ := url.JoinPath(p.url, "/embedding")
-	resp, err := p.client.Post(u, "application/json", jsonReader(body))
+	u, _ := url.JoinPath(c.url, "/embedding")
+	resp, err := c.client.Post(u, "application/json", jsonReader(body))
 
 	if err != nil {
 		return nil, err
@@ -118,22 +118,22 @@ func (p *Provider) Embed(ctx context.Context, content string) ([]float32, error)
 	return result.Embedding, nil
 }
 
-func (p *Provider) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+func (c *Client) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
 	}
 
 	id := uuid.NewString()
 
-	url, _ := url.JoinPath(p.url, "/completion")
-	body, err := p.convertCompletionRequest(messages, options)
+	url, _ := url.JoinPath(c.url, "/completion")
+	body, err := c.convertCompletionRequest(messages, options)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if options.Stream == nil {
-		resp, err := p.client.Post(url, "application/json", jsonReader(body))
+		resp, err := c.client.Post(url, "application/json", jsonReader(body))
 
 		if err != nil {
 			return nil, err
@@ -175,7 +175,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "text/event-stream")
 
-		resp, err := p.client.Do(req)
+		resp, err := c.client.Do(req)
 
 		if err != nil {
 			return nil, err
@@ -259,12 +259,12 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	}
 }
 
-func (p *Provider) convertCompletionRequest(messages []provider.Message, options *provider.CompleteOptions) (*CompletionRequest, error) {
+func (c *Client) convertCompletionRequest(messages []provider.Message, options *provider.CompleteOptions) (*CompletionRequest, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
 	}
 
-	prompt, err := p.template.Prompt(p.system, messages, toTemplateOptions(options))
+	prompt, err := c.template.Prompt(c.system, messages, toTemplateOptions(options))
 
 	if err != nil {
 		return nil, err
@@ -279,7 +279,7 @@ func (p *Provider) convertCompletionRequest(messages []provider.Message, options
 		TopP:        options.TopP,
 		MinP:        options.MinP,
 
-		Stop: p.template.Stop(),
+		Stop: c.template.Stop(),
 
 		CachePrompt: true,
 	}

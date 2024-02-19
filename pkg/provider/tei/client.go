@@ -1,4 +1,4 @@
-package sbert
+package tei
 
 import (
 	"bytes"
@@ -14,19 +14,19 @@ import (
 )
 
 var (
-	_ provider.Embedder = (*Provider)(nil)
+	_ provider.Embedder = (*Client)(nil)
 )
 
-type Provider struct {
+type Client struct {
 	url string
 
 	client *http.Client
 }
 
-type Option func(*Provider)
+type Option func(*Client)
 
-func New(url string, options ...Option) (*Provider, error) {
-	p := &Provider{
+func New(url string, options ...Option) (*Client, error) {
+	p := &Client{
 		url: url,
 
 		client: http.DefaultClient,
@@ -44,36 +44,36 @@ func New(url string, options ...Option) (*Provider, error) {
 }
 
 func WithClient(client *http.Client) Option {
-	return func(p *Provider) {
-		p.client = client
+	return func(c *Client) {
+		c.client = client
 	}
 }
 
-func (p *Provider) Embed(ctx context.Context, content string) ([]float32, error) {
-	body := &VectorsRequest{
-		Text: strings.TrimSpace(content),
+func (c *Client) Embed(ctx context.Context, content string) ([]float32, error) {
+	body := map[string]any{
+		"inputs": strings.TrimSpace(content),
 	}
 
-	u, _ := url.JoinPath(p.url, "/vectors")
-	resp, err := p.client.Post(u, "application/json", jsonReader(body))
+	u, _ := url.JoinPath(c.url, "/embed")
+	resp, err := c.client.Post(u, "application/json", jsonReader(body))
 
 	if err != nil {
 		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("unable to vectorize text")
+		return nil, errors.New("unable to encode input")
 	}
 
 	defer resp.Body.Close()
 
-	var result VectorsResponse
+	var result []float32
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
 
-	return result.Vector, nil
+	return result, nil
 }
 
 func jsonReader(v any) io.Reader {

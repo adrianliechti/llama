@@ -16,49 +16,49 @@ import (
 )
 
 var (
-	_ provider.Transcriber = (*Provider)(nil)
+	_ provider.Transcriber = (*Client)(nil)
 )
 
-type Provider struct {
+type Client struct {
 	url string
 
 	client *http.Client
 }
 
-type Option func(*Provider)
+type Option func(*Client)
 
-func New(url string, options ...Option) (*Provider, error) {
-	p := &Provider{
+func New(url string, options ...Option) (*Client, error) {
+	if url == "" {
+		return nil, errors.New("invalid url")
+	}
+
+	c := &Client{
 		url: url,
 
 		client: http.DefaultClient,
 	}
 
 	for _, option := range options {
-		option(p)
+		option(c)
 	}
 
-	if p.url == "" {
-		return nil, errors.New("invalid url")
-	}
-
-	return p, nil
+	return c, nil
 }
 
 func WithClient(client *http.Client) Option {
-	return func(p *Provider) {
-		p.client = client
+	return func(c *Client) {
+		c.client = client
 	}
 }
 
-func (p *Provider) Transcribe(ctx context.Context, input provider.File, options *provider.TranscribeOptions) (*provider.Transcription, error) {
+func (c *Client) Transcribe(ctx context.Context, input provider.File, options *provider.TranscribeOptions) (*provider.Transcription, error) {
 	if options == nil {
-		options = &provider.TranscribeOptions{}
+		options = new(provider.TranscribeOptions)
 	}
 
 	id := uuid.NewString()
 
-	url, _ := url.JoinPath(p.url, "/inference")
+	url, _ := url.JoinPath(c.url, "/inference")
 
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
@@ -80,7 +80,7 @@ func (p *Provider) Transcribe(ctx context.Context, input provider.File, options 
 	req, _ := http.NewRequest("POST", url, &b)
 	req.Header.Set("Content-Type", w.FormDataContentType())
 
-	resp, err := p.client.Do(req)
+	resp, err := c.client.Do(req)
 
 	if err != nil {
 		return nil, err

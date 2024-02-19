@@ -117,14 +117,13 @@ providers:
         id: whisper
 ```
 
+#### Text Generation Inference (TEI)
 
-#### Text Generation Inference (TGI)
-
-https://huggingface.co/docs/text-generation-inference/
+https://huggingface.co/docs/text-embeddings-inference/index
 
 ```shell
 # using taskfile.dev
-task tgi-server
+task tei-server
 
 # using Docker
 $ docker run -it --rm -p 9082:8000 adrianliechti/sentence-transformers:bge-base-en-v1
@@ -132,8 +131,8 @@ $ docker run -it --rm -p 9082:8000 adrianliechti/sentence-transformers:bge-base-
 
 ```yaml
 providers:
-  - type: tgi
-    url: http://tgi:9082
+  - type: tei
+    url: http://localhost:9082
 
     models:
       bge-base-en-v1:

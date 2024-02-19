@@ -18,62 +18,57 @@ import (
 )
 
 var (
-	_ provider.Completer = (*Provider)(nil)
+	_ provider.Completer = (*Client)(nil)
 )
 
-type Provider struct {
+type Client struct {
 	url string
 
 	client *http.Client
 }
 
-type Option func(*Provider)
+type Option func(*Client)
 
-func New(url string, options ...Option) (*Provider, error) {
-	p := &Provider{
-		url:    url,
+func New(url string, options ...Option) (*Client, error) {
+	if url == "" {
+		return nil, errors.New("invalid url")
+	}
+
+	c := &Client{
+		url: url,
+
 		client: http.DefaultClient,
 	}
 
 	for _, option := range options {
-		option(p)
+		option(c)
 	}
 
-	if p.url == "" {
-		return nil, errors.New("invalid url")
-	}
-
-	return p, nil
+	return c, nil
 }
 
 func WithClient(client *http.Client) Option {
-	return func(p *Provider) {
-		p.client = client
+	return func(c *Client) {
+		c.client = client
 	}
 }
 
-func WithURL(url string) Option {
-	return func(p *Provider) {
-		p.url = url
-	}
-}
-
-func (p *Provider) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+func (c *Client) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
 	}
 
 	id := uuid.NewString()
 
-	body, err := p.convertRunInput(messages, options)
+	body, err := c.convertRunInput(messages, options)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if options.Stream == nil {
-		url, _ := url.JoinPath(p.url, "invoke")
-		resp, err := p.client.Post(url, "application/json", jsonReader(body))
+		url, _ := url.JoinPath(c.url, "invoke")
+		resp, err := c.client.Post(url, "application/json", jsonReader(body))
 
 		if err != nil {
 			return nil, err
@@ -100,11 +95,11 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	} else {
 		defer close(options.Stream)
 
-		url, _ := url.JoinPath(p.url, "stream")
+		url, _ := url.JoinPath(c.url, "stream")
 		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, err := p.client.Do(req)
+		resp, err := c.client.Do(req)
 
 		if err != nil {
 			return nil, err
@@ -212,7 +207,7 @@ func (p *Provider) Complete(ctx context.Context, messages []provider.Message, op
 	}
 }
 
-func (p *Provider) convertRunInput(messages []provider.Message, options *provider.CompleteOptions) (*RunInput, error) {
+func (c *Client) convertRunInput(messages []provider.Message, options *provider.CompleteOptions) (*RunInput, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
 	}

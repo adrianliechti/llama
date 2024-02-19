@@ -13,11 +13,11 @@ services:
       - source: platform
         target: /config.yaml
     depends_on:
-      - tgi
+      - tei
       - weaviate
       - unstructured
 
-  tgi:
+  tei:
     image: adrianliechti/sentence-transformers:bge-base-en-v1
     pull_policy: always
 
@@ -60,8 +60,8 @@ configs:
             mistral:
               id: mistral:latest
 
-        - type: tgi
-          url: http://tgi:8000
+        - type: tei
+          url: http://tei:8000
           models:
             bge-base-en-v1:
               id: bge-base-en-v1

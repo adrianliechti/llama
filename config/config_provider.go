@@ -11,6 +11,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 	"github.com/adrianliechti/llama/pkg/provider/sbert"
+	"github.com/adrianliechti/llama/pkg/provider/tei"
 	"github.com/adrianliechti/llama/pkg/provider/tgi"
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
 )
@@ -59,6 +60,9 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 	case "ollama":
 		return ollamaProvider(cfg, model)
 
+	case "tei":
+		return teiProvider(cfg)
+
 	case "tgi":
 		return tgiProvider(cfg)
 
@@ -76,7 +80,7 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 	}
 }
 
-func openaiProvider(cfg providerConfig, model string) (*openai.Provider, error) {
+func openaiProvider(cfg providerConfig, model string) (*openai.Client, error) {
 	var options []openai.Option
 
 	if cfg.URL != "" {
@@ -94,7 +98,7 @@ func openaiProvider(cfg providerConfig, model string) (*openai.Provider, error) 
 	return openai.New(options...)
 }
 
-func ollamaProvider(cfg providerConfig, model string) (*ollama.Provider, error) {
+func ollamaProvider(cfg providerConfig, model string) (*ollama.Client, error) {
 	var options []ollama.Option
 
 	if cfg.URL != "" {
@@ -108,7 +112,7 @@ func ollamaProvider(cfg providerConfig, model string) (*ollama.Provider, error) 
 	return ollama.New(options...)
 }
 
-func llamaProvider(cfg providerConfig) (*llama.Provider, error) {
+func llamaProvider(cfg providerConfig) (*llama.Client, error) {
 	var options []llama.Option
 
 	var system string
@@ -166,12 +170,8 @@ func llamaProvider(cfg providerConfig) (*llama.Provider, error) {
 	return llama.New(cfg.URL, options...)
 }
 
-func langchainProvider(cfg providerConfig, model string) (*langchain.Provider, error) {
+func langchainProvider(cfg providerConfig, model string) (*langchain.Client, error) {
 	var options []langchain.Option
-
-	if cfg.URL != "" {
-		options = append(options, langchain.WithURL(cfg.URL))
-	}
 
 	// if model != "" {
 	// 	options = append(options, langchain.WithModel(model))
@@ -180,16 +180,26 @@ func langchainProvider(cfg providerConfig, model string) (*langchain.Provider, e
 	return langchain.New(cfg.URL, options...)
 }
 
-func customProvider(cfg providerConfig, model string) (*custom.Provider, error) {
+func customProvider(cfg providerConfig, model string) (*custom.Client, error) {
 	var options []custom.Option
 
 	return custom.New(cfg.URL, options...)
 }
 
-func whisperProvider(cfg providerConfig) (*whisper.Provider, error) {
+func whisperProvider(cfg providerConfig) (*whisper.Client, error) {
 	var options []whisper.Option
 
 	return whisper.New(cfg.URL, options...)
+}
+
+func teiProvider(cfg providerConfig) (*tei.Client, error) {
+	var options []tei.Option
+
+	if len(cfg.Models) > 1 {
+		return nil, errors.New("multiple models not supported for tei provider")
+	}
+
+	return tei.New(cfg.URL, options...)
 }
 
 func tgiProvider(cfg providerConfig) (*tgi.Client, error) {
@@ -202,7 +212,7 @@ func tgiProvider(cfg providerConfig) (*tgi.Client, error) {
 	return tgi.New(cfg.URL, options...)
 }
 
-func sbertProvider(cfg providerConfig) (*sbert.Provider, error) {
+func sbertProvider(cfg providerConfig) (*sbert.Client, error) {
 	var options []sbert.Option
 
 	if len(cfg.Models) > 1 {
