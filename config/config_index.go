@@ -7,6 +7,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/index/bing"
 	"github.com/adrianliechti/llama/pkg/index/chroma"
+	"github.com/adrianliechti/llama/pkg/index/custom"
 	"github.com/adrianliechti/llama/pkg/index/duckduckgo"
 	"github.com/adrianliechti/llama/pkg/index/elasticsearch"
 	"github.com/adrianliechti/llama/pkg/index/memory"
@@ -65,6 +66,9 @@ func createIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 	case "elasticsearch":
 		return elasticsearchIndex(cfg)
 
+	case "custom":
+		return customIndex(cfg)
+
 	default:
 		return nil, errors.New("invalid index type: " + cfg.Type)
 	}
@@ -122,4 +126,10 @@ func elasticsearchIndex(cfg indexConfig) (index.Provider, error) {
 	var options []elasticsearch.Option
 
 	return elasticsearch.New(cfg.URL, cfg.Namespace, options...)
+}
+
+func customIndex(cfg indexConfig) (*custom.Client, error) {
+	var options []custom.Option
+
+	return custom.New(cfg.URL, options...)
 }
