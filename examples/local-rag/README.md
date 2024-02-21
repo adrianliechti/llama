@@ -15,6 +15,7 @@ Download [Mistral](https://mistral.ai) Model
 
 ```shell
 $ ollama pull mistral
+$ ollama pull nomic-embed-text
 ```
 
 Start Example Application

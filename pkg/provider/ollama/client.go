@@ -1,12 +1,12 @@
 package ollama
 
 import (
-	"github.com/adrianliechti/llama/pkg/provider/openai"
+	"github.com/adrianliechti/llama/pkg/provider"
 )
 
 type Client struct {
-	*openai.Embedder
-	*openai.Completer
+	provider.Embedder
+	provider.Completer
 }
 
 func New(url string, options ...Option) (*Client, error) {

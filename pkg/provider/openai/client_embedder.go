@@ -17,7 +17,7 @@ type Embedder struct {
 
 func NewEmbedder(options ...Option) (*Embedder, error) {
 	c := &Config{
-		model: string(openai.AdaEmbeddingV2),
+		Model: string(openai.AdaEmbeddingV2),
 	}
 
 	for _, option := range options {
@@ -26,14 +26,14 @@ func NewEmbedder(options ...Option) (*Embedder, error) {
 
 	return &Embedder{
 		Config: c,
-		client: c.Client(),
+		client: c.newClient(),
 	}, nil
 }
 
 func (c *Embedder) Embed(ctx context.Context, content string) ([]float32, error) {
 	req := openai.EmbeddingRequest{
 		Input: content,
-		Model: openai.EmbeddingModel(c.model),
+		Model: openai.EmbeddingModel(c.Model),
 	}
 
 	result, err := c.client.CreateEmbeddings(ctx, req)

@@ -23,7 +23,7 @@ type Completer struct {
 
 func NewCompleter(options ...Option) (*Completer, error) {
 	c := &Config{
-		model: openai.GPT3Dot5Turbo,
+		Model: openai.GPT3Dot5Turbo,
 	}
 
 	for _, option := range options {
@@ -32,7 +32,7 @@ func NewCompleter(options ...Option) (*Completer, error) {
 
 	return &Completer{
 		Config: c,
-		client: c.Client(),
+		client: c.newClient(),
 	}, nil
 }
 
@@ -41,7 +41,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		options = new(provider.CompleteOptions)
 	}
 
-	req, err := convertCompletionRequest(c.model, messages, options)
+	req, err := convertCompletionRequest(c.Model, messages, options)
 
 	if err != nil {
 		return nil, err

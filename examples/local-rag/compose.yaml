@@ -13,13 +13,8 @@ services:
       - source: platform
         target: /config.yaml
     depends_on:
-      - tei
       - weaviate
       - unstructured
-
-  tei:
-    image: adrianliechti/sentence-transformers:bge-base-en-v1
-    pull_policy: always
 
   weaviate:
     image: semitechnologies/weaviate:1.23.7
@@ -59,19 +54,16 @@ configs:
           models:
             mistral:
               id: mistral:latest
-
-        - type: tei
-          url: http://tei:8000
-          models:
-            bge-base-en-v1:
-              id: bge-base-en-v1
+            
+            nomic-embed-text-v1:
+              id: nomic-embed-text
 
       indexes:
         docs:
           type: weaviate
           url: http://weaviate:8080
           namespace: Document
-          embedding: bge-base-en-v1
+          embedding: nomic-embed-text-v1
 
       extracters:
         unstructured:
