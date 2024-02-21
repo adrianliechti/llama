@@ -16,7 +16,7 @@ var (
 type Client struct {
 	url string
 
-	client *openai.Client
+	client *openai.Completer
 }
 
 type Option func(*Client)
@@ -46,7 +46,7 @@ func New(url string, options ...Option) (*Client, error) {
 		openai.WithModel("tgi"),
 	}
 
-	client, err := openai.New(opts...)
+	client, err := openai.NewCompleter(opts...)
 
 	if err != nil {
 		return nil, err
