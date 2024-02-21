@@ -57,11 +57,17 @@ type providerConfig struct {
 	Models map[string]modelConfig `yaml:"models"`
 }
 
-type modelConfig struct {
-	ID string `yaml:"id"`
+type ModelType string
 
-	System   string `yaml:"system"`
-	Template string `yaml:"template"`
+const (
+	ModelTypeCompleter   ModelType = "completer"
+	ModelTypeEmbedder    ModelType = "embedder"
+	ModelTypeTranscriber ModelType = "transcriber"
+)
+
+type modelConfig struct {
+	ID   string    `yaml:"id"`
+	Type ModelType `yaml:"type"`
 
 	Name        string `yaml:"name"`
 	Description string `yaml:"description"`

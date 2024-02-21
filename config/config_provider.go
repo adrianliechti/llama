@@ -10,7 +10,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/llama"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
-	"github.com/adrianliechti/llama/pkg/provider/sbert"
 	"github.com/adrianliechti/llama/pkg/provider/tei"
 	"github.com/adrianliechti/llama/pkg/provider/tgi"
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
@@ -52,7 +51,7 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 		return openaiProvider(cfg, model)
 
 	case "llama":
-		return llamaProvider(cfg)
+		return llamaProvider(cfg, model)
 
 	case "whisper":
 		return whisperProvider(cfg)
@@ -65,9 +64,6 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 
 	case "tgi":
 		return tgiProvider(cfg)
-
-	case "sbert":
-		return sbertProvider(cfg)
 
 	case "langchain":
 		return langchainProvider(cfg, model)
@@ -98,76 +94,28 @@ func openaiProvider(cfg providerConfig, model string) (*openai.Client, error) {
 	return openai.New(options...)
 }
 
-func ollamaProvider(cfg providerConfig, model string) (*ollama.Client, error) {
-	var options []ollama.Option
-
-	if cfg.URL != "" {
-		options = append(options, ollama.WithURL(cfg.URL))
-	}
-
-	if model != "" {
-		options = append(options, ollama.WithModel(model))
-	}
-
-	return ollama.New(options...)
-}
-
-func llamaProvider(cfg providerConfig) (*llama.Client, error) {
+func llamaProvider(cfg providerConfig, model string) (*llama.Client, error) {
 	var options []llama.Option
-
-	var system string
-	var template string
 
 	if len(cfg.Models) != 1 {
 		return nil, errors.New("llama supports exactly one model")
 	}
 
-	var model modelConfig
-
-	for _, m := range cfg.Models {
-		model = m
-	}
-
-	system = model.System
-	template = model.Template
-
-	if system != "" {
-		options = append(options, llama.WithSystem(system))
-	}
-
-	switch strings.ToLower(template) {
-	case "none":
-		options = append(options, llama.WithTemplate(llama.TemplateNone))
-
-	case "simple":
-		options = append(options, llama.WithTemplate(llama.TemplateSimple))
-
-	case "chatml":
-		options = append(options, llama.WithTemplate(llama.TemplateChatML))
-
-	case "tora":
-		options = append(options, llama.WithTemplate(llama.TemplateToRA))
-
-	case "llama":
-		options = append(options, llama.WithTemplate(llama.TemplateLlama))
-
-	case "mistral":
-		options = append(options, llama.WithTemplate(llama.TemplateMistral))
-
-	case "gorilla":
-		options = append(options, llama.WithTemplate(llama.TemplateGorilla))
-
-	case "nexusraven":
-		options = append(options, llama.WithTemplate(llama.TemplateNexusRaven))
-
-	case "llamaguard":
-		options = append(options, llama.WithTemplate(llama.TemplateLlamaGuard))
-
-	default:
-		return nil, errors.New("invalid prompt template: " + template)
+	if model != "" {
+		options = append(options, llama.WithModel(model))
 	}
 
 	return llama.New(cfg.URL, options...)
+}
+
+func ollamaProvider(cfg providerConfig, model string) (*ollama.Client, error) {
+	var options []ollama.Option
+
+	if model != "" {
+		options = append(options, ollama.WithModel(model))
+	}
+
+	return ollama.New(cfg.URL, options...)
 }
 
 func langchainProvider(cfg providerConfig, model string) (*langchain.Client, error) {
@@ -184,12 +132,6 @@ func customProvider(cfg providerConfig, model string) (*custom.Client, error) {
 	var options []custom.Option
 
 	return custom.New(cfg.URL, options...)
-}
-
-func whisperProvider(cfg providerConfig) (*whisper.Client, error) {
-	var options []whisper.Option
-
-	return whisper.New(cfg.URL, options...)
 }
 
 func teiProvider(cfg providerConfig) (*tei.Client, error) {
@@ -212,12 +154,12 @@ func tgiProvider(cfg providerConfig) (*tgi.Client, error) {
 	return tgi.New(cfg.URL, options...)
 }
 
-func sbertProvider(cfg providerConfig) (*sbert.Client, error) {
-	var options []sbert.Option
+func whisperProvider(cfg providerConfig) (*whisper.Client, error) {
+	var options []whisper.Option
 
 	if len(cfg.Models) > 1 {
-		return nil, errors.New("multiple models not supported for sbert provider")
+		return nil, errors.New("multiple models not supported for tei provider")
 	}
 
-	return sbert.New(cfg.URL, options...)
+	return whisper.New(cfg.URL, options...)
 }
