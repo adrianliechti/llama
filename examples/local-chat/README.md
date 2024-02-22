@@ -14,7 +14,8 @@ $ ollama start
 Download [Mistral](https://mistral.ai) Model
 
 ```shell
-$ ollama pull mistral
+$ ollama pull gemma:7b-instruct
+$ ollama pull mistral:7b-instruct
 ```
 
 Start Example Application
