@@ -7,7 +7,9 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
-func NewCompleter(url string, options ...Option) (*openai.Completer, error) {
+type Completer = openai.Completer
+
+func NewCompleter(url string, options ...Option) (*Completer, error) {
 	if url == "" {
 		return nil, errors.New("url is required")
 	}

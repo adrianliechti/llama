@@ -2,30 +2,33 @@ package ollama
 
 import (
 	"net/http"
-
-	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
 type Config struct {
-	options []openai.Option
+	url string
+
+	token string
+	model string
+
+	client *http.Client
 }
 
 type Option func(*Config)
 
 func WithClient(client *http.Client) Option {
 	return func(c *Config) {
-		c.options = append(c.options, openai.WithClient(client))
+		c.client = client
 	}
 }
 
 func WithURL(url string) Option {
 	return func(c *Config) {
-		c.options = append(c.options, openai.WithURL(url))
+		c.url = url
 	}
 }
 
 func WithModel(model string) Option {
 	return func(c *Config) {
-		c.options = append(c.options, openai.WithModel(model))
+		c.model = model
 	}
 }

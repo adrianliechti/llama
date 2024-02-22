@@ -1,12 +1,8 @@
 package llama
 
-import (
-	"github.com/adrianliechti/llama/pkg/provider"
-)
-
 type Client struct {
-	provider.Embedder
-	provider.Completer
+	*Embedder
+	*Completer
 }
 
 func New(url string, options ...Option) (*Client, error) {

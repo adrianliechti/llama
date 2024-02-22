@@ -1,13 +1,9 @@
 package openai
 
-import (
-	"github.com/adrianliechti/llama/pkg/provider"
-)
-
 type Client struct {
-	provider.Embedder
-	provider.Completer
-	provider.Transcriber
+	*Embedder
+	*Completer
+	*Transcriber
 }
 
 func New(options ...Option) (*Client, error) {

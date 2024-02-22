@@ -8,53 +8,53 @@ import (
 )
 
 type Config struct {
-	URL string
+	url string
 
-	Token string
-	Model string
+	token string
+	model string
 
-	Client *http.Client
+	client *http.Client
 }
 
 type Option func(*Config)
 
 func WithClient(client *http.Client) Option {
 	return func(c *Config) {
-		c.Client = client
+		c.client = client
 	}
 }
 
 func WithURL(url string) Option {
 	return func(c *Config) {
-		c.URL = url
+		c.url = url
 	}
 }
 
 func WithToken(token string) Option {
 	return func(c *Config) {
-		c.Token = token
+		c.token = token
 	}
 }
 
 func WithModel(model string) Option {
 	return func(c *Config) {
-		c.Model = model
+		c.model = model
 	}
 }
 
 func (c *Config) newClient() *openai.Client {
-	config := openai.DefaultConfig(c.Token)
+	config := openai.DefaultConfig(c.token)
 
-	if c.URL != "" {
-		config.BaseURL = c.URL
+	if c.url != "" {
+		config.BaseURL = c.url
 	}
 
-	if c.Client != nil {
-		config.HTTPClient = c.Client
+	if c.client != nil {
+		config.HTTPClient = c.client
 	}
 
-	if strings.Contains(c.URL, "openai.azure.com") {
-		config = openai.DefaultAzureConfig(c.Token, c.URL)
+	if strings.Contains(c.url, "openai.azure.com") {
+		config = openai.DefaultAzureConfig(c.token, c.url)
 	}
 
 	return openai.NewClientWithConfig(config)

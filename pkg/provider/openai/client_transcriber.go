@@ -18,7 +18,7 @@ type Transcriber struct {
 
 func NewTranscriber(options ...Option) (*Transcriber, error) {
 	c := &Config{
-		Model: openai.Whisper1,
+		model: openai.Whisper1,
 	}
 
 	for _, option := range options {
@@ -39,7 +39,7 @@ func (c *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 	id := uuid.NewString()
 
 	req := openai.AudioRequest{
-		Model: c.Model,
+		Model: c.model,
 
 		Language: options.Language,
 

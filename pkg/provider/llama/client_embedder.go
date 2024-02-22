@@ -7,7 +7,9 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
-func NewEmbedder(url string, options ...Option) (*openai.Embedder, error) {
+type Embedder = openai.Embedder
+
+func NewEmbedder(url string, options ...Option) (*Embedder, error) {
 	if url == "" {
 		return nil, errors.New("url is required")
 	}
