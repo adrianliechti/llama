@@ -160,7 +160,7 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 		tool := openai.Tool{
 			Type: openai.ToolTypeFunction,
 
-			Function: openai.FunctionDefinition{
+			Function: &openai.FunctionDefinition{
 				Name:       f.Name,
 				Parameters: f.Parameters,
 

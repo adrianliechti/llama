@@ -21,7 +21,7 @@ func main() {
 	fnFindFlight := openai.Tool{
 		Type: openai.ToolTypeFunction,
 
-		Function: openai.FunctionDefinition{
+		Function: &openai.FunctionDefinition{
 			Name:        "find_flight",
 			Description: "Use this tool to find flight numbers form a city to another city",
 
@@ -48,7 +48,7 @@ func main() {
 	fnBookFlight := openai.Tool{
 		Type: openai.ToolTypeFunction,
 
-		Function: openai.FunctionDefinition{
+		Function: &openai.FunctionDefinition{
 			Name:        "book_flight",
 			Description: "Use this tool to make a reservation for a flight",
 
