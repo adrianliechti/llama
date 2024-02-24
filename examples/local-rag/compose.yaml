@@ -28,7 +28,7 @@ services:
       - weaviate-data:/var/lib/weaviate
 
   unstructured:
-    image: downloads.unstructured.io/unstructured-io/unstructured-api:latest
+    image: quay.io/unstructured-io/unstructured-api:0.0.64
     pull_policy: always
     command: --port 8000 --host 0.0.0.0
 
