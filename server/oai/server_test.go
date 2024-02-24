@@ -198,7 +198,7 @@ func TestChatCompletionWithTool(t *testing.T) {
 	fnGetCurrentWeather := openai.Tool{
 		Type: openai.ToolTypeFunction,
 
-		Function: openai.FunctionDefinition{
+		Function: &openai.FunctionDefinition{
 			Description: "Get the current weather in a given location (like a city or region).",
 
 			Name: "get_current_weather",
