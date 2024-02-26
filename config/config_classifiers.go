@@ -10,6 +10,10 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
+func (c *Config) RegisterClassifier(model string, classifier classifier.Provider) {
+	c.classifiers[model] = classifier
+}
+
 type classifierContext struct {
 	Completer provider.Completer
 
@@ -47,7 +51,7 @@ func (c *Config) registerClassifiers(f *configFile) error {
 			return err
 		}
 
-		c.classifiers[id] = classifier
+		c.RegisterClassifier(id, classifier)
 	}
 
 	return nil

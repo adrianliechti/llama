@@ -18,6 +18,11 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool"
 )
 
+func (c *Config) RegisterChain(model string, chain chain.Provider) {
+	c.RegisterModel(model)
+	c.chains[model] = chain
+}
+
 type chainContext struct {
 	Index index.Provider
 
@@ -100,11 +105,7 @@ func (c *Config) registerChains(f *configFile) error {
 			return err
 		}
 
-		c.models[id] = provider.Model{
-			ID: id,
-		}
-
-		c.chains[id] = chain
+		c.RegisterChain(id, chain)
 	}
 
 	return nil

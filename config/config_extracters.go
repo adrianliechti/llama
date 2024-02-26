@@ -10,15 +10,19 @@ import (
 	"github.com/adrianliechti/llama/pkg/extracter/unstructured"
 )
 
+func (c *Config) RegisterExtracter(model string, extracter extracter.Provider) {
+	c.extracters[model] = extracter
+}
+
 func (c *Config) registerExtracters(f *configFile) error {
 	for id, cfg := range f.Extracters {
-		e, err := createExtracter(cfg)
+		extracter, err := createExtracter(cfg)
 
 		if err != nil {
 			return err
 		}
 
-		c.extracters[id] = e
+		c.RegisterExtracter(id, extracter)
 	}
 
 	return nil

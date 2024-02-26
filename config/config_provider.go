@@ -15,6 +15,21 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
 )
 
+func (c *Config) RegisterEmbedder(model string, embedder provider.Embedder) {
+	c.RegisterModel(model)
+	c.embedder[model] = embedder
+}
+
+func (c *Config) RegisterCompleter(model string, completer provider.Completer) {
+	c.RegisterModel(model)
+	c.completer[model] = completer
+}
+
+func (c *Config) RegisterTranscriber(model string, transcriber provider.Transcriber) {
+	c.RegisterModel(model)
+	c.transcriber[model] = transcriber
+}
+
 func (c *Config) registerProviders(f *configFile) error {
 	for _, p := range f.Providers {
 		for id, m := range p.Models {
@@ -24,20 +39,16 @@ func (c *Config) registerProviders(f *configFile) error {
 				return err
 			}
 
-			c.models[id] = provider.Model{
-				ID: id,
-			}
-
 			if embedder, ok := r.(provider.Embedder); ok {
-				c.embedder[id] = embedder
+				c.RegisterEmbedder(id, embedder)
 			}
 
 			if completer, ok := r.(provider.Completer); ok {
-				c.completer[id] = completer
+				c.RegisterCompleter(id, completer)
 			}
 
 			if transcriber, ok := r.(provider.Transcriber); ok {
-				c.transcriber[id] = transcriber
+				c.RegisterTranscriber(id, transcriber)
 			}
 		}
 	}

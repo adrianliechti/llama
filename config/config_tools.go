@@ -11,6 +11,10 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool/search"
 )
 
+func (c *Config) RegisterTool(id string, tool tool.Tool) {
+	c.tools[id] = tool
+}
+
 type toolContext struct {
 	Index     index.Provider
 	Completer provider.Completer
@@ -34,13 +38,13 @@ func (c *Config) registerTools(f *configFile) error {
 			}
 		}
 
-		t, err := createTool(cfg, context)
+		tool, err := createTool(cfg, context)
 
 		if err != nil {
 			return err
 		}
 
-		c.tools[id] = t
+		c.RegisterTool(id, tool)
 	}
 
 	return nil

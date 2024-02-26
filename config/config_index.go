@@ -15,6 +15,10 @@ import (
 	"github.com/adrianliechti/llama/pkg/index/weaviate"
 )
 
+func (c *Config) RegisterIndex(id string, index index.Provider) {
+	c.indexes[id] = index
+}
+
 type indexContext struct {
 	Embedder index.Embedder
 }
@@ -31,13 +35,13 @@ func (c *Config) registerIndexes(f *configFile) error {
 			}
 		}
 
-		i, err := createIndex(cfg, context)
+		index, err := createIndex(cfg, context)
 
 		if err != nil {
 			return err
 		}
 
-		c.indexes[id] = i
+		c.RegisterIndex(id, index)
 	}
 
 	return nil
