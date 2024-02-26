@@ -18,9 +18,14 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool"
 )
 
-func (c *Config) RegisterChain(model string, chain chain.Provider) {
-	c.RegisterModel(model)
-	c.chains[model] = chain
+func (cfg *Config) RegisterChain(model string, c chain.Provider) {
+	cfg.RegisterModel(model)
+
+	if cfg.chains == nil {
+		cfg.chains = make(map[string]chain.Provider)
+	}
+
+	cfg.chains[model] = c
 }
 
 type chainContext struct {
@@ -37,8 +42,8 @@ type chainContext struct {
 	Classifiers map[string]classifier.Provider
 }
 
-func (c *Config) registerChains(f *configFile) error {
-	for id, cfg := range f.Chains {
+func (cfg *Config) registerChains(f *configFile) error {
+	for id, c := range f.Chains {
 		var err error
 
 		context := chainContext{
@@ -47,38 +52,38 @@ func (c *Config) registerChains(f *configFile) error {
 			Classifiers: make(map[string]classifier.Provider),
 		}
 
-		if cfg.Index != "" {
-			if context.Index, err = c.Index(cfg.Index); err != nil {
+		if c.Index != "" {
+			if context.Index, err = cfg.Index(c.Index); err != nil {
 				return err
 			}
 		}
 
-		if cfg.Model != "" {
-			if context.Completer, err = c.Completer(cfg.Model); err != nil {
+		if c.Model != "" {
+			if context.Completer, err = cfg.Completer(c.Model); err != nil {
 				return err
 			}
 		}
 
-		if cfg.Embedding != "" {
-			if context.Embedder, err = c.Embedder(cfg.Embedding); err != nil {
+		if c.Embedding != "" {
+			if context.Embedder, err = cfg.Embedder(c.Embedding); err != nil {
 				return err
 			}
 		}
 
-		if cfg.Template != "" {
-			if context.Template, err = parseTemplate(cfg.Template); err != nil {
+		if c.Template != "" {
+			if context.Template, err = parseTemplate(c.Template); err != nil {
 				return err
 			}
 		}
 
-		if cfg.Messages != nil {
-			if context.Messages, err = parseMessages(cfg.Messages); err != nil {
+		if c.Messages != nil {
+			if context.Messages, err = parseMessages(c.Messages); err != nil {
 				return err
 			}
 		}
 
-		for _, t := range cfg.Tools {
-			tool, err := c.Tool(t)
+		for _, t := range c.Tools {
+			tool, err := cfg.Tool(t)
 
 			if err != nil {
 				return err
@@ -87,9 +92,9 @@ func (c *Config) registerChains(f *configFile) error {
 			context.Tools[tool.Name()] = tool
 		}
 
-		for _, v := range cfg.Filters {
+		for _, v := range c.Filters {
 			if v.Classifier != "" {
-				classifier, err := c.Classifier(v.Classifier)
+				classifier, err := cfg.Classifier(v.Classifier)
 
 				if err != nil {
 					return err
@@ -99,13 +104,13 @@ func (c *Config) registerChains(f *configFile) error {
 			}
 		}
 
-		chain, err := createChain(cfg, context)
+		chain, err := createChain(c, context)
 
 		if err != nil {
 			return err
 		}
 
-		c.RegisterChain(id, chain)
+		cfg.RegisterChain(id, chain)
 	}
 
 	return nil

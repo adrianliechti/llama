@@ -15,22 +15,37 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
 )
 
-func (c *Config) RegisterEmbedder(model string, embedder provider.Embedder) {
-	c.RegisterModel(model)
-	c.embedder[model] = embedder
+func (cfg *Config) RegisterEmbedder(model string, e provider.Embedder) {
+	cfg.RegisterModel(model)
+
+	if cfg.embedder == nil {
+		cfg.embedder = make(map[string]provider.Embedder)
+	}
+
+	cfg.embedder[model] = e
 }
 
-func (c *Config) RegisterCompleter(model string, completer provider.Completer) {
-	c.RegisterModel(model)
-	c.completer[model] = completer
+func (cfg *Config) RegisterCompleter(model string, c provider.Completer) {
+	cfg.RegisterModel(model)
+
+	if cfg.completer == nil {
+		cfg.completer = make(map[string]provider.Completer)
+	}
+
+	cfg.completer[model] = c
 }
 
-func (c *Config) RegisterTranscriber(model string, transcriber provider.Transcriber) {
-	c.RegisterModel(model)
-	c.transcriber[model] = transcriber
+func (cfg *Config) RegisterTranscriber(model string, t provider.Transcriber) {
+	cfg.RegisterModel(model)
+
+	if cfg.transcriber == nil {
+		cfg.transcriber = make(map[string]provider.Transcriber)
+	}
+
+	cfg.transcriber[model] = t
 }
 
-func (c *Config) registerProviders(f *configFile) error {
+func (cfg *Config) registerProviders(f *configFile) error {
 	for _, p := range f.Providers {
 		for id, m := range p.Models {
 			r, err := createProvider(p, m.ID)
@@ -40,15 +55,15 @@ func (c *Config) registerProviders(f *configFile) error {
 			}
 
 			if embedder, ok := r.(provider.Embedder); ok {
-				c.RegisterEmbedder(id, embedder)
+				cfg.RegisterEmbedder(id, embedder)
 			}
 
 			if completer, ok := r.(provider.Completer); ok {
-				c.RegisterCompleter(id, completer)
+				cfg.RegisterCompleter(id, completer)
 			}
 
 			if transcriber, ok := r.(provider.Transcriber); ok {
-				c.RegisterTranscriber(id, transcriber)
+				cfg.RegisterTranscriber(id, transcriber)
 			}
 		}
 	}

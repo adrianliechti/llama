@@ -10,8 +10,12 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-func (c *Config) RegisterClassifier(model string, classifier classifier.Provider) {
-	c.classifiers[model] = classifier
+func (cfg *Config) RegisterClassifier(model string, c classifier.Provider) {
+	if cfg.classifiers == nil {
+		cfg.classifiers = make(map[string]classifier.Provider)
+	}
+
+	cfg.classifiers[model] = c
 }
 
 type classifierContext struct {
@@ -21,37 +25,37 @@ type classifierContext struct {
 	Messages []provider.Message
 }
 
-func (c *Config) registerClassifiers(f *configFile) error {
-	for id, cfg := range f.Classifiers {
+func (cfg *Config) registerClassifiers(f *configFile) error {
+	for id, c := range f.Classifiers {
 		var err error
 
 		context := classifierContext{}
 
-		if cfg.Model != "" {
-			if context.Completer, err = c.Completer(cfg.Model); err != nil {
+		if c.Model != "" {
+			if context.Completer, err = cfg.Completer(c.Model); err != nil {
 				return err
 			}
 		}
 
-		if cfg.Template != "" {
-			if context.Template, err = parseTemplate(cfg.Template); err != nil {
+		if c.Template != "" {
+			if context.Template, err = parseTemplate(c.Template); err != nil {
 				return err
 			}
 		}
 
-		if cfg.Messages != nil {
-			if context.Messages, err = parseMessages(cfg.Messages); err != nil {
+		if c.Messages != nil {
+			if context.Messages, err = parseMessages(c.Messages); err != nil {
 				return err
 			}
 		}
 
-		classifier, err := createClassifier(cfg, context)
+		classifier, err := createClassifier(c, context)
 
 		if err != nil {
 			return err
 		}
 
-		c.RegisterClassifier(id, classifier)
+		cfg.RegisterClassifier(id, classifier)
 	}
 
 	return nil

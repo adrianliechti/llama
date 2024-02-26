@@ -11,8 +11,12 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool/search"
 )
 
-func (c *Config) RegisterTool(id string, tool tool.Tool) {
-	c.tools[id] = tool
+func (c *Config) RegisterTool(id string, val tool.Tool) {
+	if c.tools == nil {
+		c.tools = make(map[string]tool.Tool)
+	}
+
+	c.tools[id] = val
 }
 
 type toolContext struct {
@@ -20,31 +24,31 @@ type toolContext struct {
 	Completer provider.Completer
 }
 
-func (c *Config) registerTools(f *configFile) error {
-	for id, cfg := range f.Tools {
+func (cfg *Config) registerTools(f *configFile) error {
+	for id, t := range f.Tools {
 		var err error
 
 		context := toolContext{}
 
-		if cfg.Index != "" {
-			if context.Index, err = c.Index(cfg.Index); err != nil {
+		if t.Index != "" {
+			if context.Index, err = cfg.Index(t.Index); err != nil {
 				return err
 			}
 		}
 
-		if cfg.Model != "" {
-			if context.Completer, err = c.Completer(cfg.Model); err != nil {
+		if t.Model != "" {
+			if context.Completer, err = cfg.Completer(t.Model); err != nil {
 				return err
 			}
 		}
 
-		tool, err := createTool(cfg, context)
+		tool, err := createTool(t, context)
 
 		if err != nil {
 			return err
 		}
 
-		c.RegisterTool(id, tool)
+		cfg.RegisterTool(id, tool)
 	}
 
 	return nil

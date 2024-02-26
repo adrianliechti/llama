@@ -42,81 +42,89 @@ func (cfg *Config) Models() []provider.Model {
 }
 
 func (cfg *Config) Model(id string) (*provider.Model, error) {
-	m, ok := cfg.models[id]
-
-	if !ok {
-		return nil, errors.New("model not found: " + id)
+	if cfg.models != nil {
+		if m, ok := cfg.models[id]; ok {
+			return &m, nil
+		}
 	}
 
-	return &m, nil
+	return nil, errors.New("model not found: " + id)
 }
 
 func (cfg *Config) Embedder(model string) (provider.Embedder, error) {
-	if e, ok := cfg.embedder[model]; ok {
-		return e, nil
+	if cfg.embedder != nil {
+		if e, ok := cfg.embedder[model]; ok {
+			return e, nil
+		}
 	}
 
 	return nil, errors.New("embedder not found: " + model)
 }
 
 func (cfg *Config) Completer(model string) (provider.Completer, error) {
-	if c, ok := cfg.completer[model]; ok {
-		return c, nil
+	if cfg.completer != nil {
+		if c, ok := cfg.completer[model]; ok {
+			return c, nil
+		}
 	}
 
-	if c, ok := cfg.chains[model]; ok {
-		return c, nil
+	if cfg.chains != nil {
+		if c, ok := cfg.chains[model]; ok {
+			return c, nil
+		}
 	}
 
 	return nil, errors.New("completer not found: " + model)
 }
 
 func (cfg *Config) Transcriber(model string) (provider.Transcriber, error) {
-	if c, ok := cfg.transcriber[model]; ok {
-		return c, nil
+	if cfg.transcriber != nil {
+		if c, ok := cfg.transcriber[model]; ok {
+			return c, nil
+		}
 	}
 
 	return nil, errors.New("transcriber not found: " + model)
 }
 
 func (cfg *Config) Index(id string) (index.Provider, error) {
-	i, ok := cfg.indexes[id]
-
-	if !ok {
-		return nil, errors.New("index not found: " + id)
+	if cfg.indexes != nil {
+		if i, ok := cfg.indexes[id]; ok {
+			return i, nil
+		}
 	}
 
-	return i, nil
+	return nil, errors.New("index not found: " + id)
 }
 
 func (cfg *Config) Extracter(id string) (extracter.Provider, error) {
-	e, ok := cfg.extracters[id]
-
-	if !ok {
-		return nil, errors.New("extracter not found: " + id)
+	if cfg.extracters != nil {
+		if e, ok := cfg.extracters[id]; ok {
+			return e, nil
+		}
 	}
 
-	return e, nil
+	return nil, errors.New("extracter not found: " + id)
 }
 
 func (cfg *Config) Tool(id string) (tool.Tool, error) {
-	t, ok := cfg.tools[id]
-
-	if !ok {
-		return nil, errors.New("tool not found: " + id)
+	if cfg.tools != nil {
+		if t, ok := cfg.tools[id]; ok {
+			return t, nil
+		}
 	}
 
-	return t, nil
+	return nil, errors.New("tool not found: " + id)
 }
 
 func (cfg *Config) Classifier(id string) (classifier.Provider, error) {
-	c, ok := cfg.classifiers[id]
-
-	if !ok {
-		return nil, errors.New("classifier not found: " + id)
+	if cfg.classifiers != nil {
+		if c, ok := cfg.classifiers[id]; ok {
+			return c, nil
+		}
 	}
 
-	return c, nil
+	return nil, errors.New("classifier not found: " + id)
 }
 
 func Parse(path string) (*Config, error) {
@@ -128,19 +136,6 @@ func Parse(path string) (*Config, error) {
 
 	c := &Config{
 		Address: ":8080",
-
-		models: make(map[string]provider.Model),
-
-		embedder:    make(map[string]provider.Embedder),
-		completer:   make(map[string]provider.Completer),
-		transcriber: make(map[string]provider.Transcriber),
-
-		indexes:     make(map[string]index.Provider),
-		extracters:  make(map[string]extracter.Provider),
-		classifiers: make(map[string]classifier.Provider),
-
-		tools:  make(map[string]tool.Tool),
-		chains: make(map[string]chain.Provider),
 	}
 
 	if err := c.registerAuthorizer(file); err != nil {

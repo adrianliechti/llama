@@ -4,12 +4,16 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-func (c *Config) RegisterModel(id string) {
-	if _, ok := c.models[id]; ok {
+func (cfg *Config) RegisterModel(id string) {
+	if cfg.models == nil {
+		cfg.models = make(map[string]provider.Model)
+	}
+
+	if _, ok := cfg.models[id]; ok {
 		return
 	}
 
-	c.models[id] = provider.Model{
+	cfg.models[id] = provider.Model{
 		ID: id,
 	}
 }
