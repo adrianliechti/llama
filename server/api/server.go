@@ -26,6 +26,7 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	r.Post("/extract/{extracter}", s.handleExtract)
+	r.Post("/translate/{translator}", s.handleTranslate)
 
 	r.Get("/index/{index}", s.handleIndexList)
 	r.Post("/index/{index}", s.handleIndexIngest)

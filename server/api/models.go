@@ -10,7 +10,7 @@ type Document struct {
 
 type Result struct {
 	Document `json:",inline"`
-	Distance float32 `json:"distance"`
+	Distance *float32 `json:"distance,omitempty"`
 }
 
 type Query struct {

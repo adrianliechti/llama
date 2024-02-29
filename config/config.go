@@ -85,7 +85,7 @@ func (cfg *Config) Translator(model string) (provider.Translator, error) {
 		}
 	}
 
-	return nil, errors.New("embedder not found: " + model)
+	return nil, errors.New("translator not found: " + model)
 }
 
 func (cfg *Config) Transcriber(model string) (provider.Transcriber, error) {
