@@ -15,6 +15,10 @@ type Completer interface {
 	Complete(ctx context.Context, messages []Message, options *CompleteOptions) (*Completion, error)
 }
 
+type Translater interface {
+	Translate(ctx context.Context, content string, options *TranslateOptions) (*Translation, error)
+}
+
 type Transcriber interface {
 	Transcribe(ctx context.Context, input File, options *TranscribeOptions) (*Transcription, error)
 }
@@ -97,6 +101,16 @@ type CompleteOptions struct {
 	Temperature *float32
 	TopP        *float32
 	MinP        *float32
+}
+
+type Translation struct {
+	ID string
+
+	Content string
+}
+
+type TranslateOptions struct {
+	Language string
 }
 
 type Transcription struct {

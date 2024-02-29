@@ -6,6 +6,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/custom"
+	"github.com/adrianliechti/llama/pkg/provider/deepl"
 	"github.com/adrianliechti/llama/pkg/provider/langchain"
 	"github.com/adrianliechti/llama/pkg/provider/llama"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
@@ -93,6 +94,9 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 
 	case "langchain":
 		return langchainProvider(cfg, model)
+
+	case "deepl":
+		return deeplProvider(cfg, model)
 
 	case "custom":
 		return customProvider(cfg, model)
@@ -188,4 +192,18 @@ func whisperProvider(cfg providerConfig) (*whisper.Client, error) {
 	}
 
 	return whisper.New(cfg.URL, options...)
+}
+
+func deeplProvider(cfg providerConfig, model string) (*deepl.Client, error) {
+	var options []deepl.Option
+
+	if cfg.Token != "" {
+		options = append(options, deepl.WithToken(cfg.Token))
+	}
+
+	if model != "" {
+		options = append(options, deepl.WithLanguage(model))
+	}
+
+	return deepl.New(cfg.URL, options...)
 }
