@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/provider/azuretranslator"
 	"github.com/adrianliechti/llama/pkg/provider/custom"
 	"github.com/adrianliechti/llama/pkg/provider/deepl"
 	"github.com/adrianliechti/llama/pkg/provider/langchain"
@@ -97,6 +98,9 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 
 	case "deepl":
 		return deeplProvider(cfg, model)
+
+	case "azure-translator":
+		return azuretranslatorProvider(cfg, model)
 
 	case "custom":
 		return customProvider(cfg, model)
@@ -206,4 +210,18 @@ func deeplProvider(cfg providerConfig, model string) (*deepl.Client, error) {
 	}
 
 	return deepl.New(cfg.URL, options...)
+}
+
+func azuretranslatorProvider(cfg providerConfig, model string) (*azuretranslator.Client, error) {
+	var options []azuretranslator.Option
+
+	if cfg.Token != "" {
+		options = append(options, azuretranslator.WithToken(cfg.Token))
+	}
+
+	if model != "" {
+		options = append(options, azuretranslator.WithLanguage(model))
+	}
+
+	return azuretranslator.New(cfg.URL, options...)
 }
