@@ -1,4 +1,4 @@
-package tgi
+package huggingface
 
 import (
 	"context"
@@ -9,19 +9,15 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
-var (
-	_ provider.Completer = (*Client)(nil)
-)
+var _ provider.Completer = (*Completer)(nil)
 
-type Client struct {
-	url string
+type Completer struct {
+	*Config
 
 	client *openai.Completer
 }
 
-type Option func(*Client)
-
-func New(url string, options ...Option) (*Client, error) {
+func NewCompleter(url string, options ...Option) (*Completer, error) {
 	if url == "" {
 		return nil, errors.New("invalid url")
 	}
@@ -32,12 +28,12 @@ func New(url string, options ...Option) (*Client, error) {
 		url += "/v1"
 	}
 
-	p := &Client{
+	cfg := &Config{
 		url: url,
 	}
 
 	for _, option := range options {
-		option(p)
+		option(cfg)
 	}
 
 	opts := []openai.Option{
@@ -52,11 +48,12 @@ func New(url string, options ...Option) (*Client, error) {
 		return nil, err
 	}
 
-	p.client = client
-
-	return p, nil
+	return &Completer{
+		Config: cfg,
+		client: client,
+	}, nil
 }
 
-func (c *Client) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+func (c *Completer) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	return c.client.Complete(ctx, messages, options)
 }

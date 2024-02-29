@@ -1,30 +1,32 @@
-package deepl
+package huggingface
 
 import (
 	"bytes"
 	"encoding/json"
 	"io"
-
-	"github.com/adrianliechti/llama/pkg/provider"
 )
 
 type Client struct {
-	provider.Completer
-	provider.Translator
+	*Embedder
+	*Completer
 }
 
 func New(url string, options ...Option) (*Client, error) {
-	var err error
+	e, err := NewEmbedder(url, options...)
 
-	t, err := NewTranslator(url, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := NewCompleter(url, options...)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return &Client{
-		Translator: t,
-		Completer:  t,
+		Embedder:  e,
+		Completer: c,
 	}, nil
 }
 

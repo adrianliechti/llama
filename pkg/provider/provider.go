@@ -15,7 +15,7 @@ type Completer interface {
 	Complete(ctx context.Context, messages []Message, options *CompleteOptions) (*Completion, error)
 }
 
-type Translater interface {
+type Translator interface {
 	Translate(ctx context.Context, content string, options *TranslateOptions) (*Translation, error)
 }
 

@@ -3,69 +3,27 @@ package azuretranslator
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"io"
-	"net/http"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-var (
-	_ provider.Completer  = (*Client)(nil)
-	_ provider.Translater = (*Client)(nil)
-)
-
 type Client struct {
-	url string
-
-	token    string
-	language string
-
-	client *http.Client
+	provider.Completer
+	provider.Translator
 }
-
-type Option func(*Client)
 
 func New(url string, options ...Option) (*Client, error) {
-	c := &Client{
-		url: url,
+	t, err := NewTranslator(url, options...)
 
-		language: "en",
-
-		client: http.DefaultClient,
+	if err != nil {
+		return nil, err
 	}
 
-	for _, option := range options {
-		option(c)
-	}
-
-	if c.url == "" {
-		return nil, errors.New("invalid url")
-	}
-
-	if c.token == "" {
-		return nil, errors.New("invalid token")
-	}
-
-	return c, nil
-}
-
-func WithClient(client *http.Client) Option {
-	return func(c *Client) {
-		c.client = client
-	}
-}
-
-func WithToken(token string) Option {
-	return func(c *Client) {
-		c.token = token
-	}
-}
-
-func WithLanguage(language string) Option {
-	return func(c *Client) {
-		c.language = language
-	}
+	return &Client{
+		Completer:  t,
+		Translator: t,
+	}, nil
 }
 
 func jsonReader(v any) io.Reader {

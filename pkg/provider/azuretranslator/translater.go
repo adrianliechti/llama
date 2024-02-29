@@ -11,13 +11,35 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-func (c *Client) Translate(ctx context.Context, content string, options *provider.TranslateOptions) (*provider.Translation, error) {
+type Translator struct {
+	*Config
+}
+
+func NewTranslator(url string, options ...Option) (*Translator, error) {
+	cfg := &Config{
+		url: url,
+
+		language: "en",
+
+		client: http.DefaultClient,
+	}
+
+	for _, option := range options {
+		option(cfg)
+	}
+
+	return &Translator{
+		Config: cfg,
+	}, nil
+}
+
+func (t *Translator) Translate(ctx context.Context, content string, options *provider.TranslateOptions) (*provider.Translation, error) {
 	if options == nil {
 		options = new(provider.TranslateOptions)
 	}
 
 	if options.Language == "" {
-		options.Language = c.language
+		options.Language = t.language
 	}
 
 	type bodyType struct {
@@ -30,7 +52,7 @@ func (c *Client) Translate(ctx context.Context, content string, options *provide
 		},
 	}
 
-	u, _ := url.Parse(strings.TrimRight(c.url, "/") + "/translator/text/v3.0/translate")
+	u, _ := url.Parse(strings.TrimRight(t.url, "/") + "/translator/text/v3.0/translate")
 
 	query := u.Query()
 	query.Set("to", options.Language)
@@ -38,10 +60,10 @@ func (c *Client) Translate(ctx context.Context, content string, options *provide
 	u.RawQuery = query.Encode()
 
 	r, _ := http.NewRequest(http.MethodPost, u.String(), jsonReader(body))
-	r.Header.Add("Ocp-Apim-Subscription-Key", c.token)
+	r.Header.Add("Ocp-Apim-Subscription-Key", t.token)
 	r.Header.Add("Content-Type", "application/json")
 
-	resp, err := c.client.Do(r)
+	resp, err := t.client.Do(r)
 
 	if err != nil {
 		return nil, err

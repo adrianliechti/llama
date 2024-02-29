@@ -7,14 +7,14 @@ import (
 	"github.com/google/uuid"
 )
 
-func (c *Client) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+func (t *Translator) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
 	}
 
 	message := messages[len(messages)-1]
 
-	result, err := c.Translate(ctx, message.Content, &provider.TranslateOptions{})
+	result, err := t.Translate(ctx, message.Content, nil)
 
 	if err != nil {
 		return nil, err
@@ -30,10 +30,6 @@ func (c *Client) Complete(ctx context.Context, messages []provider.Message, opti
 			Content: result.Content,
 		},
 	}
-
-	// if options.Stream != nil {
-	// 	options.Stream <- completion
-	// }
 
 	return &completion, nil
 }

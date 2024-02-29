@@ -7,27 +7,27 @@ type Client struct {
 }
 
 func New(options ...Option) (*Client, error) {
-	var err error
-
-	c := &Client{}
-
-	c.Embedder, err = NewEmbedder(options...)
+	e, err := NewEmbedder(options...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	c.Completer, err = NewCompleter(options...)
+	c, err := NewCompleter(options...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	c.Transcriber, err = NewTranscriber(options...)
+	t, err := NewTranscriber(options...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return c, nil
+	return &Client{
+		Embedder:    e,
+		Completer:   c,
+		Transcriber: t,
+	}, nil
 }

@@ -6,21 +6,20 @@ type Client struct {
 }
 
 func New(url string, options ...Option) (*Client, error) {
-	var err error
-
-	c := &Client{}
-
-	c.Embedder, err = NewEmbedder(url, options...)
+	e, err := NewEmbedder(url, options...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	c.Completer, err = NewCompleter(url, options...)
+	c, err := NewCompleter(url, options...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return c, nil
+	return &Client{
+		Embedder:  e,
+		Completer: c,
+	}, nil
 }

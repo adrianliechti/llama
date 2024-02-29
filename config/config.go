@@ -21,6 +21,7 @@ type Config struct {
 
 	embedder    map[string]provider.Embedder
 	completer   map[string]provider.Completer
+	translator  map[string]provider.Translator
 	transcriber map[string]provider.Transcriber
 
 	indexes     map[string]index.Provider
@@ -77,10 +78,20 @@ func (cfg *Config) Completer(model string) (provider.Completer, error) {
 	return nil, errors.New("completer not found: " + model)
 }
 
+func (cfg *Config) Translator(model string) (provider.Translator, error) {
+	if cfg.translator != nil {
+		if t, ok := cfg.translator[model]; ok {
+			return t, nil
+		}
+	}
+
+	return nil, errors.New("embedder not found: " + model)
+}
+
 func (cfg *Config) Transcriber(model string) (provider.Transcriber, error) {
 	if cfg.transcriber != nil {
-		if c, ok := cfg.transcriber[model]; ok {
-			return c, nil
+		if t, ok := cfg.transcriber[model]; ok {
+			return t, nil
 		}
 	}
 

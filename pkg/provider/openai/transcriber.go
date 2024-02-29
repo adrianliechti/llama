@@ -17,17 +17,17 @@ type Transcriber struct {
 }
 
 func NewTranscriber(options ...Option) (*Transcriber, error) {
-	c := &Config{
+	cfg := &Config{
 		model: openai.Whisper1,
 	}
 
 	for _, option := range options {
-		option(c)
+		option(cfg)
 	}
 
 	return &Transcriber{
-		Config: c,
-		client: c.newClient(),
+		Config: cfg,
+		client: cfg.newClient(),
 	}, nil
 }
 

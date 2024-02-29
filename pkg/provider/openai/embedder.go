@@ -16,17 +16,17 @@ type Embedder struct {
 }
 
 func NewEmbedder(options ...Option) (*Embedder, error) {
-	c := &Config{
+	cfg := &Config{
 		model: string(openai.AdaEmbeddingV2),
 	}
 
 	for _, option := range options {
-		option(c)
+		option(cfg)
 	}
 
 	return &Embedder{
-		Config: c,
-		client: c.newClient(),
+		Config: cfg,
+		client: cfg.newClient(),
 	}, nil
 }
 

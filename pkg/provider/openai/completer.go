@@ -22,17 +22,17 @@ type Completer struct {
 }
 
 func NewCompleter(options ...Option) (*Completer, error) {
-	c := &Config{
+	cfg := &Config{
 		model: openai.GPT3Dot5Turbo,
 	}
 
 	for _, option := range options {
-		option(c)
+		option(cfg)
 	}
 
 	return &Completer{
-		Config: c,
-		client: c.newClient(),
+		Config: cfg,
+		client: cfg.newClient(),
 	}, nil
 }
 

@@ -8,12 +8,11 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/azuretranslator"
 	"github.com/adrianliechti/llama/pkg/provider/custom"
 	"github.com/adrianliechti/llama/pkg/provider/deepl"
+	"github.com/adrianliechti/llama/pkg/provider/huggingface"
 	"github.com/adrianliechti/llama/pkg/provider/langchain"
 	"github.com/adrianliechti/llama/pkg/provider/llama"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
-	"github.com/adrianliechti/llama/pkg/provider/tei"
-	"github.com/adrianliechti/llama/pkg/provider/tgi"
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
 )
 
@@ -35,6 +34,16 @@ func (cfg *Config) RegisterCompleter(model string, c provider.Completer) {
 	}
 
 	cfg.completer[model] = c
+}
+
+func (cfg *Config) RegisterTranslator(model string, t provider.Translator) {
+	cfg.RegisterModel(model)
+
+	if cfg.translator == nil {
+		cfg.translator = make(map[string]provider.Translator)
+	}
+
+	cfg.translator[model] = t
 }
 
 func (cfg *Config) RegisterTranscriber(model string, t provider.Transcriber) {
@@ -62,6 +71,10 @@ func (cfg *Config) registerProviders(f *configFile) error {
 
 			if completer, ok := r.(provider.Completer); ok {
 				cfg.RegisterCompleter(id, completer)
+			}
+
+			if translator, ok := r.(provider.Translator); ok {
+				cfg.RegisterTranslator(id, translator)
 			}
 
 			if transcriber, ok := r.(provider.Transcriber); ok {
@@ -168,24 +181,24 @@ func customProvider(cfg providerConfig, model string) (*custom.Client, error) {
 	return custom.New(cfg.URL, options...)
 }
 
-func teiProvider(cfg providerConfig) (*tei.Client, error) {
-	var options []tei.Option
+func teiProvider(cfg providerConfig) (*huggingface.Embedder, error) {
+	var options []huggingface.Option
 
 	if len(cfg.Models) > 1 {
 		return nil, errors.New("multiple models not supported for tei provider")
 	}
 
-	return tei.New(cfg.URL, options...)
+	return huggingface.NewEmbedder(cfg.URL, options...)
 }
 
-func tgiProvider(cfg providerConfig) (*tgi.Client, error) {
-	var options []tgi.Option
+func tgiProvider(cfg providerConfig) (*huggingface.Completer, error) {
+	var options []huggingface.Option
 
 	if len(cfg.Models) > 1 {
 		return nil, errors.New("multiple models not supported for tgi provider")
 	}
 
-	return tgi.New(cfg.URL, options...)
+	return huggingface.NewCompleter(cfg.URL, options...)
 }
 
 func whisperProvider(cfg providerConfig) (*whisper.Client, error) {
