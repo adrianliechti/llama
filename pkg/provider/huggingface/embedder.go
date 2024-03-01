@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
@@ -20,6 +19,9 @@ type Embedder struct {
 func NewEmbedder(url string, options ...Option) (*Embedder, error) {
 	cfg := &Config{
 		url: url,
+
+		token: "-",
+		model: "tei",
 
 		client: http.DefaultClient,
 	}
@@ -38,8 +40,7 @@ func (e *Embedder) Embed(ctx context.Context, content string) ([]float32, error)
 		"inputs": strings.TrimSpace(content),
 	}
 
-	u, _ := url.JoinPath(e.url, "/embed")
-	resp, err := e.client.Post(u, "application/json", jsonReader(body))
+	resp, err := e.client.Post(e.url, "application/json", jsonReader(body))
 
 	if err != nil {
 		return nil, err

@@ -98,6 +98,7 @@ providers:
         template: mistral
 ```
 
+
 #### WHISPER.CPP
 
 https://github.com/ggerganov/whisper.cpp/tree/master/examples/server
@@ -117,26 +118,19 @@ providers:
         id: whisper
 ```
 
-#### Text Generation Inference (TEI)
 
-https://huggingface.co/docs/text-embeddings-inference/index
+#### Hugging Face
 
-```shell
-# using taskfile.dev
-task tei-server
-
-# using Docker
-$ docker run -it --rm -p 9082:8000 adrianliechti/sentence-transformers:bge-base-en-v1
-```
+https://huggingface.co/
 
 ```yaml
 providers:
-  - type: tei
-    url: http://localhost:9082
+  - type: huggingface
+    url: https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1
 
     models:
-      bge-base-en-v1:
-        id: bge-base-en-v1
+      mistral-7B-instruct:
+        id: tgi
 ```
 
 
@@ -229,6 +223,7 @@ indexes:
     namespace: docs
 ```
 
+
 ### Extracters
 
 #### Tesseract
@@ -249,6 +244,7 @@ extracters:
     type: tesseract
     url: http://localhost:9086
 ```
+
 
 #### Unstructured
 
@@ -284,6 +280,7 @@ classifiers:
       class-2: "...Description when to use Class 2..."
 ```
 
+
 ## Use Cases
 
 ### Retrieval Augmented Generation (RAG)
@@ -304,6 +301,7 @@ chains:
     #  {metadata-key}:
     #    classifier: {classifier-id}
 ```
+
 
 #### Index Documents
 
@@ -341,6 +339,7 @@ POST http://localhost:8080/v1/index/{index-name}
     }
 ]
 ```
+
 
 ### Function Calling
 

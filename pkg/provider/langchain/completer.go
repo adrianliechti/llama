@@ -117,8 +117,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			data = bytes.TrimSpace(data)
 
-			println(string(data))
-
 			if bytes.EqualFold(data, []byte("event: end")) {
 				resultReason = provider.CompletionReasonStop
 
@@ -134,11 +132,13 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				}
 			}
 
-			if bytes.HasPrefix(data, []byte("event: ")) {
+			if bytes.HasPrefix(data, []byte("event:")) {
 				continue
 			}
 
-			data = bytes.TrimPrefix(data, []byte("data: "))
+			data = bytes.TrimPrefix(data, []byte("data:"))
+
+			data = bytes.TrimSpace(data)
 
 			if len(data) == 0 {
 				continue

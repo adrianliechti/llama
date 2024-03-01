@@ -100,11 +100,8 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 	case "ollama":
 		return ollamaProvider(cfg, model)
 
-	case "tei":
-		return teiProvider(cfg)
-
-	case "tgi":
-		return tgiProvider(cfg)
+	case "huggingface":
+		return huggingfaceProvider(cfg, model)
 
 	case "langchain":
 		return langchainProvider(cfg, model)
@@ -181,24 +178,18 @@ func customProvider(cfg providerConfig, model string) (*custom.Client, error) {
 	return custom.New(cfg.URL, options...)
 }
 
-func teiProvider(cfg providerConfig) (*huggingface.Embedder, error) {
+func huggingfaceProvider(cfg providerConfig, model string) (*huggingface.Client, error) {
 	var options []huggingface.Option
 
-	if len(cfg.Models) > 1 {
-		return nil, errors.New("multiple models not supported for tei provider")
+	if cfg.Token != "" {
+		options = append(options, huggingface.WithToken(cfg.Token))
 	}
 
-	return huggingface.NewEmbedder(cfg.URL, options...)
-}
-
-func tgiProvider(cfg providerConfig) (*huggingface.Completer, error) {
-	var options []huggingface.Option
-
 	if len(cfg.Models) > 1 {
-		return nil, errors.New("multiple models not supported for tgi provider")
+		return nil, errors.New("multiple models not supported for hugging face provider")
 	}
 
-	return huggingface.NewCompleter(cfg.URL, options...)
+	return huggingface.New(cfg.URL, options...)
 }
 
 func whisperProvider(cfg providerConfig) (*whisper.Client, error) {
