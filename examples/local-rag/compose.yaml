@@ -17,7 +17,7 @@ services:
       - unstructured
 
   weaviate:
-    image: semitechnologies/weaviate:1.23.7
+    image: semitechnologies/weaviate:1.23.11
     pull_policy: always
     environment:
       - CLUSTER_HOSTNAME=weaviate
@@ -65,7 +65,10 @@ configs:
           namespace: Document
           embedding: nomic-embed-text-v1
 
-      extracters:
+      extractors:
+        code:
+          type: text
+          
         unstructured:
           type: unstructured
           url: http://unstructured:8000
@@ -75,6 +78,7 @@ configs:
           type: rag
           index: docs
           model: mistral
+          limit: 10
 
   web:
     content: |

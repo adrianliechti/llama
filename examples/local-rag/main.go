@@ -15,6 +15,7 @@ func main() {
 	urlFlag := flag.String("url", "http://localhost:8080", "server url")
 	pathFlag := flag.String("path", "", "documents path")
 	indexFlag := flag.String("index", "docs", "index name")
+	extractorFlag := flag.String("extractor", "unstructured", "extractor name")
 
 	flag.Parse()
 
@@ -32,13 +33,32 @@ func main() {
 
 	client := http.DefaultClient
 
-	url := strings.TrimRight(*urlFlag, "/") + "/api/index/" + *indexFlag + "/unstructured"
+	var filetypes []string
+	var fileignores []string
 
-	filetypes := []string{
-		".txt", ".eml", ".msg", ".html", ".md", ".rst", ".rtf",
-		".jpeg", ".png",
-		".doc", ".docx", ".ppt", ".pptx", ".pdf", ".odt", ".epub", ".csv", ".tsv", ".xlsx",
+	switch strings.ToLower(*extractorFlag) {
+	case "code":
+		filetypes = []string{
+			".c", ".h", ".cpp", ".hpp", ".m", ".cs", ".vb", ".java", ".js", ".mjs", ".py", ".rb", ".sql", ".sh", ".bat",
+			".swift", ".kt", ".kts", ".go", ".rs", ".ts", ".tsx", ".scala", ".pl", ".pm", ".lua", ".dart", ".groovy", ".gvy", ".jl",
+		}
+
+		fileignores = []string{
+			".pb.go", ".generated.go",
+			".min.js", "d.ts", "node_modules/",
+		}
+
+	case "unstructured":
+		filetypes = []string{
+			".txt", ".eml", ".msg", ".html", ".md", ".rst", ".rtf",
+			".jpeg", ".png",
+			".doc", ".docx", ".ppt", ".pptx", ".pdf", ".odt", ".epub", ".csv", ".tsv", ".xlsx",
+		}
+	default:
+		panic("unknown extractor")
 	}
+
+	url := strings.TrimRight(*urlFlag, "/") + "/api/index/" + *indexFlag + "/" + *extractorFlag
 
 	err := filepath.Walk(*pathFlag, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -50,6 +70,12 @@ func main() {
 		}
 
 		if !slices.Contains(filetypes, filepath.Ext(path)) {
+			return nil
+		}
+
+		if slices.ContainsFunc(fileignores, func(s string) bool {
+			return strings.Contains(strings.ToLower(path), strings.ToLower(s))
+		}) {
 			return nil
 		}
 
