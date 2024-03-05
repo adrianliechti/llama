@@ -74,7 +74,7 @@ func (c *Client) Extract(ctx context.Context, input extracter.File, options *ext
 
 	w.Close()
 
-	req, _ := http.NewRequest("POST", url, &b)
+	req, _ := http.NewRequestWithContext(ctx, "POST", url, &b)
 	req.Header.Set("Content-Type", w.FormDataContentType())
 
 	resp, err := c.client.Do(req)

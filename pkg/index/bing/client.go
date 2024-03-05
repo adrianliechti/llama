@@ -62,7 +62,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 	u.RawQuery = values.Encode()
 
-	req, _ := http.NewRequest("GET", u.String(), nil)
+	req, _ := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	req.Header.Set("Ocp-Apim-Subscription-Key", c.token)
 
 	resp, err := c.client.Do(req)

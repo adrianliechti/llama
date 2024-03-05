@@ -58,7 +58,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 	url.RawQuery = values.Encode()
 
-	req, _ := http.NewRequest("GET", url.String(), nil)
+	req, _ := http.NewRequestWithContext(ctx, "GET", url.String(), nil)
 	req.Header.Set("Referer", "https://www.duckduckgo.com/")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")

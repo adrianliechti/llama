@@ -67,7 +67,7 @@ func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 
 	w.Close()
 
-	req, _ := http.NewRequest("POST", url, &body)
+	req, _ := http.NewRequestWithContext(ctx, "POST", url, &body)
 	req.Header.Set("Content-Type", w.FormDataContentType())
 
 	resp, err := t.client.Do(req)

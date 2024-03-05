@@ -63,8 +63,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		choice := completion.Choices[0]
 
 		return &provider.Completion{
-			ID: completion.ID,
-
+			ID:     completion.ID,
 			Reason: toCompletionResult(choice.FinishReason),
 
 			Message: provider.Message{
@@ -108,8 +107,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			resultFunctions = toFunctionCalls(choice.Delta.ToolCalls)
 
 			options.Stream <- provider.Completion{
-				ID: completion.ID,
-
+				ID:     completion.ID,
 				Reason: resultReason,
 
 				Message: provider.Message{
@@ -125,8 +123,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		}
 
 		result := provider.Completion{
-			ID: resultID,
-
+			ID:     resultID,
 			Reason: resultReason,
 
 			Message: provider.Message{
@@ -177,10 +174,6 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 
 	if options.Temperature != nil {
 		req.Temperature = *options.Temperature
-	}
-
-	if options.TopP != nil {
-		req.TopP = *options.TopP
 	}
 
 	for _, m := range messages {

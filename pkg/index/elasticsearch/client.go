@@ -59,7 +59,7 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		},
 	}
 
-	req, _ := http.NewRequest(http.MethodGet, u, jsonReader(body))
+	req, _ := http.NewRequestWithContext(ctx, "GET", u, jsonReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.client.Do(req)
@@ -134,7 +134,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		},
 	}
 
-	req, _ := http.NewRequest(http.MethodGet, u, jsonReader(body))
+	req, _ := http.NewRequestWithContext(ctx, "GET", u, jsonReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.client.Do(req)

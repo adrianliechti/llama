@@ -59,7 +59,7 @@ func (t *Translator) Translate(ctx context.Context, content string, options *pro
 
 	u.RawQuery = query.Encode()
 
-	r, _ := http.NewRequest(http.MethodPost, u.String(), jsonReader(body))
+	r, _ := http.NewRequestWithContext(ctx, "POST", u.String(), jsonReader(body))
 	r.Header.Add("Ocp-Apim-Subscription-Key", t.token)
 	r.Header.Add("Content-Type", "application/json")
 

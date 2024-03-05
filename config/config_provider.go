@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/provider/anthropic"
 	"github.com/adrianliechti/llama/pkg/provider/azuretranslator"
 	"github.com/adrianliechti/llama/pkg/provider/custom"
 	"github.com/adrianliechti/llama/pkg/provider/deepl"
@@ -91,6 +92,9 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 	case "openai":
 		return openaiProvider(cfg, model)
 
+	case "anthropic":
+		return anthropicProvider(cfg, model)
+
 	case "llama":
 		return llamaProvider(cfg, model)
 
@@ -136,6 +140,24 @@ func openaiProvider(cfg providerConfig, model string) (*openai.Client, error) {
 	}
 
 	return openai.New(options...)
+}
+
+func anthropicProvider(cfg providerConfig, model string) (*anthropic.Client, error) {
+	var options []anthropic.Option
+
+	// if cfg.URL != "" {
+	// 	options = append(options, openai.WithURL(cfg.URL))
+	// }
+
+	if cfg.Token != "" {
+		options = append(options, anthropic.WithToken(cfg.Token))
+	}
+
+	if model != "" {
+		options = append(options, anthropic.WithModel(model))
+	}
+
+	return anthropic.New(options...)
 }
 
 func llamaProvider(cfg providerConfig, model string) (*llama.Client, error) {

@@ -150,7 +150,7 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 		err := c.createObject(d)
 
 		if err != nil {
-			err = c.updateObject(d)
+			err = c.updateObject(ctx, d)
 		}
 
 		if err != nil {
@@ -284,7 +284,7 @@ func (c *Client) createObject(d index.Document) error {
 	return nil
 }
 
-func (c *Client) updateObject(d index.Document) error {
+func (c *Client) updateObject(ctx context.Context, d index.Document) error {
 	properties := maps.Clone(d.Metadata)
 	properties["content"] = d.Content
 
@@ -298,7 +298,7 @@ func (c *Client) updateObject(d index.Document) error {
 	}
 
 	u, _ := url.JoinPath(c.url, "/v1/objects/"+c.class+"/"+d.ID)
-	req, err := http.NewRequest(http.MethodPut, u, jsonReader(body))
+	req, err := http.NewRequestWithContext(ctx, "PUT", u, jsonReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	if err != nil {

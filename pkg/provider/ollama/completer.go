@@ -16,7 +16,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var _ provider.Embedder = (*Embedder)(nil)
+var _ provider.Completer = (*Completer)(nil)
 
 type Completer struct {
 	*Config
@@ -75,8 +75,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		}
 
 		result := provider.Completion{
-			ID: id,
-
+			ID:     id,
 			Reason: provider.CompletionReasonStop,
 
 			Message: provider.Message{
@@ -144,8 +143,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			resultReason = toCompletionReason(chat)
 
 			options.Stream <- provider.Completion{
-				ID: id,
-
+				ID:     id,
 				Reason: resultReason,
 
 				Message: provider.Message{
@@ -156,6 +154,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		}
 
 		result := provider.Completion{
+			ID:     id,
 			Reason: resultReason,
 
 			Message: provider.Message{

@@ -50,7 +50,6 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 	options := &provider.CompleteOptions{
 		Temperature: req.Temperature,
-		TopP:        req.TopP,
 
 		Functions: functions,
 	}

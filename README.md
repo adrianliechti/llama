@@ -49,6 +49,20 @@ providers:
 ```
 
 
+#### Anthropic
+
+https://www.anthropic.com/api
+
+```yaml
+providers:
+  - type: anthropic
+    token: sk-ant-apixx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    models:
+      claude-3-opus:
+        id: claude-3-opus-20240229
+```
+
+
 #### Ollama
 
 https://ollama.ai

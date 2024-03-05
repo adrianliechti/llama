@@ -75,8 +75,6 @@ func (c *Client) Complete(ctx context.Context, messages []provider.Message, opti
 		Messages: fromMessages(messages),
 
 		Temperature: options.Temperature,
-		TopP:        options.TopP,
-		MinP:        options.MinP,
 	})
 
 	if err != nil {

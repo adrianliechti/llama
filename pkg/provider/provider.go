@@ -99,8 +99,6 @@ type CompleteOptions struct {
 	Stop []string
 
 	Temperature *float32
-	TopP        *float32
-	MinP        *float32
 }
 
 type Translation struct {

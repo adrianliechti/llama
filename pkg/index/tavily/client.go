@@ -65,7 +65,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		"search_depth": "basic",
 	}
 
-	req, _ := http.NewRequest(http.MethodPost, u.String(), jsonReader(body))
+	req, _ := http.NewRequestWithContext(ctx, "POST", u.String(), jsonReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.client.Do(req)

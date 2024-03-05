@@ -68,8 +68,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		defer resp.Body.Close()
 
 		result := provider.Completion{
-			ID: id,
-
+			ID:     id,
 			Reason: provider.CompletionReasonStop,
 
 			Message: provider.Message{
@@ -121,8 +120,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				resultReason = provider.CompletionReasonStop
 
 				options.Stream <- provider.Completion{
-					ID: id,
-
+					ID:     id,
 					Reason: resultReason,
 
 					Message: provider.Message{
@@ -168,8 +166,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			resultRole = toMessageRole(run)
 
 			options.Stream <- provider.Completion{
-				ID: id,
-
+				ID:     id,
 				Reason: resultReason,
 
 				Message: provider.Message{
@@ -180,8 +177,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		}
 
 		result := provider.Completion{
-			ID: id,
-
+			ID:     id,
 			Reason: resultReason,
 
 			Message: provider.Message{

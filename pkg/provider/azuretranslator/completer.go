@@ -21,8 +21,7 @@ func (t *Translator) Complete(ctx context.Context, messages []provider.Message, 
 	}
 
 	completion := provider.Completion{
-		ID: uuid.New().String(),
-
+		ID:     uuid.New().String(),
 		Reason: provider.CompletionReasonStop,
 
 		Message: provider.Message{

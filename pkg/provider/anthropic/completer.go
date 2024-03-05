@@ -1,0 +1,329 @@
+package anthropic
+
+import (
+	"bufio"
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+	"unicode"
+
+	"github.com/adrianliechti/llama/pkg/provider"
+)
+
+var _ provider.Completer = (*Completer)(nil)
+
+type Completer struct {
+	*Config
+}
+
+func NewCompleter(options ...Option) (*Completer, error) {
+	c := &Config{
+		url:    "https://api.anthropic.com/v1",
+		client: http.DefaultClient,
+	}
+
+	for _, option := range options {
+		option(c)
+	}
+
+	return &Completer{
+		Config: c,
+	}, nil
+}
+
+func (c *Completer) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+	if options == nil {
+		options = new(provider.CompleteOptions)
+	}
+
+	url, _ := url.JoinPath(c.url, "/messages")
+	body, err := convertChatRequest(c.model, messages, options)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if options.Stream == nil {
+		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
+		req.Header.Set("x-api-key", c.token)
+		req.Header.Set("anthropic-version", "2023-06-01")
+		req.Header.Set("content-type", "application/json")
+
+		resp, err := c.client.Do(req)
+
+		if err != nil {
+			return nil, err
+		}
+
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, errors.New("unable to complete")
+		}
+
+		var response MessagesResponse
+
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			return nil, err
+		}
+
+		if response.Role != MessageRoleAssistant || len(response.Content) != 1 {
+			return nil, errors.New("invalid complete response")
+		}
+
+		role := provider.MessageRoleAssistant
+		content := response.Content[0].Text
+
+		result := provider.Completion{
+			ID:     response.ID,
+			Reason: provider.CompletionReasonStop,
+
+			Message: provider.Message{
+				Role:    role,
+				Content: content,
+			},
+		}
+
+		return &result, nil
+	} else {
+		defer close(options.Stream)
+
+		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
+		req.Header.Set("x-api-key", c.token)
+		req.Header.Set("anthropic-version", "2023-06-01")
+		req.Header.Set("content-type", "application/json")
+
+		resp, err := c.client.Do(req)
+
+		if err != nil {
+			return nil, err
+		}
+
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, errors.New("unable to complete")
+		}
+
+		reader := bufio.NewReader(resp.Body)
+
+		var resultID string
+		var resultText strings.Builder
+		var resultRole provider.MessageRole
+		var resultReason provider.CompletionReason
+
+		for i := 0; ; i++ {
+			data, err := reader.ReadBytes('\n')
+
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			if err != nil {
+				return nil, err
+			}
+
+			data = bytes.TrimSpace(data)
+
+			if bytes.HasPrefix(data, []byte("event:")) {
+				continue
+			}
+
+			data = bytes.TrimPrefix(data, []byte("data:"))
+
+			data = bytes.TrimSpace(data)
+
+			if len(data) == 0 {
+				continue
+			}
+
+			var event MessagesEvent
+
+			if err := json.Unmarshal([]byte(data), &event); err != nil {
+				return nil, err
+			}
+
+			if event.Message != nil {
+				resultID = event.Message.ID
+			}
+
+			if event.Type == EventTypeMessageStop {
+				resultReason = provider.CompletionReasonStop
+				break
+			}
+
+			if event.Type != EventTypeContentBlockDelta || event.Delta == nil {
+				continue
+			}
+
+			var content = event.Delta.Text
+
+			if i == 0 {
+				content = strings.TrimLeftFunc(content, unicode.IsSpace)
+			}
+
+			resultText.WriteString(content)
+
+			resultRole = provider.MessageRoleAssistant
+
+			options.Stream <- provider.Completion{
+				ID:     resultID,
+				Reason: resultReason,
+
+				Message: provider.Message{
+					Role:    resultRole,
+					Content: content,
+				},
+			}
+		}
+
+		result := provider.Completion{
+			ID:     resultID,
+			Reason: resultReason,
+
+			Message: provider.Message{
+				Role:    resultRole,
+				Content: resultText.String(),
+			},
+		}
+
+		return &result, nil
+	}
+}
+
+func convertChatRequest(model string, messages []provider.Message, options *provider.CompleteOptions) (*MessagesRequest, error) {
+	if options == nil {
+		options = new(provider.CompleteOptions)
+	}
+
+	stream := options.Stream != nil
+
+	req := &MessagesRequest{
+		Model:  model,
+		Stream: stream,
+
+		MaxTokens:     1024,
+		Temperature:   options.Temperature,
+		StopSequences: options.Stop,
+	}
+
+	for _, m := range messages {
+		switch m.Role {
+		case provider.MessageRoleSystem:
+			req.System = m.Content
+
+		case provider.MessageRoleUser:
+			req.Messages = append(req.Messages, Message{
+				Role:    MessageRoleUser,
+				Content: m.Content,
+			})
+
+		case provider.MessageRoleAssistant:
+			req.Messages = append(req.Messages, Message{
+				Role:    MessageRoleAssistant,
+				Content: m.Content,
+			})
+
+		default:
+			return nil, errors.New("unsupported message role")
+		}
+	}
+
+	return req, nil
+}
+
+type MessageRole string
+
+var (
+	MessageRoleUser      MessageRole = "user"
+	MessageRoleAssistant MessageRole = "assistant"
+)
+
+type MessagesRequest struct {
+	Model string `json:"model"`
+
+	Stream bool   `json:"stream"`
+	System string `json:"system,omitempty"`
+
+	Messages []Message `json:"messages"`
+
+	MaxTokens     int      `json:"max_tokens,omitempty"`
+	Temperature   *float32 `json:"temperature,omitempty"`
+	StopSequences []string `json:"stop_sequences,omitempty"`
+}
+
+type Message struct {
+	Role    MessageRole `json:"role"`
+	Content string      `json:"content"`
+}
+
+type ContentType string
+
+var (
+	ContentTypeText      ContentType = "text"
+	ContentTypeTextDelta ContentType = "text_delta"
+)
+
+type Content struct {
+	Text string      `json:"text"`
+	Type ContentType `json:"type"`
+}
+
+type ResponseType string
+
+var (
+	ResponseTypeMessage ResponseType = "message"
+)
+
+type StopReason string
+
+var (
+	StopReasonEndTurn      StopReason = "end_turn"
+	StopReasonMaxTokens    StopReason = "max_tokens"
+	StopReasonStopSequence StopReason = "stop_sequence"
+)
+
+type MessagesResponse struct {
+	ID string `json:"id"`
+
+	Type  ResponseType `json:"type"`
+	Model string       `json:"model"`
+
+	Role MessageRole `json:"role"`
+
+	Content []Content `json:"content"`
+
+	StopReason   StopReason `json:"stop_reason,omitempty"`
+	StopSequence []string   `json:"stop_sequence,omitempty"`
+}
+
+type EventType string
+
+var (
+	EventTypePing EventType = "ping"
+
+	EventTypeMessageStart EventType = "message_start"
+	EventTypeMessageDelta EventType = "message_delta"
+	EventTypeMessageStop  EventType = "message_stop"
+
+	EventTypeContentBlockStart EventType = "content_block_start"
+	EventTypeContentBlockDelta EventType = "content_block_delta"
+	EventTypeContentBlockStop  EventType = "content_block_stop"
+)
+
+type MessagesEvent struct {
+	Type EventType `json:"type"`
+
+	Index int `json:"index"`
+
+	Message      *MessagesResponse `json:"message,omitempty"`
+	MessageDelta *MessagesResponse `json:"message_delta,omitempty"`
+
+	ContentBlock *Content `json:"content_block,omitempty"`
+	Delta        *Content `json:"delta,omitempty"`
+}
