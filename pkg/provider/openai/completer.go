@@ -153,6 +153,10 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 		}
 	}
 
+	if model == "gpt-4-vision-preview" || model == "gpt-4-1106-vision-preview" {
+		req.MaxTokens = 4096
+	}
+
 	for _, f := range options.Functions {
 		tool := openai.Tool{
 			Type: openai.ToolTypeFunction,
