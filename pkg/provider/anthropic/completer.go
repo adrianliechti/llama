@@ -4,11 +4,14 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"unicode"
 
@@ -218,10 +221,42 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 			req.System = m.Content
 
 		case provider.MessageRoleUser:
-			req.Messages = append(req.Messages, Message{
+			message := Message{
 				Role:    MessageRoleUser,
 				Content: m.Content,
-			})
+			}
+
+			if len(m.Files) > 0 {
+				message.Content = ""
+
+				message.Contents = []Content{
+					{
+						Type: ContentTypeText,
+						Text: m.Content,
+					},
+				}
+
+				for _, f := range m.Files {
+					mime := mime.TypeByExtension(filepath.Ext(f.Name))
+					data, err := io.ReadAll(f.Content)
+
+					if err != nil {
+						return nil, err
+					}
+
+					message.Contents = append(message.Contents, Content{
+						Type: ContentTypeImage,
+
+						Source: &ContentSource{
+							Type:      "base64",
+							MediaType: mime,
+							Data:      base64.StdEncoding.EncodeToString(data),
+						},
+					})
+				}
+			}
+
+			req.Messages = append(req.Messages, message)
 
 		case provider.MessageRoleAssistant:
 			req.Messages = append(req.Messages, Message{
@@ -258,8 +293,64 @@ type MessagesRequest struct {
 }
 
 type Message struct {
-	Role    MessageRole `json:"role"`
-	Content string      `json:"content"`
+	Role MessageRole `json:"role"`
+
+	Content  string    `json:"content"`
+	Contents []Content `json:"contents,omitempty"`
+}
+
+func (m *Message) MarshalJSON() ([]byte, error) {
+	if m.Content != "" && m.Contents != nil {
+		return nil, errors.New("cannot have both content and contents")
+	}
+
+	if len(m.Contents) > 0 {
+		msg := struct {
+			Role MessageRole `json:"role"`
+
+			Content  string    `json:"-"`
+			Contents []Content `json:"content,omitempty"`
+		}(*m)
+
+		return json.Marshal(msg)
+	}
+
+	msg := struct {
+		Role MessageRole `json:"role"`
+
+		Content  string    `json:"content"`
+		Contents []Content `json:"-"`
+	}(*m)
+
+	return json.Marshal(msg)
+}
+
+func (m *Message) UnmarshalJSON(data []byte) error {
+	m1 := struct {
+		Role MessageRole `json:"role"`
+
+		Content  string `json:"content"`
+		Contents []Content
+	}{}
+
+	if err := json.Unmarshal(data, &m1); err == nil {
+		*m = Message(m1)
+		return nil
+	}
+
+	m2 := struct {
+		Role MessageRole `json:"role"`
+
+		Content  string
+		Contents []Content `json:"content"`
+	}{}
+
+	if err := json.Unmarshal(data, &m2); err == nil {
+		*m = Message(m2)
+		return err
+	}
+
+	return nil
 }
 
 type ContentType string
@@ -267,11 +358,21 @@ type ContentType string
 var (
 	ContentTypeText      ContentType = "text"
 	ContentTypeTextDelta ContentType = "text_delta"
+	ContentTypeImage     ContentType = "image"
 )
 
 type Content struct {
-	Text string      `json:"text"`
 	Type ContentType `json:"type"`
+
+	Text   string         `json:"text,omitempty"`
+	Source *ContentSource `json:"source,omitempty"`
+}
+
+type ContentSource struct {
+	Type string `json:"type"`
+
+	MediaType string `json:"media_type"`
+	Data      string `json:"data"`
 }
 
 type ResponseType string
