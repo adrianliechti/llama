@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/adrianliechti/llama/pkg/extracter"
+	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/text"
 )
 
-var _ extracter.Provider = &Provider{}
+var _ extractor.Provider = &Provider{}
 
 type Provider struct {
 }
@@ -26,9 +26,9 @@ func New(options ...Option) (*Provider, error) {
 	return p, nil
 }
 
-func (p *Provider) Extract(ctx context.Context, input extracter.File, options *extracter.ExtractOptions) (*extracter.Document, error) {
+func (p *Provider) Extract(ctx context.Context, input extractor.File, options *extractor.ExtractOptions) (*extractor.Document, error) {
 	if options == nil {
-		options = &extracter.ExtractOptions{}
+		options = &extractor.ExtractOptions{}
 	}
 
 	data, err := io.ReadAll(input.Content)
@@ -37,14 +37,14 @@ func (p *Provider) Extract(ctx context.Context, input extracter.File, options *e
 		return nil, err
 	}
 
-	result := extracter.Document{
+	result := extractor.Document{
 		Name: input.Name,
 	}
 
 	chunks := text.Split(string(data))
 
 	for i, chunk := range chunks {
-		block := []extracter.Block{
+		block := []extractor.Block{
 			{
 				ID:      fmt.Sprintf("%s#%d", result.Name, i),
 				Content: chunk,

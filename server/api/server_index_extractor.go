@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/extracter"
+	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/index"
 
 	"github.com/go-chi/chi/v5"
 )
 
-func (s *Server) handleIndexWithExtracter(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleIndexWithExtractor(w http.ResponseWriter, r *http.Request) {
 	i, err := s.Index(chi.URLParam(r, "index"))
 
 	if err != nil {
@@ -18,14 +18,14 @@ func (s *Server) handleIndexWithExtracter(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	e, err := s.Extracter(chi.URLParam(r, "extracter"))
+	e, err := s.Extractor(chi.URLParam(r, "extractor"))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	file := extracter.File{
+	file := extractor.File{
 		Name:    detectFileName(r),
 		Content: r.Body,
 	}

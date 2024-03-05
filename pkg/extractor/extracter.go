@@ -1,4 +1,4 @@
-package extracter
+package extractor
 
 import (
 	"context"

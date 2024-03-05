@@ -25,13 +25,13 @@ func New(cfg *config.Config) (*Server, error) {
 		Handler: r,
 	}
 
-	r.Post("/extract/{extracter}", s.handleExtract)
+	r.Post("/extract/{extractor}", s.handleExtract)
 	r.Post("/translate/{translator}", s.handleTranslate)
 
 	r.Get("/index/{index}", s.handleIndexList)
 	r.Post("/index/{index}", s.handleIndexIngest)
 	r.Post("/index/{index}/query", s.handleIndexQuery)
-	r.Post("/index/{index}/{extracter}", s.handleIndexWithExtracter)
+	r.Post("/index/{index}/{extractor}", s.handleIndexWithExtractor)
 
 	return s, nil
 }

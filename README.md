@@ -238,7 +238,7 @@ indexes:
 ```
 
 
-### Extracters
+### Extractors
 
 #### Tesseract
 
@@ -253,7 +253,7 @@ docker run -it --rm -p 9086:8884 hertzg/tesseract-server:latest
 ```
 
 ```yaml
-extracters:
+extractors:
   tesseract:
     type: tesseract
     url: http://localhost:9086
@@ -273,7 +273,7 @@ docker run -it --rm -p 9085:8000 quay.io/unstructured-io/unstructured-api:0.0.64
 ```
 
 ```yaml
-extracters:
+extractors:
   unstructured:
     type: unstructured
     url: http://localhost:9085

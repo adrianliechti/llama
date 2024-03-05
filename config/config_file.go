@@ -32,7 +32,7 @@ type configFile struct {
 	Providers []providerConfig `yaml:"providers"`
 
 	Indexes     map[string]indexConfig      `yaml:"indexes"`
-	Extracters  map[string]extracterConfig  `yaml:"extracters"`
+	Extractors  map[string]extractorConfig  `yaml:"extractors"`
 	Classifiers map[string]classifierConfig `yaml:"classifiers"`
 
 	Tools  map[string]toolConfig  `yaml:"tools"`
@@ -83,7 +83,7 @@ type indexConfig struct {
 	Embedding string `yaml:"embedding"`
 }
 
-type extracterConfig struct {
+type extractorConfig struct {
 	Type string `yaml:"type"`
 
 	URL   string `yaml:"url"`

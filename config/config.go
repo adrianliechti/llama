@@ -6,7 +6,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/authorizer"
 	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/classifier"
-	"github.com/adrianliechti/llama/pkg/extracter"
+	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/tool"
@@ -25,7 +25,7 @@ type Config struct {
 	transcriber map[string]provider.Transcriber
 
 	indexes     map[string]index.Provider
-	extracters  map[string]extracter.Provider
+	extractors  map[string]extractor.Provider
 	classifiers map[string]classifier.Provider
 
 	tools  map[string]tool.Tool
@@ -108,14 +108,14 @@ func (cfg *Config) Index(id string) (index.Provider, error) {
 	return nil, errors.New("index not found: " + id)
 }
 
-func (cfg *Config) Extracter(id string) (extracter.Provider, error) {
-	if cfg.extracters != nil {
-		if e, ok := cfg.extracters[id]; ok {
+func (cfg *Config) Extractor(id string) (extractor.Provider, error) {
+	if cfg.extractors != nil {
+		if e, ok := cfg.extractors[id]; ok {
 			return e, nil
 		}
 	}
 
-	return nil, errors.New("extracter not found: " + id)
+	return nil, errors.New("extractor not found: " + id)
 }
 
 func (cfg *Config) Tool(id string) (tool.Tool, error) {
@@ -161,7 +161,7 @@ func Parse(path string) (*Config, error) {
 		return nil, err
 	}
 
-	if err := c.registerExtracters(file); err != nil {
+	if err := c.registerExtractors(file); err != nil {
 		return nil, err
 	}
 

@@ -10,11 +10,11 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/adrianliechti/llama/pkg/extracter"
+	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/text"
 )
 
-var _ extracter.Provider = &Client{}
+var _ extractor.Provider = &Client{}
 
 type Client struct {
 	url string
@@ -48,9 +48,9 @@ func WithClient(client *http.Client) Option {
 	}
 }
 
-func (c *Client) Extract(ctx context.Context, input extracter.File, options *extracter.ExtractOptions) (*extracter.Document, error) {
+func (c *Client) Extract(ctx context.Context, input extractor.File, options *extractor.ExtractOptions) (*extractor.Document, error) {
 	if options == nil {
-		options = &extracter.ExtractOptions{}
+		options = &extractor.ExtractOptions{}
 	}
 
 	url, _ := url.JoinPath(c.url, "/general/v0/general")
@@ -96,7 +96,7 @@ func (c *Client) Extract(ctx context.Context, input extracter.File, options *ext
 		return nil, err
 	}
 
-	result := extracter.Document{
+	result := extractor.Document{
 		Name: input.Name,
 	}
 
@@ -105,7 +105,7 @@ func (c *Client) Extract(ctx context.Context, input extracter.File, options *ext
 	}
 
 	for _, e := range elements {
-		block := extracter.Block{
+		block := extractor.Block{
 			ID:      e.ID,
 			Content: text.Normalize(e.Text),
 		}

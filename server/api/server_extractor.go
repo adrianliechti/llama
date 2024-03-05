@@ -3,20 +3,20 @@ package api
 import (
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/extracter"
+	"github.com/adrianliechti/llama/pkg/extractor"
 
 	"github.com/go-chi/chi/v5"
 )
 
 func (s *Server) handleExtract(w http.ResponseWriter, r *http.Request) {
-	e, err := s.Extracter(chi.URLParam(r, "extracter"))
+	e, err := s.Extractor(chi.URLParam(r, "extractor"))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	file := extracter.File{
+	file := extractor.File{
 		Name:    detectFileName(r),
 		Content: r.Body,
 	}

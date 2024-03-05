@@ -12,11 +12,11 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/extracter"
+	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/text"
 )
 
-var _ extracter.Provider = &Client{}
+var _ extractor.Provider = &Client{}
 
 type Client struct {
 	url string
@@ -50,9 +50,9 @@ func WithClient(client *http.Client) Option {
 	}
 }
 
-func (c *Client) Extract(ctx context.Context, input extracter.File, options *extracter.ExtractOptions) (*extracter.Document, error) {
+func (c *Client) Extract(ctx context.Context, input extractor.File, options *extractor.ExtractOptions) (*extractor.Document, error) {
 	if options == nil {
-		options = &extracter.ExtractOptions{}
+		options = &extractor.ExtractOptions{}
 	}
 
 	url, _ := url.JoinPath(c.url, "/tesseract")
@@ -99,7 +99,7 @@ func (c *Client) Extract(ctx context.Context, input extracter.File, options *ext
 		return nil, errors.New(data.Data.Stderr)
 	}
 
-	result := extracter.Document{
+	result := extractor.Document{
 		Name: input.Name,
 	}
 
@@ -117,7 +117,7 @@ func (c *Client) Extract(ctx context.Context, input extracter.File, options *ext
 	for i, chunk := range chunks {
 		chunk = strings.ReplaceAll(chunk, "\n\n", "\n")
 
-		block := []extracter.Block{
+		block := []extractor.Block{
 			{
 				ID:      fmt.Sprintf("%s#%d", result.Name, i),
 				Content: chunk,
