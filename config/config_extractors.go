@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
+	"github.com/adrianliechti/llama/pkg/extractor/code"
 	"github.com/adrianliechti/llama/pkg/extractor/tesseract"
 	"github.com/adrianliechti/llama/pkg/extractor/text"
 	"github.com/adrianliechti/llama/pkg/extractor/unstructured"
@@ -37,6 +38,9 @@ func createExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	case "text":
 		return textExtractor(cfg)
 
+	case "code":
+		return codeExtractor(cfg)
+
 	case "tesseract":
 		return tesseractExtractor(cfg)
 
@@ -52,6 +56,12 @@ func textExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	var options []text.Option
 
 	return text.New(options...)
+}
+
+func codeExtractor(cfg extractorConfig) (extractor.Provider, error) {
+	var options []code.Option
+
+	return code.New(options...)
 }
 
 func tesseractExtractor(cfg extractorConfig) (extractor.Provider, error) {

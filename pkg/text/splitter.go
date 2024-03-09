@@ -4,33 +4,53 @@ import (
 	"strings"
 )
 
-const chunkSize = 1500
+type Splitter struct {
+	ChunkSize int
 
-func Split(text string) []string {
-	text = Normalize(text)
+	Normalize  bool
+	Separators []string
+}
 
-	sep := textSeperator(text)
+func NewSplitter() *Splitter {
+	return &Splitter{
+		ChunkSize: 1500,
+		Normalize: true,
+		Separators: []string{
+			"\n\n",
+			"\n",
+			" ",
+			"",
+		},
+	}
+}
+
+func (s *Splitter) Split(text string) []string {
+	if s.Normalize {
+		text = Normalize(text)
+	}
+
+	sep := s.textSeparator(text)
 	parts := strings.Split(text, sep)
 
 	var chunks []string
 	var current []string
 
 	for _, part := range parts {
-		if len(part) < chunkSize {
+		if len(part) < s.ChunkSize {
 			current = append(current, part)
 			continue
 		}
 
 		if len(current) > 0 {
-			chunks = append(chunks, combineChunks(current, sep)...)
+			chunks = append(chunks, s.combineChunks(current, sep)...)
 			clear(current)
 		}
 
-		chunks = append(chunks, Split(part)...)
+		chunks = append(chunks, s.Split(part)...)
 	}
 
 	if len(current) > 0 {
-		chunks = append(chunks, combineChunks(current, sep)...)
+		chunks = append(chunks, s.combineChunks(current, sep)...)
 	}
 
 	var result []string
@@ -48,13 +68,13 @@ func Split(text string) []string {
 	return result
 }
 
-func combineChunks(chunks []string, sep string) []string {
+func (s *Splitter) combineChunks(chunks []string, sep string) []string {
 	var result []string
 
 	var chunk string
 
 	for _, c := range chunks {
-		if len(chunk)+len(c) > chunkSize {
+		if len(chunk)+len(c) > s.ChunkSize {
 			result = append(result, chunk)
 			chunk = ""
 		}
@@ -69,15 +89,8 @@ func combineChunks(chunks []string, sep string) []string {
 	return result
 }
 
-func textSeperator(text string) string {
-	separators := []string{
-		"\n\n",
-		"\n",
-		" ",
-		"",
-	}
-
-	for _, sep := range separators {
+func (s *Splitter) textSeparator(text string) string {
+	for _, sep := range s.Separators {
 		if strings.Contains(text, sep) {
 			return sep
 		}
