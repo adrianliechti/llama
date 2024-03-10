@@ -57,7 +57,7 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 
-	w.WriteField("strategy", "hi_res")
+	w.WriteField("strategy", "auto")
 	w.WriteField("languages", "eng")
 	w.WriteField("skip_infer_table_types", "")
 	w.WriteField("pdf_infer_table_structure", "true")

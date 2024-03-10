@@ -70,6 +70,10 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 			d.Embedding = embedding
 		}
 
+		if len(d.Embedding) == 0 {
+			continue
+		}
+
 		c.documents[d.ID] = d
 	}
 
