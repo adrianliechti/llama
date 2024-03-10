@@ -67,7 +67,7 @@ configs:
 
       extractors:
         code:
-          type: text
+          type: code
           
         unstructured:
           type: unstructured

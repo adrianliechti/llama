@@ -1,9 +1,11 @@
-package text
+package code
 
 import (
 	"context"
 	"fmt"
 	"io"
+	"path"
+	"strings"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/text"
@@ -42,6 +44,11 @@ func (p *Provider) Extract(ctx context.Context, input extractor.File, options *e
 	}
 
 	splitter := text.NewSplitter()
+
+	if sep := getSeperators(input); len(sep) > 0 {
+		splitter.Separators = sep
+	}
+
 	chunks := splitter.Split(string(data))
 
 	for i, chunk := range chunks {
@@ -56,4 +63,35 @@ func (p *Provider) Extract(ctx context.Context, input extractor.File, options *e
 	}
 
 	return &result, nil
+}
+
+func getSeperators(input extractor.File) []string {
+	switch strings.ToLower(path.Ext(input.Name)) {
+	case ".cs":
+		return languageCSharp
+	case ".cpp":
+		return languageCPP
+	case ".go":
+		return languageGo
+	case ".java":
+		return languageJava
+	case ".kt":
+		return languageKotlin
+	case ".js", ".jsm":
+		return languageJavaScript
+	case ".ts", ".tsx":
+		return languageTypeScript
+	case ".py":
+		return languagePython
+	case ".rb":
+		return languageRuby
+	case ".rs":
+		return languageRust
+	case ".sc", ".scala":
+		return languageScala
+	case ".swift":
+		return languageSwift
+	}
+
+	return nil
 }

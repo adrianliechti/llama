@@ -240,6 +240,37 @@ indexes:
 
 ### Extractors
 
+#### Text
+
+```yaml
+extractors:
+  text:
+    type: text
+```
+
+#### Code
+
+Supported Languages:
+
+- C#
+- C++
+- Go
+- Java
+- Kotlin
+- Java Script
+- Type Script
+- Python
+- Ruby
+- Rust
+- Scala
+- Swfit
+
+```yaml
+extractors:
+  code:
+    type: code
+```
+
 #### Tesseract
 
 https://tesseract-ocr.github.io

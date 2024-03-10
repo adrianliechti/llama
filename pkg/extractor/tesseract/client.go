@@ -112,7 +112,8 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 		lines = append(lines, line)
 	}
 
-	chunks := text.Split(strings.Join(lines, "\n"))
+	splitter := text.NewSplitter()
+	chunks := splitter.Split(strings.Join(lines, "\n"))
 
 	for i, chunk := range chunks {
 		chunk = strings.ReplaceAll(chunk, "\n\n", "\n")
