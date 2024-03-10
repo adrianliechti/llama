@@ -22,6 +22,9 @@ message CompletionRequest {
   string model = 1;
   repeated Message messages = 2;
 
+  repeated string stop = 5;
+
+  optional int32 max_tokens = 4;
   optional float temperature = 3;
 }
 

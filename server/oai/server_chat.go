@@ -48,14 +48,25 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	options := &provider.CompleteOptions{
-		Temperature: req.Temperature,
+	var stops []string
 
-		Functions: functions,
+	switch v := req.Stop.(type) {
+	case string:
+		stops = []string{v}
+	case []string:
+		stops = v
 	}
 
-	if req.Format != nil {
-		if req.Format.Type == ResponseFormatJSON {
+	options := &provider.CompleteOptions{
+		Stop:      stops,
+		Functions: functions,
+
+		MaxTokens:   req.MaxTokens,
+		Temperature: req.Temperature,
+	}
+
+	if req.ResponseFormat != nil {
+		if req.ResponseFormat.Type == ResponseFormatJSON {
 			options.Format = provider.CompletionFormatJSON
 		}
 	}
@@ -99,7 +110,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 				Choices: []ChatCompletionChoice{
 					{
-						FinishReason: oaiCompletionReason(completion.Reason),
+						FinishReason: oaiFinishReason(completion.Reason),
 
 						Delta: &ChatCompletionMessage{
 							//Role:    fromMessageRole(completion.Role),
@@ -147,7 +158,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 			Choices: []ChatCompletionChoice{
 				{
-					FinishReason: oaiCompletionReason(completion.Reason),
+					FinishReason: oaiFinishReason(completion.Reason),
 
 					Message: &ChatCompletionMessage{
 						Role:    oaiMessageRole(completion.Message.Role),
@@ -346,16 +357,16 @@ func oaiMessageRole(r provider.MessageRole) MessageRole {
 	}
 }
 
-func oaiCompletionReason(val provider.CompletionReason) *CompletionReason {
+func oaiFinishReason(val provider.CompletionReason) *FinishReason {
 	switch val {
 	case provider.CompletionReasonStop:
-		return &CompletionReasonStop
+		return &FinishReasonStop
 
 	case provider.CompletionReasonLength:
-		return &CompletionReasonLength
+		return &FinishReasonLength
 
 	case provider.CompletionReasonFunction:
-		return &CompletionReasonToolCalls
+		return &FinishReasonToolCalls
 
 	default:
 		return nil

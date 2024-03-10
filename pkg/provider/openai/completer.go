@@ -157,6 +157,10 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 		req.MaxTokens = 4096
 	}
 
+	if options.Stop != nil {
+		req.Stop = options.Stop
+	}
+
 	for _, f := range options.Functions {
 		tool := openai.Tool{
 			Type: openai.ToolTypeFunction,
@@ -172,8 +176,8 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 		req.Tools = append(req.Tools, tool)
 	}
 
-	if options.Stop != nil {
-		req.Stop = options.Stop
+	if options.MaxTokens != nil {
+		req.MaxTokens = *options.MaxTokens
 	}
 
 	if options.Temperature != nil {

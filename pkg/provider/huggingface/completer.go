@@ -197,8 +197,13 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 	stream := options.Stream != nil
 
 	req := &ChatCompletionRequest{
-		Model:  model,
+		Model: model,
+
+		Stop:   options.Stop,
 		Stream: stream,
+
+		MaxTokens:   options.MaxTokens,
+		Temperature: options.Temperature,
 	}
 
 	for _, m := range messages {
@@ -259,10 +264,11 @@ type ChatCompletionRequest struct {
 
 	Messages []ChatCompletionMessage `json:"messages"`
 
-	Stream bool `json:"stream,omitempty"`
+	Stop   []string `json:"stop,omitempty"`
+	Stream bool     `json:"stream,omitempty"`
 
+	MaxTokens   *int     `json:"max_tokens,omitempty"`
 	Temperature *float32 `json:"temperature,omitempty"`
-	TopP        *float32 `json:"top_p,omitempty"`
 }
 
 type ChatCompletion struct {

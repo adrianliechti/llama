@@ -210,9 +210,19 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 		Model:  model,
 		Stream: stream,
 
-		MaxTokens:     1024,
-		Temperature:   options.Temperature,
-		StopSequences: options.Stop,
+		MaxTokens: 1024,
+	}
+
+	if options.Stop != nil {
+		req.StopSequences = options.Stop
+	}
+
+	if options.MaxTokens != nil {
+		req.MaxTokens = *options.MaxTokens
+	}
+
+	if options.Temperature != nil {
+		req.Temperature = options.Temperature
 	}
 
 	for _, m := range messages {

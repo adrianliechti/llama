@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/to"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -69,13 +70,25 @@ func (c *Client) Complete(ctx context.Context, messages []provider.Message, opti
 		defer close(options.Stream)
 	}
 
-	stream, err := c.client.Complete(ctx, &CompletionRequest{
+	req := &CompletionRequest{
 		Model: c.model,
 
 		Messages: fromMessages(messages),
+	}
 
-		Temperature: options.Temperature,
-	})
+	if options.Stop != nil {
+		req.Stop = options.Stop
+	}
+
+	if options.MaxTokens != nil {
+		req.MaxTokens = to.Ptr(int32(*options.MaxTokens))
+	}
+
+	if options.Temperature != nil {
+		req.Temperature = options.Temperature
+	}
+
+	stream, err := c.client.Complete(ctx, req)
 
 	if err != nil {
 		return nil, err

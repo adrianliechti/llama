@@ -5,6 +5,7 @@ import (
 	"errors"
 )
 
+// https://platform.openai.com/docs/api-reference/models/object
 type Model struct {
 	Object string `json:"object"` // "model"
 
@@ -13,17 +14,24 @@ type Model struct {
 	OwnedBy string `json:"owned_by"`
 }
 
+// https://platform.openai.com/docs/api-reference/models
 type ModelList struct {
 	Object string `json:"object"` // "list"
 
 	Models []Model `json:"data"`
 }
 
+// https://platform.openai.com/docs/api-reference/embeddings/create
 type EmbeddingsRequest struct {
 	Input any    `json:"input"`
 	Model string `json:"model"`
+
+	// encoding_format string: float, base64
+	// dimensions int
+	// user string
 }
 
+// https://platform.openai.com/docs/api-reference/embeddings/object
 type Embedding struct {
 	Object string `json:"object"` // "embedding"
 
@@ -31,11 +39,19 @@ type Embedding struct {
 	Embedding []float32 `json:"embedding"`
 }
 
+// https://platform.openai.com/docs/api-reference/embeddings/create
 type EmbeddingList struct {
 	Object string `json:"object"` // "list"
 
 	Model string      `json:"model"`
 	Data  []Embedding `json:"data"`
+
+	// model string
+
+	// usage {
+	//   prompt_tokens int
+	//   total_tokens int
+	// }
 }
 
 type MessageRole string
@@ -54,34 +70,58 @@ var (
 	ResponseFormatJSON ResponseFormat = "json_object"
 )
 
-type CompletionReason string
+// // https://platform.openai.com/docs/api-reference/chat/object
+type FinishReason string
 
 var (
-	CompletionReasonStop   CompletionReason = "stop"
-	CompletionReasonLength CompletionReason = "length"
+	FinishReasonStop   FinishReason = "stop"
+	FinishReasonLength FinishReason = "length"
 
-	CompletionReasonToolCalls CompletionReason = "tool_calls"
+	FinishReasonToolCalls     FinishReason = "tool_calls"
+	FinishReasonContentFilter FinishReason = "content_filter"
 )
 
+// https://platform.openai.com/docs/api-reference/chat/create
 type ChatCompletionRequest struct {
 	Model string `json:"model"`
 
 	Messages []ChatCompletionMessage `json:"messages"`
-	Tools    []Tool                  `json:"tools,omitempty"`
 
-	Stream bool `json:"stream,omitempty"`
+	Stream bool   `json:"stream,omitempty"`
+	Stop   any    `json:"stop,omitempty"`
+	Tools  []Tool `json:"tools,omitempty"`
 
-	Format *ChatCompletionResponseFormat `json:"response_format,omitempty"`
-
+	MaxTokens   *int     `json:"max_tokens,omitempty"`
 	Temperature *float32 `json:"temperature,omitempty"`
+
+	ResponseFormat *ChatCompletionResponseFormat `json:"response_format,omitempty"`
+
+	// frequency_penalty *float32
+	// presence_penalty *float32
+
+	// logit_bias
+	// logprobs *bool
+	// top_logprobs *int
+
+	// n *int
+
+	// seed *int
+
+	// top_p *float32
+
+	// tool_choice string: none, auto
+
+	// user string
 }
 
+// https://platform.openai.com/docs/api-reference/chat/create
 type ChatCompletionResponseFormat struct {
 	Type ResponseFormat `json:"type"`
 }
 
+// https://platform.openai.com/docs/api-reference/chat/object
 type ChatCompletion struct {
-	Object string `json:"object"`
+	Object string `json:"object"` // "chat.completion" | "chat.completion.chunk"
 
 	ID string `json:"id"`
 
@@ -89,35 +129,45 @@ type ChatCompletion struct {
 	Created int64  `json:"created"`
 
 	Choices []ChatCompletionChoice `json:"choices"`
+
+	// system_fingerprint string
+
+	// usage {
+	//   completion_tokens int
+	//   prompt_tokens int
+	//   total_tokens int
+	// }
 }
 
+// https://platform.openai.com/docs/api-reference/chat/object
 type ChatCompletionChoice struct {
 	Index int `json:"index"`
 
 	Delta   *ChatCompletionMessage `json:"delta,omitempty"`
 	Message *ChatCompletionMessage `json:"message,omitempty"`
 
-	FinishReason *CompletionReason `json:"finish_reason"`
+	FinishReason *FinishReason `json:"finish_reason"`
 }
 
+// https://platform.openai.com/docs/api-reference/chat/object
 type ChatCompletionMessage struct {
 	Role MessageRole `json:"role,omitempty"`
 
-	Content  string                  `json:"content"`
-	Contents []ChatCompletionContent `json:"-"`
+	Content  string           `json:"content"`
+	Contents []MessageContent `json:"-"`
 
-	ToolCallID string     `json:"tool_call_id,omitempty"`
 	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+	ToolCallID string     `json:"tool_call_id,omitempty"`
 }
 
-type ChatCompletionContent struct {
+type MessageContent struct {
 	Type string `json:"type,omitempty"`
 	Text string `json:"text,omitempty"`
 
-	ImageURL *ChatCompletionFile `json:"image_url,omitempty"`
+	ImageURL *MessageContentURL `json:"image_url,omitempty"`
 }
 
-type ChatCompletionFile struct {
+type MessageContentURL struct {
 	URL string `json:"url"`
 }
 
@@ -127,66 +177,67 @@ func (m *ChatCompletionMessage) MarshalJSON() ([]byte, error) {
 	}
 
 	if len(m.Contents) > 0 {
-		msg := struct {
+		type2 := struct {
 			Role MessageRole `json:"role"`
 
-			Content  string                  `json:"-"`
-			Contents []ChatCompletionContent `json:"content,omitempty"`
+			Content  string           `json:"-"`
+			Contents []MessageContent `json:"content,omitempty"`
 
-			ToolCallID string     `json:"tool_call_id,omitempty"`
 			ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+			ToolCallID string     `json:"tool_call_id,omitempty"`
 		}(*m)
 
-		return json.Marshal(msg)
+		return json.Marshal(type2)
+	} else {
+		type1 := struct {
+			Role MessageRole `json:"role"`
+
+			Content  string           `json:"content"`
+			Contents []MessageContent `json:"-"`
+
+			ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+			ToolCallID string     `json:"tool_call_id,omitempty"`
+		}(*m)
+
+		return json.Marshal(type1)
 	}
-
-	msg := struct {
-		Role MessageRole `json:"role"`
-
-		Content  string                  `json:"content"`
-		Contents []ChatCompletionContent `json:"-"`
-
-		ToolCallID string     `json:"tool_call_id,omitempty"`
-		ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
-	}(*m)
-
-	return json.Marshal(msg)
 }
 
 func (m *ChatCompletionMessage) UnmarshalJSON(data []byte) error {
-	m1 := struct {
+	type1 := struct {
 		Role MessageRole `json:"role"`
 
 		Content  string `json:"content"`
-		Contents []ChatCompletionContent
+		Contents []MessageContent
 
-		ToolCallID string     `json:"tool_call_id,omitempty"`
 		ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+		ToolCallID string     `json:"tool_call_id,omitempty"`
 	}{}
 
-	if err := json.Unmarshal(data, &m1); err == nil {
-		*m = ChatCompletionMessage(m1)
+	if err := json.Unmarshal(data, &type1); err == nil {
+		*m = ChatCompletionMessage(type1)
 		return nil
 	}
 
-	m2 := struct {
+	type2 := struct {
 		Role MessageRole `json:"role"`
 
 		Content  string
-		Contents []ChatCompletionContent `json:"content"`
+		Contents []MessageContent `json:"content"`
 
-		ToolCallID string     `json:"tool_call_id,omitempty"`
 		ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+		ToolCallID string     `json:"tool_call_id,omitempty"`
 	}{}
 
-	if err := json.Unmarshal(data, &m2); err == nil {
-		*m = ChatCompletionMessage(m2)
+	if err := json.Unmarshal(data, &type2); err == nil {
+		*m = ChatCompletionMessage(type2)
 		return err
 	}
 
 	return nil
 }
 
+// https://platform.openai.com/docs/api-reference/chat/object
 type ToolType string
 
 var (
@@ -199,6 +250,7 @@ type Tool struct {
 	ToolFunction *Function `json:"function"`
 }
 
+// https://platform.openai.com/docs/api-reference/chat/object
 type ToolCall struct {
 	ID string `json:"id"`
 
@@ -216,6 +268,7 @@ type Function struct {
 	Parameters any `json:"parameters"`
 }
 
+// https://platform.openai.com/docs/api-reference/chat/object
 type FunctionCall struct {
 	Name      string `json:"name,omitempty"`
 	Arguments string `json:"arguments,omitempty"`

@@ -92,13 +92,13 @@ type Completion struct {
 type CompleteOptions struct {
 	Stream chan<- Completion
 
-	Format CompletionFormat
-
+	Stop      []string
 	Functions []Function
 
-	Stop []string
-
+	MaxTokens   *int
 	Temperature *float32
+
+	Format CompletionFormat
 }
 
 type Translation struct {
