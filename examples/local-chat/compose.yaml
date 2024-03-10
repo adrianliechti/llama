@@ -34,18 +34,29 @@ configs:
           url: http://host.docker.internal:11434
           models:
             gemma:
-              id: gemma:7b-instruct
+              id: gemma:latest
             
             mistral:
-              id: mistral:7b-instruct
-
+              id: mistral:latest
+            
+            llava:
+              id: llava:latest
+              
   web:
     content: |
       contexts:
         - name: Gemma
           models:
             - id: gemma
-
+        
         - name: Mistral
           models:
             - id: mistral
+        
+        - name: LLaVA
+          capabilities:
+            - images
+          models:
+            - id: llava
+
+        

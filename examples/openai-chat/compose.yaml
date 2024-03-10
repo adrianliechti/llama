@@ -35,13 +35,16 @@ configs:
  
           models:
             gpt-3.5-turbo:
-              id: gpt-3.5-turbo-0125
+              id: gpt-3.5-turbo
  
             gpt-4-turbo:
               id: gpt-4-turbo-preview
             
             gpt-4-vision:
               id: gpt-4-vision-preview
+            
+            whisper-1:
+              id: whisper-1
 
   web:
     content: |

@@ -1,45 +1,18 @@
-# Local Chat
+# OpenAI Adapter
 
-## Run Example
-
-- [Ollama](https://ollama.ai)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-
-Start Ollama Server
-
-```shell
-$ ollama start
-```
-
-Download [Mistral](https://mistral.ai) Model
-
-```shell
-$ ollama pull gemma
-$ ollama pull llava
-$ ollama pull mistral
-```
-
-Start Example Application
-
-```shell
-docker compose up
-```
-
-## Open Web UI
-
-```shell
-$ open http://localhost:3000
-```
+- Text Generation (ChatGPT)
+- Image Recognition (Vision)
+- Audio Transcriptions (Whisper)
 
 ## Completion API
 
-The Completion API provides compatibility for the OpenAI API standard, allowing easier integrations into existing applications. (Documentation: https://platform.openai.com/docs/api-reference/chat/create)
+https://platform.openai.com/docs/api-reference/chat/create
 
 ```shell
 curl http://localhost:8080/oai/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "mistral",
+    "model": "gpt-3.5-turbo",
     "messages": [
       {
         "role": "system",
@@ -55,13 +28,13 @@ curl http://localhost:8080/oai/v1/chat/completions \
 
 ## Vision API
 
-The Vision API provides compatibility for the OpenAI API standard, allowing easier integrations into existing applications. (Documentation: https://platform.openai.com/docs/guides/vision)
+https://platform.openai.com/docs/guides/vision
 
 ```shell
 curl http://localhost:8080/oai/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "llava",
+    "model": "gpt-4-vision",
     "messages": [
       {
         "role": "user",
@@ -80,4 +53,17 @@ curl http://localhost:8080/oai/v1/chat/completions \
       }
     ]
   }'
+```
+
+## Transcription API
+
+```shell
+# Download Sample File
+curl -o jfk.wav https://github.com/ggerganov/whisper.cpp/raw/master/samples/jfk.wav
+
+# Run Transcriptions
+curl http://localhost:8080/oai/v1/audio/transcriptions \
+  -H "Content-Type: multipart/form-data" \
+  -F file="@jfk.wav" \
+  -F model="whisper-1"
 ```
