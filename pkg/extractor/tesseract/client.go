@@ -103,7 +103,8 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 		Name: input.Name,
 	}
 
-	output := text.Normalize(data.Data.Stdout)
+	output := data.Data.Stdout
+	output = strings.ReplaceAll(output, "\r\n", "\n")
 
 	var lines []string
 
