@@ -12,6 +12,8 @@ services:
     configs:
       - source: platform
         target: /config.yaml
+      - source: prompt_docs
+        target: /prompt_docs.tmpl
     depends_on:
       - weaviate
       - unstructured
@@ -87,7 +89,12 @@ configs:
           type: rag
           index: docs
           model: mistral
-          limit: 10
+          template: /prompt_docs.tmpl
+          limit: 5
+          temperature: 0.5
+  
+  prompt_docs:
+    file: ./prompt_docs.tmpl
 
   web:
     content: |
