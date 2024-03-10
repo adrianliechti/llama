@@ -20,6 +20,8 @@ type Chain struct {
 
 	template *prompt.Template
 	messages []provider.Message
+
+	temperature float32
 }
 
 type Option func(*Chain)
@@ -27,6 +29,8 @@ type Option func(*Chain)
 func New(options ...Option) (*Chain, error) {
 	c := &Chain{
 		template: prompt.MustTemplate(promptTemplate),
+
+		temperature: 0,
 	}
 
 	for _, option := range options {
@@ -52,6 +56,12 @@ func WithTemplate(template *prompt.Template) Option {
 	}
 }
 
+func WithTemperature(temperature float32) Option {
+	return func(c *Chain) {
+		c.temperature = temperature
+	}
+}
+
 func WithMessages(messages ...provider.Message) Option {
 	return func(c *Chain) {
 		c.messages = messages
@@ -61,6 +71,10 @@ func WithMessages(messages ...provider.Message) Option {
 func (c *Chain) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
+	}
+
+	if options.Temperature == nil {
+		options.Temperature = &c.temperature
 	}
 
 	if len(options.Functions) == 0 {
@@ -154,12 +168,12 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	input = append(input, provider.Message{
 		Role:    provider.MessageRoleUser,
-		Content: strings.TrimSpace(prompt),
+		Content: prompt,
 	})
 
 	inputOptions := &provider.CompleteOptions{
 		Stop:        promptStop,
-		Temperature: to.Ptr(float32(0)),
+		Temperature: to.Ptr(c.temperature),
 	}
 
 	completion, err := c.completer.Complete(ctx, input, inputOptions)

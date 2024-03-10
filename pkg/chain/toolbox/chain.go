@@ -18,6 +18,8 @@ type Chain struct {
 	completer provider.Completer
 
 	tools map[string]tool.Tool
+
+	temperature *float32
 }
 
 type Option func(*Chain)
@@ -52,9 +54,19 @@ func WithTools(tool ...tool.Tool) Option {
 	}
 }
 
+func WithTemperature(temperature float32) Option {
+	return func(c *Chain) {
+		c.temperature = &temperature
+	}
+}
+
 func (c *Chain) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
+	}
+
+	if options.Temperature == nil {
+		options.Temperature = c.temperature
 	}
 
 	functions := make(map[string]provider.Function)
@@ -75,7 +87,8 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 	input := slices.Clone(messages)
 
 	inputOptions := &provider.CompleteOptions{
-		Functions: to.Values(functions),
+		Temperature: options.Temperature,
+		Functions:   to.Values(functions),
 	}
 
 	for {

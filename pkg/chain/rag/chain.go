@@ -22,8 +22,9 @@ type Chain struct {
 
 	index index.Provider
 
-	limit    *int
-	distance *float32
+	limit       *int
+	distance    *float32
+	temperature *float32
 
 	filters map[string]classifier.Provider
 }
@@ -88,6 +89,12 @@ func WithDistance(val float32) Option {
 	}
 }
 
+func WithTemperature(temperature float32) Option {
+	return func(c *Chain) {
+		c.temperature = &temperature
+	}
+}
+
 func WithFilter(name string, classifier classifier.Provider) Option {
 	return func(c *Chain) {
 		c.filters[name] = classifier
@@ -95,6 +102,14 @@ func WithFilter(name string, classifier classifier.Provider) Option {
 }
 
 func (c *Chain) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+	if options == nil {
+		options = new(provider.CompleteOptions)
+	}
+
+	if options.Temperature == nil {
+		options.Temperature = c.temperature
+	}
+
 	message := messages[len(messages)-1]
 
 	if message.Role != provider.MessageRoleUser {

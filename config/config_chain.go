@@ -153,6 +153,10 @@ func assistantChain(cfg chainConfig, context chainContext) (chain.Provider, erro
 		options = append(options, assistant.WithMessages(context.Messages...))
 	}
 
+	if cfg.Temperature != nil {
+		options = append(options, assistant.WithTemperature(*cfg.Temperature))
+	}
+
 	return assistant.New(options...)
 }
 
@@ -181,6 +185,10 @@ func ragChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 
 	if cfg.Distance != nil {
 		options = append(options, rag.WithDistance(*cfg.Distance))
+	}
+
+	if cfg.Temperature != nil {
+		options = append(options, rag.WithTemperature(*cfg.Temperature))
 	}
 
 	for k, v := range cfg.Filters {
@@ -217,6 +225,10 @@ func refineChain(cfg chainConfig, context chainContext) (chain.Provider, error) 
 		options = append(options, refine.WithDistance(*cfg.Distance))
 	}
 
+	if cfg.Temperature != nil {
+		options = append(options, refine.WithTemperature(*cfg.Temperature))
+	}
+
 	for k, v := range cfg.Filters {
 		options = append(options, refine.WithFilter(k, context.Classifiers[v.Classifier]))
 	}
@@ -239,6 +251,10 @@ func reactChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 		options = append(options, react.WithMessages(context.Messages...))
 	}
 
+	if cfg.Temperature != nil {
+		options = append(options, react.WithTemperature(*cfg.Temperature))
+	}
+
 	return react.New(options...)
 }
 
@@ -251,6 +267,10 @@ func toolboxChain(cfg chainConfig, context chainContext) (chain.Provider, error)
 
 	if context.Tools != nil {
 		options = append(options, toolbox.WithTools(to.Values(context.Tools)...))
+	}
+
+	if cfg.Temperature != nil {
+		options = append(options, toolbox.WithTemperature(*cfg.Temperature))
 	}
 
 	return toolbox.New(options...)

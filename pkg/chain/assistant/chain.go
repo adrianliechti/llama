@@ -17,6 +17,8 @@ type Chain struct {
 
 	template *prompt.Template
 	messages []provider.Message
+
+	temperature *float32
 }
 
 type Option func(*Chain)
@@ -53,7 +55,21 @@ func WithMessages(messages ...provider.Message) Option {
 	}
 }
 
+func WithTemperature(temperature float32) Option {
+	return func(c *Chain) {
+		c.temperature = &temperature
+	}
+}
+
 func (c *Chain) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+	if options == nil {
+		options = new(provider.CompleteOptions)
+	}
+
+	if options.Temperature == nil {
+		options.Temperature = c.temperature
+	}
+
 	if len(c.messages) > 0 && messages[0].Role != provider.MessageRoleSystem {
 		messages = slices.Concat(c.messages, messages)
 	}
