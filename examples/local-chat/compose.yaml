@@ -41,6 +41,18 @@ configs:
             
             llava:
               id: llava:latest
+            
+      chains:
+        terminal:
+          type: assistant
+          model: mistral
+          messages:
+          - role: system
+            content: You are a simulated Linux terminal. Respond to user input as if they are entering commands in a Linux terminal. Execute commands, display the expected output, and handle errors as a real Linux terminal would. Keep your responses concise and accurate, resembling the actual terminal experience. You MUST answer in Markdown using ``` blocks.
+          - role: user
+            content: pwd
+          - role: assistant
+            content: /home/user
               
   web:
     content: |
@@ -58,5 +70,9 @@ configs:
             - images
           models:
             - id: llava
+        
+        - name: Terminal (Simulated)
+          models:
+            - id: terminal
 
         
