@@ -49,7 +49,6 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 	return nil, errors.ErrUnsupported
 }
 
-// Query implements index.Provider.
 func (c *Client) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
 	url, _ := url.Parse("https://duckduckgo.com/html/")
 
