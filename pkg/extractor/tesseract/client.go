@@ -136,6 +136,7 @@ func (c *Client) optionsJSON() string {
 	options := map[string]any{
 		"languages": []string{
 			"eng",
+			"deu",
 		},
 	}
 

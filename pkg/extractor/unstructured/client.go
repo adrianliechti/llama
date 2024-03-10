@@ -59,9 +59,12 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 
 	w.WriteField("strategy", "auto")
 	w.WriteField("languages", "eng")
+	w.WriteField("languages", "deu")
+	w.WriteField("chunking_strategy", "by_title")
+	w.WriteField("max_characters", "4000")
+	w.WriteField("overlap", "200")
 	w.WriteField("skip_infer_table_types", "")
 	w.WriteField("pdf_infer_table_structure", "true")
-	w.WriteField("chunking_strategy", "by_title")
 
 	file, err := w.CreateFormFile("files", input.Name)
 

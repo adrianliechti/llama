@@ -42,6 +42,9 @@ func (p *Provider) Extract(ctx context.Context, input extractor.File, options *e
 	}
 
 	splitter := text.NewSplitter()
+	splitter.ChunkSize = 4000
+	splitter.ChunkOverlap = 200
+
 	chunks := splitter.Split(string(data))
 
 	for i, chunk := range chunks {
