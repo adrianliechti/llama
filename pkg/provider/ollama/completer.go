@@ -189,20 +189,23 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 		req.Format = "json"
 	}
 
-	for _, m := range messages {
+	for i, m := range messages {
 		message := Message{
 			Role:    MessageRole(m.Role),
 			Content: m.Content,
 		}
 
-		for _, f := range m.Files {
-			data, err := io.ReadAll(f.Content)
+		// HACK: only use images on last message
+		if i == len(messages)-1 {
+			for _, f := range m.Files {
+				data, err := io.ReadAll(f.Content)
 
-			if err != nil {
-				return nil, err
+				if err != nil {
+					return nil, err
+				}
+
+				message.Images = append(message.Images, data)
 			}
-
-			message.Images = append(message.Images, data)
 		}
 
 		req.Messages = append(req.Messages, message)
