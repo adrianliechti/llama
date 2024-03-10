@@ -66,12 +66,21 @@ configs:
           embedding: nomic-embed-text-v1
 
       extractors:
+        text:
+          type: text
+          chunkSize: 4000
+          chunkOverlap: 200
+
         code:
           type: code
+          chunkSize: 1500
+          chunkOverlap: 0
           
         unstructured:
           type: unstructured
           url: http://unstructured:8000
+          chunkSize: 4000
+          chunkOverlap: 200
 
       chains:
         docs:

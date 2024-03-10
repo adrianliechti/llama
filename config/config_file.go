@@ -88,6 +88,9 @@ type extractorConfig struct {
 
 	URL   string `yaml:"url"`
 	Token string `yaml:"token"`
+
+	ChunkSize    *int `yaml:"chunkSize"`
+	ChunkOverlap *int `yaml:"chunkOverlap"`
 }
 
 type classifierConfig struct {

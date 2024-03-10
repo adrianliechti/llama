@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -19,6 +20,9 @@ type Client struct {
 	url string
 
 	client *http.Client
+
+	chunkSize    int
+	chunkOverlap int
 }
 
 type Option func(*Client)
@@ -32,6 +36,9 @@ func New(url string, options ...Option) (*Client, error) {
 		url: url,
 
 		client: http.DefaultClient,
+
+		chunkSize:    4000,
+		chunkOverlap: 200,
 	}
 
 	for _, option := range options {
@@ -44,6 +51,18 @@ func New(url string, options ...Option) (*Client, error) {
 func WithClient(client *http.Client) Option {
 	return func(c *Client) {
 		c.client = client
+	}
+}
+
+func WithChunkSize(size int) Option {
+	return func(c *Client) {
+		c.chunkSize = size
+	}
+}
+
+func WithChunkOverlap(overlap int) Option {
+	return func(c *Client) {
+		c.chunkOverlap = overlap
 	}
 }
 
@@ -61,8 +80,8 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	w.WriteField("languages", "eng")
 	w.WriteField("languages", "deu")
 	w.WriteField("chunking_strategy", "by_title")
-	w.WriteField("max_characters", "4000")
-	w.WriteField("overlap", "200")
+	w.WriteField("max_characters", fmt.Sprintf("%d", c.chunkSize))
+	w.WriteField("overlap", fmt.Sprintf("%d", c.chunkOverlap))
 	w.WriteField("skip_infer_table_types", "")
 	w.WriteField("pdf_infer_table_structure", "true")
 

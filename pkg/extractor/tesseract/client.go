@@ -22,6 +22,9 @@ type Client struct {
 	url string
 
 	client *http.Client
+
+	chunkSize    int
+	chunkOverlap int
 }
 
 type Option func(*Client)
@@ -35,6 +38,9 @@ func New(url string, options ...Option) (*Client, error) {
 		url: url,
 
 		client: http.DefaultClient,
+
+		chunkSize:    4000,
+		chunkOverlap: 200,
 	}
 
 	for _, option := range options {
@@ -47,6 +53,18 @@ func New(url string, options ...Option) (*Client, error) {
 func WithClient(client *http.Client) Option {
 	return func(c *Client) {
 		c.client = client
+	}
+}
+
+func WithChunkSize(size int) Option {
+	return func(c *Client) {
+		c.chunkSize = size
+	}
+}
+
+func WithChunkOverlap(overlap int) Option {
+	return func(c *Client) {
+		c.chunkOverlap = overlap
 	}
 }
 
@@ -114,6 +132,9 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	}
 
 	splitter := text.NewSplitter()
+	splitter.ChunkSize = c.chunkSize
+	splitter.ChunkOverlap = c.chunkOverlap
+
 	chunks := splitter.Split(strings.Join(lines, "\n"))
 
 	for i, chunk := range chunks {

@@ -55,11 +55,27 @@ func createExtractor(cfg extractorConfig) (extractor.Provider, error) {
 func textExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	var options []text.Option
 
+	if cfg.ChunkSize != nil {
+		options = append(options, text.WithChunkSize(*cfg.ChunkSize))
+	}
+
+	if cfg.ChunkOverlap != nil {
+		options = append(options, text.WithChunkOverlap(*cfg.ChunkOverlap))
+	}
+
 	return text.New(options...)
 }
 
 func codeExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	var options []code.Option
+
+	if cfg.ChunkSize != nil {
+		options = append(options, code.WithChunkSize(*cfg.ChunkSize))
+	}
+
+	if cfg.ChunkOverlap != nil {
+		options = append(options, code.WithChunkOverlap(*cfg.ChunkOverlap))
+	}
 
 	return code.New(options...)
 }
@@ -67,11 +83,27 @@ func codeExtractor(cfg extractorConfig) (extractor.Provider, error) {
 func tesseractExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	var options []tesseract.Option
 
+	if cfg.ChunkSize != nil {
+		options = append(options, tesseract.WithChunkSize(*cfg.ChunkSize))
+	}
+
+	if cfg.ChunkOverlap != nil {
+		options = append(options, tesseract.WithChunkOverlap(*cfg.ChunkOverlap))
+	}
+
 	return tesseract.New(cfg.URL, options...)
 }
 
 func unstructuredExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	var options []unstructured.Option
+
+	if cfg.ChunkSize != nil {
+		options = append(options, unstructured.WithChunkSize(*cfg.ChunkSize))
+	}
+
+	if cfg.ChunkOverlap != nil {
+		options = append(options, unstructured.WithChunkOverlap(*cfg.ChunkOverlap))
+	}
 
 	return unstructured.New(cfg.URL, options...)
 }
