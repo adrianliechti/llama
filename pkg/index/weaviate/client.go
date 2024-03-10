@@ -236,21 +236,33 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	results := make([]index.Result, 0)
 
 	for _, d := range result.Data.Get[c.class] {
+		title := d.Additional.ID
+		location := d.Additional.ID
+
 		metadata := map[string]string{}
 
 		if d.FileName != "" {
 			metadata["filename"] = d.FileName
+			title = d.FileName
+			location = d.FileName
 		}
 
 		if d.FilePart != "" {
 			metadata["filepart"] = d.FilePart
+
+			if location != "" {
+				location += "#" + d.FilePart
+			}
 		}
 
 		r := index.Result{
 			Document: index.Document{
 				ID: d.Additional.ID,
 
+				Title:    title,
 				Content:  d.Content,
+				Location: location,
+
 				Metadata: metadata,
 			},
 

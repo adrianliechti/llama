@@ -191,7 +191,6 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		},
 
 		"include": []string{
-			"embeddings",
 			"documents",
 			"metadatas",
 			"distances",
@@ -228,16 +227,41 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 	for i := range result.IDs {
 		for j := range result.IDs[i] {
+			id := result.IDs[i][j]
+
+			content := result.Documents[i][j]
+			metadata := result.Metadatas[i][j]
+
+			distance := result.Distances[i][j]
+
+			filename := metadata["filename"]
+			filepart := metadata["filepart"]
+
+			title := id
+			location := id
+
+			if filename != "" {
+				title = filename
+				location = filename
+			}
+
+			if filepart != "" {
+				if location != "" {
+					location += "#" + filepart
+				}
+			}
+
 			r := index.Result{
-				Distance: result.Distances[i][j],
+				Distance: distance,
 
 				Document: index.Document{
-					ID: result.IDs[i][j],
+					ID: id,
 
-					Content:  result.Documents[i][j],
-					Metadata: result.Metadatas[i][j],
+					Title:    title,
+					Content:  content,
+					Location: location,
 
-					Embedding: toFloat32s(result.Embeddings[i][j]),
+					Metadata: metadata,
 				},
 			}
 

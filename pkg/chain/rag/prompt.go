@@ -15,6 +15,9 @@ type promptData struct {
 }
 
 type promptResult struct {
+	Title    string
 	Content  string
+	Location string
+
 	Metadata map[string]string
 }

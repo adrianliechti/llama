@@ -145,8 +145,11 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	for _, r := range results {
 		data.Results = append(data.Results, promptResult{
-			Metadata: r.Metadata,
+			Title:    r.Title,
 			Content:  strings.TrimSpace(r.Content),
+			Location: r.Location,
+
+			Metadata: r.Metadata,
 		})
 	}
 
