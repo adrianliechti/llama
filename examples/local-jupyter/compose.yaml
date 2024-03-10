@@ -1,0 +1,63 @@
+version: "3"
+
+services:
+  platform:
+    image: adrianliechti/llama-platform
+    pull_policy: always
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    configs:
+      - source: platform
+        target: /config.yaml
+  
+  jupyter:
+    image: quay.io/jupyter/datascience-notebook:2024-01-15
+    command: start-notebook.sh --NotebookApp.token='' -ServerApp.root_dir=/home/jovyan/work  
+    ports:
+      - 8888:8888
+      - 9999:9999
+    volumes:
+      - ./work:/home/jovyan/work
+  
+  web:
+    image: adrianliechti/llama-ui
+    pull_policy: always
+    ports:
+      - 3000:3000
+    environment:
+      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+    configs:
+      - source: web
+        target: /config.yaml
+    depends_on:
+      - platform
+  
+configs:
+  platform:
+    content: |
+      providers:
+        - type: ollama
+          url: http://host.docker.internal:11434
+          models:
+            mistral:
+              id: mistral:latest
+        
+        - type: langchain
+          url: http://jupyter:9999
+          models:
+            jupyter:
+              id: default
+
+  web:
+    content: |
+      contexts:
+        - name: Mistral
+          models:
+            - id: mistral
+
+        - name: Jupyter
+          models:
+            - id: jupyter

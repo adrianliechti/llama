@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -14,24 +16,22 @@ import (
 )
 
 func main() {
-	llamaURL := os.Getenv("LLAMA_URL")
-	llamaToken := os.Getenv("LLAMA_TOKEN")
+	urlFlag := flag.String("url", "http://localhost:8080/oai/v1", "server url")
+	tokenFlag := flag.String("token", "", "server token")
+	modelFlag := flag.String("model", "", "model id")
 
-	model := os.Getenv("LLAMA_MODEL")
-
-	if llamaURL == "" {
-		llamaURL = "http://localhost:8080/oai/v1"
-	}
+	flag.Parse()
 
 	ctx := context.Background()
 
 	reader := bufio.NewReader(os.Stdin)
 	output := os.Stdout
 
-	config := openai.DefaultConfig(llamaToken)
-	config.BaseURL = llamaURL
+	config := openai.DefaultConfig(*tokenFlag)
+	config.BaseURL = *urlFlag
 
 	client := openai.NewClientWithConfig(config)
+	model := *modelFlag
 
 	if model == "" {
 		list, err := client.ListModels(ctx)
@@ -39,6 +39,10 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+
+		sort.SliceStable(list.Models, func(i, j int) bool {
+			return list.Models[i].ID < list.Models[j].ID
+		})
 
 		for i, m := range list.Models {
 			output.WriteString(fmt.Sprintf("%2d) ", i+1))
@@ -65,6 +69,7 @@ func main() {
 
 	var messages []openai.ChatCompletionMessage
 
+LOOP:
 	for {
 		output.WriteString(">>> ")
 		input, err := reader.ReadString('\n')
@@ -73,9 +78,31 @@ func main() {
 			panic(err)
 		}
 
+		input = strings.TrimSpace(input)
+
+		if strings.HasPrefix(input, "/") {
+			switch strings.ToLower(input) {
+			case "/reset":
+				messages = nil
+				continue LOOP
+
+			case "/repeat":
+				if len(messages) == 0 {
+					continue LOOP
+				}
+
+				input = messages[len(messages)-1].Content
+				messages = messages[:len(messages)-1]
+
+			default:
+				output.WriteString("Unknown command\n")
+				continue LOOP
+			}
+		}
+
 		messages = append(messages, openai.ChatCompletionMessage{
 			Role:    openai.ChatMessageRoleUser,
-			Content: strings.TrimSpace(input),
+			Content: input,
 		})
 
 		req := openai.ChatCompletionRequest{
@@ -86,7 +113,8 @@ func main() {
 		stream, err := client.CreateChatCompletionStream(ctx, req)
 
 		if err != nil {
-			panic(err)
+			output.WriteString(err.Error() + "\n")
+			continue LOOP
 		}
 
 		defer stream.Close()
@@ -101,7 +129,8 @@ func main() {
 			}
 
 			if err != nil {
-				panic(err)
+				output.WriteString(err.Error() + "\n")
+				continue LOOP
 			}
 
 			content := resp.Choices[0].Delta.Content

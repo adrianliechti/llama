@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+option go_package = "github.com/adrianliechti/llama/pkg/index/custom;custom";
+
+package index;
+
+service index {
+  rpc Query (QueryRequest) returns (Results) {}
+}
+
+message QueryRequest {
+  string query = 1;
+
+  optional int32 limit = 2;
+  optional float distance = 3;
+
+  map<string, string> filters = 4;
+}
+
+message Results {
+    repeated Result results = 1;
+}
+
+message Result {
+  Document document = 1;
+
+  float distance = 2; 
+}
+
+message Document {
+  string id = 1;
+
+	string title = 2;
+	string content = 3;
+	string location = 4;
+
+	map<string, string> metadata = 5;
+
+	repeated float embedding = 6;
+}

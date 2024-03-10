@@ -1,47 +1,15 @@
 
 # LLAMA Platform
 
-The LLAMA Platform provides an unified API to various Large Language Models (LLM) and higher level functionality like 
-Retrieval-Augmented Generation (RAG) for use cases like:
+Open Source LLM Platform to build and deploy applications at scale
 
-- Enterprise Chat
-- Question/Answering (QA) over Documents and Code
-- AI Workflows / Agents 
+## Integrations & Configuration
 
-
-## Integrations
-
-###  Large Language Models (LLM)
-
-- OpenAI API (or compatible)  
-  - [OpenAI Platform](https://platform.openai.com/docs/introduction)
-  - [Azure OpenAI Service](https://azure.microsoft.com/en-us/products/ai-services/openai-service)
-  - [vLLM](https://docs.vllm.ai)
-  - ...
-
-- Local Models
-  - [LLAMA.CPP](https://github.com/ggerganov/llama.cpp)
-  - [Ollama](https://ollama.ai/)
-  - [Sentence BERT](https://www.sbert.net) 
-
-
-### Vector Indexes
-
-- [Chroma](https://www.trychroma.com) Embedding Database
-- [Weaviate](https://weaviate.io) Vector Database
-- In-Memory cosine similarity
-
-### User Authorizers
-
-- Static Token
-- OIDC JWT Tokens
-
-
-## Configuration
-
-### Providers
+### LLM Providers
 
 #### OpenAI Platform
+
+https://platform.openai.com/docs/api-reference
 
 ```yaml
 providers:
@@ -58,7 +26,10 @@ providers:
         id: text-embedding-ada-002
 ```
 
+
 #### Azure OpenAI Service
+
+https://azure.microsoft.com/en-us/products/ai-services/openai-service
 
 ```yaml
 providers:
@@ -77,14 +48,57 @@ providers:
         id: text-embedding-ada-002
 ```
 
-#### LLAMA.CPP
 
-```shell
-$ server --port 9081 --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+#### Anthropic
+
+https://www.anthropic.com/api
+
+```yaml
+providers:
+  - type: anthropic
+    token: sk-ant-apixx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    models:
+      claude-3-opus:
+        id: claude-3-opus-20240229
 ```
 
+
+#### Ollama
+
+https://ollama.ai
+
 ```shell
-$ docker run -it --rm -p 9081:9081 -v ./models/:/models/ ghcr.io/ggerganov/llama.cpp:full --server --host 0.0.0.0 --port 9081 --model /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+$ ollama start
+$ ollama run mistral
+```
+
+```yaml
+providers:
+  - type: ollama
+    url: http://localhost:11434
+
+    models:
+      mistral-7b-instruct:
+        id: mistral
+```
+
+
+#### LLAMA.CPP
+
+https://github.com/ggerganov/llama.cpp/tree/master/examples/server
+
+```shell
+# using taskfile.dev
+$ task llama-server
+
+# LLAMA.CPP Server
+$ bin/llama-server --port 9081 --log-disable --embedding --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+
+# LLAMA.CPP Server (Multimodal Model)
+$ bin/llama-server --port 9081 --log-disable --embedding --model ./models/llava-v1.5-7b-Q4_K.gguf --mmproj ./models/llava-v1.5-7b-mmproj-Q4_0.gguf
+
+# using Docker (might be slow)
+$ docker run -it --rm -p 9081:9081 -v ./models/:/models/ ghcr.io/ggerganov/llama.cpp:server --host 0.0.0.0 --port 9081 --model /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
 ```
 
 ```yaml
@@ -98,45 +112,69 @@ providers:
         template: mistral
 ```
 
-#### Ollama
+
+#### WHISPER.CPP
+
+https://github.com/ggerganov/whisper.cpp/tree/master/examples/server
 
 ```shell
-$ ollama start
-$ ollama run mistral
+# using taskfile.dev
+$ task whisper-server
 ```
 
 ```yaml
 providers:
-  - type: ollama
-    url: http://localhost:11434
+  - type: whisper
+    url: http://localhost:9085
 
     models:
-      mistral:
-        id: mistral
+      whisper:
+        id: whisper
 ```
 
-#### Sentence-BERT
 
-```shell
-$ docker run -it --rm -p 9082:8080 semitechnologies/transformers-inference:sentence-transformers-all-mpnet-base-v2
-```
+#### Hugging Face
+
+https://huggingface.co/
 
 ```yaml
 providers:
-  - type: sbert
-    url: http://localhost:9082
+  - type: huggingface
+    url: https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1
 
     models:
-      all-mpnet-base-v2:
-        id: all-mpnet-base-v2
+      mistral-7B-instruct:
+        id: tgi
 ```
 
-### Indexes
+
+#### LangChain / LangServe
+
+https://python.langchain.com/docs/langserve
+
+```yaml
+providers:
+  - type: langchain
+    url: http://your-langchain-server:8000
+
+    models:
+      langchain:
+        id: default
+```
+
+
+### Vector Databses / Indexes
 
 #### Chroma
 
+https://www.trychroma.com
+
 ```shell
-$ docker run -it --rm -p 9083:8000 ghcr.io/chroma-core/chroma
+# using taskfile.dev
+$ task chroma-server
+
+# using Docker
+$ docker run -it --rm -p 9083:8000 -v chroma-data:/chroma/chroma ghcr.io/chroma-core/chroma
 ```
 
 ```yaml
@@ -148,10 +186,17 @@ indexes:
     embedding: text-embedding-ada-002
 ```
 
+
 #### Weaviate
 
+https://weaviate.io
+
 ```shell
-$ docker run -it --rm -p 9084:8080 -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true -e PERSISTENCE_DATA_PATH=/data semitechnologies/weaviate
+# using taskfile.dev
+$ task weaviate-server
+
+# using Docker
+$ docker run -it --rm -p 9084:8080 -v weaviate-data:/var/lib/weaviate -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true -e PERSISTENCE_DATA_PATH=/var/lib/weaviate semitechnologies/weaviate
 ```
 
 ```yaml
@@ -160,8 +205,9 @@ indexes:
     type: weaviate
     url: http://localhost:9084
     namespace: Document
-    embedding: multi-qa-minilm-l6-cos-v1  
+    embedding: text-embedding-ada-002
 ```
+
 
 #### In-Memory
 
@@ -171,6 +217,114 @@ indexes:
     type: memory   
     embedding: text-embedding-ada-002
 ```
+
+
+##### OpenSearch / Elasticsearch
+
+```shell
+# using taskfile.dev
+$ task opensearch-server
+
+# using Docker
+docker run -it --rm -p 9200:9200 -v opensearch-data:/usr/share/opensearch/data -e "discovery.type=single-node" -e DISABLE_SECURITY_PLUGIN=true opensearchproject/opensearch:latest
+```
+
+```yaml
+indexes:
+  docs:
+    type: elasticsearch
+    url: http://localhost:9200
+    namespace: docs
+```
+
+
+### Extractors
+
+#### Text
+
+```yaml
+extractors:
+  text:
+    type: text
+```
+
+#### Code
+
+Supported Languages:
+
+- C#
+- C++
+- Go
+- Java
+- Kotlin
+- Java Script
+- Type Script
+- Python
+- Ruby
+- Rust
+- Scala
+- Swfit
+
+```yaml
+extractors:
+  code:
+    type: code
+```
+
+#### Tesseract
+
+https://tesseract-ocr.github.io
+
+```shell
+# using taskfile.dev
+$ task tesseract-server
+
+# using Docker
+docker run -it --rm -p 9086:8884 hertzg/tesseract-server:latest
+```
+
+```yaml
+extractors:
+  tesseract:
+    type: tesseract
+    url: http://localhost:9086
+```
+
+
+#### Unstructured
+
+https://unstructured.io
+
+```shell
+# using taskfile.dev
+$ task unstructured-server
+
+# using Docker
+docker run -it --rm -p 9085:8000 quay.io/unstructured-io/unstructured-api:0.0.64 --port 8000 --host 0.0.0.0
+```
+
+```yaml
+extractors:
+  unstructured:
+    type: unstructured
+    url: http://localhost:9085
+```
+
+
+### Classifications
+
+#### LLM Classifier
+
+```yaml
+classifiers:
+  {classifier-id}:
+    type: llm
+    model: mistral-7b-instruct
+    classes:
+      class-1: "...Description when to use Class 1..."
+      class-2: "...Description when to use Class 2..."
+```
+
 
 ## Use Cases
 
@@ -184,38 +338,63 @@ chains:
     type: rag
     index: docs
     model: mistral-7b-instruct
-    top_k: 5
-    top_p: 0.5
+
+    # limit: 10
+    # distance: 1
+
+    # filters:
+    #  {metadata-key}:
+    #    classifier: {classifier-id}
 ```
+
 
 #### Index Documents
 
+Using Extractor
+
 ```
-POST http://localhost:8080/api/index/{index-name}
+POST http://localhost:8080/v1/index/{index-name}/{extractor}
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="filename.pdf"
+```
+
+Using Documents
+
+```
+POST http://localhost:8080/v1/index/{index-name}
 ```
 
 ```json
 [
     {
         "id": "id1",
-        "content": "content of document..."
+        "content": "content of document...",
+        "metadata": {
+          "key1": "value1",
+          "key2": "value2"
+        }
     },
     {
         "id": "id2",
-        "content": "content of document..."
+        "content": "content of document...",
+        "metadata": {
+          "key1": "value1",
+          "key2": "value2"
+        }
     }
 ]
 ```
 
-### Function Calling Mimicking
 
-For providers or models not natively supporting Function Calling, a transformator chain can be configured to mimic this functionality
+### Function Calling
 
-#### Configuration
+#### ReAct
+
+For providers or models not natively supporting Function Calling, a transformator chain can be configured to mimic this functionality.
 
 ```yaml
 chains:
-  fn:
-    type: fn
-    model: mistral
+  mistral-7b-react:
+    type: react
+    model: mistral-7b-instruct
 ```

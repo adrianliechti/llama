@@ -2,12 +2,10 @@ package provider
 
 import (
 	"context"
-)
+	"io"
 
-type Provider interface {
-	Embed(ctx context.Context, model, content string) ([]float32, error)
-	Complete(ctx context.Context, model string, messages []Message, options *CompleteOptions) (*Completion, error)
-}
+	"github.com/adrianliechti/llama/pkg/jsonschema"
+)
 
 type Embedder interface {
 	Embed(ctx context.Context, content string) ([]float32, error)
@@ -15,6 +13,18 @@ type Embedder interface {
 
 type Completer interface {
 	Complete(ctx context.Context, messages []Message, options *CompleteOptions) (*Completion, error)
+}
+
+type Translator interface {
+	Translate(ctx context.Context, content string, options *TranslateOptions) (*Translation, error)
+}
+
+type Transcriber interface {
+	Transcribe(ctx context.Context, input File, options *TranscribeOptions) (*Transcription, error)
+}
+
+type Model struct {
+	ID string
 }
 
 type MessageRole string
@@ -30,6 +40,8 @@ type Message struct {
 	Role    MessageRole
 	Content string
 
+	Files []File
+
 	Function      string
 	FunctionCalls []FunctionCall
 }
@@ -40,11 +52,18 @@ const (
 	CompletionFormatJSON CompletionFormat = "json"
 )
 
-type Function struct {
-	Name       string
-	Parameters any
+type File struct {
+	ID string
 
+	Name    string
+	Content io.Reader
+}
+
+type Function struct {
+	Name        string
 	Description string
+
+	Parameters jsonschema.Definition
 }
 
 type FunctionCall struct {
@@ -73,44 +92,32 @@ type Completion struct {
 type CompleteOptions struct {
 	Stream chan<- Completion
 
-	Format    CompletionFormat
+	Stop      []string
 	Functions []Function
 
-	Stop []string
-
+	MaxTokens   *int
 	Temperature *float32
-	TopP        *float32
-	MinP        *float32
+
+	Format CompletionFormat
 }
 
-func ToEmbbedder(p Provider, model string) Embedder {
-	return &embberder{
-		Provider: p,
-		model:    model,
-	}
+type Translation struct {
+	ID string
+
+	Content string
 }
 
-func ToCompleter(p Provider, model string) Completer {
-	return &completer{
-		Provider: p,
-		model:    model,
-	}
+type TranslateOptions struct {
+	Language string
 }
 
-type embberder struct {
-	Provider
-	model string
+type Transcription struct {
+	ID string
+
+	Content string
 }
 
-func (e *embberder) Embed(ctx context.Context, content string) ([]float32, error) {
-	return e.Provider.Embed(ctx, e.model, content)
-}
-
-type completer struct {
-	Provider
-	model string
-}
-
-func (c *completer) Complete(ctx context.Context, messages []Message, options *CompleteOptions) (*Completion, error) {
-	return c.Provider.Complete(ctx, c.model, messages, options)
+type TranscribeOptions struct {
+	Language    string
+	Temperature *float32
 }

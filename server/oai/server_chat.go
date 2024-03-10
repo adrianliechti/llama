@@ -2,13 +2,21 @@ package oai
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
+	"mime"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
+	"github.com/adrianliechti/llama/pkg/jsonschema"
 	"github.com/adrianliechti/llama/pkg/provider"
+
+	"github.com/google/uuid"
 )
 
 func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
@@ -26,17 +34,39 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	messages := toMessages(req.Messages)
+	messages, err := toMessages(req.Messages)
 
-	options := &provider.CompleteOptions{
-		Temperature: req.Temperature,
-		TopP:        req.TopP,
-
-		Functions: toFunctions(req.Tools),
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
 	}
 
-	if req.Format != nil {
-		if req.Format.Type == ResponseFormatJSON {
+	functions, err := toFunctions(req.Tools)
+
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	var stops []string
+
+	switch v := req.Stop.(type) {
+	case string:
+		stops = []string{v}
+	case []string:
+		stops = v
+	}
+
+	options := &provider.CompleteOptions{
+		Stop:      stops,
+		Functions: functions,
+
+		MaxTokens:   req.MaxTokens,
+		Temperature: req.Temperature,
+	}
+
+	if req.ResponseFormat != nil {
+		if req.ResponseFormat.Type == ResponseFormatJSON {
 			options.Format = provider.CompletionFormatJSON
 		}
 	}
@@ -53,7 +83,19 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 		go func() {
 			options.Stream = stream
 
-			_, err := completer.Complete(r.Context(), messages, options)
+			completion, err := completer.Complete(r.Context(), messages, options)
+
+			select {
+			case <-stream:
+				break
+			default:
+				if completion != nil {
+					stream <- *completion
+				}
+
+				close(stream)
+			}
+
 			done <- err
 		}()
 
@@ -68,7 +110,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 				Choices: []ChatCompletionChoice{
 					{
-						FinishReason: oaiCompletionReason(completion.Reason),
+						FinishReason: oaiFinishReason(completion.Reason),
 
 						Delta: &ChatCompletionMessage{
 							//Role:    fromMessageRole(completion.Role),
@@ -116,7 +158,7 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 
 			Choices: []ChatCompletionChoice{
 				{
-					FinishReason: oaiCompletionReason(completion.Reason),
+					FinishReason: oaiFinishReason(completion.Reason),
 
 					Message: &ChatCompletionMessage{
 						Role:    oaiMessageRole(completion.Message.Role),
@@ -133,20 +175,42 @@ func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func toMessages(s []ChatCompletionMessage) []provider.Message {
+func toMessages(s []ChatCompletionMessage) ([]provider.Message, error) {
 	result := make([]provider.Message, 0)
 
 	for _, m := range s {
+		content := m.Content
+		files := make([]provider.File, 0)
+
+		for _, c := range m.Contents {
+			if c.Type == "text" {
+				content = c.Text
+			}
+
+			if c.Type == "image_url" && c.ImageURL != nil {
+				file, err := toFile(*&c.ImageURL.URL)
+
+				if err != nil {
+					return nil, err
+				}
+
+				files = append(files, *file)
+			}
+		}
+
 		result = append(result, provider.Message{
 			Role:    toMessageRole(m.Role),
-			Content: m.Content,
+			Content: content,
+
+			Files: files,
 
 			Function:      m.ToolCallID,
 			FunctionCalls: toFuncionCalls(m.ToolCalls),
 		})
+
 	}
 
-	return result
+	return result, nil
 }
 
 func toMessageRole(r MessageRole) provider.MessageRole {
@@ -168,23 +232,93 @@ func toMessageRole(r MessageRole) provider.MessageRole {
 	}
 }
 
-func toFunctions(s []Tool) []provider.Function {
+func toFile(url string) (*provider.File, error) {
+	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
+		resp, err := http.Get(url)
+
+		if err != nil {
+			return nil, err
+		}
+
+		defer resp.Body.Close()
+
+		data, err := io.ReadAll(resp.Body)
+
+		if err != nil {
+			return nil, err
+		}
+
+		file := provider.File{
+			Content: bytes.NewReader(data),
+		}
+
+		if ext, _ := mime.ExtensionsByType(resp.Header.Get("Content-Type")); len(ext) > 0 {
+			file.Name = uuid.New().String() + ext[0]
+		}
+
+		return &file, nil
+	}
+
+	if strings.HasPrefix(url, "data:") {
+		re := regexp.MustCompile(`data:([a-zA-Z]+\/[a-zA-Z0-9.+_-]+);base64,\s*(.+)`)
+
+		match := re.FindStringSubmatch(url)
+
+		if len(match) != 3 {
+			return nil, fmt.Errorf("invalid data url")
+		}
+
+		data, err := base64.StdEncoding.DecodeString(match[2])
+
+		if err != nil {
+			return nil, fmt.Errorf("invalid data encoding")
+		}
+
+		file := provider.File{
+			Content: bytes.NewReader(data),
+		}
+
+		if ext, _ := mime.ExtensionsByType(match[1]); len(ext) > 0 {
+			file.Name = uuid.New().String() + ext[0]
+		}
+
+		return &file, nil
+	}
+
+	return nil, fmt.Errorf("invalid url")
+}
+
+func toFunctions(tools []Tool) ([]provider.Function, error) {
 	var result []provider.Function
 
-	for _, t := range s {
+	for _, t := range tools {
 		if t.Type == ToolTypeFunction && t.ToolFunction != nil {
 			function := provider.Function{
-				Name:       t.ToolFunction.Name,
-				Parameters: t.ToolFunction.Parameters,
-
+				Name:        t.ToolFunction.Name,
 				Description: t.ToolFunction.Description,
+			}
+
+			if t.ToolFunction.Parameters != nil {
+				input, err := json.Marshal(t.ToolFunction.Parameters)
+
+				if err != nil {
+					return nil, err
+				}
+
+				var params jsonschema.Definition
+
+				if err := json.Unmarshal(input, &params); err != nil {
+					return nil, err
+				}
+
+				function.Parameters = params
 			}
 
 			result = append(result, function)
 		}
 	}
 
-	return result
+	return result, nil
 }
 
 func toFuncionCalls(calls []ToolCall) []provider.FunctionCall {
@@ -223,16 +357,16 @@ func oaiMessageRole(r provider.MessageRole) MessageRole {
 	}
 }
 
-func oaiCompletionReason(val provider.CompletionReason) *CompletionReason {
+func oaiFinishReason(val provider.CompletionReason) *FinishReason {
 	switch val {
 	case provider.CompletionReasonStop:
-		return &CompletionReasonStop
+		return &FinishReasonStop
 
 	case provider.CompletionReasonLength:
-		return &CompletionReasonLength
+		return &FinishReasonLength
 
 	case provider.CompletionReasonFunction:
-		return &CompletionReasonToolCalls
+		return &FinishReasonToolCalls
 
 	default:
 		return nil

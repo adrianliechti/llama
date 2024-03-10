@@ -1,0 +1,39 @@
+{
+  Get {
+    {{ .Class }} (
+      {{- if .Limit }}
+      limit: {{ .Limit }}
+      {{ end }}
+
+      {{- if .Where }}
+      where: {
+        operator: And,
+        operands: [
+          {{- $sep := "" }}
+          {{- range $key, $value := .Where }}
+          {
+            path: ["{{ $key }}"],
+            operator: Equal,
+            valueText: "{{ $value }}",
+          }
+          {{- $sep = "," }}
+          {{- end }}
+        ]
+      }
+      {{- end }}
+      
+      hybrid: {
+        query: "{{ .Query }}"
+        vector: {{ .Vector }}
+      }
+    ) {
+      content
+      filename
+      filepart
+      _additional {
+        id
+        distance
+      }
+    }
+  }
+}

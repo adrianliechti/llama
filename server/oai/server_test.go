@@ -198,7 +198,6 @@ func TestChatCompletionStream(t *testing.T) {
 
 // 		Function: openai.FunctionDefinition{
 // 			Description: "Get the current weather in a given location (like a city or region).",
-
 // 			Name: "get_current_weather",
 // 			Parameters: jsonschema.Definition{
 // 				Type: jsonschema.Object,

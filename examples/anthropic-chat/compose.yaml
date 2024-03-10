@@ -1,0 +1,49 @@
+version: "3"
+
+services:
+  platform:
+    image: adrianliechti/llama-platform
+    pull_policy: always
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    configs:
+      - source: platform
+        target: /config.yaml
+  
+  web:
+    image: adrianliechti/llama-ui
+    pull_policy: always
+    ports:
+      - 3000:3000
+    environment:
+      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+    configs:
+      - source: web
+        target: /config.yaml
+    depends_on:
+      - platform
+  
+configs:
+  platform:
+    content: |
+      providers:
+        - type: anthropic
+          token: sk-ant-apixx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+          models:
+            claude-3-opus:
+              id: claude-3-opus-20240229
+
+  web:
+    content: |
+      contexts:
+        - name: Claude
+
+          capabilities:
+            - images
+
+          models:
+            - id: claude-3-opus

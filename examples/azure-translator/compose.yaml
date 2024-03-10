@@ -1,0 +1,51 @@
+version: "3"
+
+services:
+  platform:
+    image: adrianliechti/llama-platform
+    pull_policy: always
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    configs:
+      - source: platform
+        target: /config.yaml
+  
+  web:
+    image: adrianliechti/llama-ui
+    pull_policy: always
+    ports:
+      - 3000:3000
+    environment:
+      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+    configs:
+      - source: web
+        target: /config.yaml
+    depends_on:
+      - platform
+  
+configs:
+  platform:
+    content: |
+      providers:
+        - type: azure-translator
+          token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+          url: https://xxxxxxxx.cognitiveservices.azure.com/
+          models:
+            english-translator:
+              id: en
+            german-translator:
+              id: de
+
+  web:
+    content: |
+      contexts:
+        - name: English
+          models:
+            - id: english-translator
+
+        - name: German
+          models:
+            - id: german-translator
