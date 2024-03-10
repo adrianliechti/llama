@@ -236,10 +236,22 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	results := make([]index.Result, 0)
 
 	for _, d := range result.Data.Get[c.class] {
+		metadata := map[string]string{}
+
+		if d.FileName != "" {
+			metadata["filename"] = d.FileName
+		}
+
+		if d.FilePart != "" {
+			metadata["filepart"] = d.FilePart
+		}
+
 		r := index.Result{
 			Document: index.Document{
-				ID:      d.Additional.ID,
-				Content: d.Content,
+				ID: d.Additional.ID,
+
+				Content:  d.Content,
+				Metadata: metadata,
 			},
 
 			Distance: d.Additional.Distance,
@@ -262,6 +274,24 @@ func generateID(d index.Document) string {
 func (c *Client) createObject(d index.Document) error {
 	properties := maps.Clone(d.Metadata)
 	properties["content"] = d.Content
+
+	filename := d.Metadata["filename"]
+	filepart := d.Metadata["filepart"]
+
+	if filename == "" {
+		filename = d.ID
+
+		if d.Location != "" {
+			filename = d.Location
+		}
+	}
+
+	if filepart == "" {
+		filepart = "0"
+	}
+
+	properties["filename"] = filename
+	properties["filepart"] = filepart
 
 	body := map[string]any{
 		"id": d.ID,
@@ -350,6 +380,10 @@ type errorDetail struct {
 
 type document struct {
 	Content string `json:"content"`
+
+	// HACK
+	FileName string `json:"filename,omitempty"`
+	FilePart string `json:"filepart,omitempty"`
 
 	Additional additional `json:"_additional"`
 }
