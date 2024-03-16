@@ -4,9 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/adapter"
-	"github.com/adrianliechti/llama/pkg/adapter/hermesfn"
-	"github.com/adrianliechti/llama/pkg/adapter/react"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/anthropic"
 	"github.com/adrianliechti/llama/pkg/provider/azuretranslator"
@@ -18,6 +15,9 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
+
+	"github.com/adrianliechti/llama/pkg/adapter"
+	"github.com/adrianliechti/llama/pkg/adapter/hermesfn"
 )
 
 func (cfg *Config) RegisterEmbedder(model string, e provider.Embedder) {
@@ -268,10 +268,7 @@ func azuretranslatorProvider(cfg providerConfig, model string) (*azuretranslator
 func createCompleterAdapter(name string, completer provider.Completer) (adapter.Provider, error) {
 	switch strings.ToLower(name) {
 
-	case "react":
-		return react.New(completer)
-
-	case "hermesfn":
+	case "hermesfn", "hermes-function-calling":
 		return hermesfn.New(completer)
 
 	default:

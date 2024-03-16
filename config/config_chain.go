@@ -4,14 +4,10 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/adapter"
 	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
-
-	"github.com/adrianliechti/llama/pkg/adapter/hermesfn"
-	"github.com/adrianliechti/llama/pkg/adapter/react"
 
 	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/chain/assistant"
@@ -131,12 +127,6 @@ func createChain(cfg chainConfig, context chainContext) (chain.Provider, error) 
 	case "toolbox":
 		return toolboxChain(cfg, context)
 
-	case "react":
-		return reactAdapter(cfg, context)
-
-	case "hermesfn":
-		return hermesfnAdapter(cfg, context)
-
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
 	}
@@ -218,26 +208,4 @@ func toolboxChain(cfg chainConfig, context chainContext) (chain.Provider, error)
 	}
 
 	return toolbox.New(options...)
-}
-
-func reactAdapter(cfg chainConfig, context chainContext) (adapter.Provider, error) {
-	var options []react.Option
-
-	if context.Template != nil {
-		options = append(options, react.WithTemplate(context.Template))
-	}
-
-	if context.Messages != nil {
-		options = append(options, react.WithMessages(context.Messages...))
-	}
-
-	if cfg.Temperature != nil {
-		options = append(options, react.WithTemperature(*cfg.Temperature))
-	}
-
-	return react.New(context.Completer, options...)
-}
-
-func hermesfnAdapter(cfg chainConfig, context chainContext) (adapter.Provider, error) {
-	return hermesfn.New(context.Completer)
 }
