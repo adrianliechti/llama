@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/llama/pkg/index/aisearch"
 	"github.com/adrianliechti/llama/pkg/index/bing"
 	"github.com/adrianliechti/llama/pkg/index/chroma"
 	"github.com/adrianliechti/llama/pkg/index/custom"
@@ -63,6 +64,9 @@ func createIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 	case "weaviate":
 		return weaviateIndex(cfg, context)
 
+	case "aisearch":
+		return aisearchIndex(cfg)
+
 	case "bing":
 		return bingIndex(cfg)
 
@@ -114,6 +118,12 @@ func weaviateIndex(cfg indexConfig, context indexContext) (index.Provider, error
 	}
 
 	return weaviate.New(cfg.URL, cfg.Namespace, options...)
+}
+
+func aisearchIndex(cfg indexConfig) (index.Provider, error) {
+	var options []aisearch.Option
+
+	return aisearch.New(cfg.URL, cfg.Namespace, cfg.Token, options...)
 }
 
 func bingIndex(cfg indexConfig) (index.Provider, error) {
