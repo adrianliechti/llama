@@ -13,9 +13,9 @@ import (
 	"github.com/adrianliechti/llama/pkg/to"
 )
 
-var _ chain.Provider = &Chain{}
+var _ chain.Provider = &Adapter{}
 
-type Chain struct {
+type Adapter struct {
 	completer provider.Completer
 
 	template *prompt.Template
@@ -24,61 +24,61 @@ type Chain struct {
 	temperature float32
 }
 
-type Option func(*Chain)
+type Option func(*Adapter)
 
-func New(options ...Option) (*Chain, error) {
-	c := &Chain{
+func New(options ...Option) (*Adapter, error) {
+	a := &Adapter{
 		template: prompt.MustTemplate(promptTemplate),
 
 		temperature: 0,
 	}
 
 	for _, option := range options {
-		option(c)
+		option(a)
 	}
 
-	if c.completer == nil {
+	if a.completer == nil {
 		return nil, errors.New("missing completer provider")
 	}
 
-	return c, nil
+	return a, nil
 }
 
 func WithCompleter(completer provider.Completer) Option {
-	return func(c *Chain) {
-		c.completer = completer
+	return func(a *Adapter) {
+		a.completer = completer
 	}
 }
 
 func WithTemplate(template *prompt.Template) Option {
-	return func(c *Chain) {
-		c.template = template
+	return func(a *Adapter) {
+		a.template = template
 	}
 }
 
 func WithTemperature(temperature float32) Option {
-	return func(c *Chain) {
-		c.temperature = temperature
+	return func(a *Adapter) {
+		a.temperature = temperature
 	}
 }
 
 func WithMessages(messages ...provider.Message) Option {
-	return func(c *Chain) {
-		c.messages = messages
+	return func(a *Adapter) {
+		a.messages = messages
 	}
 }
 
-func (c *Chain) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+func (a *Adapter) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
 	}
 
 	if options.Temperature == nil {
-		options.Temperature = &c.temperature
+		options.Temperature = &a.temperature
 	}
 
 	if len(options.Functions) == 0 {
-		return c.completer.Complete(ctx, messages, options)
+		return a.completer.Complete(ctx, messages, options)
 	}
 
 	data := promptData{}
@@ -156,7 +156,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		}
 	}
 
-	prompt, err := c.template.Execute(data)
+	prompt, err := a.template.Execute(data)
 
 	if err != nil {
 		return nil, err
@@ -173,10 +173,10 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	inputOptions := &provider.CompleteOptions{
 		Stop:        promptStop,
-		Temperature: to.Ptr(c.temperature),
+		Temperature: to.Ptr(a.temperature),
 	}
 
-	completion, err := c.completer.Complete(ctx, input, inputOptions)
+	completion, err := a.completer.Complete(ctx, input, inputOptions)
 
 	if err != nil {
 		return nil, err

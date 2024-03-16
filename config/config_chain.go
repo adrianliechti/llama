@@ -4,16 +4,19 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/adapter/hermesfn"
-	"github.com/adrianliechti/llama/pkg/chain"
-	"github.com/adrianliechti/llama/pkg/chain/assistant"
-	"github.com/adrianliechti/llama/pkg/chain/rag"
-	"github.com/adrianliechti/llama/pkg/chain/react"
-	"github.com/adrianliechti/llama/pkg/chain/toolbox"
 	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
+
+	"github.com/adrianliechti/llama/pkg/adapter/hermesfn"
+	"github.com/adrianliechti/llama/pkg/adapter/react"
+
+	"github.com/adrianliechti/llama/pkg/chain"
+	"github.com/adrianliechti/llama/pkg/chain/assistant"
+	"github.com/adrianliechti/llama/pkg/chain/rag"
+	"github.com/adrianliechti/llama/pkg/chain/toolbox"
+
 	"github.com/adrianliechti/llama/pkg/to"
 	"github.com/adrianliechti/llama/pkg/tool"
 )
@@ -124,17 +127,14 @@ func createChain(cfg chainConfig, context chainContext) (chain.Provider, error) 
 	case "rag":
 		return ragChain(cfg, context)
 
-	case "refine":
-		return refineChain(cfg, context)
-
-	case "react":
-		return reactChain(cfg, context)
-
 	case "toolbox":
 		return toolboxChain(cfg, context)
 
+	case "react":
+		return reactAdapter(cfg, context)
+
 	case "hermesfn":
-		return hermesfnChain(cfg, context)
+		return hermesfnAdapter(cfg, context)
 
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
@@ -201,7 +201,7 @@ func ragChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	return rag.New(options...)
 }
 
-func reactChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
+func reactAdapter(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	var options []react.Option
 
 	if context.Completer != nil {
@@ -223,7 +223,7 @@ func reactChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	return react.New(options...)
 }
 
-func hermesfnChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
+func hermesfnAdapter(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	return hermesfn.New(context.Completer)
 }
 
