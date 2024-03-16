@@ -18,12 +18,8 @@ configs:
     content: |
       providers:
         - type: llama
-          url: http://host.docker.internal:8000
+          url: http://host.docker.internal:9081
           models:
-            hermes-pro:
+            hermes-2-pro:
               id: hermes
-
-      chains:
-        hermes-pro-fn:
-          type: hermesfn
-          model: hermes-pro
+              adapter: hermesfn

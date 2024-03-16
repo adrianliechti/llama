@@ -7,13 +7,13 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/chain"
+	"github.com/adrianliechti/llama/pkg/adapter"
 	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/to"
 )
 
-var _ chain.Provider = &Adapter{}
+var _ adapter.Provider = &Adapter{}
 
 type Adapter struct {
 	completer provider.Completer
@@ -26,7 +26,7 @@ type Adapter struct {
 
 type Option func(*Adapter)
 
-func New(options ...Option) (*Adapter, error) {
+func New(completer provider.Completer, options ...Option) (*Adapter, error) {
 	a := &Adapter{
 		template: prompt.MustTemplate(promptTemplate),
 
@@ -37,17 +37,7 @@ func New(options ...Option) (*Adapter, error) {
 		option(a)
 	}
 
-	if a.completer == nil {
-		return nil, errors.New("missing completer provider")
-	}
-
 	return a, nil
-}
-
-func WithCompleter(completer provider.Completer) Option {
-	return func(a *Adapter) {
-		a.completer = completer
-	}
 }
 
 func WithTemplate(template *prompt.Template) Option {

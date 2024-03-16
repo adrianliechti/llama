@@ -7,11 +7,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/chain"
+	"github.com/adrianliechti/llama/pkg/adapter"
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-var _ chain.Provider = &Adapter{}
+var _ adapter.Provider = &Adapter{}
 
 // https://github.com/NousResearch/Hermes-Function-Calling
 type Adapter struct {

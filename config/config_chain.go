@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/adapter"
 	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/prompt"
@@ -201,32 +202,6 @@ func ragChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	return rag.New(options...)
 }
 
-func reactAdapter(cfg chainConfig, context chainContext) (chain.Provider, error) {
-	var options []react.Option
-
-	if context.Completer != nil {
-		options = append(options, react.WithCompleter(context.Completer))
-	}
-
-	if context.Template != nil {
-		options = append(options, react.WithTemplate(context.Template))
-	}
-
-	if context.Messages != nil {
-		options = append(options, react.WithMessages(context.Messages...))
-	}
-
-	if cfg.Temperature != nil {
-		options = append(options, react.WithTemperature(*cfg.Temperature))
-	}
-
-	return react.New(options...)
-}
-
-func hermesfnAdapter(cfg chainConfig, context chainContext) (chain.Provider, error) {
-	return hermesfn.New(context.Completer)
-}
-
 func toolboxChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	var options []toolbox.Option
 
@@ -243,4 +218,26 @@ func toolboxChain(cfg chainConfig, context chainContext) (chain.Provider, error)
 	}
 
 	return toolbox.New(options...)
+}
+
+func reactAdapter(cfg chainConfig, context chainContext) (adapter.Provider, error) {
+	var options []react.Option
+
+	if context.Template != nil {
+		options = append(options, react.WithTemplate(context.Template))
+	}
+
+	if context.Messages != nil {
+		options = append(options, react.WithMessages(context.Messages...))
+	}
+
+	if cfg.Temperature != nil {
+		options = append(options, react.WithTemperature(*cfg.Temperature))
+	}
+
+	return react.New(context.Completer, options...)
+}
+
+func hermesfnAdapter(cfg chainConfig, context chainContext) (adapter.Provider, error) {
+	return hermesfn.New(context.Completer)
 }

@@ -11,7 +11,7 @@ func main() {
 	config := openai.DefaultConfig("")
 	config.BaseURL = "http://localhost:8080/oai/v1"
 
-	model := "hermes-pro-fn"
+	model := "hermes-2-pro"
 
 	client := openai.NewClientWithConfig(config)
 

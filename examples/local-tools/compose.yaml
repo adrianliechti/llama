@@ -22,8 +22,4 @@ configs:
           models:
             mistral:
               id: mistral:latest
-
-      chains:
-        mistral-fn:
-          type: react
-          model: mistral
+              adapter: react
