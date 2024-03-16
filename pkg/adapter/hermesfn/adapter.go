@@ -188,6 +188,8 @@ func extractToolCall(message provider.Message) (*provider.FunctionCall, error) {
 	}
 
 	return &provider.FunctionCall{
+		ID: result.Name,
+
 		Name:      result.Name,
 		Arguments: string(result.Arguments),
 	}, nil
