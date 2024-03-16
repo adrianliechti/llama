@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/adapter/hermesfn"
 	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/chain/assistant"
 	"github.com/adrianliechti/llama/pkg/chain/rag"
@@ -133,6 +134,9 @@ func createChain(cfg chainConfig, context chainContext) (chain.Provider, error) 
 	case "toolbox":
 		return toolboxChain(cfg, context)
 
+	case "hermesfn":
+		return hermesfnChain(cfg, context)
+
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
 	}
@@ -256,6 +260,10 @@ func reactChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	}
 
 	return react.New(options...)
+}
+
+func hermesfnChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
+	return hermesfn.New(context.Completer)
 }
 
 func toolboxChain(cfg chainConfig, context chainContext) (chain.Provider, error) {

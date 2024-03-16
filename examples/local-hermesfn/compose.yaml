@@ -1,0 +1,29 @@
+version: "3"
+
+services:
+  platform:
+    image: adrianliechti/llama-platform
+    pull_policy: always
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    configs:
+      - source: platform
+        target: /config.yaml
+  
+configs:
+  platform:
+    content: |
+      providers:
+        - type: llama
+          url: http://host.docker.internal:8000
+          models:
+            hermes-pro:
+              id: hermes
+
+      chains:
+        hermes-pro-fn:
+          type: hermesfn
+          model: hermes-pro
