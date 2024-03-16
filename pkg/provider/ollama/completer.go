@@ -62,11 +62,17 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			return nil, err
 		}
 
-		if resp.StatusCode != http.StatusOK {
-			return nil, errors.New("unable to complete")
-		}
-
 		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			data, _ := io.ReadAll(resp.Body)
+
+			if len(data) == 0 {
+				data = []byte("unable to complete")
+			}
+
+			return nil, errors.New(string(data))
+		}
 
 		var chat ChatResponse
 
@@ -79,7 +85,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			Reason: provider.CompletionReasonStop,
 
 			Message: provider.Message{
-				Role:    provider.MessageRole(chat.Message.Role),
+				Role:    toMessageRole(chat.Message.Role),
 				Content: chat.Message.Content,
 			},
 		}
@@ -106,9 +112,13 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 		reader := bufio.NewReader(resp.Body)
 
-		var resultText strings.Builder
-		var resultRole provider.MessageRole
-		var resultReason provider.CompletionReason
+		result := provider.Completion{
+			ID: id,
+
+			Message: provider.Message{
+				Role: provider.MessageRoleAssistant,
+			},
+		}
 
 		for i := 0; ; i++ {
 			data, err := reader.ReadBytes('\n')
@@ -137,30 +147,19 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				content = strings.TrimLeftFunc(content, unicode.IsSpace)
 			}
 
-			resultText.WriteString(content)
+			result.Reason = toCompletionReason(chat)
 
-			resultRole = provider.MessageRoleAssistant
-			resultReason = toCompletionReason(chat)
+			result.Message.Role = toMessageRole(chat.Message.Role)
+			result.Message.Content += content
 
 			options.Stream <- provider.Completion{
-				ID:     id,
-				Reason: resultReason,
+				ID:     result.ID,
+				Reason: result.Reason,
 
 				Message: provider.Message{
-					Role:    resultRole,
 					Content: content,
 				},
 			}
-		}
-
-		result := provider.Completion{
-			ID:     id,
-			Reason: resultReason,
-
-			Message: provider.Message{
-				Role:    resultRole,
-				Content: resultText.String(),
-			},
 		}
 
 		return &result, nil
@@ -191,7 +190,7 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 
 	for i, m := range messages {
 		message := Message{
-			Role:    MessageRole(m.Role),
+			Role:    convertMessageRole(m.Role),
 			Content: m.Content,
 		}
 
@@ -214,6 +213,46 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 	return req, nil
 }
 
+func convertMessageRole(r provider.MessageRole) MessageRole {
+	switch r {
+
+	case provider.MessageRoleSystem:
+		return MessageRoleSystem
+
+	case provider.MessageRoleUser:
+		return MessageRoleUser
+
+	case provider.MessageRoleAssistant:
+		return MessageRoleAssistant
+
+	// case provider.MessageRoleFunction:
+	// 	return MessageRoleTool
+
+	default:
+		return ""
+	}
+}
+
+func toMessageRole(role MessageRole) provider.MessageRole {
+	switch role {
+
+	case MessageRoleSystem:
+		return provider.MessageRoleSystem
+
+	case MessageRoleUser:
+		return provider.MessageRoleUser
+
+	case MessageRoleAssistant:
+		return provider.MessageRoleAssistant
+
+	// case MessageRoleTool:
+	// 	return provider.MessageRoleFunction
+
+	default:
+		return ""
+	}
+}
+
 func toCompletionReason(chat ChatResponse) provider.CompletionReason {
 	if chat.Done {
 		return provider.CompletionReasonStop
@@ -228,6 +267,7 @@ var (
 	MessageRoleSystem    MessageRole = "system"
 	MessageRoleUser      MessageRole = "user"
 	MessageRoleAssistant MessageRole = "assistant"
+	//MessageRoleTool      MessageRole = "tool"
 )
 
 type MessageImage []byte
