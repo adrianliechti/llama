@@ -1,5 +1,5 @@
 
-# LLAMA Platform
+# LLM Platform
 
 Open Source LLM Platform to build and deploy applications at scale
 
@@ -109,7 +109,6 @@ providers:
     models:
       mistral-7b-instruct:
         id: /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
-        template: mistral
 ```
 
 
@@ -388,13 +387,15 @@ POST http://localhost:8080/v1/index/{index-name}
 
 ### Function Calling
 
-#### ReAct
-
-For providers or models not natively supporting Function Calling, a transformator chain can be configured to mimic this functionality.
+#### Hermes Function Calling
 
 ```yaml
-chains:
-  mistral-7b-react:
-    type: react
-    model: mistral-7b-instruct
+providers:
+  - type: llama
+    url: http://localhost:9081
+
+    models:
+      hermes-2-pro:
+        id: /models/Hermes-2-Pro-Mistral-7B.Q4_K_M.gguf
+        adapter: hermesfn
 ```
