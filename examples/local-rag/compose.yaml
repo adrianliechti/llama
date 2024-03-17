@@ -19,7 +19,7 @@ services:
       - unstructured
 
   weaviate:
-    image: semitechnologies/weaviate:1.23.11
+    image: cr.weaviate.io/semitechnologies/weaviate:1.23.11
     pull_policy: always
     environment:
       - CLUSTER_HOSTNAME=weaviate
