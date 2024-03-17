@@ -27,24 +27,28 @@ func New(completer provider.Completer) (*Adapter, error) {
 }
 
 func (a *Adapter) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
-	var input []provider.Message
+	var system string
+
+	if len(messages) > 0 && messages[0].Role == provider.MessageRoleSystem {
+		system = messages[0].Content
+	}
+
+	prompt, err := convertSystemPrompt(system, options.Functions)
+
+	if err != nil {
+		return nil, err
+	}
+
+	input := []provider.Message{
+		{
+			Role:    provider.MessageRoleSystem,
+			Content: prompt,
+		},
+	}
 
 	for _, m := range messages {
-		if m.Role == provider.MessageRoleSystem {
-			input = append(input, m)
-		}
-
 		if m.Role == provider.MessageRoleUser {
-			prompt, err := convertUserPrompt(m.Content, options.Functions)
-
-			if err != nil {
-				return nil, err
-			}
-
-			input = append(input, provider.Message{
-				Role:    provider.MessageRoleUser,
-				Content: prompt,
-			})
+			input = append(input, m)
 		}
 
 		if m.Role == provider.MessageRoleAssistant {
@@ -96,8 +100,12 @@ func (a *Adapter) Complete(ctx context.Context, messages []provider.Message, opt
 	return completion, nil
 }
 
-func convertUserPrompt(prompt string, functions []provider.Function) (string, error) {
+func convertSystemPrompt(prompt string, functions []provider.Function) (string, error) {
 	var result string
+
+	if prompt != "" {
+		result += strings.TrimSpace(prompt) + "\n"
+	}
 
 	result += "You are a function calling AI model. "
 	result += `You are provided with function signatures within <tools></tools> XML tags. `
@@ -147,10 +155,6 @@ func convertUserPrompt(prompt string, functions []provider.Function) (string, er
 	result += `<tool_call>\n`
 	result += `{"arguments": <args-dict>, "name": <function-name>}`
 	result += `\n</tool_call>`
-
-	if prompt != "" {
-		result += "\n" + strings.TrimSpace(prompt)
-	}
 
 	return result, nil
 }
