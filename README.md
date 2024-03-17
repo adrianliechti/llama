@@ -89,7 +89,7 @@ https://github.com/ggerganov/llama.cpp/tree/master/examples/server
 
 ```shell
 # using taskfile.dev
-$ task llama-server
+$ task llama:server
 
 # LLAMA.CPP Server
 $ bin/llama-server --port 9081 --log-disable --embedding --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
@@ -118,7 +118,7 @@ https://github.com/ggerganov/whisper.cpp/tree/master/examples/server
 
 ```shell
 # using taskfile.dev
-$ task whisper-server
+$ task whisper:server
 ```
 
 ```yaml
@@ -169,9 +169,6 @@ providers:
 https://www.trychroma.com
 
 ```shell
-# using taskfile.dev
-$ task chroma-server
-
 # using Docker
 $ docker run -it --rm -p 9083:8000 -v chroma-data:/chroma/chroma ghcr.io/chroma-core/chroma
 ```
@@ -191,9 +188,6 @@ indexes:
 https://weaviate.io
 
 ```shell
-# using taskfile.dev
-$ task weaviate-server
-
 # using Docker
 $ docker run -it --rm -p 9084:8080 -v weaviate-data:/var/lib/weaviate -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true -e PERSISTENCE_DATA_PATH=/var/lib/weaviate semitechnologies/weaviate
 ```
@@ -221,9 +215,6 @@ indexes:
 ##### OpenSearch / Elasticsearch
 
 ```shell
-# using taskfile.dev
-$ task opensearch-server
-
 # using Docker
 docker run -it --rm -p 9200:9200 -v opensearch-data:/usr/share/opensearch/data -e "discovery.type=single-node" -e DISABLE_SECURITY_PLUGIN=true opensearchproject/opensearch:latest
 ```
@@ -275,9 +266,6 @@ extractors:
 https://tesseract-ocr.github.io
 
 ```shell
-# using taskfile.dev
-$ task tesseract-server
-
 # using Docker
 docker run -it --rm -p 9086:8884 hertzg/tesseract-server:latest
 ```
@@ -295,9 +283,6 @@ extractors:
 https://unstructured.io
 
 ```shell
-# using taskfile.dev
-$ task unstructured-server
-
 # using Docker
 docker run -it --rm -p 9085:8000 quay.io/unstructured-io/unstructured-api:0.0.64 --port 8000 --host 0.0.0.0
 ```

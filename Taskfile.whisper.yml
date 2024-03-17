@@ -1,0 +1,30 @@
+# https://taskfile.dev
+
+version: "3"
+
+tasks:
+  server:
+    deps: [download-server, download-model]
+    cmds:
+      - bin/whisper-server --port 9085 --convert --model ./models/whisper-ggml-medium.bin
+
+  download-model:
+    cmds:
+      - mkdir -p models
+      - curl -s -L -o models/whisper-ggml-medium.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin
+
+    status:
+      - test -f models/whisper-ggml-medium.bin
+
+  download-server:
+    cmds:
+      - mkdir -p bin
+      - rm -rf tmp/whisper.cpp
+      - git clone https://github.com/ggerganov/whisper.cpp tmp/whisper.cpp
+      - make -C tmp/whisper.cpp/ server
+      - cp tmp/whisper.cpp/server bin/whisper-server
+      - rm -rf tmp/whisper.cpp
+      - rm -rf tmp
+
+    status:
+      - test -f bin/whisper-server
