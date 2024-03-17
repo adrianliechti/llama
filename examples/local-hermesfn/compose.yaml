@@ -17,13 +17,9 @@ configs:
   platform:
     content: |
       providers:
-        - type: ollama
-          url: http://host.docker.internal:11434
+        - type: llama
+          url: http://host.docker.internal:9081
           models:
-            mistral:
-              id: mistral:latest
-
-      chains:
-        mistral-fn:
-          type: react
-          model: mistral
+            hermes-2-pro:
+              id: hermes
+              adapter: hermesfn

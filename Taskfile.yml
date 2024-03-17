@@ -40,7 +40,7 @@ tasks:
       - mkdir -p bin
       - rm -rf tmp/llama.cpp
       - git clone https://github.com/ggerganov/llama.cpp tmp/llama.cpp
-      - make -C tmp/llama.cpp/ server
+      - make -C tmp/llama.cpp/
       - cp tmp/llama.cpp/server bin/llama-server
       - cp tmp/llama.cpp/ggml-metal.metal bin/ggml-metal.metal
       - rm -rf tmp/llama.cpp
@@ -74,10 +74,6 @@ tasks:
 
     status:
       - test -f bin/whisper-server
-
-  tei-server:
-    cmds:
-      - docker run -it --rm -p 9082:8000 adrianliechti/sentence-transformers:bge-base-en-v1
 
   chroma-server:
     cmds:

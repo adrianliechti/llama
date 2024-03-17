@@ -4,16 +4,16 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/chain"
-	"github.com/adrianliechti/llama/pkg/chain/assistant"
-	"github.com/adrianliechti/llama/pkg/chain/rag"
-	"github.com/adrianliechti/llama/pkg/chain/react"
-	"github.com/adrianliechti/llama/pkg/chain/refine"
-	"github.com/adrianliechti/llama/pkg/chain/toolbox"
 	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
+
+	"github.com/adrianliechti/llama/pkg/chain"
+	"github.com/adrianliechti/llama/pkg/chain/assistant"
+	"github.com/adrianliechti/llama/pkg/chain/rag"
+	"github.com/adrianliechti/llama/pkg/chain/toolbox"
+
 	"github.com/adrianliechti/llama/pkg/to"
 	"github.com/adrianliechti/llama/pkg/tool"
 )
@@ -124,12 +124,6 @@ func createChain(cfg chainConfig, context chainContext) (chain.Provider, error) 
 	case "rag":
 		return ragChain(cfg, context)
 
-	case "refine":
-		return refineChain(cfg, context)
-
-	case "react":
-		return reactChain(cfg, context)
-
 	case "toolbox":
 		return toolboxChain(cfg, context)
 
@@ -196,66 +190,6 @@ func ragChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	}
 
 	return rag.New(options...)
-}
-
-func refineChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
-	var options []refine.Option
-
-	if context.Completer != nil {
-		options = append(options, refine.WithCompleter(context.Completer))
-	}
-
-	if context.Template != nil {
-		options = append(options, refine.WithTemplate(context.Template))
-	}
-
-	if context.Messages != nil {
-		options = append(options, refine.WithMessages(context.Messages...))
-	}
-
-	if context.Index != nil {
-		options = append(options, refine.WithIndex(context.Index))
-	}
-
-	if cfg.Limit != nil {
-		options = append(options, refine.WithLimit(*cfg.Limit))
-	}
-
-	if cfg.Distance != nil {
-		options = append(options, refine.WithDistance(*cfg.Distance))
-	}
-
-	if cfg.Temperature != nil {
-		options = append(options, refine.WithTemperature(*cfg.Temperature))
-	}
-
-	for k, v := range cfg.Filters {
-		options = append(options, refine.WithFilter(k, context.Classifiers[v.Classifier]))
-	}
-
-	return refine.New(options...)
-}
-
-func reactChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
-	var options []react.Option
-
-	if context.Completer != nil {
-		options = append(options, react.WithCompleter(context.Completer))
-	}
-
-	if context.Template != nil {
-		options = append(options, react.WithTemplate(context.Template))
-	}
-
-	if context.Messages != nil {
-		options = append(options, react.WithMessages(context.Messages...))
-	}
-
-	if cfg.Temperature != nil {
-		options = append(options, react.WithTemperature(*cfg.Temperature))
-	}
-
-	return react.New(options...)
 }
 
 func toolboxChain(cfg chainConfig, context chainContext) (chain.Provider, error) {

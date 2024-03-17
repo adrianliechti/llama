@@ -58,7 +58,7 @@ func (*Tool) Parameters() jsonschema.Definition {
 		Properties: map[string]jsonschema.Definition{
 			"query": {
 				Type:        jsonschema.DataTypeString,
-				Description: "The search query to use. For example: 'Latest news on Nvidia stock performance'",
+				Description: "The search query to use. For example: \"Latest news on Nvidia stock performance\"",
 			},
 		},
 

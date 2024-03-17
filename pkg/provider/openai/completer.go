@@ -7,7 +7,6 @@ import (
 	"io"
 	"mime"
 	"path/filepath"
-	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 
@@ -67,7 +66,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			Reason: toCompletionResult(choice.FinishReason),
 
 			Message: provider.Message{
-				Role:    provider.MessageRoleAssistant,
+				Role:    toMessageRole(choice.Message.Role),
 				Content: choice.Message.Content,
 
 				FunctionCalls: toFunctionCalls(choice.Message.ToolCalls),
@@ -82,10 +81,11 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			return nil, err
 		}
 
-		var resultID string
-		var resultText strings.Builder
-		var resultReason provider.CompletionReason
-		var resultFunctions []provider.FunctionCall
+		result := provider.Completion{
+			Message: provider.Message{
+				Role: provider.MessageRoleAssistant,
+			},
+		}
 
 		for {
 			completion, err := stream.Recv()
@@ -100,15 +100,16 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			choice := completion.Choices[0]
 
-			resultText.WriteString(choice.Delta.Content)
+			result.ID = completion.ID
+			result.Reason = toCompletionResult(choice.FinishReason)
 
-			resultID = completion.ID
-			resultReason = toCompletionResult(choice.FinishReason)
-			resultFunctions = toFunctionCalls(choice.Delta.ToolCalls)
+			result.Message.Role = toMessageRole(choice.Delta.Role)
+			result.Message.Content += choice.Delta.Content
+			result.Message.FunctionCalls = toFunctionCalls(choice.Delta.ToolCalls)
 
 			options.Stream <- provider.Completion{
-				ID:     completion.ID,
-				Reason: resultReason,
+				ID:     result.ID,
+				Reason: result.Reason,
 
 				Message: provider.Message{
 					Content: choice.Delta.Content,
@@ -120,18 +121,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			if choice.FinishReason != "" {
 				break
 			}
-		}
-
-		result := provider.Completion{
-			ID:     resultID,
-			Reason: resultReason,
-
-			Message: provider.Message{
-				Role:    provider.MessageRoleAssistant,
-				Content: resultText.String(),
-
-				FunctionCalls: resultFunctions,
-			},
 		}
 
 		return &result, nil
@@ -255,6 +244,26 @@ func convertMessageRole(r provider.MessageRole) string {
 
 	case provider.MessageRoleFunction:
 		return openai.ChatMessageRoleTool
+
+	default:
+		return ""
+	}
+}
+
+func toMessageRole(role string) provider.MessageRole {
+	switch role {
+
+	case openai.ChatMessageRoleSystem:
+		return provider.MessageRoleSystem
+
+	case openai.ChatMessageRoleUser:
+		return provider.MessageRoleUser
+
+	case openai.ChatMessageRoleAssistant:
+		return provider.MessageRoleAssistant
+
+	case openai.ChatMessageRoleTool:
+		return provider.MessageRoleFunction
 
 	default:
 		return ""

@@ -15,6 +15,9 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
+
+	"github.com/adrianliechti/llama/pkg/adapter"
+	"github.com/adrianliechti/llama/pkg/adapter/hermesfn"
 )
 
 func (cfg *Config) RegisterEmbedder(model string, e provider.Embedder) {
@@ -71,6 +74,16 @@ func (cfg *Config) registerProviders(f *configFile) error {
 			}
 
 			if completer, ok := r.(provider.Completer); ok {
+				if m.Adapter != "" {
+					adapter, err := createCompleterAdapter(m.Adapter, completer)
+
+					if err != nil {
+						return err
+					}
+
+					completer = adapter
+				}
+
 				cfg.RegisterCompleter(id, completer)
 			}
 
@@ -89,20 +102,9 @@ func (cfg *Config) registerProviders(f *configFile) error {
 
 func createProvider(cfg providerConfig, model string) (any, error) {
 	switch strings.ToLower(cfg.Type) {
-	case "openai":
-		return openaiProvider(cfg, model)
 
 	case "anthropic":
 		return anthropicProvider(cfg, model)
-
-	case "llama":
-		return llamaProvider(cfg, model)
-
-	case "whisper":
-		return whisperProvider(cfg)
-
-	case "ollama":
-		return ollamaProvider(cfg, model)
 
 	case "huggingface":
 		return huggingfaceProvider(cfg, model)
@@ -110,11 +112,23 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 	case "langchain":
 		return langchainProvider(cfg, model)
 
-	case "deepl":
-		return deeplProvider(cfg, model)
+	case "llama":
+		return llamaProvider(cfg, model)
+
+	case "ollama":
+		return ollamaProvider(cfg, model)
+
+	case "openai":
+		return openaiProvider(cfg, model)
+
+	case "whisper":
+		return whisperProvider(cfg)
 
 	case "azure-translator":
 		return azuretranslatorProvider(cfg, model)
+
+	case "deepl":
+		return deeplProvider(cfg, model)
 
 	case "custom":
 		return customProvider(cfg, model)
@@ -122,24 +136,6 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 	default:
 		return nil, errors.New("invalid provider type: " + cfg.Type)
 	}
-}
-
-func openaiProvider(cfg providerConfig, model string) (*openai.Client, error) {
-	var options []openai.Option
-
-	if cfg.URL != "" {
-		options = append(options, openai.WithURL(cfg.URL))
-	}
-
-	if cfg.Token != "" {
-		options = append(options, openai.WithToken(cfg.Token))
-	}
-
-	if model != "" {
-		options = append(options, openai.WithModel(model))
-	}
-
-	return openai.New(options...)
 }
 
 func anthropicProvider(cfg providerConfig, model string) (*anthropic.Client, error) {
@@ -158,6 +154,30 @@ func anthropicProvider(cfg providerConfig, model string) (*anthropic.Client, err
 	}
 
 	return anthropic.New(options...)
+}
+
+func huggingfaceProvider(cfg providerConfig, model string) (*huggingface.Client, error) {
+	var options []huggingface.Option
+
+	if cfg.Token != "" {
+		options = append(options, huggingface.WithToken(cfg.Token))
+	}
+
+	if len(cfg.Models) > 1 {
+		return nil, errors.New("multiple models not supported for hugging face provider")
+	}
+
+	return huggingface.New(cfg.URL, options...)
+}
+
+func langchainProvider(cfg providerConfig, model string) (*langchain.Client, error) {
+	var options []langchain.Option
+
+	// if model != "" {
+	// 	options = append(options, langchain.WithModel(model))
+	// }
+
+	return langchain.New(cfg.URL, options...)
 }
 
 func llamaProvider(cfg providerConfig, model string) (*llama.Client, error) {
@@ -184,34 +204,22 @@ func ollamaProvider(cfg providerConfig, model string) (*ollama.Client, error) {
 	return ollama.New(cfg.URL, options...)
 }
 
-func langchainProvider(cfg providerConfig, model string) (*langchain.Client, error) {
-	var options []langchain.Option
+func openaiProvider(cfg providerConfig, model string) (*openai.Client, error) {
+	var options []openai.Option
 
-	// if model != "" {
-	// 	options = append(options, langchain.WithModel(model))
-	// }
-
-	return langchain.New(cfg.URL, options...)
-}
-
-func customProvider(cfg providerConfig, model string) (*custom.Client, error) {
-	var options []custom.Option
-
-	return custom.New(cfg.URL, options...)
-}
-
-func huggingfaceProvider(cfg providerConfig, model string) (*huggingface.Client, error) {
-	var options []huggingface.Option
+	if cfg.URL != "" {
+		options = append(options, openai.WithURL(cfg.URL))
+	}
 
 	if cfg.Token != "" {
-		options = append(options, huggingface.WithToken(cfg.Token))
+		options = append(options, openai.WithToken(cfg.Token))
 	}
 
-	if len(cfg.Models) > 1 {
-		return nil, errors.New("multiple models not supported for hugging face provider")
+	if model != "" {
+		options = append(options, openai.WithModel(model))
 	}
 
-	return huggingface.New(cfg.URL, options...)
+	return openai.New(options...)
 }
 
 func whisperProvider(cfg providerConfig) (*whisper.Client, error) {
@@ -222,6 +230,20 @@ func whisperProvider(cfg providerConfig) (*whisper.Client, error) {
 	}
 
 	return whisper.New(cfg.URL, options...)
+}
+
+func azuretranslatorProvider(cfg providerConfig, model string) (*azuretranslator.Client, error) {
+	var options []azuretranslator.Option
+
+	if cfg.Token != "" {
+		options = append(options, azuretranslator.WithToken(cfg.Token))
+	}
+
+	if model != "" {
+		options = append(options, azuretranslator.WithLanguage(model))
+	}
+
+	return azuretranslator.New(cfg.URL, options...)
 }
 
 func deeplProvider(cfg providerConfig, model string) (*deepl.Client, error) {
@@ -238,16 +260,19 @@ func deeplProvider(cfg providerConfig, model string) (*deepl.Client, error) {
 	return deepl.New(cfg.URL, options...)
 }
 
-func azuretranslatorProvider(cfg providerConfig, model string) (*azuretranslator.Client, error) {
-	var options []azuretranslator.Option
+func customProvider(cfg providerConfig, model string) (*custom.Client, error) {
+	var options []custom.Option
 
-	if cfg.Token != "" {
-		options = append(options, azuretranslator.WithToken(cfg.Token))
+	return custom.New(cfg.URL, options...)
+}
+
+func createCompleterAdapter(name string, completer provider.Completer) (adapter.Provider, error) {
+	switch strings.ToLower(name) {
+
+	case "hermesfn", "hermes-function-calling":
+		return hermesfn.New(completer)
+
+	default:
+		return nil, errors.New("invalid adapter type: " + name)
 	}
-
-	if model != "" {
-		options = append(options, azuretranslator.WithLanguage(model))
-	}
-
-	return azuretranslator.New(cfg.URL, options...)
 }

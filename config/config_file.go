@@ -62,15 +62,19 @@ type ModelType string
 const (
 	ModelTypeCompleter   ModelType = "completer"
 	ModelTypeEmbedder    ModelType = "embedder"
+	ModelTypeTranslator  ModelType = "translator"
 	ModelTypeTranscriber ModelType = "transcriber"
 )
 
 type modelConfig struct {
-	ID   string    `yaml:"id"`
+	ID string `yaml:"id"`
+
 	Type ModelType `yaml:"type"`
 
 	Name        string `yaml:"name"`
 	Description string `yaml:"description"`
+
+	Adapter string `yaml:"adapter"`
 }
 
 type indexConfig struct {
