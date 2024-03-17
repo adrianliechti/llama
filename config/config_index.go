@@ -57,6 +57,9 @@ func createIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 	case "chroma":
 		return chromaIndex(cfg, context)
 
+	case "elasticsearch":
+		return elasticsearchIndex(cfg)
+
 	case "memory":
 		return memoryIndex(cfg, context)
 
@@ -71,9 +74,6 @@ func createIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 
 	case "tavily":
 		return tavilyIndex(cfg)
-
-	case "elasticsearch":
-		return elasticsearchIndex(cfg)
 
 	case "wikipedia":
 		return wikipediaIndex(cfg)
@@ -94,6 +94,12 @@ func chromaIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 	}
 
 	return chroma.New(cfg.URL, cfg.Namespace, options...)
+}
+
+func elasticsearchIndex(cfg indexConfig) (index.Provider, error) {
+	var options []elasticsearch.Option
+
+	return elasticsearch.New(cfg.URL, cfg.Namespace, options...)
 }
 
 func memoryIndex(cfg indexConfig, context indexContext) (index.Provider, error) {
@@ -132,12 +138,6 @@ func tavilyIndex(cfg indexConfig) (index.Provider, error) {
 	var options []tavily.Option
 
 	return tavily.New(cfg.Token, options...)
-}
-
-func elasticsearchIndex(cfg indexConfig) (index.Provider, error) {
-	var options []elasticsearch.Option
-
-	return elasticsearch.New(cfg.URL, cfg.Namespace, options...)
 }
 
 func wikipediaIndex(cfg indexConfig) (index.Provider, error) {
