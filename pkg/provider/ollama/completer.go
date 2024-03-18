@@ -188,6 +188,14 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 		req.Format = "json"
 	}
 
+	if options.MaxTokens != nil {
+		req.Options["num_predict"] = *options.MaxTokens
+	}
+
+	if options.Temperature != nil {
+		req.Options["temperature"] = *options.Temperature
+	}
+
 	for i, m := range messages {
 		message := Message{
 			Role:    convertMessageRole(m.Role),
