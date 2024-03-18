@@ -86,7 +86,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			Message: provider.Message{
 				Role:    toMessageRole(chat.Message.Role),
-				Content: chat.Message.Content,
+				Content: strings.TrimSpace(chat.Message.Content),
 			},
 		}
 

@@ -22,11 +22,11 @@ configs:
 
           models:
             mistral-7b-instruct:
-              id: /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+              id: mistral-7b-instruct-v0.2.Q4_K_M.gguf
 
         - type: whisper
           url: http://host.docker.internal:9085
 
           models:
             whisper:
-              id: whisper
+              id: whisper-ggml-medium.bin

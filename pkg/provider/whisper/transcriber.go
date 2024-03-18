@@ -89,10 +89,16 @@ func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 		return nil, err
 	}
 
+	content := strings.TrimSpace(inference.Text)
+
+	if strings.EqualFold(content, "[BLANK_AUDIO]") {
+		content = ""
+	}
+
 	result := provider.Transcription{
 		ID: id,
 
-		Content: strings.TrimSpace(inference.Text),
+		Content: content,
 	}
 
 	return &result, nil

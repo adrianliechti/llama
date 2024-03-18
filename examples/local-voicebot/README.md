@@ -1,20 +1,17 @@
-# Local Audio Transcription
+# Local Voice Bot
 
 ## Run Example
 
 - [Whisper.cpp](https://github.com/ggerganov/whisper.cpp)
+- [Llama.cpp](https://github.com/ggerganov/llama.cpp)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
-Download Model
+
+Start LLama & Whisper Server
 
 ```shell
-$ curl -Lo whisper-ggml-medium.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin
-```
-
-Start Whisper Server
-
-```shell
-$ ./server --port 9085 --model whisper-ggml-medium.bin
+task llama:server
+task whisper:server
 ```
 
 Start Example Application
