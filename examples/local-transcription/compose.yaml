@@ -17,8 +17,15 @@ configs:
   platform:
     content: |
       providers:
+        - type: llama
+          url: http://host.docker.internal:9081
+
+          models:
+            mistral-7b-instruct:
+              id: /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+
         - type: whisper
-          url: http://host.docker.internal:8000
+          url: http://host.docker.internal:9085
 
           models:
             whisper:

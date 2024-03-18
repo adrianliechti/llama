@@ -14,7 +14,7 @@ $ curl -Lo whisper-ggml-medium.bin https://huggingface.co/ggerganov/whisper.cpp/
 Start Whisper Server
 
 ```shell
-$ ./server --port 8000 --model whisper-ggml-medium.bin
+$ ./server --port 9085 --model whisper-ggml-medium.bin
 ```
 
 Start Example Application

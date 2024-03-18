@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/google/uuid"
@@ -91,7 +92,7 @@ func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 	result := provider.Transcription{
 		ID: id,
 
-		Content: inference.Text,
+		Content: strings.TrimSpace(inference.Text),
 	}
 
 	return &result, nil
