@@ -106,11 +106,11 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 		return nil, err
 	}
 
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New("unable to convert")
 	}
-
-	defer resp.Body.Close()
 
 	var elements []Element
 

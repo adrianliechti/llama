@@ -49,11 +49,11 @@ func (e *Embedder) Embed(ctx context.Context, content string) ([]float32, error)
 		return nil, err
 	}
 
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New("unable to embed")
 	}
-
-	defer resp.Body.Close()
 
 	var result EmbeddingResponse
 

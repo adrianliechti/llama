@@ -72,11 +72,11 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			return nil, err
 		}
 
+		defer resp.Body.Close()
+
 		if resp.StatusCode != http.StatusOK {
 			return nil, errors.New("unable to complete")
 		}
-
-		defer resp.Body.Close()
 
 		var completion ChatCompletion
 
