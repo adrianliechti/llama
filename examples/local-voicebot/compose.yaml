@@ -21,7 +21,7 @@ configs:
           url: http://host.docker.internal:9081
 
           models:
-            mistral-7b-instruct:
+            mistral:
               id: mistral-7b-instruct-v0.2.Q4_K_M.gguf
 
         - type: whisper
@@ -30,3 +30,10 @@ configs:
           models:
             whisper:
               id: whisper-ggml-medium.bin
+        
+        - type: mimic
+          url: http://host.docker.internal:59125
+
+          models:
+            tts-1:
+              id: mimic-3

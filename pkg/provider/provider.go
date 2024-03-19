@@ -19,6 +19,10 @@ type Translator interface {
 	Translate(ctx context.Context, content string, options *TranslateOptions) (*Translation, error)
 }
 
+type Synthesizer interface {
+	Synthesize(ctx context.Context, content string, options *SynthesizeOptions) (*Synthesis, error)
+}
+
 type Transcriber interface {
 	Transcribe(ctx context.Context, input File, options *TranscribeOptions) (*Transcription, error)
 }
@@ -101,6 +105,17 @@ type CompleteOptions struct {
 	Format CompletionFormat
 }
 
+type Synthesis struct {
+	ID string
+
+	Name    string
+	Content io.ReadCloser
+}
+
+type SynthesizeOptions struct {
+	Voice string
+}
+
 type Translation struct {
 	ID string
 
@@ -113,6 +128,9 @@ type TranslateOptions struct {
 
 type Transcription struct {
 	ID string
+
+	Language string
+	Duration float64
 
 	Content string
 }

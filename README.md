@@ -92,10 +92,10 @@ https://github.com/ggerganov/llama.cpp/tree/master/examples/server
 $ task llama:server
 
 # LLAMA.CPP Server
-$ bin/llama-server --port 9081 --log-disable --embedding --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+$ bin/llama-server --port 9081 --log-disable --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
 
 # LLAMA.CPP Server (Multimodal Model)
-$ bin/llama-server --port 9081 --log-disable --embedding --model ./models/llava-v1.5-7b-Q4_K.gguf --mmproj ./models/llava-v1.5-7b-mmproj-Q4_0.gguf
+$ bin/llama-server --port 9081 --log-disable --model ./models/llava-v1.5-7b-Q4_K.gguf --mmproj ./models/llava-v1.5-7b-mmproj-Q4_0.gguf
 
 # using Docker (might be slow)
 $ docker run -it --rm -p 9081:9081 -v ./models/:/models/ ghcr.io/ggerganov/llama.cpp:server --host 0.0.0.0 --port 9081 --model /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
@@ -144,6 +144,24 @@ providers:
     models:
       mistral-7B-instruct:
         id: tgi
+```
+
+
+#### Mimic 3
+
+```docker
+mkdir -p mimic3
+chmod 777 mimic3
+docker run -it -p 59125:59125 -v $(pwd)/models/mimic3:/home/mimic3/.local/share/mycroft/mimic3 mycroftai/mimic3
+```
+
+```yaml
+- type: mimic
+    url: http://localhost:59125
+
+    models:
+      tts-1:
+        id: mimic-3
 ```
 
 

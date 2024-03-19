@@ -52,9 +52,15 @@ func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 
 	url, _ := url.JoinPath(t.url, "/inference")
 
+	if options.Language == "" {
+		options.Language = "auto"
+	}
+
 	var body bytes.Buffer
 	w := multipart.NewWriter(&body)
-	w.WriteField("response-format", "json")
+	w.WriteField("id", id)
+	w.WriteField("language", options.Language)
+	w.WriteField("response_format", "verbose_json")
 
 	file, err := w.CreateFormFile("file", input.Name)
 
@@ -98,16 +104,20 @@ func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 	result := provider.Transcription{
 		ID: id,
 
+		Language: inference.Language,
+		Duration: inference.Duration,
+
 		Content: content,
 	}
 
 	return &result, nil
 }
 
-// type InferenceRequest struct {
-// 	Temperature *float32 `json:"temperature,omitempty"`
-// }
-
 type InferenceResponse struct {
+	Task string `json:"task"`
+
+	Language string  `json:"language"`
+	Duration float64 `json:"duration"`
+
 	Text string `json:"text"`
 }

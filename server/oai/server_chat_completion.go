@@ -19,7 +19,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Server) handleChatCompletions(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 	var req ChatCompletionRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

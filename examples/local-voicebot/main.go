@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"io"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -18,6 +20,7 @@ func main() {
 	config.BaseURL = "http://localhost:8080/oai/v1"
 
 	completionModel := "mistral"
+	synthesizerModel := "tts-1"
 	transcriptionModel := "whisper"
 
 	client := openai.NewClientWithConfig(config)
@@ -47,27 +50,74 @@ func main() {
 
 			defer os.Remove(output)
 
-			transcription, _ := transcribe(ctx, client, transcriptionModel, output)
-			println("> " + transcription)
+			transcription, err := transcribe(ctx, client, transcriptionModel, output)
 
-			if transcription == "" || transcription == "[BLANK_AUDIO]" {
+			if err != nil {
+				println(err.Error())
 				return
+			}
+
+			prompt := transcription.Text
+			println("> " + prompt)
+
+			if prompt == "" || prompt == "[BLANK_AUDIO]" {
+				return
+			}
+
+			if transcription.Language != "" {
+				println("Language: " + transcription.Language)
+				prompt = strings.TrimRight(prompt, ".") + ". Answer in " + transcription.Language + "."
 			}
 
 			messages = append(messages, openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleUser,
-				Content: transcription,
+				Content: prompt,
 			})
 
-			completion, _ := complete(ctx, client, completionModel, messages)
-			println("< " + completion)
+			completion, err := complete(ctx, client, completionModel, messages)
+
+			if err != nil {
+				println(err.Error())
+				return
+			}
+
+			answer := completion.Choices[0].Message.Content
+
+			answer = regexp.MustCompile(`\[.*?\]|\(.*?\)`).ReplaceAllString(answer, "")
+			answer = regexp.MustCompile(`\[.*?\]?|\(.*?\)?`).ReplaceAllString(answer, "")
+			answer = strings.Split(answer, "\n")[0]
+
+			println("< " + answer)
 
 			messages = append(messages, openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleAssistant,
-				Content: completion,
+				Content: answer,
 			})
 
-			say(ctx, completion)
+			data, err := synthesize(ctx, client, synthesizerModel, transcription.Language, answer)
+
+			if err != nil {
+				println(err.Error())
+				return
+			}
+
+			f, err := os.CreateTemp("", "voicebot-*.wav")
+
+			if err != nil {
+				println(err.Error())
+				return
+			}
+
+			if _, err := io.Copy(f, data); err != nil {
+				println(err.Error())
+				return
+			}
+
+			f.Close()
+
+			play(ctx, f.Name())
+
+			//say(ctx, answer)
 		}()
 
 		waitForEnter()
@@ -104,36 +154,48 @@ func record(ctx context.Context) (string, error) {
 	return output, nil
 }
 
-func transcribe(ctx context.Context, client *openai.Client, model, file string) (string, error) {
-	transcription, err := client.CreateTranscription(ctx, openai.AudioRequest{
+func transcribe(ctx context.Context, client *openai.Client, model, file string) (openai.AudioResponse, error) {
+	return client.CreateTranscription(ctx, openai.AudioRequest{
 		Model:    model,
 		FilePath: file,
 	})
-
-	if err != nil {
-		return "", err
-	}
-
-	return transcription.Text, nil
 }
 
-func complete(ctx context.Context, client *openai.Client, model string, messages []openai.ChatCompletionMessage) (string, error) {
-	completion, err := client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-		Model: model,
-
+func complete(ctx context.Context, client *openai.Client, model string, messages []openai.ChatCompletionMessage) (openai.ChatCompletionResponse, error) {
+	return client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+		Model:    model,
 		Messages: messages,
 	})
-
-	if err != nil {
-		return "", err
-	}
-
-	return completion.Choices[0].Message.Content, nil
 }
 
-func say(ctx context.Context, text string) error {
+func synthesize(ctx context.Context, client *openai.Client, model, voice, text string) (io.ReadCloser, error) {
+	if voice != "" {
+		// HACK to allow language
+		text = "#" + voice + " " + text
+	}
+
+	return client.CreateSpeech(ctx, openai.CreateSpeechRequest{
+		Input: text,
+
+		Model: openai.TTSModel1,
+		Voice: openai.VoiceAlloy,
+
+		//Model: openai.SpeechModel(model),
+		//Voice: openai.SpeechVoice(voice),
+	})
+}
+
+func play(ctx context.Context, path string) error {
 	if runtime.GOOS == "darwin" {
-		exec.CommandContext(ctx, "say", text).Run()
+		return exec.CommandContext(ctx, "afplay", path).Run()
+	}
+
+	if runtime.GOOS == "linux" {
+		return exec.CommandContext(ctx, "aplay", path).Run()
+	}
+
+	if runtime.GOOS == "windows" {
+		return exec.CommandContext(ctx, "powershell", "-c", "(New-Object Media.SoundPlayer \""+path+"\").PlaySync()").Run()
 	}
 
 	return nil
