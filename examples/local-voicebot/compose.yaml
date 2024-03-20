@@ -28,7 +28,7 @@ configs:
           url: http://host.docker.internal:9085
 
           models:
-            whisper:
+            whisper-1:
               id: whisper-ggml-medium.bin
         
         - type: mimic

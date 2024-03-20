@@ -21,7 +21,7 @@ func main() {
 
 	completionModel := "mistral"
 	synthesizerModel := "tts-1"
-	transcriptionModel := "whisper"
+	transcriptionModel := "whisper-1"
 
 	client := openai.NewClientWithConfig(config)
 
