@@ -21,10 +21,8 @@ tasks:
       - mkdir -p bin
       - rm -rf bin/llama.cpp
       - git clone https://github.com/ggerganov/llama.cpp bin/llama.cpp
-      - make -C bin/llama.cpp/
+      - LLAMA_METAL_EMBED_LIBRARY=ON make -C bin/llama.cpp/ server
       - cp bin/llama.cpp/server bin/llama-server
-      - cp bin/llama.cpp/ggml-common.h bin/ggml-common.h
-      - cp -n bin/llama.cpp/ggml-metal.metal bin/ggml-metal.metal
       - rm -rf bin/llama.cpp
 
     status:

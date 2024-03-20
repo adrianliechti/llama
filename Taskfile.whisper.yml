@@ -21,9 +21,8 @@ tasks:
       - mkdir -p bin
       - rm -rf bin/whisper.cpp
       - git clone https://github.com/ggerganov/whisper.cpp bin/whisper.cpp
-      - make -C bin/whisper.cpp/
+      - WHISPER_METAL_EMBED_LIBRARY=ON make -C bin/whisper.cpp/ server
       - cp bin/whisper.cpp/server bin/whisper-server
-      - cp -n bin/whisper.cpp/ggml-metal.metal bin/ggml-metal.metal
       - rm -rf bin/whisper.cpp
 
     status:
