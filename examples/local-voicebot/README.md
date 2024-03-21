@@ -35,11 +35,11 @@ The Transcription API provides compatibility for the OpenAI API standard, allowi
 
 ```shell
 # Download Sample File
-curl -o jfk.wav https://github.com/ggerganov/whisper.cpp/raw/master/samples/jfk.wav
+curl -Lo jfk.wav https://github.com/ggerganov/whisper.cpp/raw/master/samples/jfk.wav
 
 # Run Transcriptions
 curl http://localhost:8080/oai/v1/audio/transcriptions \
   -H "Content-Type: multipart/form-data" \
   -F file="@jfk.wav" \
-  -F model="whisper"
+  -F model="whisper-1"
 ```

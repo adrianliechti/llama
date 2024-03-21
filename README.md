@@ -156,12 +156,13 @@ docker run -it -p 59125:59125 -v $(pwd)/models/mimic3:/home/mimic3/.local/share/
 ```
 
 ```yaml
-- type: mimic
-    url: http://localhost:59125
-
-    models:
-      tts-1:
-        id: mimic-3
+providers:
+  - type: mimic
+      url: http://localhost:59125
+  
+      models:
+        tts-1:
+          id: mimic-3
 ```
 
 
