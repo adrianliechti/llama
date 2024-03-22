@@ -169,19 +169,11 @@ func complete(ctx context.Context, client *openai.Client, model string, messages
 }
 
 func synthesize(ctx context.Context, client *openai.Client, model, voice, text string) (io.ReadCloser, error) {
-	if voice != "" {
-		// HACK to allow language
-		text = "#" + voice + " " + text
-	}
-
 	return client.CreateSpeech(ctx, openai.CreateSpeechRequest{
 		Input: text,
 
-		Model: openai.TTSModel1,
-		Voice: openai.VoiceAlloy,
-
-		//Model: openai.SpeechModel(model),
-		//Voice: openai.SpeechVoice(voice),
+		Model: openai.SpeechModel(model),
+		Voice: openai.SpeechVoice(voice),
 	})
 }
 

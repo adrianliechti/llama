@@ -2,6 +2,8 @@ module github.com/adrianliechti/llama
 
 go 1.22
 
+replace github.com/sashabaranov/go-openai v1.20.4 => github.com/adrianliechti/go-openai v0.0.0-20240322224346-47657b844843
+
 require (
 	github.com/coreos/go-oidc/v3 v3.9.0
 	github.com/go-chi/chi/v5 v5.0.12
