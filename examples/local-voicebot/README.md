@@ -1,20 +1,26 @@
-# Local Audio Transcription
+# Local Voice Bot
 
 ## Run Example
 
+- [Llama.cpp](https://github.com/ggerganov/llama.cpp)
 - [Whisper.cpp](https://github.com/ggerganov/whisper.cpp)
+- [Mimic](https://github.com/MycroftAI/mimic3)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
-Download Model
+
+Start LLama & Whisper Server
 
 ```shell
-$ curl -Lo whisper-ggml-medium.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin
+task llama:server
+task whisper:server
 ```
 
-Start Whisper Server
+Start Mimic Server
 
-```shell
-$ ./server --port 8000 --model whisper-ggml-medium.bin
+```
+mkdir -p mimic3
+chmod 777 mimic3
+docker run -it -p 59125:59125 -v $(pwd)/mimic3:/home/mimic3/.local/share/mycroft/mimic3 mycroftai/mimic3
 ```
 
 Start Example Application
@@ -29,11 +35,11 @@ The Transcription API provides compatibility for the OpenAI API standard, allowi
 
 ```shell
 # Download Sample File
-curl -o jfk.wav https://github.com/ggerganov/whisper.cpp/raw/master/samples/jfk.wav
+curl -Lo jfk.wav https://github.com/ggerganov/whisper.cpp/raw/master/samples/jfk.wav
 
 # Run Transcriptions
 curl http://localhost:8080/oai/v1/audio/transcriptions \
   -H "Content-Type: multipart/form-data" \
   -F file="@jfk.wav" \
-  -F model="whisper"
+  -F model="whisper-1"
 ```

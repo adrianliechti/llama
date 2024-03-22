@@ -3,6 +3,7 @@ package openai
 type Client struct {
 	*Embedder
 	*Completer
+	*Synthesizer
 	*Transcriber
 }
 
@@ -19,6 +20,12 @@ func New(options ...Option) (*Client, error) {
 		return nil, err
 	}
 
+	s, err := NewSynthesizer(options...)
+
+	if err != nil {
+		return nil, err
+	}
+
 	t, err := NewTranscriber(options...)
 
 	if err != nil {
@@ -28,6 +35,7 @@ func New(options ...Option) (*Client, error) {
 	return &Client{
 		Embedder:    e,
 		Completer:   c,
+		Synthesizer: s,
 		Transcriber: t,
 	}, nil
 }

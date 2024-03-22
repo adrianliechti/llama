@@ -12,6 +12,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/huggingface"
 	"github.com/adrianliechti/llama/pkg/provider/langchain"
 	"github.com/adrianliechti/llama/pkg/provider/llama"
+	"github.com/adrianliechti/llama/pkg/provider/mimic"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
@@ -38,6 +39,16 @@ func (cfg *Config) RegisterCompleter(model string, c provider.Completer) {
 	}
 
 	cfg.completer[model] = c
+}
+
+func (cfg *Config) RegisterSynthesizer(model string, s provider.Synthesizer) {
+	cfg.RegisterModel(model)
+
+	if cfg.synthesizer == nil {
+		cfg.synthesizer = make(map[string]provider.Synthesizer)
+	}
+
+	cfg.synthesizer[model] = s
 }
 
 func (cfg *Config) RegisterTranslator(model string, t provider.Translator) {
@@ -87,6 +98,10 @@ func (cfg *Config) registerProviders(f *configFile) error {
 				cfg.RegisterCompleter(id, completer)
 			}
 
+			if synthesizer, ok := r.(provider.Synthesizer); ok {
+				cfg.RegisterSynthesizer(id, synthesizer)
+			}
+
 			if translator, ok := r.(provider.Translator); ok {
 				cfg.RegisterTranslator(id, translator)
 			}
@@ -120,6 +135,9 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 
 	case "openai":
 		return openaiProvider(cfg, model)
+
+	case "mimic":
+		return mimicProvider(cfg)
 
 	case "whisper":
 		return whisperProvider(cfg)
@@ -222,11 +240,21 @@ func openaiProvider(cfg providerConfig, model string) (*openai.Client, error) {
 	return openai.New(options...)
 }
 
+func mimicProvider(cfg providerConfig) (*mimic.Client, error) {
+	var options []mimic.Option
+
+	if len(cfg.Models) > 1 {
+		return nil, errors.New("multiple models not supported for mimic provider")
+	}
+
+	return mimic.New(cfg.URL, options...)
+}
+
 func whisperProvider(cfg providerConfig) (*whisper.Client, error) {
 	var options []whisper.Option
 
 	if len(cfg.Models) > 1 {
-		return nil, errors.New("multiple models not supported for tei provider")
+		return nil, errors.New("multiple models not supported for whisper provider")
 	}
 
 	return whisper.New(cfg.URL, options...)

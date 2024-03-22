@@ -6,7 +6,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-func (s *Server) handleAudioTranscriptions(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleAudioTranscription(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
@@ -34,6 +34,8 @@ func (s *Server) handleAudioTranscriptions(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	defer file.Close()
+
 	input := provider.File{
 		Content: file,
 		Name:    header.Filename,
@@ -49,6 +51,11 @@ func (s *Server) handleAudioTranscriptions(w http.ResponseWriter, r *http.Reques
 	}
 
 	result := Transcription{
+		Task: "transcribe",
+
+		Language: transcription.Language,
+		Duration: transcription.Duration,
+
 		Text: transcription.Content,
 	}
 

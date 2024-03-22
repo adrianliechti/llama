@@ -19,13 +19,11 @@ tasks:
   download-server:
     cmds:
       - mkdir -p bin
-      - rm -rf tmp/llama.cpp
-      - git clone https://github.com/ggerganov/llama.cpp tmp/llama.cpp
-      - make -C tmp/llama.cpp/
-      - cp tmp/llama.cpp/server bin/llama-server
-      - cp tmp/llama.cpp/ggml-metal.metal bin/ggml-metal.metal
-      - rm -rf tmp/llama.cpp
-      - rm -rf tmp
+      - rm -rf bin/llama.cpp
+      - git clone https://github.com/ggerganov/llama.cpp bin/llama.cpp
+      - make LLAMA_METAL=1 LLAMA_METAL_EMBED_LIBRARY=1 -C bin/llama.cpp/ server
+      - cp bin/llama.cpp/server bin/llama-server
+      - rm -rf bin/llama.cpp
 
     status:
       - test -f bin/llama-server

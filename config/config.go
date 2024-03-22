@@ -21,6 +21,7 @@ type Config struct {
 
 	embedder    map[string]provider.Embedder
 	completer   map[string]provider.Completer
+	synthesizer map[string]provider.Synthesizer
 	translator  map[string]provider.Translator
 	transcriber map[string]provider.Transcriber
 
@@ -76,6 +77,16 @@ func (cfg *Config) Completer(model string) (provider.Completer, error) {
 	}
 
 	return nil, errors.New("completer not found: " + model)
+}
+
+func (cfg *Config) Synthesizer(model string) (provider.Synthesizer, error) {
+	if cfg.synthesizer != nil {
+		if s, ok := cfg.synthesizer[model]; ok {
+			return s, nil
+		}
+	}
+
+	return nil, errors.New("synthesizer not found: " + model)
 }
 
 func (cfg *Config) Translator(model string) (provider.Translator, error) {

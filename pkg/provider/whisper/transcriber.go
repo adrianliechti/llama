@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/google/uuid"
@@ -51,9 +52,15 @@ func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 
 	url, _ := url.JoinPath(t.url, "/inference")
 
+	if options.Language == "" {
+		options.Language = "auto"
+	}
+
 	var body bytes.Buffer
 	w := multipart.NewWriter(&body)
-	w.WriteField("response-format", "json")
+	w.WriteField("id", id)
+	w.WriteField("language", options.Language)
+	w.WriteField("response_format", "verbose_json")
 
 	file, err := w.CreateFormFile("file", input.Name)
 
@@ -76,11 +83,11 @@ func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 		return nil, err
 	}
 
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New("unable to transcribe")
 	}
-
-	defer resp.Body.Close()
 
 	var inference InferenceResponse
 
@@ -88,19 +95,29 @@ func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 		return nil, err
 	}
 
+	content := strings.TrimSpace(inference.Text)
+
+	if strings.EqualFold(content, "[BLANK_AUDIO]") {
+		content = ""
+	}
+
 	result := provider.Transcription{
 		ID: id,
 
-		Content: inference.Text,
+		Language: inference.Language,
+		Duration: inference.Duration,
+
+		Content: content,
 	}
 
 	return &result, nil
 }
 
-// type InferenceRequest struct {
-// 	Temperature *float32 `json:"temperature,omitempty"`
-// }
-
 type InferenceResponse struct {
+	Task string `json:"task"`
+
+	Language string  `json:"language"`
+	Duration float64 `json:"duration"`
+
 	Text string `json:"text"`
 }

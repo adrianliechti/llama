@@ -19,12 +19,13 @@ tasks:
   download-server:
     cmds:
       - mkdir -p bin
-      - rm -rf tmp/whisper.cpp
-      - git clone https://github.com/ggerganov/whisper.cpp tmp/whisper.cpp
-      - make -C tmp/whisper.cpp/ server
-      - cp tmp/whisper.cpp/server bin/whisper-server
-      - rm -rf tmp/whisper.cpp
-      - rm -rf tmp
+      - rm -rf bin/whisper.cpp
+      - git clone https://github.com/ggerganov/whisper.cpp bin/whisper.cpp
+      - make WHISPER_METAL=1 WHISPER_METAL_EMBED_LIBRARY=1 -C bin/whisper.cpp/ server
+      - cp bin/whisper.cpp/server bin/whisper-server
+      - cp bin/whisper.cpp/ggml-common.h bin/ggml-common.h
+      - cp bin/whisper.cpp/ggml-metal.metal bin/ggml-metal.metal
+      - rm -rf bin/whisper.cpp
 
     status:
       - test -f bin/whisper-server

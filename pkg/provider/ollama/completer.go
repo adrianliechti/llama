@@ -86,7 +86,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			Message: provider.Message{
 				Role:    toMessageRole(chat.Message.Role),
-				Content: chat.Message.Content,
+				Content: strings.TrimSpace(chat.Message.Content),
 			},
 		}
 
@@ -186,6 +186,14 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 
 	if options.Format == provider.CompletionFormatJSON {
 		req.Format = "json"
+	}
+
+	if options.MaxTokens != nil {
+		req.Options["num_predict"] = *options.MaxTokens
+	}
+
+	if options.Temperature != nil {
+		req.Options["temperature"] = *options.Temperature
 	}
 
 	for i, m := range messages {

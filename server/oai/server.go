@@ -27,8 +27,10 @@ func New(cfg *config.Config) (*Server, error) {
 
 	r.Post("/v1/embeddings", s.handleEmbeddings)
 
-	r.Post("/v1/chat/completions", s.handleChatCompletions)
-	r.Post("/v1/audio/transcriptions", s.handleAudioTranscriptions)
+	r.Post("/v1/chat/completions", s.handleChatCompletion)
+
+	r.Post("/v1/audio/speech", s.handleAudioSpeech)
+	r.Post("/v1/audio/transcriptions", s.handleAudioTranscription)
 
 	return s, nil
 }
