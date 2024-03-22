@@ -15,8 +15,8 @@ services:
   
   custom:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../../
+      dockerfile: examples/custom-chat/Dockerfile
   
   web:
     image: adrianliechti/llama-ui
@@ -25,7 +25,6 @@ services:
       - 3000:3000
     environment:
       - OPENAI_BASE_URL=http://platform:8080/oai/v1
-      - OPENAI_MODEL=custom
     depends_on:
       - platform
   

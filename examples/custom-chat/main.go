@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/adrianliechti/llama/pkg/provider/custom"
@@ -47,7 +48,7 @@ func (*Server) Complete(r *custom.CompletionRequest, stream custom.Completer_Com
 
 		Message: &custom.Message{
 			Role:    custom.Role_ROLE_ASSISTANT,
-			Content: last.Content,
+			Content: strings.ToUpper(last.Content) + "!!!",
 		},
 	}
 
