@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 
@@ -52,11 +53,23 @@ func (e *Embedder) Embed(ctx context.Context, content string) ([]float32, error)
 		return nil, errors.New("unable to encode input")
 	}
 
-	var result []float32
+	data, err := io.ReadAll(resp.Body)
 
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	var result1 []float32
+
+	if err := json.Unmarshal(data, &result1); err == nil {
+		return result1, nil
+	}
+
+	var result2 [][]float32
+
+	if err := json.Unmarshal(data, &result2); err == nil && len(result2) > 0 {
+		return result2[0], nil
+	}
+
+	return nil, errors.New("unable to decode output")
 }
