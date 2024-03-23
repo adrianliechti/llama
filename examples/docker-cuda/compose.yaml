@@ -1,0 +1,123 @@
+version: "3"
+
+services:
+  platform:
+    image: adrianliechti/llama-platform
+    pull_policy: always
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    configs:
+      - source: platform
+        target: /config.yaml
+  
+  mistral:
+    image: ghcr.io/ggerganov/llama.cpp:server-cuda
+    pull_policy: always
+    command: --host 0.0.0.0 --port 8000 --log-disable --ctx-size 8192 -ngl 99 --model /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+    environment:
+      - LC_ALL=C.utf8
+    volumes:
+      - /models:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+              
+  nomic:
+    image: ghcr.io/ggerganov/llama.cpp:server-cuda
+    pull_policy: always
+    command: --host 0.0.0.0 --port 8000 --log-disable --ctx-size 8192 --embedding -ngl 99 --model /models/nomic-embed-text-v1.5.Q4_K_M.gguf
+    environment:
+      - LC_ALL=C.utf8
+    volumes:
+      - /models:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+  
+  whisper:
+    image: ghcr.io/ggerganov/whisper.cpp:main-cuda
+    pull_policy: always
+    entrypoint: /app/server
+    command: --host 0.0.0.0 --port 8000 --convert --model /models/whisper-ggml-medium.bin
+    volumes:
+      - /models:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+  
+  mimic:
+    image: mycroftai/mimic3
+    pull_policy: always
+    volumes:
+      - /models:/home/mimic3/.local/share/mycroft/mimic3
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+  
+  web:
+    image: adrianliechti/llama-ui
+    pull_policy: always
+    ports:
+      - 3000:3000
+    environment:
+      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+    configs:
+      - source: web
+        target: /config.yaml
+    depends_on:
+      - platform
+  
+configs:
+  platform:
+    content: |
+      providers:
+        - type: llama
+          url: http://mistral:8000
+          models:
+            mistral:
+              id: default
+        
+        - type: llama
+          url: http://nomic:8000
+
+          models:
+            nomic-embed-text:
+              id: default
+        
+        - type: whisper
+          url: http://whisper:8000
+          models:
+            whisper-1:
+              id: default
+        
+        - type: mimic
+          url: http://mimic:59125
+          models:
+            tts-1:
+              id: default
+
+  web:
+    content: |
+      contexts:        
+        - name: Mistral
+          models:
+            - id: mistral
