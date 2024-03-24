@@ -14,6 +14,9 @@ includes:
   
   whisper:
     taskfile: ./Taskfile.whisper.yml
+  
+  mimic:
+    taskfile: ./Taskfile.minic.yml
 
 tasks:
   publish:

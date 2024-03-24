@@ -21,7 +21,7 @@ configs:
           url: http://host.docker.internal:9081
 
           models:
-            mistral:
+            mistral-7b-instruct:
               id: mistral-7b-instruct-v0.2.Q4_K_M.gguf
 
         - type: whisper
