@@ -4,9 +4,12 @@ version: "3"
 
 tasks:
   server:
-    deps: [download-server, download-model]
+    deps: [build, download-model]
     cmds:
-      - bin/whisper-server --port 9085 --convert --model ./models/whisper-ggml-medium.bin
+      - bin/whisper-server
+        --port 9085
+        --convert
+        --model ./models/whisper-ggml-medium.bin
 
   download-model:
     cmds:
@@ -16,7 +19,7 @@ tasks:
     status:
       - test -f models/whisper-ggml-medium.bin
 
-  download-server:
+  build:
     cmds:
       - mkdir -p bin
       - rm -rf bin/whisper.cpp

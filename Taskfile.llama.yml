@@ -4,24 +4,22 @@ version: "3"
 
 tasks:
   server:
-    deps: [download-server, download-model]
+    deps: [ build ]
     cmds:
-      - bin/llama-server --port 9081 --log-disable --ctx-size 8192 --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+      - bin/llama-server 
+        --port 9081
+        --log-disable
+        --ctx-size 8192
+        --hf-repo TheBloke/Mistral-7B-Instruct-v0.2-GGUF
+        --hf-file mistral-7b-instruct-v0.2.Q4_K_M.gguf
+        --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
 
-  download-model:
-    cmds:
-      - mkdir -p models
-      - curl -s -L -o models/mistral-7b-instruct-v0.2.Q4_K_M.gguf https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf
-
-    status:
-      - test -f models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
-
-  download-server:
+  build:
     cmds:
       - mkdir -p bin
       - rm -rf bin/llama.cpp
       - git clone https://github.com/ggerganov/llama.cpp bin/llama.cpp
-      - make LLAMA_METAL=1 LLAMA_METAL_EMBED_LIBRARY=1 -C bin/llama.cpp/ server
+      - make LLAMA_CURL=1 LLAMA_METAL=1 LLAMA_METAL_EMBED_LIBRARY=1 -C bin/llama.cpp/ server
       - cp bin/llama.cpp/server bin/llama-server
       - rm -rf bin/llama.cpp
 
