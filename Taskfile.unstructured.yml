@@ -1,0 +1,8 @@
+# https://taskfile.dev
+
+version: "3"
+
+tasks:
+  server:
+    cmds:
+      - docker run -it -p 9085:8000 quay.io/unstructured-io/unstructured-api:0.0.64

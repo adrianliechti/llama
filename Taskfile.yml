@@ -17,6 +17,9 @@ includes:
   
   mimic:
     taskfile: ./Taskfile.minic.yml
+  
+  unstructured:
+    taskfile: ./Taskfile.unstructured.yml
 
 tasks:
   publish:
