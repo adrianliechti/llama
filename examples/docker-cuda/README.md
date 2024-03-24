@@ -44,6 +44,6 @@ curl http://localhost:8080/oai/v1/audio/speech \
 ```shell
 curl http://localhost:8080/oai/v1/audio/transcriptions \
   -H "Content-Type: multipart/form-data" \
-  -F file="@/Users/adrian/Downloads/test.wav" \
+  -F file="@speech.wav" \
   -F model="whisper-1"
 ```

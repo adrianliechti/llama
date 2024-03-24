@@ -1,0 +1,66 @@
+version: "3"
+
+services:
+  platform:
+    image: adrianliechti/llama-platform
+    pull_policy: always
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    configs:
+      - source: platform
+        target: /config.yaml
+  
+  mistral-7b-instruct:
+    image: ghcr.io/ggerganov/llama.cpp:server
+    pull_policy: always
+    command: --host 0.0.0.0 --port 8000 --log-disable --ctx-size 8192 --model /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+    volumes:
+      - ../../models:/models
+              
+  nomic-embed-text:
+    image: ghcr.io/ggerganov/llama.cpp:server
+    pull_policy: always
+    entrypoint: ""
+    command: /bin/bash -c "apt-get update && apt-get install locales && locale-gen en_US.UTF-8 && update-locale && /server --host 0.0.0.0 --port 8000 --log-disable --ctx-size 8192 --embedding --model ./models/nomic-embed-text-v1.5.Q4_K_M.gguf"
+    #command: --host 0.0.0.0 --port 8000 --log-disable --ctx-size 8192 --embedding --model /models/nomic-embed-text-v1.5.Q4_K_M.gguf
+    volumes:
+      - ../../models:/models
+  
+  web:
+    image: adrianliechti/llama-ui
+    pull_policy: always
+    ports:
+      - 3000:3000
+    environment:
+      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+    configs:
+      - source: web
+        target: /config.yaml
+    depends_on:
+      - platform
+  
+configs:
+  platform:
+    content: |
+      providers:
+        - type: llama
+          url: http://mistral-7b-instruct:8000
+          models:
+            mistral-7b-instruct:
+              id: default
+        
+        - type: llama
+          url: http://nomic-embed-text:8000
+          models:
+            nomic-embed-text:
+              id: default
+
+  web:
+    content: |
+      contexts:        
+        - name: Mistral
+          models:
+            - id: mistral-7b-instruct
