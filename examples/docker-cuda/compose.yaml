@@ -13,14 +13,13 @@ services:
       - source: platform
         target: /config.yaml
   
-  mistral:
-    image: ghcr.io/ggerganov/llama.cpp:server-cuda
+  mistral-7b-instruct:
+    image: ghcr.io/huggingface/text-generation-inference:1.4
     pull_policy: always
-    command: --host 0.0.0.0 --port 8000 --log-disable --ctx-size 8192 -ngl 99 --model /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
-    environment:
-      - LC_ALL=C.utf8
+    command: --hostname 0.0.0.0 --model-id mistralai/Mistral-7B-Instruct-v0.1
+    shm_size: 1g
     volumes:
-      - /models:/models
+      - /models:/data
     deploy:
       resources:
         reservations:
@@ -29,14 +28,13 @@ services:
               count: all
               capabilities: [gpu]
               
-  nomic:
-    image: ghcr.io/ggerganov/llama.cpp:server-cuda
+  nomic-embed-text:
+    image: ghcr.io/huggingface/text-embeddings-inference:1.2
     pull_policy: always
-    command: --host 0.0.0.0 --port 8000 --log-disable --ctx-size 8192 --embedding -ngl 99 --model /models/nomic-embed-text-v1.5.Q4_K_M.gguf
-    environment:
-      - LC_ALL=C.utf8
+    command: --hostname 0.0.0.0 --model-id nomic-ai/nomic-embed-text-v1.5
+    shm_size: 1g
     volumes:
-      - /models:/models
+      - /models:/data
     deploy:
       resources:
         reservations:
@@ -90,18 +88,17 @@ configs:
   platform:
     content: |
       providers:
-        - type: llama
-          url: http://mistral:8000
+        - type: huggingface
+          url: http://mistral-7b-instruct
           models:
-            mistral:
-              id: default
+            mistral-7b-instruct:
+              id: tgi
         
-        - type: llama
-          url: http://nomic:8000
-
+        - type: huggingface
+          url: http://nomic-embed-text
           models:
             nomic-embed-text:
-              id: default
+              id: tei
         
         - type: whisper
           url: http://whisper:8000
@@ -120,4 +117,4 @@ configs:
       contexts:        
         - name: Mistral
           models:
-            - id: mistral
+            - id: mistral-7b-instruct

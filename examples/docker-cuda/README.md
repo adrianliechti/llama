@@ -4,10 +4,6 @@
 mkdir /models
 chmod 777 /models
 
-curl -Lo /models/nomic-embed-text-v1.5.Q4_K_M.gguf https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.Q4_K_M.gguf
-
-curl -Lo /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf
-
 curl -Lo /models/whisper-ggml-medium.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin
 ```
 
@@ -15,7 +11,7 @@ curl -Lo /models/whisper-ggml-medium.bin https://huggingface.co/ggerganov/whispe
 curl http://localhost:8080/oai/v1/embeddings \
   -H "Content-Type: application/json" \
   -d '{
-    "input": "Your text string goes here",
+    "input": "Hello!",
     "model": "nomic-embed-text"
   }'
 ```
@@ -24,23 +20,11 @@ curl http://localhost:8080/oai/v1/embeddings \
 curl http://localhost:8080/oai/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "mistral",
+    "model": "mistral-7b-instruct",
     "messages": [
       {
-        "role": "system",
-        "content": "You are a helpful assistant."
-      },
-      {
         "role": "user",
-        "content": "Who won the world series in 2020?"
-      },
-      {
-        "role": "assistant",
-        "content": "The Los Angeles Dodgers won the World Series in 2020."
-      },
-      {
-        "role": "user",
-        "content": "Where was it played?"
+        "content": "Hello!"
       }
     ]
   }'

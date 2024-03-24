@@ -28,10 +28,7 @@ func NewCompleter(url string, options ...Option) (*Completer, error) {
 	}
 
 	url = strings.TrimRight(url, "/")
-
-	if !strings.HasSuffix(url, "/v1") {
-		url += "/v1"
-	}
+	url = strings.TrimSuffix(url, "/v1")
 
 	cfg := &Config{
 		url: url,
@@ -58,7 +55,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 	id := uuid.NewString()
 
-	url, _ := url.JoinPath(c.url, "/chat/completions")
+	url, _ := url.JoinPath(c.url, "/v1/chat/completions")
 	body, err := convertChatRequest(c.model, messages, options)
 
 	if err != nil {
