@@ -4,7 +4,7 @@ version: "3"
 
 tasks:
   server:
-    deps: [build, download-model]
+    deps: [ build, download-model ]
     cmds:
       - bin/whisper-server
         --port 9085

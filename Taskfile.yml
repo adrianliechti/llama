@@ -9,6 +9,9 @@ includes:
   llama:
     taskfile: ./Taskfile.llama.yml
   
+  nomic:
+    taskfile: ./Taskfile.nomic.yml
+  
   whisper:
     taskfile: ./Taskfile.whisper.yml
 

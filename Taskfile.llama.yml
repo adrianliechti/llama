@@ -9,7 +9,9 @@ tasks:
       - bin/llama-server 
         --port 9081
         --log-disable
-        --ctx-size 8192
+        --ctx-size 32768
+        --grp-attn-n 4
+        --grp-attn-w 4096
         --hf-repo TheBloke/Mistral-7B-Instruct-v0.2-GGUF
         --hf-file mistral-7b-instruct-v0.2.Q4_K_M.gguf
         --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
