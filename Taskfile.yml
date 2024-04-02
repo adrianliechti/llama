@@ -20,6 +20,9 @@ includes:
   
   unstructured:
     taskfile: ./Taskfile.unstructured.yml
+  
+  weaviate:
+    taskfile: ./Taskfile.weaviate.yml
 
 tasks:
   publish:
