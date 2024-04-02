@@ -3,6 +3,9 @@
 
 Open Source LLM Platform to build and deploy applications at scale
 
+![Logo](docs/icon.png)
+
+
 ## Integrations & Configuration
 
 ### LLM Providers
