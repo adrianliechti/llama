@@ -28,7 +28,7 @@ type Client struct {
 type Option func(*Client)
 
 func New(url, namespace string, options ...Option) (*Client, error) {
-	chroma := &Client{
+	c := &Client{
 		url: url,
 
 		client: http.DefaultClient,
@@ -37,14 +37,14 @@ func New(url, namespace string, options ...Option) (*Client, error) {
 	}
 
 	for _, option := range options {
-		option(chroma)
+		option(c)
 	}
 
-	if chroma.embedder == nil {
+	if c.embedder == nil {
 		return nil, errors.New("embedder is required")
 	}
 
-	return chroma, nil
+	return c, nil
 }
 
 func WithClient(client *http.Client) Option {
@@ -162,6 +162,34 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 	if resp.StatusCode != http.StatusOK {
 		return convertError(resp)
 	}
+
+	return nil
+}
+
+func (c *Client) Delete(ctx context.Context, ids ...string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	col, err := c.createCollection(c.namespace)
+
+	if err != nil {
+		return err
+	}
+
+	u, _ := url.JoinPath(c.url, "/api/v1/collections/"+col.ID+"/delete")
+
+	body := map[string]any{
+		"ids": ids,
+	}
+
+	resp, err := c.client.Post(u, "application/json", jsonReader(body))
+
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
 
 	return nil
 }

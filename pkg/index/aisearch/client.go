@@ -50,12 +50,16 @@ func WithClient(client *http.Client) Option {
 	}
 }
 
+func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+	return nil, errors.ErrUnsupported
+}
+
 func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 	return errors.ErrUnsupported
 }
 
-func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
-	return nil, errors.ErrUnsupported
+func (c *Client) Delete(ctx context.Context, ids ...string) error {
+	return errors.ErrUnsupported
 }
 
 func (c *Client) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {

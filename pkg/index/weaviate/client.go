@@ -165,6 +165,36 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 	return nil
 }
 
+func (c *Client) Delete(ctx context.Context, ids ...string) error {
+	var result error
+
+	for _, id := range ids {
+		id := convertID(id)
+
+		u, _ := url.JoinPath(c.url, "/v1/objects/"+c.class+"/"+id)
+		req, _ := http.NewRequestWithContext(ctx, "DELETE", u, nil)
+
+		resp, err := c.client.Do(req)
+
+		if err != nil {
+			result = errors.Join(result, err)
+			continue
+		}
+
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusNoContent {
+			if resp.StatusCode == http.StatusNotFound {
+				continue
+			}
+
+			result = errors.Join(result, errors.New("unable to delete object: "+id))
+		}
+	}
+
+	return result
+}
+
 func (c *Client) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
 	var vector strings.Builder
 
@@ -280,11 +310,20 @@ func generateID(d index.Document) string {
 		return uuid.NewString()
 	}
 
-	return uuid.NewMD5(uuid.NameSpaceOID, []byte(d.ID)).String()
+	return convertID(d.ID)
+}
+
+func convertID(id string) string {
+	return uuid.NewMD5(uuid.NameSpaceOID, []byte(id)).String()
 }
 
 func (c *Client) createObject(d index.Document) error {
 	properties := maps.Clone(d.Metadata)
+
+	if properties == nil {
+		properties = map[string]string{}
+	}
+
 	properties["content"] = d.Content
 
 	filename := d.Metadata["filename"]
@@ -332,6 +371,11 @@ func (c *Client) createObject(d index.Document) error {
 
 func (c *Client) updateObject(ctx context.Context, d index.Document) error {
 	properties := maps.Clone(d.Metadata)
+
+	if properties == nil {
+		properties = map[string]string{}
+	}
+
 	properties["content"] = d.Content
 
 	body := map[string]any{

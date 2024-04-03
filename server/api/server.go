@@ -29,7 +29,10 @@ func New(cfg *config.Config) (*Server, error) {
 	r.Post("/translate/{translator}", s.handleTranslate)
 
 	r.Get("/index/{index}", s.handleIndexList)
+
 	r.Post("/index/{index}", s.handleIndexIngest)
+	r.Delete("/index/{index}", s.handleIndexDeletion)
+
 	r.Post("/index/{index}/query", s.handleIndexQuery)
 	r.Post("/index/{index}/{extractor}", s.handleIndexWithExtractor)
 
