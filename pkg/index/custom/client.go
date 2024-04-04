@@ -51,11 +51,15 @@ func New(url string, options ...Option) (*Client, error) {
 	return c, nil
 }
 
-func (*Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
 	return nil, errors.ErrUnsupported
 }
 
-func (*Client) Index(ctx context.Context, documents ...index.Document) error {
+func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
+	return errors.ErrUnsupported
+}
+
+func (c *Client) Delete(ctx context.Context, ids ...string) error {
 	return errors.ErrUnsupported
 }
 

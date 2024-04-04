@@ -80,6 +80,14 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 	return nil
 }
 
+func (c *Client) Delete(ctx context.Context, ids ...string) error {
+	for _, id := range ids {
+		delete(c.documents, id)
+	}
+
+	return nil
+}
+
 func (c *Client) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
 	if options == nil {
 		options = &index.QueryOptions{}
