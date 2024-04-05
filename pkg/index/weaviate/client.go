@@ -108,18 +108,22 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		}
 
 		for _, o := range page.Objects {
-			id := o.ID
+			key := o.Properties["key"]
 			content := o.Properties["content"]
+
+			if key == "" {
+				key = o.ID
+			}
 
 			metadata := maps.Clone(o.Properties)
 			delete(metadata, "content")
 
 			d := index.Document{
-				ID:      id,
+				ID:      key,
 				Content: content,
 			}
 
-			cursor = id
+			cursor = o.ID
 			results = append(results, d)
 		}
 
@@ -135,8 +139,6 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 
 func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 	for _, d := range documents {
-		d.ID = generateID(d)
-
 		if len(d.Embedding) == 0 && c.embedder != nil {
 			embedding, err := c.embedder.Embed(ctx, d.Content)
 
@@ -169,9 +171,7 @@ func (c *Client) Delete(ctx context.Context, ids ...string) error {
 	var result error
 
 	for _, id := range ids {
-		id := convertID(id)
-
-		u, _ := url.JoinPath(c.url, "/v1/objects/"+c.class+"/"+id)
+		u, _ := url.JoinPath(c.url, "/v1/objects/"+c.class+"/"+convertID(id))
 		req, _ := http.NewRequestWithContext(ctx, "DELETE", u, nil)
 
 		resp, err := c.client.Do(req)
@@ -266,10 +266,15 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	results := make([]index.Result, 0)
 
 	for _, d := range result.Data.Get[c.class] {
+		key := d.Additional.ID
 		title := d.Additional.ID
 		location := d.Additional.ID
 
 		metadata := map[string]string{}
+
+		if d.Key != "" {
+			key = d.Key
+		}
 
 		if d.FileName != "" {
 			metadata["filename"] = d.FileName
@@ -287,7 +292,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 		r := index.Result{
 			Document: index.Document{
-				ID: d.Additional.ID,
+				ID: key,
 
 				Title:    title,
 				Content:  d.Content,
@@ -305,15 +310,11 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	return results, nil
 }
 
-func generateID(d index.Document) string {
-	if d.ID == "" {
+func convertID(id string) string {
+	if id == "" {
 		return uuid.NewString()
 	}
 
-	return convertID(d.ID)
-}
-
-func convertID(id string) string {
 	return uuid.NewMD5(uuid.NameSpaceOID, []byte(id)).String()
 }
 
@@ -324,6 +325,7 @@ func (c *Client) createObject(d index.Document) error {
 		properties = map[string]string{}
 	}
 
+	properties["key"] = d.ID
 	properties["content"] = d.Content
 
 	filename := d.Metadata["filename"]
@@ -345,7 +347,7 @@ func (c *Client) createObject(d index.Document) error {
 	properties["filepart"] = filepart
 
 	body := map[string]any{
-		"id": d.ID,
+		"id": convertID(d.ID),
 
 		"class":  c.class,
 		"vector": d.Embedding,
@@ -376,10 +378,11 @@ func (c *Client) updateObject(ctx context.Context, d index.Document) error {
 		properties = map[string]string{}
 	}
 
+	properties["key"] = d.ID
 	properties["content"] = d.Content
 
 	body := map[string]any{
-		"id": d.ID,
+		"id": convertID(d.ID),
 
 		"class":  c.class,
 		"vector": d.Embedding,
@@ -435,6 +438,7 @@ type errorDetail struct {
 }
 
 type document struct {
+	Key     string `json:"key"`
 	Content string `json:"content"`
 
 	// HACK
