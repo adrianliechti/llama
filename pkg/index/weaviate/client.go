@@ -135,8 +135,6 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 
 func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 	for _, d := range documents {
-		d.ID = generateID(d)
-
 		if len(d.Embedding) == 0 && c.embedder != nil {
 			embedding, err := c.embedder.Embed(ctx, d.Content)
 
@@ -266,10 +264,15 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	results := make([]index.Result, 0)
 
 	for _, d := range result.Data.Get[c.class] {
+		id := d.Additional.ID
 		title := d.Additional.ID
 		location := d.Additional.ID
 
 		metadata := map[string]string{}
+
+		if d.ID != "" {
+			id = d.ID
+		}
 
 		if d.FileName != "" {
 			metadata["filename"] = d.FileName
@@ -287,7 +290,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 		r := index.Result{
 			Document: index.Document{
-				ID: d.Additional.ID,
+				ID: id,
 
 				Title:    title,
 				Content:  d.Content,
@@ -305,15 +308,11 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	return results, nil
 }
 
-func generateID(d index.Document) string {
-	if d.ID == "" {
+func convertID(id string) string {
+	if id == "" {
 		return uuid.NewString()
 	}
 
-	return convertID(d.ID)
-}
-
-func convertID(id string) string {
 	return uuid.NewMD5(uuid.NameSpaceOID, []byte(id)).String()
 }
 
@@ -324,6 +323,7 @@ func (c *Client) createObject(d index.Document) error {
 		properties = map[string]string{}
 	}
 
+	properties["id"] = d.ID
 	properties["content"] = d.Content
 
 	filename := d.Metadata["filename"]
@@ -345,7 +345,7 @@ func (c *Client) createObject(d index.Document) error {
 	properties["filepart"] = filepart
 
 	body := map[string]any{
-		"id": d.ID,
+		"id": convertID(d.ID),
 
 		"class":  c.class,
 		"vector": d.Embedding,
@@ -376,10 +376,11 @@ func (c *Client) updateObject(ctx context.Context, d index.Document) error {
 		properties = map[string]string{}
 	}
 
+	properties["id"] = d.ID
 	properties["content"] = d.Content
 
 	body := map[string]any{
-		"id": d.ID,
+		"id": convertID(d.ID),
 
 		"class":  c.class,
 		"vector": d.Embedding,
@@ -435,6 +436,7 @@ type errorDetail struct {
 }
 
 type document struct {
+	ID      string `json:"id"`
 	Content string `json:"content"`
 
 	// HACK
