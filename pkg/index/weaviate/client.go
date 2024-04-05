@@ -108,18 +108,22 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		}
 
 		for _, o := range page.Objects {
-			id := o.ID
+			key := o.Properties["key"]
 			content := o.Properties["content"]
+
+			if key == "" {
+				key = o.ID
+			}
 
 			metadata := maps.Clone(o.Properties)
 			delete(metadata, "content")
 
 			d := index.Document{
-				ID:      id,
+				ID:      key,
 				Content: content,
 			}
 
-			cursor = id
+			cursor = o.ID
 			results = append(results, d)
 		}
 
@@ -264,14 +268,14 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	results := make([]index.Result, 0)
 
 	for _, d := range result.Data.Get[c.class] {
-		id := d.Additional.ID
+		key := d.Additional.ID
 		title := d.Additional.ID
 		location := d.Additional.ID
 
 		metadata := map[string]string{}
 
-		if d.ID != "" {
-			id = d.ID
+		if d.Key != "" {
+			key = d.Key
 		}
 
 		if d.FileName != "" {
@@ -290,7 +294,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 		r := index.Result{
 			Document: index.Document{
-				ID: id,
+				ID: key,
 
 				Title:    title,
 				Content:  d.Content,
@@ -323,7 +327,7 @@ func (c *Client) createObject(d index.Document) error {
 		properties = map[string]string{}
 	}
 
-	properties["id"] = d.ID
+	properties["key"] = d.ID
 	properties["content"] = d.Content
 
 	filename := d.Metadata["filename"]
@@ -376,7 +380,7 @@ func (c *Client) updateObject(ctx context.Context, d index.Document) error {
 		properties = map[string]string{}
 	}
 
-	properties["id"] = d.ID
+	properties["key"] = d.ID
 	properties["content"] = d.Content
 
 	body := map[string]any{
@@ -436,7 +440,7 @@ type errorDetail struct {
 }
 
 type document struct {
-	ID      string `json:"id"`
+	Key     string `json:"key"`
 	Content string `json:"content"`
 
 	// HACK

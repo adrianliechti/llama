@@ -97,16 +97,21 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 	}
 
 	for _, d := range documents {
-		d.ID = generateID(d)
+		if d.ID == "" {
+			d.ID = uuid.NewString()
+		}
 
 		body := Document{
 			ID: d.ID,
 
+			Title:    d.Title,
 			Content:  d.Content,
+			Location: d.Location,
+
 			Metadata: d.Metadata,
 		}
 
-		u, _ := url.JoinPath(c.url, "/"+c.namespace+"/_doc/"+d.ID)
+		u, _ := url.JoinPath(c.url, "/"+c.namespace+"/_doc/"+convertID(d.ID))
 		resp, err := c.client.Post(u, "application/json", jsonReader(body))
 
 		if err != nil {
@@ -125,9 +130,7 @@ func (c *Client) Delete(ctx context.Context, ids ...string) error {
 	var result error
 
 	for _, id := range ids {
-		id := convertID(id)
-
-		u, _ := url.JoinPath(c.url, "/"+c.namespace+"/_doc/"+id)
+		u, _ := url.JoinPath(c.url, "/"+c.namespace+"/_doc/"+convertID(id))
 		req, _ := http.NewRequestWithContext(ctx, "DELETE", u, nil)
 
 		resp, err := c.client.Do(req)
@@ -186,8 +189,12 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	for _, hit := range result.Hits.Hits {
 		results = append(results, index.Result{
 			Document: index.Document{
-				ID:       hit.Document.ID,
+				ID: hit.Document.ID,
+
+				Title:    hit.Document.Title,
 				Content:  hit.Document.Content,
+				Location: hit.Document.Location,
+
 				Metadata: hit.Document.Metadata,
 			},
 		})
@@ -196,15 +203,11 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	return results, nil
 }
 
-func generateID(d index.Document) string {
-	if d.ID == "" {
+func convertID(id string) string {
+	if id == "" {
 		return uuid.NewString()
 	}
 
-	return convertID(d.ID)
-}
-
-func convertID(id string) string {
 	return uuid.NewMD5(uuid.NameSpaceOID, []byte(id)).String()
 }
 
