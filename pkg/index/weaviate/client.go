@@ -171,9 +171,7 @@ func (c *Client) Delete(ctx context.Context, ids ...string) error {
 	var result error
 
 	for _, id := range ids {
-		id := convertID(id)
-
-		u, _ := url.JoinPath(c.url, "/v1/objects/"+c.class+"/"+id)
+		u, _ := url.JoinPath(c.url, "/v1/objects/"+c.class+"/"+convertID(id))
 		req, _ := http.NewRequestWithContext(ctx, "DELETE", u, nil)
 
 		resp, err := c.client.Do(req)

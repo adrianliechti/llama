@@ -127,10 +127,8 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 	}
 
 	for i, d := range documents {
-		id := d.ID
-
-		if id == "" {
-			id = uuid.NewString()
+		if d.ID == "" {
+			d.ID = uuid.NewString()
 		}
 
 		if len(d.Embedding) == 0 && c.embedder != nil {
@@ -143,7 +141,7 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 			d.Embedding = embedding
 		}
 
-		body.IDs[i] = id
+		body.IDs[i] = d.ID
 
 		body.Embeddings[i] = d.Embedding
 
