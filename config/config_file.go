@@ -17,6 +17,8 @@ func parseFile(path string) (*configFile, error) {
 		return nil, err
 	}
 
+	data = []byte(os.ExpandEnv(string(data)))
+
 	var config configFile
 
 	if err := yaml.Unmarshal(data, &config); err != nil {
