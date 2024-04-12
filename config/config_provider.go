@@ -9,10 +9,12 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/azuretranslator"
 	"github.com/adrianliechti/llama/pkg/provider/custom"
 	"github.com/adrianliechti/llama/pkg/provider/deepl"
+	"github.com/adrianliechti/llama/pkg/provider/groq"
 	"github.com/adrianliechti/llama/pkg/provider/huggingface"
 	"github.com/adrianliechti/llama/pkg/provider/langchain"
 	"github.com/adrianliechti/llama/pkg/provider/llama"
 	"github.com/adrianliechti/llama/pkg/provider/mimic"
+	"github.com/adrianliechti/llama/pkg/provider/mistral"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
@@ -136,6 +138,12 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 	case "openai":
 		return openaiProvider(cfg, model)
 
+	case "mistral":
+		return mistralProvider(cfg, model)
+
+	case "groq":
+		return groqProvider(cfg, model)
+
 	case "mimic":
 		return mimicProvider(cfg)
 
@@ -238,6 +246,34 @@ func openaiProvider(cfg providerConfig, model string) (*openai.Client, error) {
 	}
 
 	return openai.New(options...)
+}
+
+func mistralProvider(cfg providerConfig, model string) (*mistral.Client, error) {
+	var options []mistral.Option
+
+	if cfg.Token != "" {
+		options = append(options, mistral.WithToken(cfg.Token))
+	}
+
+	if model != "" {
+		options = append(options, mistral.WithModel(model))
+	}
+
+	return mistral.New(options...)
+}
+
+func groqProvider(cfg providerConfig, model string) (*groq.Client, error) {
+	var options []groq.Option
+
+	if cfg.Token != "" {
+		options = append(options, groq.WithToken(cfg.Token))
+	}
+
+	if model != "" {
+		options = append(options, groq.WithModel(model))
+	}
+
+	return groq.New(options...)
 }
 
 func mimicProvider(cfg providerConfig) (*mimic.Client, error) {
