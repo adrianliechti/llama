@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"sort"
 
 	"github.com/adrianliechti/llama/pkg/authorizer"
 	"github.com/adrianliechti/llama/pkg/chain"
@@ -39,6 +40,8 @@ func (cfg *Config) Models() []provider.Model {
 	for _, m := range cfg.models {
 		result = append(result, m)
 	}
+
+	sort.SliceStable(result, func(i, j int) bool { return result[i].ID < result[j].ID })
 
 	return result
 }
