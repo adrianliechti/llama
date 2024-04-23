@@ -4,9 +4,8 @@ version: "3"
 
 tasks:
   server:
-    deps: [ build ]
     cmds:
-      - bin/llama-server 
+      - llama-server 
         --port 9081
         --log-disable
         --ctx-size 32768
@@ -15,15 +14,3 @@ tasks:
         --hf-repo TheBloke/Mistral-7B-Instruct-v0.2-GGUF
         --hf-file mistral-7b-instruct-v0.2.Q4_K_M.gguf
         --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
-
-  build:
-    cmds:
-      - mkdir -p bin
-      - rm -rf bin/llama.cpp
-      - git clone https://github.com/ggerganov/llama.cpp bin/llama.cpp
-      - make LLAMA_CURL=1 LLAMA_METAL=1 LLAMA_METAL_EMBED_LIBRARY=1 -C bin/llama.cpp/ server
-      - cp bin/llama.cpp/server bin/llama-server
-      - rm -rf bin/llama.cpp
-
-    status:
-      - test -f bin/llama-server

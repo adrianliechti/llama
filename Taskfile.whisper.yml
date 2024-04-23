@@ -4,9 +4,9 @@ version: "3"
 
 tasks:
   server:
-    deps: [ build, download-model ]
+    deps: [ download-model ]
     cmds:
-      - bin/whisper-server
+      - whisper-server
         --port 9083
         --convert
         --model ./models/whisper-ggml-medium.bin
@@ -18,17 +18,3 @@ tasks:
 
     status:
       - test -f models/whisper-ggml-medium.bin
-
-  build:
-    cmds:
-      - mkdir -p bin
-      - rm -rf bin/whisper.cpp
-      - git clone https://github.com/ggerganov/whisper.cpp bin/whisper.cpp
-      - make WHISPER_METAL=1 WHISPER_METAL_EMBED_LIBRARY=1 -C bin/whisper.cpp/ server
-      - cp bin/whisper.cpp/server bin/whisper-server
-      - cp bin/whisper.cpp/ggml-common.h bin/ggml-common.h
-      - cp bin/whisper.cpp/ggml-metal.metal bin/ggml-metal.metal
-      - rm -rf bin/whisper.cpp
-
-    status:
-      - test -f bin/whisper-server
