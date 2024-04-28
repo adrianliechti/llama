@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform
+data:
+  config.yaml: |
+    providers:
+      - type: llama
+        url: http://phi
+        models:
+          phi-3-mini-instruct:
+            id: default
+            
+      - type: llama
+        url: http://llama
+        models:
+          llama-3-8b-instruct:
+            id: default

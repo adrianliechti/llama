@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phi
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      containers:
+        - name: server
+          image: ghcr.io/ggerganov/llama.cpp:server
+          imagePullPolicy: Always
+          args:
+            - "--host"
+            - "0.0.0.0"
+            - "--port"
+            - "8080"
+            - "--log-disable"
+            - "--model"
+            - "/models/phi-3-mini-4k-instruct.gguf"
+            - "--ctx-size"
+            - "4096"
+            - "--hf-repo"
+            - "microsoft/Phi-3-mini-4k-instruct-gguf"
+            - "--hf-file"
+            - "Phi-3-mini-4k-instruct-q4.gguf"
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: data
+              subPath: models
+              mountPath: "/models"
+          resources: {}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: phi-data

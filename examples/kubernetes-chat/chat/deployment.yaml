@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      containers:
+        - name: server
+          image: adrianliechti/llama-streamlit
+          imagePullPolicy: Always
+          env:
+            - name: OPENAI_BASE_URL
+              value: http://platform/oai/v1
+          ports:
+            - containerPort: 8501
+          resources: {}

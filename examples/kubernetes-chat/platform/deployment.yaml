@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: platform
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      containers:
+        - name: server
+          image: adrianliechti/llama-platform
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: config
+              subPath: config.yaml
+              mountPath: /config.yaml
+          resources: {}
+      volumes:
+        - name: config
+          configMap:
+            name: platform
