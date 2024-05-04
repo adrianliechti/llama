@@ -1,0 +1,8 @@
+# https://taskfile.dev
+
+version: "3"
+
+tasks:
+  server:
+    cmds:
+      - docker run -it -p 5001:3000 mcr.microsoft.com/presidio-analyzer:latest
