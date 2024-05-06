@@ -100,10 +100,16 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			choice := completion.Choices[0]
 
+			role := toMessageRole(choice.Delta.Role)
+
+			if role == "" {
+				role = provider.MessageRoleAssistant
+			}
+
 			result.ID = completion.ID
 			result.Reason = toCompletionResult(choice.FinishReason)
 
-			result.Message.Role = toMessageRole(choice.Delta.Role)
+			result.Message.Role = role
 			result.Message.Content += choice.Delta.Content
 			result.Message.FunctionCalls = toFunctionCalls(choice.Delta.ToolCalls)
 
@@ -112,6 +118,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				Reason: result.Reason,
 
 				Message: provider.Message{
+					Role:    role,
 					Content: choice.Delta.Content,
 
 					FunctionCalls: toFunctionCalls(choice.Delta.ToolCalls),
