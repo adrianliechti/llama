@@ -27,6 +27,10 @@ func New(completer provider.Completer) (*Adapter, error) {
 }
 
 func (a *Adapter) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+	if options == nil {
+		options = new(provider.CompleteOptions)
+	}
+
 	var system string
 
 	if len(messages) > 0 && messages[0].Role == provider.MessageRoleSystem {
@@ -73,7 +77,16 @@ func (a *Adapter) Complete(ctx context.Context, messages []provider.Message, opt
 		}
 	}
 
-	completion, err := a.completer.Complete(ctx, input, options)
+	completion, err := a.completer.Complete(ctx, input, &provider.CompleteOptions{
+		Stream: options.Stream,
+
+		Stop: options.Stop,
+
+		MaxTokens:   options.MaxTokens,
+		Temperature: options.Temperature,
+
+		Format: options.Format,
+	})
 
 	if err != nil {
 		return nil, err
@@ -185,9 +198,13 @@ func extractToolCall(message provider.Message) (*provider.FunctionCall, error) {
 		return nil, errors.New("no tool call found")
 	}
 
+	content := match[1]
+	content = strings.ReplaceAll(content, "\\n", "")
+	content = strings.ReplaceAll(content, "\n", "")
+
 	var result ToolCall
 
-	if err := json.Unmarshal([]byte(match[1]), &result); err != nil {
+	if err := json.Unmarshal([]byte(content), &result); err != nil {
 		return nil, err
 	}
 
