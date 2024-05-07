@@ -28,6 +28,7 @@ func New(cfg *config.Config) (*Server, error) {
 	r.Get("/api/tags", s.handleTags)
 
 	r.Post("/api/chat", s.handleChat)
+	r.Post("api/embeddings", s.handleEmbeddings)
 
 	return s, nil
 }

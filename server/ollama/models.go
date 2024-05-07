@@ -47,6 +47,15 @@ type ChatResponse struct {
 	Done bool `json:"done"`
 }
 
+type EmbeddingRequest struct {
+	Model  string `json:"model"`
+	Prompt string `json:"prompt"`
+}
+
+type EmbeddingResponse struct {
+	Embedding []float64 `json:"embedding"`
+}
+
 type StatusError struct {
 	StatusCode   int
 	Status       string
