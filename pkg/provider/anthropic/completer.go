@@ -8,10 +8,8 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"mime"
 	"net/http"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"unicode"
 
@@ -247,7 +245,6 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 				}
 
 				for _, f := range m.Files {
-					mime := mime.TypeByExtension(filepath.Ext(f.Name))
 					data, err := io.ReadAll(f.Content)
 
 					if err != nil {
@@ -258,8 +255,9 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 						Type: ContentTypeImage,
 
 						Source: &ContentSource{
-							Type:      "base64",
-							MediaType: mime,
+							Type: "base64",
+
+							MediaType: http.DetectContentType(data),
 							Data:      base64.StdEncoding.EncodeToString(data),
 						},
 					})

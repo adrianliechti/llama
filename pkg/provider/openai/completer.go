@@ -5,8 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"io"
-	"mime"
-	"path/filepath"
+	"net/http"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 
@@ -199,13 +198,13 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 			}
 
 			for _, f := range m.Files {
-				mime := mime.TypeByExtension(filepath.Ext(f.Name))
 				data, err := io.ReadAll(f.Content)
 
 				if err != nil {
 					return nil, err
 				}
 
+				mime := http.DetectContentType(data)
 				content := base64.StdEncoding.EncodeToString(data)
 
 				message.MultiContent = append(message.MultiContent, openai.ChatMessagePart{
