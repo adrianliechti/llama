@@ -68,7 +68,7 @@ func detectFileName(r *http.Request) string {
 			return uuid.NewString() + val
 		}
 
-		if vals, _ := mime.ExtensionsByType(val); err == nil && len(vals) > 0 {
+		if vals, _ := mime.ExtensionsByType(val); len(vals) > 0 {
 			return uuid.NewString() + vals[0]
 		}
 	}

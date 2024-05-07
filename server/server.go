@@ -6,6 +6,7 @@ import (
 	"github.com/adrianliechti/llama/config"
 	"github.com/adrianliechti/llama/server/api"
 	"github.com/adrianliechti/llama/server/oai"
+	"github.com/adrianliechti/llama/server/ollama"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -40,6 +41,12 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
+	ollama, err := ollama.New(cfg)
+
+	if err != nil {
+		return nil, err
+	}
+
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"*"},
 
@@ -65,6 +72,7 @@ func New(cfg *config.Config) (*Server, error) {
 	r.Mount("/api", api)
 
 	r.Mount("/oai", oai)
+	r.Mount("/ollama", ollama)
 
 	return s, nil
 }
