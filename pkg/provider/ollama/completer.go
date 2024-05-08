@@ -36,6 +36,8 @@ func NewCompleter(url string, options ...Option) (*Completer, error) {
 		option(c)
 	}
 
+	go c.ensureModel()
+
 	return &Completer{
 		Config: c,
 	}, nil
