@@ -30,7 +30,7 @@ func NewEmbedder(options ...Option) (*Embedder, error) {
 	}, nil
 }
 
-func (c *Embedder) Embed(ctx context.Context, content string) ([]float32, error) {
+func (c *Embedder) Embed(ctx context.Context, content string) (provider.Embeddings, error) {
 	req := openai.EmbeddingRequest{
 		Input: content,
 		Model: openai.EmbeddingModel(c.model),

@@ -3,7 +3,9 @@ package huggingface
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
+	"net/http"
 )
 
 type Client struct {
@@ -28,6 +30,16 @@ func New(url string, options ...Option) (*Client, error) {
 		Embedder:  e,
 		Completer: c,
 	}, nil
+}
+
+func convertError(resp *http.Response) error {
+	data, _ := io.ReadAll(resp.Body)
+
+	if len(data) == 0 {
+		return errors.New(http.StatusText(resp.StatusCode))
+	}
+
+	return errors.New(string(data))
 }
 
 func jsonReader(v any) io.Reader {

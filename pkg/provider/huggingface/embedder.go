@@ -43,12 +43,16 @@ func NewEmbedder(url string, options ...Option) (*Embedder, error) {
 	}, nil
 }
 
-func (e *Embedder) Embed(ctx context.Context, content string) ([]float32, error) {
+func (e *Embedder) Embed(ctx context.Context, content string) (provider.Embeddings, error) {
 	body := map[string]any{
 		"inputs": strings.TrimSpace(content),
 	}
 
-	resp, err := e.client.Post(e.url, "application/json", jsonReader(body))
+	req, _ := http.NewRequestWithContext(ctx, "POST", e.url, jsonReader(body))
+	req.Header.Set("Authorization", "Bearer "+e.token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := e.client.Do(req)
 
 	if err != nil {
 		return nil, err
@@ -57,7 +61,7 @@ func (e *Embedder) Embed(ctx context.Context, content string) ([]float32, error)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("unable to encode input")
+		return nil, convertError(resp)
 	}
 
 	data, err := io.ReadAll(resp.Body)
@@ -80,58 +84,3 @@ func (e *Embedder) Embed(ctx context.Context, content string) ([]float32, error)
 
 	return nil, errors.New("unable to embed input")
 }
-
-// func (e *Embedder) Embed(ctx context.Context, content string) ([]float32, error) {
-// 	body := EmbeddingsRequest{
-// 		Input: strings.TrimSpace(content),
-// 	}
-
-// 	url, _ := url.JoinPath(e.url, "/embeddings")
-// 	resp, err := e.client.Post(url, "application/json", jsonReader(body))
-
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	defer resp.Body.Close()
-
-// 	if resp.StatusCode != http.StatusOK {
-// 		return nil, errors.New("unable to encode input")
-// 	}
-
-// 	var result EmbeddingList
-
-// 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-// 		return nil, err
-// 	}
-
-// 	if len(result.Data) == 0 {
-// 		return nil, errors.New("unable to embed input")
-// 	}
-
-// 	return result.Data[0].Embedding, nil
-// }
-
-// type EmbeddingsRequest struct {
-// 	Input any    `json:"input"`
-// 	Model string `json:"model"`
-// }
-
-// type Embedding struct {
-// 	Object string `json:"object"` // "embedding"
-
-// 	Index     int       `json:"index"`
-// 	Embedding []float32 `json:"embedding"`
-// }
-
-// type EmbeddingList struct {
-// 	Object string `json:"object"` // "list"
-
-// 	Model string      `json:"model"`
-// 	Data  []Embedding `json:"data"`
-
-// 	// usage {
-// 	//   prompt_tokens int
-// 	//   total_tokens int
-// 	// }
-// }

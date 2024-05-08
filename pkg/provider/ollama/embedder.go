@@ -38,7 +38,7 @@ func NewEmbedder(url string, options ...Option) (*Embedder, error) {
 	}, nil
 }
 
-func (e *Embedder) Embed(ctx context.Context, content string) ([]float32, error) {
+func (e *Embedder) Embed(ctx context.Context, content string) (provider.Embeddings, error) {
 	body := &EmbeddingRequest{
 		Model:  e.model,
 		Prompt: strings.TrimSpace(content),

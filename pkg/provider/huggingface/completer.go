@@ -63,7 +63,11 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 	}
 
 	if options.Stream == nil {
-		resp, err := c.client.Post(url, "application/json", jsonReader(body))
+		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
+		req.Header.Set("Authorization", "Bearer "+c.token)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := c.client.Do(req)
 
 		if err != nil {
 			return nil, err
@@ -72,7 +76,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return nil, errors.New("unable to complete")
+			return nil, convertError(resp)
 		}
 
 		var completion ChatCompletion
@@ -96,6 +100,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		defer close(options.Stream)
 
 		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
+		req.Header.Set("Authorization", "Bearer "+c.token)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/x-ndjson")
 
@@ -108,7 +113,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return nil, errors.New("unable to complete")
+			return nil, convertError(resp)
 		}
 
 		reader := bufio.NewReader(resp.Body)

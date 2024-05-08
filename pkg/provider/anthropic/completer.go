@@ -24,7 +24,7 @@ type Completer struct {
 
 func NewCompleter(options ...Option) (*Completer, error) {
 	c := &Config{
-		url:    "https://api.anthropic.com/v1",
+		url:    "https://api.anthropic.com",
 		client: http.DefaultClient,
 	}
 
@@ -42,7 +42,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		options = new(provider.CompleteOptions)
 	}
 
-	url, _ := url.JoinPath(c.url, "/messages")
+	url, _ := url.JoinPath(c.url, "/v1/messages")
 	body, err := convertChatRequest(c.model, messages, options)
 
 	if err != nil {

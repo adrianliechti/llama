@@ -1,0 +1,42 @@
+services:
+  platform:
+    image: adrianliechti/llama-platform
+    pull_policy: always
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    configs:
+      - source: platform
+        target: /config.yaml
+  
+  web:
+    image: adrianliechti/llama-streamlit
+    pull_policy: always
+    ports:
+      - 8501:8501
+    environment:
+      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+    depends_on:
+      - platform
+  
+configs:
+  platform:
+    content: |
+      providers:
+        - type: huggingface
+          url: https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct
+          token: ${HF_TOKEN}
+
+          models:
+            llama3-8b-instruct:
+              id: tgi
+        
+        - type: huggingface
+          url: https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-mpnet-base-v2
+          token: ${HF_TOKEN}
+
+          models:
+            all-mpnet-base-v2:
+              id: tei

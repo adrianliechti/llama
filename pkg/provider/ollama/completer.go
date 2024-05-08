@@ -249,9 +249,6 @@ func convertMessageRole(r provider.MessageRole) MessageRole {
 	case provider.MessageRoleAssistant:
 		return MessageRoleAssistant
 
-	// case provider.MessageRoleFunction:
-	// 	return MessageRoleTool
-
 	default:
 		return ""
 	}
@@ -291,7 +288,6 @@ var (
 	MessageRoleSystem    MessageRole = "system"
 	MessageRoleUser      MessageRole = "user"
 	MessageRoleAssistant MessageRole = "assistant"
-	//MessageRoleTool      MessageRole = "tool"
 )
 
 type MessageImage []byte
