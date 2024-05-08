@@ -301,6 +301,11 @@ type ImageCreateRequest struct {
 	ResponseFormat string `json:"response_format,omitempty"`
 }
 
+// https://platform.openai.com/docs/api-reference/images/create
+type ImageList struct {
+	Images []Image `json:"data"`
+}
+
 // https://platform.openai.com/docs/api-reference/images/object
 type Image struct {
 	URL     string `json:"url,omitempty"`

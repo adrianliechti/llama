@@ -6,6 +6,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/anthropic"
+	"github.com/adrianliechti/llama/pkg/provider/automatic1111"
 	"github.com/adrianliechti/llama/pkg/provider/azuretranslator"
 	"github.com/adrianliechti/llama/pkg/provider/custom"
 	"github.com/adrianliechti/llama/pkg/provider/deepl"
@@ -137,6 +138,9 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 	case "anthropic":
 		return anthropicProvider(cfg, model)
 
+	case "automatic1111":
+		return automatic1111Provider(cfg, model)
+
 	case "huggingface":
 		return huggingfaceProvider(cfg, model)
 
@@ -194,6 +198,16 @@ func anthropicProvider(cfg providerConfig, model string) (*anthropic.Client, err
 	}
 
 	return anthropic.New(options...)
+}
+
+func automatic1111Provider(cfg providerConfig, model string) (*automatic1111.Client, error) {
+	var options []automatic1111.Option
+
+	if cfg.URL != "" {
+		options = append(options, automatic1111.WithURL(cfg.URL))
+	}
+
+	return automatic1111.New(options...)
 }
 
 func huggingfaceProvider(cfg providerConfig, model string) (*huggingface.Client, error) {

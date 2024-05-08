@@ -42,11 +42,15 @@ func (s *Server) handleImageGeneration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := Image{}
+	result := ImageList{}
 
 	if req.ResponseFormat == "b64_json" {
-		content := base64.StdEncoding.EncodeToString(data)
-		result.B64JSON = content
+		result.Images = []Image{
+			{
+				B64JSON: base64.StdEncoding.EncodeToString(data),
+			},
+		}
+
 	} else {
 		mime := mime.TypeByExtension(path.Ext(image.Name))
 
@@ -54,8 +58,11 @@ func (s *Server) handleImageGeneration(w http.ResponseWriter, r *http.Request) {
 			mime = "image/png"
 		}
 
-		content := base64.StdEncoding.EncodeToString(data)
-		result.URL = "data:" + mime + ";base64," + content
+		result.Images = []Image{
+			{
+				URL: "data:" + mime + ";base64," + base64.StdEncoding.EncodeToString(data),
+			},
+		}
 	}
 
 	writeJson(w, result)
