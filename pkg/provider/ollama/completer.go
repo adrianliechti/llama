@@ -82,13 +82,20 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			return nil, err
 		}
 
+		role := toMessageRole(chat.Message.Role)
+		content := strings.TrimSpace(chat.Message.Content)
+
+		if role == "" {
+			role = provider.MessageRoleAssistant
+		}
+
 		result := provider.Completion{
 			ID:     id,
 			Reason: provider.CompletionReasonStop,
 
 			Message: provider.Message{
-				Role:    toMessageRole(chat.Message.Role),
-				Content: strings.TrimSpace(chat.Message.Content),
+				Role:    role,
+				Content: content,
 			},
 		}
 
@@ -149,9 +156,15 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				content = strings.TrimLeftFunc(content, unicode.IsSpace)
 			}
 
+			role := toMessageRole(chat.Message.Role)
+
+			if role == "" {
+				role = provider.MessageRoleAssistant
+			}
+
 			result.Reason = toCompletionReason(chat)
 
-			result.Message.Role = toMessageRole(chat.Message.Role)
+			result.Message.Role = role
 			result.Message.Content += content
 
 			options.Stream <- provider.Completion{
@@ -159,6 +172,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				Reason: result.Reason,
 
 				Message: provider.Message{
+					Role:    role,
 					Content: content,
 				},
 			}

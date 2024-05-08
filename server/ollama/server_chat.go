@@ -69,14 +69,21 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		for completion := range stream {
 			timestamp := time.Now().UTC()
 
+			role := ollamaMessageRole(completion.Message.Role)
+			content := completion.Message.Content
+
+			if role == "" {
+				role = MessageRoleAssistant
+			}
+
 			result := ChatResponse{
 				Model: req.Model,
 
 				CreatedAt: timestamp,
 
 				Message: Message{
-					Role:    ollamaMessageRole(completion.Message.Role),
-					Content: completion.Message.Content,
+					Role:    role,
+					Content: content,
 				},
 
 				Done: completion.Reason == provider.CompletionReasonStop,
@@ -106,14 +113,21 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 
 		timestamp := time.Now().UTC()
 
+		role := ollamaMessageRole(completion.Message.Role)
+		content := completion.Message.Content
+
+		if role == "" {
+			role = MessageRoleAssistant
+		}
+
 		result := ChatResponse{
 			Model: req.Model,
 
 			CreatedAt: timestamp,
 
 			Message: Message{
-				Role:    ollamaMessageRole(completion.Message.Role),
-				Content: completion.Message.Content,
+				Role:    role,
+				Content: content,
 			},
 
 			Done: completion.Reason == provider.CompletionReasonStop,
