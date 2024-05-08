@@ -217,10 +217,6 @@ func huggingfaceProvider(cfg providerConfig, model string) (*huggingface.Client,
 		options = append(options, huggingface.WithToken(cfg.Token))
 	}
 
-	if len(cfg.Models) > 1 {
-		return nil, errors.New("multiple models not supported for hugging face provider")
-	}
-
 	return huggingface.New(cfg.URL, options...)
 }
 
@@ -236,10 +232,6 @@ func langchainProvider(cfg providerConfig, model string) (*langchain.Client, err
 
 func llamaProvider(cfg providerConfig, model string) (*llama.Client, error) {
 	var options []llama.Option
-
-	if len(cfg.Models) != 1 {
-		return nil, errors.New("llama supports exactly one model")
-	}
 
 	if model != "" {
 		options = append(options, llama.WithModel(model))
@@ -307,19 +299,11 @@ func groqProvider(cfg providerConfig, model string) (*groq.Client, error) {
 func mimicProvider(cfg providerConfig) (*mimic.Client, error) {
 	var options []mimic.Option
 
-	if len(cfg.Models) > 1 {
-		return nil, errors.New("multiple models not supported for mimic provider")
-	}
-
 	return mimic.New(cfg.URL, options...)
 }
 
 func whisperProvider(cfg providerConfig) (*whisper.Client, error) {
 	var options []whisper.Option
-
-	if len(cfg.Models) > 1 {
-		return nil, errors.New("multiple models not supported for whisper provider")
-	}
 
 	return whisper.New(cfg.URL, options...)
 }
