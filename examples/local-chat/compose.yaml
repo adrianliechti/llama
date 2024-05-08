@@ -12,15 +12,12 @@ services:
         target: /config.yaml
   
   web:
-    image: adrianliechti/llama-ui
+    image: adrianliechti/llama-streamlit
     pull_policy: always
     ports:
-      - 3000:3000
+      - 8501:8501
     environment:
       - OPENAI_BASE_URL=http://platform:8080/oai/v1
-    configs:
-      - source: web
-        target: /config.yaml
     depends_on:
       - platform
   
@@ -51,26 +48,5 @@ configs:
             content: pwd
           - role: assistant
             content: /home/user
-              
-  web:
-    content: |
-      contexts:
-        - name: Gemma
-          models:
-            - id: gemma
-        
-        - name: Mistral
-          models:
-            - id: mistral
-        
-        - name: LLaVA
-          capabilities:
-            - images
-          models:
-            - id: llava
-        
-        - name: Terminal (Simulated)
-          models:
-            - id: terminal
 
         

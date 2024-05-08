@@ -17,10 +17,10 @@ services:
       dockerfile: examples/custom-chat/Dockerfile
   
   web:
-    image: adrianliechti/llama-ui
+    image: adrianliechti/llama-streamlit
     pull_policy: always
     ports:
-      - 3000:3000
+      - 8501:8501
     environment:
       - OPENAI_BASE_URL=http://platform:8080/oai/v1
     depends_on:

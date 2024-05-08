@@ -39,4 +39,4 @@ tasks:
 
   webui:
     cmds:
-      - docker run -it --rm --pull always -p 3000:3000 -e OPENAI_BASE_URL=http://host.docker.internal:8080/oai/v1 adrianliechti/llama-ui
+      - docker run -it --rm --pull always -p 8501:8501 -e OPENAI_BASE_URL=http://host.docker.internal:8080/oai/v1 adrianliechti/llama-streamlit
