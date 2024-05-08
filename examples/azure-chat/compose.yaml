@@ -26,12 +26,12 @@ configs:
     content: |
       providers:
         - type: openai
-          url: https://xxxxxxxx.openai.azure.com
-          token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+          url: ${OPENAI_BASE_URL}
+          token: ${OPENAI_API_KEY}
  
           models:
             gpt-3.5-turbo:
-              id: gpt-35-turbo-16k
+              id: gpt-35-turbo
  
             gpt-4-turbo:
-              id: gpt-4-32k
+              id: gpt-4-turbo

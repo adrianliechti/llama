@@ -26,8 +26,11 @@ configs:
     content: |
       providers:
         - type: groq
-          token: gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+          token: ${GROQ_API_TOKEN}
 
           models:
-            llama3:
+            llama3-70b-instruct:
               id: llama3-70b-8192
+            
+            mixtral-8x7b-instruct:
+              id: mixtral-8x7b-32768

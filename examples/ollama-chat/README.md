@@ -6,7 +6,7 @@
 Start Example Application
 
 ```shell
-docker compose up
+docker compose up --force-recreate --remove-orphans
 ```
 
 ## Open Web UI

@@ -26,8 +26,14 @@ configs:
     content: |
       providers:
         - type: anthropic
-          token: sk-ant-apixx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+          token: ${ANTHROPIC_API_KEY}
 
           models:
             claude-3-opus:
               id: claude-3-opus-20240229
+            
+            claude-3-sonnet:
+              id: claude-3-sonnet-20240229
+            
+            claude-3-haiku:
+              id: claude-3-haiku-20240307	

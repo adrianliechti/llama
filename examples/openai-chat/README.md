@@ -4,6 +4,14 @@
 - Image Recognition (Vision)
 - Audio Transcriptions (Whisper)
 
+```bash
+export OPENAI_API_KEY=sk-......
+
+docker compose up --force-recreate --remove-orphans
+```
+
+open [localhost:8501](http://localhost:8501) in your favorite browser
+
 ## Completion API
 
 https://platform.openai.com/docs/api-reference/chat/create
@@ -12,7 +20,7 @@ https://platform.openai.com/docs/api-reference/chat/create
 curl http://localhost:8080/oai/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gpt-3.5-turbo",
+    "model": "gpt-4-turbo",
     "messages": [
       {
         "role": "system",
@@ -34,7 +42,7 @@ https://platform.openai.com/docs/guides/vision
 curl http://localhost:8080/oai/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gpt-4-vision",
+    "model": "gpt-4-turbo",
     "messages": [
       {
         "role": "user",
