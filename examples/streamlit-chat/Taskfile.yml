@@ -1,0 +1,11 @@
+# https://taskfile.dev
+
+version: "3"
+
+vars:
+  REPOSITORY: adrianliechti/llama-streamlit
+
+tasks:
+  publish:
+    cmds:
+      - docker buildx build . --push --platform linux/amd64,linux/arm64 --tag {{.REPOSITORY}}
