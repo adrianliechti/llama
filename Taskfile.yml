@@ -30,6 +30,8 @@ tasks:
       - docker buildx build . --push --platform linux/amd64,linux/arm64 --tag {{.REPOSITORY}}
 
   server:
+    dotenv: ['.env' ]
+    
     cmds:
       - go run cmd/server/main.go
 

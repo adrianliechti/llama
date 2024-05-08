@@ -5,3 +5,4 @@ config.yaml
 
 .DS_Store
 /.vscode
+/.env
