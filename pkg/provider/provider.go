@@ -27,6 +27,10 @@ type Transcriber interface {
 	Transcribe(ctx context.Context, input File, options *TranscribeOptions) (*Transcription, error)
 }
 
+type Renderer interface {
+	Render(ctx context.Context, input string, options *RenderOptions) (*Image, error)
+}
+
 type Model struct {
 	ID string
 }
@@ -138,4 +142,14 @@ type Transcription struct {
 type TranscribeOptions struct {
 	Language    string
 	Temperature *float32
+}
+
+type Image struct {
+	ID string
+
+	Name    string
+	Content io.ReadCloser
+}
+
+type RenderOptions struct {
 }

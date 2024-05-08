@@ -73,6 +73,16 @@ func (cfg *Config) RegisterTranscriber(model string, t provider.Transcriber) {
 	cfg.transcriber[model] = t
 }
 
+func (cfg *Config) RegisterRenderer(model string, r provider.Renderer) {
+	cfg.RegisterModel(model)
+
+	if cfg.renderer == nil {
+		cfg.renderer = make(map[string]provider.Renderer)
+	}
+
+	cfg.renderer[model] = r
+}
+
 func (cfg *Config) registerProviders(f *configFile) error {
 	for _, p := range f.Providers {
 		for id, m := range p.Models {
@@ -110,6 +120,10 @@ func (cfg *Config) registerProviders(f *configFile) error {
 
 			if transcriber, ok := r.(provider.Transcriber); ok {
 				cfg.RegisterTranscriber(id, transcriber)
+			}
+
+			if renderer, ok := r.(provider.Renderer); ok {
+				cfg.RegisterRenderer(id, renderer)
 			}
 		}
 	}

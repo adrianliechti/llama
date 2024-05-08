@@ -25,6 +25,7 @@ type Config struct {
 	synthesizer map[string]provider.Synthesizer
 	translator  map[string]provider.Translator
 	transcriber map[string]provider.Transcriber
+	renderer    map[string]provider.Renderer
 
 	indexes     map[string]index.Provider
 	extractors  map[string]extractor.Provider
@@ -110,6 +111,16 @@ func (cfg *Config) Transcriber(model string) (provider.Transcriber, error) {
 	}
 
 	return nil, errors.New("transcriber not found: " + model)
+}
+
+func (cfg *Config) Renderer(model string) (provider.Renderer, error) {
+	if cfg.renderer != nil {
+		if t, ok := cfg.renderer[model]; ok {
+			return t, nil
+		}
+	}
+
+	return nil, errors.New("renderer not found: " + model)
 }
 
 func (cfg *Config) Index(id string) (index.Provider, error) {

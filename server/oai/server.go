@@ -32,6 +32,8 @@ func New(cfg *config.Config) (*Server, error) {
 	r.Post("/v1/audio/speech", s.handleAudioSpeech)
 	r.Post("/v1/audio/transcriptions", s.handleAudioTranscription)
 
+	r.Post("/v1/images/generations", s.handleImageGeneration)
+
 	return s, nil
 }
 

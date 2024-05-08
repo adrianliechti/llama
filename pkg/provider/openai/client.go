@@ -5,6 +5,7 @@ type Client struct {
 	*Completer
 	*Synthesizer
 	*Transcriber
+	*Renderer
 }
 
 func New(options ...Option) (*Client, error) {
@@ -32,10 +33,17 @@ func New(options ...Option) (*Client, error) {
 		return nil, err
 	}
 
+	r, err := NewRenderer(options...)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return &Client{
 		Embedder:    e,
 		Completer:   c,
 		Synthesizer: s,
 		Transcriber: t,
+		Renderer:    r,
 	}, nil
 }
