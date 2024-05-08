@@ -12,15 +12,12 @@ services:
         target: /config.yaml
   
   web:
-    image: adrianliechti/llama-ui
+    image: adrianliechti/llama-streamlit
     pull_policy: always
     ports:
-      - 3000:3000
+      - 8501:8501
     environment:
       - OPENAI_BASE_URL=http://platform:8080/oai/v1
-    configs:
-      - source: web
-        target: /config.yaml
     depends_on:
       - platform
   
@@ -38,14 +35,3 @@ configs:
  
             gpt-4-turbo:
               id: gpt-4-32k
-
-  web:
-    content: |
-      contexts:
-        - name: GPT 3.5
-          models:
-            - id: gpt-3.5-turbo
-
-        - name: GPT 4
-          models:
-            - id: gpt-4-turbo
