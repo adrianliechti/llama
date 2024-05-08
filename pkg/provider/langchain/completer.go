@@ -62,7 +62,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			return nil, errors.New("unable to complete")
+			return nil, convertError(resp)
 		}
 
 		defer resp.Body.Close()
@@ -94,7 +94,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return nil, errors.New("unable to complete")
+			return nil, convertError(resp)
 		}
 
 		reader := bufio.NewReader(resp.Body)

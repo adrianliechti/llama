@@ -3,7 +3,6 @@ package ollama
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/url"
 	"strings"
@@ -54,7 +53,7 @@ func (e *Embedder) Embed(ctx context.Context, content string) (provider.Embeddin
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("unable to embed")
+		return nil, convertError(resp)
 	}
 
 	var result EmbeddingResponse

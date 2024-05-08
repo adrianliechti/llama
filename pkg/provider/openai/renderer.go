@@ -51,7 +51,7 @@ func (r *Renderer) Render(ctx context.Context, input string, options *provider.R
 	result, err := r.client.CreateImage(ctx, req)
 
 	if err != nil {
-		return nil, err
+		convertError(err)
 	}
 
 	if len(result.Data) == 0 {
@@ -66,10 +66,8 @@ func (r *Renderer) Render(ctx context.Context, input string, options *provider.R
 
 	name := strings.ReplaceAll(uuid.NewString(), "-", "") + ".png"
 
-	image := &provider.Image{
+	return &provider.Image{
 		Name:    name,
 		Content: io.NopCloser(bytes.NewReader(data)),
-	}
-
-	return image, nil
+	}, nil
 }

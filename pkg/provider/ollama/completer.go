@@ -67,13 +67,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			data, _ := io.ReadAll(resp.Body)
-
-			if len(data) == 0 {
-				data = []byte("unable to complete")
-			}
-
-			return nil, errors.New(string(data))
+			return nil, convertError(resp)
 		}
 
 		var chat ChatResponse
@@ -116,7 +110,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return nil, errors.New("unable to complete")
+			return nil, convertError(resp)
 		}
 
 		reader := bufio.NewReader(resp.Body)

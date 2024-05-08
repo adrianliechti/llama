@@ -45,7 +45,7 @@ func (c *Config) pullModel() error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("unable to pull model")
+		return convertError(resp)
 	}
 
 	reader := bufio.NewReader(resp.Body)

@@ -1,5 +1,11 @@
 package openai
 
+import (
+	"errors"
+
+	"github.com/sashabaranov/go-openai"
+)
+
 type Client struct {
 	*Embedder
 	*Completer
@@ -46,4 +52,14 @@ func New(options ...Option) (*Client, error) {
 		Transcriber: t,
 		Renderer:    r,
 	}, nil
+}
+
+func convertError(err error) error {
+	var oaierr *openai.APIError
+
+	if errors.As(err, &oaierr) {
+		return errors.New(oaierr.Message)
+	}
+
+	return err
 }

@@ -1,9 +1,9 @@
 package mimic
 
 import (
-	"bytes"
-	"encoding/json"
+	"errors"
 	"io"
+	"net/http"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 )
@@ -24,12 +24,12 @@ func New(url string, options ...Option) (*Client, error) {
 	}, nil
 }
 
-func jsonReader(v any) io.Reader {
-	b := new(bytes.Buffer)
+func convertError(resp *http.Response) error {
+	data, _ := io.ReadAll(resp.Body)
 
-	enc := json.NewEncoder(b)
-	enc.SetEscapeHTML(false)
+	if len(data) == 0 {
+		return errors.New(http.StatusText(resp.StatusCode))
+	}
 
-	enc.Encode(v)
-	return b
+	return errors.New(string(data))
 }

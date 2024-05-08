@@ -86,7 +86,7 @@ func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("unable to transcribe")
+		return nil, convertError(resp)
 	}
 
 	var inference InferenceResponse

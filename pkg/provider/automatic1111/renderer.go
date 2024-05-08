@@ -52,7 +52,7 @@ func (r *Renderer) Render(ctx context.Context, input string, options *provider.R
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("unable to generate image")
+		return nil, convertError(resp)
 	}
 
 	var result Text2ImageResponse

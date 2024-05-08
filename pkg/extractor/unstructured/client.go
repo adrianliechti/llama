@@ -109,7 +109,7 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("unable to convert")
+		return nil, convertError(resp)
 	}
 
 	var elements []Element
@@ -136,4 +136,14 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	}
 
 	return &result, nil
+}
+
+func convertError(resp *http.Response) error {
+	data, _ := io.ReadAll(resp.Body)
+
+	if len(data) == 0 {
+		return errors.New(http.StatusText(resp.StatusCode))
+	}
+
+	return errors.New(string(data))
 }

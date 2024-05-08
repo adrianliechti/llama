@@ -64,7 +64,7 @@ func (s *Synthesizer) Synthesize(ctx context.Context, content string, options *p
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("unable to transcribe")
+		return nil, convertError(resp)
 	}
 
 	id := uuid.NewString()

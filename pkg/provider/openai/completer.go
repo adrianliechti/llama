@@ -49,13 +49,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		completion, err := c.client.CreateChatCompletion(ctx, *req)
 
 		if err != nil {
-			var oaierr *openai.APIError
-
-			if errors.As(err, &oaierr) {
-				return nil, errors.New(oaierr.Message)
-			}
-
-			return nil, err
+			convertError(err)
 		}
 
 		choice := completion.Choices[0]
@@ -77,7 +71,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		stream, err := c.client.CreateChatCompletionStream(ctx, *req)
 
 		if err != nil {
-			return nil, err
+			convertError(err)
 		}
 
 		result := provider.Completion{

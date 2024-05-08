@@ -74,7 +74,7 @@ func (t *Translator) Translate(ctx context.Context, content string, options *pro
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("unable to translate")
+		return nil, convertError(resp)
 	}
 
 	type resultType struct {

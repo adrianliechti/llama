@@ -39,7 +39,7 @@ func (c *Embedder) Embed(ctx context.Context, content string) (provider.Embeddin
 	result, err := c.client.CreateEmbeddings(ctx, req)
 
 	if err != nil {
-		return nil, err
+		convertError(err)
 	}
 
 	return result.Data[0].Embedding, nil
