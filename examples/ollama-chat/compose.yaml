@@ -1,0 +1,43 @@
+services:
+  platform:
+    image: adrianliechti/llama-platform
+    pull_policy: always
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    configs:
+      - source: platform
+        target: /config.yaml
+    depends_on:
+      - ollama
+  
+  ollama:
+    image: ollama/ollama
+    pull_policy: always
+    volumes:
+      - ollama_data:/root/.ollama
+
+  web:
+    image: adrianliechti/llama-ui
+    pull_policy: always
+    ports:
+      - 3000:3000
+    environment:
+      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+    depends_on:
+      - platform
+
+volumes:
+  ollama_data:
+  
+configs:
+  platform:
+    content: |
+      providers:
+        - type: ollama
+          url: http://ollama:11434
+          models:
+            phi-3-mini-4k-instruct:
+              id: phi3:latest
