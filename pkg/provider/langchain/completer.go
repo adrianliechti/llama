@@ -55,7 +55,11 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 	if options.Stream == nil {
 		url, _ := url.JoinPath(c.url, "invoke")
-		resp, err := c.client.Post(url, "application/json", jsonReader(body))
+
+		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := c.client.Do(req)
 
 		if err != nil {
 			return nil, err
@@ -67,7 +71,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 		defer resp.Body.Close()
 
-		result := provider.Completion{
+		return &provider.Completion{
 			ID:     id,
 			Reason: provider.CompletionReasonStop,
 
@@ -75,13 +79,12 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				Role:    provider.MessageRoleAssistant,
 				Content: "hoi",
 			},
-		}
-
-		return &result, nil
+		}, nil
 	} else {
 		defer close(options.Stream)
 
 		url, _ := url.JoinPath(c.url, "stream")
+
 		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
 		req.Header.Set("Content-Type", "application/json")
 
@@ -106,11 +109,11 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		for i := 0; ; i++ {
 			data, err := reader.ReadBytes('\n')
 
-			if errors.Is(err, io.EOF) {
-				break
-			}
-
 			if err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+
 				return nil, err
 			}
 
@@ -135,7 +138,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			}
 
 			data = bytes.TrimPrefix(data, []byte("data:"))
-
 			data = bytes.TrimSpace(data)
 
 			if len(data) == 0 {
@@ -176,7 +178,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			}
 		}
 
-		result := provider.Completion{
+		return &provider.Completion{
 			ID:     id,
 			Reason: resultReason,
 
@@ -184,9 +186,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				Role:    resultRole,
 				Content: resultText.String(),
 			},
-		}
-
-		return &result, nil
+		}, nil
 	}
 }
 

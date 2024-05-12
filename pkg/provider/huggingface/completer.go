@@ -85,7 +85,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			return nil, err
 		}
 
-		result := provider.Completion{
+		return &provider.Completion{
 			ID:     id,
 			Reason: provider.CompletionReasonStop,
 
@@ -93,9 +93,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				Role:    provider.MessageRole(completion.Choices[0].Message.Role),
 				Content: completion.Choices[0].Message.Content,
 			},
-		}
-
-		return &result, nil
+		}, nil
 	} else {
 		defer close(options.Stream)
 
@@ -125,11 +123,11 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		for i := 0; ; i++ {
 			data, err := reader.ReadBytes('\n')
 
-			if errors.Is(err, io.EOF) {
-				break
-			}
-
 			if err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+
 				return nil, err
 			}
 
@@ -140,7 +138,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			}
 
 			data = bytes.TrimPrefix(data, []byte("data:"))
-
 			data = bytes.TrimSpace(data)
 
 			if len(data) == 0 {
@@ -177,7 +174,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			}
 		}
 
-		result := provider.Completion{
+		return &provider.Completion{
 			ID:     id,
 			Reason: resultReason,
 
@@ -185,9 +182,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				Role:    resultRole,
 				Content: resultText.String(),
 			},
-		}
-
-		return &result, nil
+		}, nil
 	}
 }
 

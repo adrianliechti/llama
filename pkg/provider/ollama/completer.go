@@ -58,7 +58,10 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 	}
 
 	if options.Stream == nil {
-		resp, err := c.client.Post(url, "application/json", jsonReader(body))
+		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := c.client.Do(req)
 
 		if err != nil {
 			return nil, err
@@ -83,7 +86,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			role = provider.MessageRoleAssistant
 		}
 
-		result := provider.Completion{
+		return &provider.Completion{
 			ID:     id,
 			Reason: provider.CompletionReasonStop,
 
@@ -91,9 +94,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				Role:    role,
 				Content: content,
 			},
-		}
-
-		return &result, nil
+		}, nil
 	} else {
 		defer close(options.Stream)
 
@@ -115,7 +116,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 		reader := bufio.NewReader(resp.Body)
 
-		result := provider.Completion{
+		result := &provider.Completion{
 			ID: id,
 
 			Message: provider.Message{
@@ -126,11 +127,11 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		for i := 0; ; i++ {
 			data, err := reader.ReadBytes('\n')
 
-			if errors.Is(err, io.EOF) {
-				break
-			}
-
 			if err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+
 				return nil, err
 			}
 
@@ -172,7 +173,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			}
 		}
 
-		return &result, nil
+		return result, nil
 	}
 }
 

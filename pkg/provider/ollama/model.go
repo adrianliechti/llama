@@ -50,14 +50,16 @@ func (c *Config) pullModel() error {
 
 	reader := bufio.NewReader(resp.Body)
 
+	slog.Info("downloading model...", "model", c.model)
+
 	for i := 0; ; i++ {
 		data, err := reader.ReadBytes('\n')
 
-		if errors.Is(err, io.EOF) {
-			break
-		}
-
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
 			return err
 		}
 
@@ -70,9 +72,9 @@ func (c *Config) pullModel() error {
 		if err := json.Unmarshal([]byte(data), &pull); err != nil {
 			return err
 		}
-
-		slog.Info("download model", "model", c.model, "status", pull.Status)
 	}
+
+	slog.Info("downloaded model", "model", c.model)
 
 	return nil
 }

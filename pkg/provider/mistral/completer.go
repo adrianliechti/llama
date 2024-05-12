@@ -104,7 +104,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 		reader := bufio.NewReader(resp.Body)
 
-		result := provider.Completion{
+		result := &provider.Completion{
 			Message: provider.Message{
 				Role: provider.MessageRoleAssistant,
 			},
@@ -113,11 +113,11 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		for i := 0; ; i++ {
 			data, err := reader.ReadBytes('\n')
 
-			if errors.Is(err, io.EOF) {
-				break
-			}
-
 			if err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+
 				return nil, err
 			}
 
@@ -128,7 +128,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			}
 
 			data = bytes.TrimPrefix(data, []byte("data:"))
-
 			data = bytes.TrimSpace(data)
 
 			if len(data) == 0 {
@@ -163,7 +162,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			}
 		}
 
-		return &result, nil
+		return result, nil
 	}
 }
 
