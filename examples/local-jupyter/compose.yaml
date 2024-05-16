@@ -12,7 +12,7 @@ services:
         target: /config.yaml
   
   jupyter:
-    image: quay.io/jupyter/datascience-notebook:2024-01-15
+    image: quay.io/jupyter/datascience-notebook:2024-05-06
     command: start-notebook.sh --NotebookApp.token='' -ServerApp.root_dir=/home/jovyan/work  
     ports:
       - 8888:8888

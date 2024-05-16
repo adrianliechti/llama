@@ -36,7 +36,7 @@ configs:
         - type: ollama
           url: http://ollama:11434
           models:
-            phi-3-mini-4k-instruct:
+            phi3:
               id: phi3:latest
 volumes:
   ollama_data:

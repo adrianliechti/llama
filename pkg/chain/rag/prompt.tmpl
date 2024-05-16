@@ -1,5 +1,5 @@
 {{- if .Results -}}
-Use the provided articles delimited by triple quotes to answer questions. If the answer cannot be found in the articles, write "I could not find an answer."
+Use the provided search results delimited by triple quotes to answer questions."
 {{ range .Results }}
 """{{ .Content }}"""
 {{ end }}

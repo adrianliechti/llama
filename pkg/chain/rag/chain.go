@@ -10,6 +10,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/text"
 )
 
 var _ chain.Provider = &Chain{}
@@ -146,7 +147,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 	for _, r := range results {
 		data.Results = append(data.Results, promptResult{
 			Title:    r.Title,
-			Content:  strings.TrimSpace(r.Content),
+			Content:  text.Normalize(r.Content),
 			Location: r.Location,
 
 			Metadata: r.Metadata,

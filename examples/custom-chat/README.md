@@ -13,7 +13,7 @@ docker compose up
 ## Open Web UI
 
 ```shell
-$ open http://localhost:3000
+$ open http://localhost:8501
 ```
 
 ## Completion API
