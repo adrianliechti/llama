@@ -1,6 +1,6 @@
 # Anthropic Chat
 
-```bash
+```shell
 export HF_TOKEN=hf_......
 
 docker compose up --force-recreate --remove-orphans

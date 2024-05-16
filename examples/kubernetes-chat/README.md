@@ -6,7 +6,7 @@
 
 ## Installation
 
-```bash
+```shell
 kubectl create namespace llm-demo
 kubectl apply -n llm-demo -k https://github.com/adrianliechti/llama/examples/kubernetes-chat/
 kubectl port-forward service/chat 8501:80 -n llm-demo
@@ -14,7 +14,7 @@ kubectl port-forward service/chat 8501:80 -n llm-demo
 
 ## Demo Client
 
-```bash
+```shell
 kubectl port-forward service/chat :80 -n llm-demo
 ```
 

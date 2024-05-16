@@ -1,6 +1,6 @@
 # Azure OpenAI Chat
 
-```bash
+```shell
 export OPENAI_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 export OPENAI_BASE_URL=https://xxxxxxxx.openai.azure.com
 

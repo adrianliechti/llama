@@ -4,7 +4,7 @@
 - Image Recognition (Vision)
 - Audio Transcriptions (Whisper)
 
-```bash
+```shell
 export OPENAI_API_KEY=sk-......
 
 docker compose up --force-recreate --remove-orphans

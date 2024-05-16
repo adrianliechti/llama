@@ -155,7 +155,7 @@ providers:
 
 #### Mimic 3
 
-```docker
+```shell
 mkdir -p mimic3
 chmod 777 mimic3
 docker run -it -p 59125:59125 -v $(pwd)/models/mimic3:/home/mimic3/.local/share/mycroft/mimic3 mycroftai/mimic3
@@ -169,6 +169,24 @@ providers:
       models:
         tts-1:
           id: mimic-3
+```
+
+```shell
+docker run --rm -it -p 5002:5002 --platform linux/amd64 --entrypoint /bin/bash ghcr.io/coqui-ai/tts-cpu
+python3 TTS/server/server.py --list_models
+python3 TTS/server/server.py --model_name tts_models/en/vctk/vits
+```
+
+#### Coqui
+
+```yaml
+providers:
+  - type: coqui
+    url: http://localhost:5002
+
+    models:
+      coqui-1:
+        id: coqui-1
 ```
 
 

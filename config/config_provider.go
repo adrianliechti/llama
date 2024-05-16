@@ -8,6 +8,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/anthropic"
 	"github.com/adrianliechti/llama/pkg/provider/automatic1111"
 	"github.com/adrianliechti/llama/pkg/provider/azuretranslator"
+	"github.com/adrianliechti/llama/pkg/provider/coqui"
 	"github.com/adrianliechti/llama/pkg/provider/custom"
 	"github.com/adrianliechti/llama/pkg/provider/deepl"
 	"github.com/adrianliechti/llama/pkg/provider/groq"
@@ -162,6 +163,9 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 	case "groq":
 		return groqProvider(cfg, model)
 
+	case "coqui":
+		return coquiProvider(cfg)
+
 	case "mimic":
 		return mimicProvider(cfg)
 
@@ -294,6 +298,12 @@ func groqProvider(cfg providerConfig, model string) (*groq.Client, error) {
 	}
 
 	return groq.New(options...)
+}
+
+func coquiProvider(cfg providerConfig) (*coqui.Client, error) {
+	var options []coqui.Option
+
+	return coqui.New(cfg.URL, options...)
 }
 
 func mimicProvider(cfg providerConfig) (*mimic.Client, error) {
