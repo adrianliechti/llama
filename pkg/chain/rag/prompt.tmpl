@@ -1,8 +1,8 @@
-Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
-
-{{- range .Results }}
-{{ .Content }}
+{{- if .Results -}}
+Use the provided articles delimited by triple quotes to answer questions. If the answer cannot be found in the articles, write "I could not find an answer."
+{{ range .Results }}
+"""{{ .Content }}"""
 {{ end }}
+{{- end -}}
 
 Question: {{ .Input }}
-Helpful Answer:

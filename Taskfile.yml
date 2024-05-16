@@ -21,6 +21,9 @@ includes:
   unstructured:
     taskfile: ./Taskfile.unstructured.yml
   
+  chroma:
+    taskfile: ./Taskfile.chroma.yml
+  
   weaviate:
     taskfile: ./Taskfile.weaviate.yml
 
