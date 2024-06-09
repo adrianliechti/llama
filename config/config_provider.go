@@ -21,6 +21,8 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
 
+	"github.com/adrianliechti/llama/pkg/template"
+
 	"github.com/adrianliechti/llama/pkg/adapter"
 	"github.com/adrianliechti/llama/pkg/adapter/hermesfn"
 )
@@ -88,7 +90,7 @@ func (cfg *Config) RegisterRenderer(model string, r provider.Renderer) {
 func (cfg *Config) registerProviders(f *configFile) error {
 	for _, p := range f.Providers {
 		for id, m := range p.Models {
-			r, err := createProvider(p, m.ID)
+			r, err := createProvider(p, m)
 
 			if err != nil {
 				return err
@@ -133,7 +135,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 	return nil
 }
 
-func createProvider(cfg providerConfig, model string) (any, error) {
+func createProvider(cfg providerConfig, model modelConfig) (any, error) {
 	switch strings.ToLower(cfg.Type) {
 
 	case "anthropic":
@@ -179,15 +181,17 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 		return deeplProvider(cfg, model)
 
 	case "custom":
-		return customProvider(cfg, model)
+		return customProvider(cfg, model.ID)
 
 	default:
 		return nil, errors.New("invalid provider type: " + cfg.Type)
 	}
 }
 
-func anthropicProvider(cfg providerConfig, model string) (*anthropic.Client, error) {
-	var options []anthropic.Option
+func anthropicProvider(cfg providerConfig, model modelConfig) (*anthropic.Client, error) {
+	options := []anthropic.Option{
+		anthropic.WithModel(model.ID),
+	}
 
 	// if cfg.URL != "" {
 	// 	options = append(options, openai.WithURL(cfg.URL))
@@ -197,14 +201,10 @@ func anthropicProvider(cfg providerConfig, model string) (*anthropic.Client, err
 		options = append(options, anthropic.WithToken(cfg.Token))
 	}
 
-	if model != "" {
-		options = append(options, anthropic.WithModel(model))
-	}
-
 	return anthropic.New(options...)
 }
 
-func automatic1111Provider(cfg providerConfig, model string) (*automatic1111.Client, error) {
+func automatic1111Provider(cfg providerConfig, model modelConfig) (*automatic1111.Client, error) {
 	var options []automatic1111.Option
 
 	if cfg.URL != "" {
@@ -214,7 +214,7 @@ func automatic1111Provider(cfg providerConfig, model string) (*automatic1111.Cli
 	return automatic1111.New(options...)
 }
 
-func huggingfaceProvider(cfg providerConfig, model string) (*huggingface.Client, error) {
+func huggingfaceProvider(cfg providerConfig, model modelConfig) (*huggingface.Client, error) {
 	var options []huggingface.Option
 
 	if cfg.Token != "" {
@@ -224,7 +224,7 @@ func huggingfaceProvider(cfg providerConfig, model string) (*huggingface.Client,
 	return huggingface.New(cfg.URL, options...)
 }
 
-func langchainProvider(cfg providerConfig, model string) (*langchain.Client, error) {
+func langchainProvider(cfg providerConfig, model modelConfig) (*langchain.Client, error) {
 	var options []langchain.Option
 
 	// if model != "" {
@@ -234,28 +234,36 @@ func langchainProvider(cfg providerConfig, model string) (*langchain.Client, err
 	return langchain.New(cfg.URL, options...)
 }
 
-func llamaProvider(cfg providerConfig, model string) (*llama.Client, error) {
-	var options []llama.Option
-
-	if model != "" {
-		options = append(options, llama.WithModel(model))
+func llamaProvider(cfg providerConfig, model modelConfig) (*llama.Client, error) {
+	options := []llama.Option{
+		llama.WithModel(cfg.Token),
 	}
 
 	return llama.New(cfg.URL, options...)
 }
 
-func ollamaProvider(cfg providerConfig, model string) (*ollama.Client, error) {
-	var options []ollama.Option
+func ollamaProvider(cfg providerConfig, model modelConfig) (*ollama.Client, error) {
+	options := []ollama.Option{
+		ollama.WithModel(model.ID),
+	}
 
-	if model != "" {
-		options = append(options, ollama.WithModel(model))
+	if model.Template != "" {
+		switch strings.ToLower(model.Template) {
+		case "mistral":
+			options = append(options, ollama.WithTemplate(template.Mistral))
+
+		case "default":
+			return nil, errors.New("invalid template")
+		}
 	}
 
 	return ollama.New(cfg.URL, options...)
 }
 
-func openaiProvider(cfg providerConfig, model string) (*openai.Client, error) {
-	var options []openai.Option
+func openaiProvider(cfg providerConfig, model modelConfig) (*openai.Client, error) {
+	options := []openai.Option{
+		openai.WithModel(model.ID),
+	}
 
 	if cfg.URL != "" {
 		options = append(options, openai.WithURL(cfg.URL))
@@ -265,36 +273,28 @@ func openaiProvider(cfg providerConfig, model string) (*openai.Client, error) {
 		options = append(options, openai.WithToken(cfg.Token))
 	}
 
-	if model != "" {
-		options = append(options, openai.WithModel(model))
-	}
-
 	return openai.New(options...)
 }
 
-func mistralProvider(cfg providerConfig, model string) (*mistral.Client, error) {
-	var options []mistral.Option
+func mistralProvider(cfg providerConfig, model modelConfig) (*mistral.Client, error) {
+	options := []mistral.Option{
+		mistral.WithModel(model.ID),
+	}
 
 	if cfg.Token != "" {
 		options = append(options, mistral.WithToken(cfg.Token))
 	}
 
-	if model != "" {
-		options = append(options, mistral.WithModel(model))
-	}
-
 	return mistral.New(options...)
 }
 
-func groqProvider(cfg providerConfig, model string) (*groq.Client, error) {
-	var options []groq.Option
+func groqProvider(cfg providerConfig, model modelConfig) (*groq.Client, error) {
+	options := []groq.Option{
+		groq.WithModel(model.ID),
+	}
 
 	if cfg.Token != "" {
 		options = append(options, groq.WithToken(cfg.Token))
-	}
-
-	if model != "" {
-		options = append(options, groq.WithModel(model))
 	}
 
 	return groq.New(options...)
@@ -318,29 +318,25 @@ func whisperProvider(cfg providerConfig) (*whisper.Client, error) {
 	return whisper.New(cfg.URL, options...)
 }
 
-func azuretranslatorProvider(cfg providerConfig, model string) (*azuretranslator.Client, error) {
-	var options []azuretranslator.Option
+func azuretranslatorProvider(cfg providerConfig, model modelConfig) (*azuretranslator.Client, error) {
+	options := []azuretranslator.Option{
+		azuretranslator.WithLanguage(model.ID),
+	}
 
 	if cfg.Token != "" {
 		options = append(options, azuretranslator.WithToken(cfg.Token))
 	}
 
-	if model != "" {
-		options = append(options, azuretranslator.WithLanguage(model))
-	}
-
 	return azuretranslator.New(cfg.URL, options...)
 }
 
-func deeplProvider(cfg providerConfig, model string) (*deepl.Client, error) {
-	var options []deepl.Option
+func deeplProvider(cfg providerConfig, model modelConfig) (*deepl.Client, error) {
+	options := []deepl.Option{
+		deepl.WithLanguage(model.ID),
+	}
 
 	if cfg.Token != "" {
 		options = append(options, deepl.WithToken(cfg.Token))
-	}
-
-	if model != "" {
-		options = append(options, deepl.WithLanguage(model))
 	}
 
 	return deepl.New(cfg.URL, options...)

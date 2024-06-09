@@ -125,8 +125,7 @@ func convertSystemPrompt(prompt string, functions []provider.Function) (string, 
 	result += `You may call one or more functions to assist with the user query. `
 	result += `Don't make assumptions about what values to plug into functions. `
 
-	result += `Here are the available tools:\n`
-	result += `<tools>\n`
+	result += `Here are the available tools: <tools> `
 
 	for _, f := range functions {
 		if f.Name == "" {
@@ -160,7 +159,7 @@ func convertSystemPrompt(prompt string, functions []provider.Function) (string, 
 		result += data
 	}
 
-	result += `</tools> `
+	result += ` </tools> `
 
 	result += `Use the following pydantic model json schema for each tool call you will make: {"properties": {"arguments": {"title": "Arguments", "type": "object"}, "name": {"title": "Name", "type": "string"}}, "required": ["arguments", "name"], "title": "FunctionCall", "type": "object"} `
 

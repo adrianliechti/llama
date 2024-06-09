@@ -76,7 +76,8 @@ type modelConfig struct {
 	Name        string `yaml:"name"`
 	Description string `yaml:"description"`
 
-	Adapter string `yaml:"adapter"`
+	Adapter  string `yaml:"adapter"`
+	Template string `yaml:"template"`
 }
 
 type indexConfig struct {

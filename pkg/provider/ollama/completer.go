@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/to"
 
 	"github.com/google/uuid"
 )
@@ -44,6 +45,198 @@ func NewCompleter(url string, options ...Option) (*Completer, error) {
 }
 
 func (c *Completer) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+	if c.template != nil {
+		return c.generate(ctx, messages, options)
+	}
+
+	return c.chat(ctx, messages, options)
+}
+
+func (c *Completer) generate(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+	if options == nil {
+		options = new(provider.CompleteOptions)
+	}
+
+	id := uuid.NewString()
+
+	url, _ := url.JoinPath(c.url, "/api/generate")
+	body, err := c.convertGenerateRequest(c.model, messages, options)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if options.Stream == nil {
+		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := c.client.Do(req)
+
+		if err != nil {
+			return nil, err
+		}
+
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, convertError(resp)
+		}
+
+		var generation GenerateResponse
+
+		if err := json.NewDecoder(resp.Body).Decode(&generation); err != nil {
+			return nil, err
+		}
+
+		// role := toMessageRole(chat.Message.Role)
+		content := strings.TrimSpace(generation.Response)
+
+		// if role == "" {
+		role := provider.MessageRoleAssistant
+		// }
+
+		return &provider.Completion{
+			ID:     id,
+			Reason: provider.CompletionReasonStop,
+
+			Message: provider.Message{
+				Role:    role,
+				Content: content,
+			},
+		}, nil
+	} else {
+		defer close(options.Stream)
+
+		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/x-ndjson")
+
+		resp, err := c.client.Do(req)
+
+		if err != nil {
+			return nil, err
+		}
+
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, convertError(resp)
+		}
+
+		reader := bufio.NewReader(resp.Body)
+
+		result := &provider.Completion{
+			ID: id,
+
+			Message: provider.Message{
+				Role: provider.MessageRoleAssistant,
+			},
+		}
+
+		for i := 0; ; i++ {
+			data, err := reader.ReadBytes('\n')
+
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+
+				return nil, err
+			}
+
+			if len(data) == 0 {
+				continue
+			}
+
+			var generation GenerateResponse
+
+			if err := json.Unmarshal([]byte(data), &generation); err != nil {
+				return nil, err
+			}
+
+			var content = generation.Response
+
+			if i == 0 {
+				content = strings.TrimLeftFunc(content, unicode.IsSpace)
+			}
+
+			// role := toMessageRole(chat.Message.Role)
+
+			// if role == "" {
+			role := provider.MessageRoleAssistant
+			// }
+
+			result.Reason = generateCompletionReason(generation)
+
+			result.Message.Role = role
+			result.Message.Content += content
+
+			options.Stream <- provider.Completion{
+				ID:     result.ID,
+				Reason: result.Reason,
+
+				Message: provider.Message{
+					Role:    role,
+					Content: content,
+				},
+			}
+		}
+
+		return result, nil
+	}
+}
+
+func (c *Completer) convertGenerateRequest(model string, messages []provider.Message, options *provider.CompleteOptions) (*GenerateRequest, error) {
+	if options == nil {
+		options = new(provider.CompleteOptions)
+	}
+
+	stream := options.Stream != nil
+
+	req := &GenerateRequest{
+		Model:  model,
+		Stream: &stream,
+
+		Options: map[string]any{},
+	}
+
+	if options.Stop != nil {
+		req.Options["stop"] = options.Stop
+	}
+
+	if options.Format == provider.CompletionFormatJSON {
+		req.Format = "json"
+	}
+
+	if options.MaxTokens != nil {
+		req.Options["num_predict"] = *options.MaxTokens
+	}
+
+	if options.Temperature != nil {
+		req.Options["temperature"] = *options.Temperature
+	}
+
+	prompt, err := c.template.Render(messages, options)
+
+	if err != nil {
+		return nil, err
+	}
+
+	req.RAW = to.Ptr(true)
+	req.Prompt = prompt
+
+	return req, nil
+}
+
+func generateCompletionReason(generation GenerateResponse) provider.CompletionReason {
+	if generation.Done {
+		return provider.CompletionReasonStop
+	}
+
+	return ""
+}
+
+func (c *Completer) chat(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
 	}
@@ -51,7 +244,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 	id := uuid.NewString()
 
 	url, _ := url.JoinPath(c.url, "/api/chat")
-	body, err := convertChatRequest(c.model, messages, options)
+	body, err := c.convertChatRequest(c.model, messages, options)
 
 	if err != nil {
 		return nil, err
@@ -157,7 +350,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				role = provider.MessageRoleAssistant
 			}
 
-			result.Reason = toCompletionReason(chat)
+			result.Reason = chatCompletionReason(chat)
 
 			result.Message.Role = role
 			result.Message.Content += content
@@ -177,7 +370,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 	}
 }
 
-func convertChatRequest(model string, messages []provider.Message, options *provider.CompleteOptions) (*ChatRequest, error) {
+func (c *Completer) convertChatRequest(model string, messages []provider.Message, options *provider.CompleteOptions) (*ChatRequest, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
 	}
@@ -232,6 +425,14 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 	return req, nil
 }
 
+func chatCompletionReason(chat ChatResponse) provider.CompletionReason {
+	if chat.Done {
+		return provider.CompletionReasonStop
+	}
+
+	return ""
+}
+
 func convertMessageRole(r provider.MessageRole) MessageRole {
 	switch r {
 
@@ -269,14 +470,6 @@ func toMessageRole(role MessageRole) provider.MessageRole {
 	}
 }
 
-func toCompletionReason(chat ChatResponse) provider.CompletionReason {
-	if chat.Done {
-		return provider.CompletionReasonStop
-	}
-
-	return ""
-}
-
 type MessageRole string
 
 var (
@@ -292,6 +485,27 @@ type Message struct {
 	Content string      `json:"content"`
 
 	Images []MessageImage `json:"images,omitempty"`
+}
+
+type GenerateRequest struct {
+	Model string `json:"model"`
+
+	Format string `json:"format,omitempty"`
+	Stream *bool  `json:"stream,omitempty"`
+
+	System string `json:"system"`
+	Prompt string `json:"prompt"`
+
+	RAW *bool `json:"raw,omitempty"`
+
+	Options map[string]interface{} `json:"options"`
+}
+
+type GenerateResponse struct {
+	Model    string `json:"model"`
+	Response string `json:"response"`
+
+	Done bool `json:"done"`
 }
 
 type ChatRequest struct {

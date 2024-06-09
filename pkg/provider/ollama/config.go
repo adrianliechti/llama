@@ -2,13 +2,15 @@ package ollama
 
 import (
 	"net/http"
+
+	"github.com/adrianliechti/llama/pkg/template"
 )
 
 type Config struct {
 	url string
 
-	token string
-	model string
+	model    string
+	template template.Template
 
 	client *http.Client
 }
@@ -30,5 +32,11 @@ func WithURL(url string) Option {
 func WithModel(model string) Option {
 	return func(c *Config) {
 		c.model = model
+	}
+}
+
+func WithTemplate(template template.Template) Option {
+	return func(c *Config) {
+		c.template = template
 	}
 }
