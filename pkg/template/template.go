@@ -9,6 +9,7 @@ type Template interface {
 	Stop() []string
 
 	Render(messages []provider.Message, options *provider.CompleteOptions) (string, error)
+	Parse(s string) (*provider.Message, error)
 }
 
 var (

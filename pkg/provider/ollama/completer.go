@@ -88,21 +88,19 @@ func (c *Completer) generate(ctx context.Context, messages []provider.Message, o
 			return nil, err
 		}
 
-		// role := toMessageRole(chat.Message.Role)
 		content := strings.TrimSpace(generation.Response)
 
-		// if role == "" {
-		role := provider.MessageRoleAssistant
-		// }
+		meesage, err := c.template.Parse(content)
+
+		if err != nil {
+			return nil, err
+		}
 
 		return &provider.Completion{
 			ID:     id,
 			Reason: provider.CompletionReasonStop,
 
-			Message: provider.Message{
-				Role:    role,
-				Content: content,
-			},
+			Message: *meesage,
 		}, nil
 	} else {
 		defer close(options.Stream)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"regexp"
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
@@ -101,6 +102,58 @@ func (t *Template) Render(messages []provider.Message, options *provider.Complet
 	}
 
 	return builder.String(), nil
+}
+
+func (t *Template) Parse(content string) (*provider.Message, error) {
+	result := &provider.Message{
+		Role: provider.MessageRoleAssistant,
+
+		Content: content,
+	}
+
+	if calls, err := t.extractToolCalls(content); err == nil {
+		result = &provider.Message{
+			Role: provider.MessageRoleAssistant,
+
+			FunctionCalls: calls,
+		}
+	}
+
+	return result, nil
+}
+
+func (t *Template) extractToolCalls(s string) ([]provider.FunctionCall, error) {
+	re := regexp.MustCompile(`(?s)\[TOOL_CALLS\] \[{(.*?)}\]`)
+	match := re.FindStringSubmatch(s)
+
+	if len(match) == 0 {
+		return nil, errors.New("no tool call found")
+	}
+
+	content := "[{" + match[1] + "}]"
+	content = strings.ReplaceAll(content, "\\n", "")
+	content = strings.ReplaceAll(content, "\n", "")
+
+	var calls []ToolCall
+
+	if err := json.Unmarshal([]byte(content), &calls); err != nil {
+		return nil, err
+	}
+
+	var results []provider.FunctionCall
+
+	for _, c := range calls {
+		result := provider.FunctionCall{
+			ID: c.Name,
+
+			Name:      c.Name,
+			Arguments: string(c.Arguments),
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
 }
 
 func encodeJSON(v any) (string, error) {
