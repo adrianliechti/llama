@@ -15,16 +15,8 @@ type Template struct {
 
 func (t *Template) Stop() []string {
 	return []string{
-		"<unk>",
-		"<s>",
-		"</s>",
 		"[INST]",
 		"[/INST]",
-		"[TOOL_CALLS]",
-		"[AVAILABLE_TOOLS]",
-		"[/AVAILABLE_TOOLS]",
-		"[TOOL_RESULTS]",
-		"[/TOOL_RESULTS]",
 	}
 }
 

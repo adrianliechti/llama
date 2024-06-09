@@ -152,17 +152,24 @@ func (c *Completer) generate(ctx context.Context, messages []provider.Message, o
 				return nil, err
 			}
 
-			var content = generation.Response
+			role := provider.MessageRoleAssistant
+			content := generation.Response
 
 			if i == 0 {
 				content = strings.TrimLeftFunc(content, unicode.IsSpace)
 			}
 
-			// role := toMessageRole(chat.Message.Role)
+			message, err := c.template.Parse(content)
 
-			// if role == "" {
-			role := provider.MessageRoleAssistant
-			// }
+			if err != nil {
+				return nil, err
+			}
+
+			content = message.Content
+
+			if message.Role != "" {
+				role = message.Role
+			}
 
 			result.Reason = generateCompletionReason(generation)
 
