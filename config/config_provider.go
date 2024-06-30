@@ -17,6 +17,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/llama"
 	"github.com/adrianliechti/llama/pkg/provider/mimic"
 	"github.com/adrianliechti/llama/pkg/provider/mistral"
+	"github.com/adrianliechti/llama/pkg/provider/mlx"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
@@ -142,6 +143,21 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 	case "automatic1111":
 		return automatic1111Provider(cfg, model)
 
+	case "azure-translator":
+		return azuretranslatorProvider(cfg, model)
+
+	case "coqui":
+		return coquiProvider(cfg)
+
+	case "custom":
+		return customProvider(cfg, model)
+
+	case "deepl":
+		return deeplProvider(cfg, model)
+
+	case "groq":
+		return groqProvider(cfg, model)
+
 	case "huggingface":
 		return huggingfaceProvider(cfg, model)
 
@@ -151,35 +167,23 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 	case "llama":
 		return llamaProvider(cfg, model)
 
+	case "mimic":
+		return mimicProvider(cfg)
+
+	case "mistral":
+		return mistralProvider(cfg, model)
+
+	case "mlx":
+		return mlxProvider(cfg, model)
+
 	case "ollama":
 		return ollamaProvider(cfg, model)
 
 	case "openai":
 		return openaiProvider(cfg, model)
 
-	case "mistral":
-		return mistralProvider(cfg, model)
-
-	case "groq":
-		return groqProvider(cfg, model)
-
-	case "coqui":
-		return coquiProvider(cfg)
-
-	case "mimic":
-		return mimicProvider(cfg)
-
 	case "whisper":
 		return whisperProvider(cfg)
-
-	case "azure-translator":
-		return azuretranslatorProvider(cfg, model)
-
-	case "deepl":
-		return deeplProvider(cfg, model)
-
-	case "custom":
-		return customProvider(cfg, model)
 
 	default:
 		return nil, errors.New("invalid provider type: " + cfg.Type)
@@ -214,6 +218,60 @@ func automatic1111Provider(cfg providerConfig, model string) (*automatic1111.Cli
 	return automatic1111.New(options...)
 }
 
+func azuretranslatorProvider(cfg providerConfig, model string) (*azuretranslator.Client, error) {
+	var options []azuretranslator.Option
+
+	if cfg.Token != "" {
+		options = append(options, azuretranslator.WithToken(cfg.Token))
+	}
+
+	if model != "" {
+		options = append(options, azuretranslator.WithLanguage(model))
+	}
+
+	return azuretranslator.New(cfg.URL, options...)
+}
+
+func coquiProvider(cfg providerConfig) (*coqui.Client, error) {
+	var options []coqui.Option
+
+	return coqui.New(cfg.URL, options...)
+}
+
+func customProvider(cfg providerConfig, model string) (*custom.Client, error) {
+	var options []custom.Option
+
+	return custom.New(cfg.URL, options...)
+}
+
+func deeplProvider(cfg providerConfig, model string) (*deepl.Client, error) {
+	var options []deepl.Option
+
+	if cfg.Token != "" {
+		options = append(options, deepl.WithToken(cfg.Token))
+	}
+
+	if model != "" {
+		options = append(options, deepl.WithLanguage(model))
+	}
+
+	return deepl.New(cfg.URL, options...)
+}
+
+func groqProvider(cfg providerConfig, model string) (*groq.Client, error) {
+	var options []groq.Option
+
+	if cfg.Token != "" {
+		options = append(options, groq.WithToken(cfg.Token))
+	}
+
+	if model != "" {
+		options = append(options, groq.WithModel(model))
+	}
+
+	return groq.New(options...)
+}
+
 func huggingfaceProvider(cfg providerConfig, model string) (*huggingface.Client, error) {
 	var options []huggingface.Option
 
@@ -244,6 +302,38 @@ func llamaProvider(cfg providerConfig, model string) (*llama.Client, error) {
 	return llama.New(cfg.URL, options...)
 }
 
+func mimicProvider(cfg providerConfig) (*mimic.Client, error) {
+	var options []mimic.Option
+
+	return mimic.New(cfg.URL, options...)
+}
+
+func mistralProvider(cfg providerConfig, model string) (*mistral.Client, error) {
+	var options []mistral.Option
+
+	if cfg.Token != "" {
+		options = append(options, mistral.WithToken(cfg.Token))
+	}
+
+	if model != "" {
+		options = append(options, mistral.WithModel(model))
+	}
+
+	return mistral.New(options...)
+}
+
+func mlxProvider(cfg providerConfig, model string) (*mlx.Client, error) {
+	var options []mlx.Option
+
+	// if model != "" {
+	// 	options = append(options, mlx.WithModel(model))
+	// }
+
+	options = append(options, mlx.WithModel("default_model"))
+
+	return mlx.New(cfg.URL, options...)
+}
+
 func ollamaProvider(cfg providerConfig, model string) (*ollama.Client, error) {
 	var options []ollama.Option
 
@@ -272,84 +362,10 @@ func openaiProvider(cfg providerConfig, model string) (*openai.Client, error) {
 	return openai.New(options...)
 }
 
-func mistralProvider(cfg providerConfig, model string) (*mistral.Client, error) {
-	var options []mistral.Option
-
-	if cfg.Token != "" {
-		options = append(options, mistral.WithToken(cfg.Token))
-	}
-
-	if model != "" {
-		options = append(options, mistral.WithModel(model))
-	}
-
-	return mistral.New(options...)
-}
-
-func groqProvider(cfg providerConfig, model string) (*groq.Client, error) {
-	var options []groq.Option
-
-	if cfg.Token != "" {
-		options = append(options, groq.WithToken(cfg.Token))
-	}
-
-	if model != "" {
-		options = append(options, groq.WithModel(model))
-	}
-
-	return groq.New(options...)
-}
-
-func coquiProvider(cfg providerConfig) (*coqui.Client, error) {
-	var options []coqui.Option
-
-	return coqui.New(cfg.URL, options...)
-}
-
-func mimicProvider(cfg providerConfig) (*mimic.Client, error) {
-	var options []mimic.Option
-
-	return mimic.New(cfg.URL, options...)
-}
-
 func whisperProvider(cfg providerConfig) (*whisper.Client, error) {
 	var options []whisper.Option
 
 	return whisper.New(cfg.URL, options...)
-}
-
-func azuretranslatorProvider(cfg providerConfig, model string) (*azuretranslator.Client, error) {
-	var options []azuretranslator.Option
-
-	if cfg.Token != "" {
-		options = append(options, azuretranslator.WithToken(cfg.Token))
-	}
-
-	if model != "" {
-		options = append(options, azuretranslator.WithLanguage(model))
-	}
-
-	return azuretranslator.New(cfg.URL, options...)
-}
-
-func deeplProvider(cfg providerConfig, model string) (*deepl.Client, error) {
-	var options []deepl.Option
-
-	if cfg.Token != "" {
-		options = append(options, deepl.WithToken(cfg.Token))
-	}
-
-	if model != "" {
-		options = append(options, deepl.WithLanguage(model))
-	}
-
-	return deepl.New(cfg.URL, options...)
-}
-
-func customProvider(cfg providerConfig, model string) (*custom.Client, error) {
-	var options []custom.Option
-
-	return custom.New(cfg.URL, options...)
 }
 
 func createCompleterAdapter(name string, completer provider.Completer) (adapter.Provider, error) {

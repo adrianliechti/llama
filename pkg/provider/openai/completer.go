@@ -71,7 +71,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		stream, err := c.client.CreateChatCompletionStream(ctx, *req)
 
 		if err != nil {
-			convertError(err)
+			return nil, err
 		}
 
 		result := provider.Completion{
