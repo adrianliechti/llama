@@ -6,7 +6,6 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/anthropic"
-	"github.com/adrianliechti/llama/pkg/provider/automatic1111"
 	"github.com/adrianliechti/llama/pkg/provider/azuretranslator"
 	"github.com/adrianliechti/llama/pkg/provider/coqui"
 	"github.com/adrianliechti/llama/pkg/provider/custom"
@@ -17,7 +16,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/llama"
 	"github.com/adrianliechti/llama/pkg/provider/mimic"
 	"github.com/adrianliechti/llama/pkg/provider/mistral"
-	"github.com/adrianliechti/llama/pkg/provider/mlx"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
@@ -140,9 +138,6 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 	case "anthropic":
 		return anthropicProvider(cfg, model)
 
-	case "automatic1111":
-		return automatic1111Provider(cfg, model)
-
 	case "azure-translator":
 		return azuretranslatorProvider(cfg, model)
 
@@ -172,9 +167,6 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 
 	case "mistral":
 		return mistralProvider(cfg, model)
-
-	case "mlx":
-		return mlxProvider(cfg, model)
 
 	case "ollama":
 		return ollamaProvider(cfg, model)
@@ -206,16 +198,6 @@ func anthropicProvider(cfg providerConfig, model string) (*anthropic.Client, err
 	}
 
 	return anthropic.New(options...)
-}
-
-func automatic1111Provider(cfg providerConfig, model string) (*automatic1111.Client, error) {
-	var options []automatic1111.Option
-
-	if cfg.URL != "" {
-		options = append(options, automatic1111.WithURL(cfg.URL))
-	}
-
-	return automatic1111.New(options...)
 }
 
 func azuretranslatorProvider(cfg providerConfig, model string) (*azuretranslator.Client, error) {
@@ -320,18 +302,6 @@ func mistralProvider(cfg providerConfig, model string) (*mistral.Client, error) 
 	}
 
 	return mistral.New(options...)
-}
-
-func mlxProvider(cfg providerConfig, model string) (*mlx.Client, error) {
-	var options []mlx.Option
-
-	// if model != "" {
-	// 	options = append(options, mlx.WithModel(model))
-	// }
-
-	options = append(options, mlx.WithModel("default_model"))
-
-	return mlx.New(cfg.URL, options...)
 }
 
 func ollamaProvider(cfg providerConfig, model string) (*ollama.Client, error) {

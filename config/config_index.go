@@ -14,7 +14,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/index/memory"
 	"github.com/adrianliechti/llama/pkg/index/tavily"
 	"github.com/adrianliechti/llama/pkg/index/weaviate"
-	"github.com/adrianliechti/llama/pkg/index/wikipedia"
 )
 
 func (cfg *Config) RegisterIndex(id string, i index.Provider) {
@@ -78,9 +77,6 @@ func createIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 
 	case "tavily":
 		return tavilyIndex(cfg)
-
-	case "wikipedia":
-		return wikipediaIndex(cfg)
 
 	case "custom":
 		return customIndex(cfg)
@@ -148,12 +144,6 @@ func tavilyIndex(cfg indexConfig) (index.Provider, error) {
 	var options []tavily.Option
 
 	return tavily.New(cfg.Token, options...)
-}
-
-func wikipediaIndex(cfg indexConfig) (index.Provider, error) {
-	var options []wikipedia.Option
-
-	return wikipedia.New(options...)
 }
 
 func customIndex(cfg indexConfig) (*custom.Client, error) {
