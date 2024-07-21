@@ -93,6 +93,8 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			Message: provider.Message{
 				Role:    role,
 				Content: content,
+
+				FunctionCalls: toFunctionCalls(chat.Message.ToolCalls),
 			},
 		}, nil
 	} else {
@@ -169,6 +171,8 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				Message: provider.Message{
 					Role:    role,
 					Content: content,
+
+					FunctionCalls: toFunctionCalls(chat.Message.ToolCalls),
 				},
 			}
 		}
@@ -207,6 +211,21 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 		req.Options["temperature"] = *options.Temperature
 	}
 
+	for _, f := range options.Functions {
+		tool := Tool{
+			Type: "function",
+
+			Function: ToolFunction{
+				Name:       f.Name,
+				Parameters: f.Parameters,
+
+				Description: f.Description,
+			},
+		}
+
+		req.Tools = append(req.Tools, tool)
+	}
+
 	for i, m := range messages {
 		message := Message{
 			Role:    convertMessageRole(m.Role),
@@ -226,6 +245,20 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 			}
 		}
 
+		for _, f := range m.FunctionCalls {
+			var arguments map[string]any
+			json.Unmarshal([]byte(f.Arguments), &arguments)
+
+			call := ToolCall{
+				Function: ToolCallFunction{
+					Name:      f.Name,
+					Arguments: arguments,
+				},
+			}
+
+			message.ToolCalls = append(message.ToolCalls, call)
+		}
+
 		req.Messages = append(req.Messages, message)
 	}
 
@@ -238,7 +271,7 @@ func convertMessageRole(r provider.MessageRole) MessageRole {
 	case provider.MessageRoleSystem:
 		return MessageRoleSystem
 
-	case provider.MessageRoleUser:
+	case provider.MessageRoleUser, provider.MessageRoleFunction:
 		return MessageRoleUser
 
 	case provider.MessageRoleAssistant:
@@ -269,6 +302,25 @@ func toMessageRole(role MessageRole) provider.MessageRole {
 	}
 }
 
+func toFunctionCalls(calls []ToolCall) []provider.FunctionCall {
+	var result []provider.FunctionCall
+
+	uuid := uuid.NewString()
+
+	for _, c := range calls {
+		arguments, _ := json.Marshal(c.Function.Arguments)
+
+		result = append(result, provider.FunctionCall{
+			ID: uuid,
+
+			Name:      c.Function.Name,
+			Arguments: string(arguments),
+		})
+	}
+
+	return result
+}
+
 func toCompletionReason(chat ChatResponse) provider.CompletionReason {
 	if chat.Done {
 		return provider.CompletionReasonStop
@@ -292,6 +344,8 @@ type Message struct {
 	Content string      `json:"content"`
 
 	Images []MessageImage `json:"images,omitempty"`
+
+	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 }
 
 type ChatRequest struct {
@@ -302,7 +356,30 @@ type ChatRequest struct {
 
 	Messages []Message `json:"messages"`
 
+	Tools []Tool `json:"tools,omitempty"`
+
 	Options map[string]interface{} `json:"options"`
+}
+
+type Tool struct {
+	Type     string       `json:"type"`
+	Function ToolFunction `json:"function"`
+}
+
+type ToolFunction struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+
+	Parameters any `json:"parameters"`
+}
+
+type ToolCall struct {
+	Function ToolCallFunction `json:"function"`
+}
+
+type ToolCallFunction struct {
+	Name      string         `json:"name"`
+	Arguments map[string]any `json:"arguments"`
 }
 
 type ChatResponse struct {

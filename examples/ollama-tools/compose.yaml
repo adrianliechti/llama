@@ -1,0 +1,22 @@
+services:
+  platform:
+    image: adrianliechti/llama-platform
+    pull_policy: always
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    configs:
+      - source: platform
+        target: /config.yaml
+  
+configs:
+  platform:
+    content: |
+      providers:
+        - type: ollama
+          url: http://host.docker.internal:11434
+          models:
+            llama3-tool-use:
+              id: llama3-groq-tool-use
