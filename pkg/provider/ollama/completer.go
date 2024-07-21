@@ -271,8 +271,11 @@ func convertMessageRole(r provider.MessageRole) MessageRole {
 	case provider.MessageRoleSystem:
 		return MessageRoleSystem
 
-	case provider.MessageRoleUser, provider.MessageRoleFunction:
+	case provider.MessageRoleUser:
 		return MessageRoleUser
+
+	case provider.MessageRoleFunction:
+		return MessageRoleTool
 
 	case provider.MessageRoleAssistant:
 		return MessageRoleAssistant
@@ -291,11 +294,11 @@ func toMessageRole(role MessageRole) provider.MessageRole {
 	case MessageRoleUser:
 		return provider.MessageRoleUser
 
+	case MessageRoleTool:
+		return provider.MessageRoleFunction
+
 	case MessageRoleAssistant:
 		return provider.MessageRoleAssistant
-
-	// case MessageRoleTool:
-	// 	return provider.MessageRoleFunction
 
 	default:
 		return ""
@@ -335,6 +338,7 @@ var (
 	MessageRoleSystem    MessageRole = "system"
 	MessageRoleUser      MessageRole = "user"
 	MessageRoleAssistant MessageRole = "assistant"
+	MessageRoleTool      MessageRole = "tool"
 )
 
 type MessageImage []byte
