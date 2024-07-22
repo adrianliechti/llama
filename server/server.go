@@ -51,7 +51,7 @@ func New(cfg *config.Config) (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) Handler() chi.Router {
+func (s *Server) Handler() http.Handler {
 	mux := chi.NewMux()
 
 	mux.Use(middleware.Logger)
@@ -99,8 +99,7 @@ func (s *Server) Handler() chi.Router {
 }
 
 func (s *Server) ListenAndServe() error {
-	r := s.Handler()
-	return http.ListenAndServe(s.Address, r)
+	return http.ListenAndServe(s.Address, s.Handler())
 }
 
 func (s *Server) handleAuth(next http.Handler) http.Handler {

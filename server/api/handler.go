@@ -36,6 +36,13 @@ func (h *Handler) Attach(r chi.Router) {
 	r.Post("/extract/{extractor}", h.handleExtract)
 }
 
+func (h *Handler) Handler() http.Handler {
+	r := chi.NewRouter()
+	h.Attach(r)
+
+	return r
+}
+
 func writeJson(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json")
 

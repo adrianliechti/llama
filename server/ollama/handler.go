@@ -30,6 +30,13 @@ func (h *Handler) Attach(r chi.Router) {
 	r.Post("/api/embeddings", h.handleEmbeddings)
 }
 
+func (h *Handler) Handler() http.Handler {
+	r := chi.NewRouter()
+	h.Attach(r)
+
+	return r
+}
+
 func writeJson(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json")
 
