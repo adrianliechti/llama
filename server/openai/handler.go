@@ -10,13 +10,18 @@ import (
 
 type Handler struct {
 	*config.Config
+	http.Handler
 }
 
 func New(cfg *config.Config) (*Handler, error) {
+	mux := chi.NewMux()
+
 	h := &Handler{
-		Config: cfg,
+		Config:  cfg,
+		Handler: mux,
 	}
 
+	h.Attach(mux)
 	return h, nil
 }
 
@@ -32,13 +37,6 @@ func (h *Handler) Attach(r chi.Router) {
 	r.Post("/audio/transcriptions", h.handleAudioTranscription)
 
 	r.Post("/images/generations", h.handleImageGeneration)
-}
-
-func (h *Handler) Handler() http.Handler {
-	r := chi.NewRouter()
-	h.Attach(r)
-
-	return r
 }
 
 func writeJson(w http.ResponseWriter, v any) {

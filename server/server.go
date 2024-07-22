@@ -15,6 +15,7 @@ import (
 
 type Server struct {
 	*config.Config
+	http.Handler
 
 	api    *api.Handler
 	openai *openai.Handler
@@ -40,19 +41,16 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
+	mux := chi.NewMux()
+
 	s := &Server{
-		Config: cfg,
+		Config:  cfg,
+		Handler: mux,
 
 		api:    api,
 		openai: openai,
 		ollama: ollama,
 	}
-
-	return s, nil
-}
-
-func (s *Server) Handler() http.Handler {
-	mux := chi.NewMux()
 
 	mux.Use(middleware.Logger)
 	mux.Use(middleware.Recoverer)
@@ -95,11 +93,11 @@ func (s *Server) Handler() http.Handler {
 		s.ollama.Attach(r)
 	})
 
-	return mux
+	return s, nil
 }
 
 func (s *Server) ListenAndServe() error {
-	return http.ListenAndServe(s.Address, s.Handler())
+	return http.ListenAndServe(s.Address, s)
 }
 
 func (s *Server) handleAuth(next http.Handler) http.Handler {
