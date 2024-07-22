@@ -30,8 +30,6 @@ func NewEmbedder(url string, options ...Option) (*Embedder, error) {
 		option(c)
 	}
 
-	go c.ensureModel()
-
 	return &Embedder{
 		Config: c,
 	}, nil
