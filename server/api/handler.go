@@ -7,36 +7,33 @@ import (
 	"path"
 
 	"github.com/adrianliechti/llama/config"
-	"github.com/google/uuid"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
-type Server struct {
+type Handler struct {
 	*config.Config
-	http.Handler
 }
 
-func New(cfg *config.Config) (*Server, error) {
-	r := chi.NewRouter()
-
-	s := &Server{
-		Config:  cfg,
-		Handler: r,
+func New(cfg *config.Config) (*Handler, error) {
+	h := &Handler{
+		Config: cfg,
 	}
 
-	r.Post("/extract/{extractor}", s.handleExtract)
-	r.Post("/translate/{translator}", s.handleTranslate)
+	return h, nil
+}
 
-	r.Get("/index/{index}", s.handleIndexList)
+func (h *Handler) Attach(r chi.Router) {
+	r.Get("/index/{index}", h.handleIndexList)
+	r.Post("/index/{index}/query", h.handleIndexQuery)
 
-	r.Post("/index/{index}", s.handleIndexIngest)
-	r.Delete("/index/{index}", s.handleIndexDeletion)
+	r.Delete("/index/{index}", h.handleIndexDeletion)
 
-	r.Post("/index/{index}/query", s.handleIndexQuery)
-	r.Post("/index/{index}/{extractor}", s.handleIndexWithExtractor)
+	r.Post("/index/{index}", h.handleIngest)
+	r.Post("/index/{index}/{extractor}", h.handleIngestWithExtractor)
 
-	return s, nil
+	r.Post("/extract/{extractor}", h.handleExtract)
 }
 
 func writeJson(w http.ResponseWriter, v any) {

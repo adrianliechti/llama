@@ -1,4 +1,4 @@
-package oai
+package openai
 
 import (
 	"encoding/json"

@@ -1,4 +1,4 @@
-package oai
+package openai
 
 import (
 	"net/http"
@@ -6,7 +6,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-func (s *Server) handleAudioTranscription(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleAudioTranscription(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
@@ -14,7 +14,7 @@ func (s *Server) handleAudioTranscription(w http.ResponseWriter, r *http.Request
 
 	model := r.FormValue("model")
 
-	transcriber, err := s.Transcriber(model)
+	transcriber, err := h.Transcriber(model)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)

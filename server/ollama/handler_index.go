@@ -1,12 +1,14 @@
 package ollama
 
-import "net/http"
+import (
+	"net/http"
+)
 
-func (s *Server) handleHeartbeat(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleHeartbeat(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 

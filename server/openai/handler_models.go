@@ -1,18 +1,16 @@
-package oai
+package openai
 
 import (
 	"net/http"
 	"time"
-
-	"github.com/go-chi/chi/v5"
 )
 
-func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleModels(w http.ResponseWriter, r *http.Request) {
 	result := &ModelList{
 		Object: "list",
 	}
 
-	for _, m := range s.Models() {
+	for _, m := range h.Models() {
 		result.Models = append(result.Models, Model{
 			Object: "model",
 
@@ -25,8 +23,8 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, result)
 }
 
-func (s *Server) handleModel(w http.ResponseWriter, r *http.Request) {
-	model, err := s.Model(chi.URLParam(r, "id"))
+func (h *Handler) handleModel(w http.ResponseWriter, r *http.Request) {
+	model, err := h.Model(r.PathValue("id"))
 
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)

@@ -5,12 +5,12 @@ import (
 	"time"
 )
 
-func (s *Server) handleTags(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleTags(w http.ResponseWriter, r *http.Request) {
 	result := &ModelList{}
 
 	timestamp := time.Now().UTC()
 
-	for _, m := range s.Models() {
+	for _, m := range h.Models() {
 		result.Models = append(result.Models, Model{
 			Name:  m.ID,
 			Model: m.ID,

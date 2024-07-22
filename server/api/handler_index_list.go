@@ -2,12 +2,10 @@ package api
 
 import (
 	"net/http"
-
-	"github.com/go-chi/chi/v5"
 )
 
-func (s *Server) handleIndexList(w http.ResponseWriter, r *http.Request) {
-	i, err := s.Index(chi.URLParam(r, "index"))
+func (s *Handler) handleIndexList(w http.ResponseWriter, r *http.Request) {
+	i, err := s.Index(r.PathValue("index"))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

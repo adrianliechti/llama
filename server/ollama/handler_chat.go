@@ -12,7 +12,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleChat(w http.ResponseWriter, r *http.Request) {
 	var req ChatRequest
 
 	if req.Stream == nil {
@@ -25,7 +25,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	completer, err := s.Completer(req.Model)
+	completer, err := h.Completer(req.Model)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)

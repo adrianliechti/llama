@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 	var req EmbeddingRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -13,7 +13,7 @@ func (s *Server) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	embedder, err := s.Embedder(req.Model)
+	embedder, err := h.Embedder(req.Model)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)

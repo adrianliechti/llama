@@ -5,32 +5,29 @@ import (
 	"net/http"
 
 	"github.com/adrianliechti/llama/config"
-
 	"github.com/go-chi/chi/v5"
 )
 
-type Server struct {
+type Handler struct {
 	*config.Config
-	http.Handler
 }
 
-func New(cfg *config.Config) (*Server, error) {
-	r := chi.NewRouter()
-
-	s := &Server{
-		Config:  cfg,
-		Handler: r,
+func New(cfg *config.Config) (*Handler, error) {
+	h := &Handler{
+		Config: cfg,
 	}
 
-	r.Head("/", s.handleHeartbeat)
-	r.Get("/", s.handleIndex)
+	return h, nil
+}
 
-	r.Get("/api/tags", s.handleTags)
+func (h *Handler) Attach(r chi.Router) {
+	r.Head("/", h.handleHeartbeat)
+	r.Get("/", h.handleIndex)
 
-	r.Post("/api/chat", s.handleChat)
-	r.Post("/api/embeddings", s.handleEmbeddings)
+	r.Get("/api/tags", h.handleTags)
 
-	return s, nil
+	r.Post("/api/chat", h.handleChat)
+	r.Post("/api/embeddings", h.handleEmbeddings)
 }
 
 func writeJson(w http.ResponseWriter, v any) {

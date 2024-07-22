@@ -1,4 +1,4 @@
-package oai
+package openai
 
 import (
 	"encoding/base64"
@@ -11,7 +11,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-func (s *Server) handleImageGeneration(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleImageGeneration(w http.ResponseWriter, r *http.Request) {
 	var req ImageCreateRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -19,7 +19,7 @@ func (s *Server) handleImageGeneration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	renderer, err := s.Renderer(req.Model)
+	renderer, err := h.Renderer(req.Model)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)

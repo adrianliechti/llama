@@ -1,4 +1,4 @@
-package oai
+package openai
 
 import (
 	"bytes"
@@ -19,7 +19,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Server) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 	var req ChatCompletionRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -27,7 +27,7 @@ func (s *Server) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	completer, err := s.Completer(req.Model)
+	completer, err := h.Completer(req.Model)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)

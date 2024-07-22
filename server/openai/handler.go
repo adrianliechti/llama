@@ -1,40 +1,37 @@
-package oai
+package openai
 
 import (
 	"encoding/json"
 	"net/http"
 
 	"github.com/adrianliechti/llama/config"
-
 	"github.com/go-chi/chi/v5"
 )
 
-type Server struct {
+type Handler struct {
 	*config.Config
-	http.Handler
 }
 
-func New(cfg *config.Config) (*Server, error) {
-	r := chi.NewRouter()
-
-	s := &Server{
-		Config:  cfg,
-		Handler: r,
+func New(cfg *config.Config) (*Handler, error) {
+	h := &Handler{
+		Config: cfg,
 	}
 
-	r.Get("/v1/models", s.handleModels)
-	r.Get("/v1/models/{id}", s.handleModel)
+	return h, nil
+}
 
-	r.Post("/v1/embeddings", s.handleEmbeddings)
+func (h *Handler) Attach(r chi.Router) {
+	r.Get("/models", h.handleModels)
+	r.Get("/models/{id}", h.handleModel)
 
-	r.Post("/v1/chat/completions", s.handleChatCompletion)
+	r.Post("/embeddings", h.handleEmbeddings)
 
-	r.Post("/v1/audio/speech", s.handleAudioSpeech)
-	r.Post("/v1/audio/transcriptions", s.handleAudioTranscription)
+	r.Post("/chat/completions", h.handleChatCompletion)
 
-	r.Post("/v1/images/generations", s.handleImageGeneration)
+	r.Post("/audio/speech", h.handleAudioSpeech)
+	r.Post("/audio/transcriptions", h.handleAudioTranscription)
 
-	return s, nil
+	r.Post("/images/generations", h.handleImageGeneration)
 }
 
 func writeJson(w http.ResponseWriter, v any) {

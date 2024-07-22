@@ -1,4 +1,4 @@
-package oai
+package openai
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-func (s *Server) handleAudioSpeech(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleAudioSpeech(w http.ResponseWriter, r *http.Request) {
 	var req SpeechRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -16,7 +16,7 @@ func (s *Server) handleAudioSpeech(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	synthesizer, err := s.Synthesizer(req.Model)
+	synthesizer, err := h.Synthesizer(req.Model)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)

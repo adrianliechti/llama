@@ -4,12 +4,10 @@ import (
 	"net/http"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
-
-	"github.com/go-chi/chi/v5"
 )
 
-func (s *Server) handleExtract(w http.ResponseWriter, r *http.Request) {
-	e, err := s.Extractor(chi.URLParam(r, "extractor"))
+func (h *Handler) handleExtract(w http.ResponseWriter, r *http.Request) {
+	e, err := h.Extractor(r.PathValue("extractor"))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

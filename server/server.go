@@ -5,8 +5,8 @@ import (
 
 	"github.com/adrianliechti/llama/config"
 	"github.com/adrianliechti/llama/server/api"
-	"github.com/adrianliechti/llama/server/oai"
 	"github.com/adrianliechti/llama/server/ollama"
+	"github.com/adrianliechti/llama/server/openai"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -15,27 +15,20 @@ import (
 
 type Server struct {
 	*config.Config
-	http.Handler
+
+	api    *api.Handler
+	openai *openai.Handler
+	ollama *ollama.Handler
 }
 
 func New(cfg *config.Config) (*Server, error) {
-	r := chi.NewRouter()
-
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-
-	s := &Server{
-		Config:  cfg,
-		Handler: r,
-	}
-
 	api, err := api.New(cfg)
 
 	if err != nil {
 		return nil, err
 	}
 
-	oai, err := oai.New(cfg)
+	openai, err := openai.New(cfg)
 
 	if err != nil {
 		return nil, err
@@ -47,7 +40,24 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	r.Use(cors.Handler(cors.Options{
+	s := &Server{
+		Config: cfg,
+
+		api:    api,
+		openai: openai,
+		ollama: ollama,
+	}
+
+	return s, nil
+}
+
+func (s *Server) Handler() chi.Router {
+	mux := chi.NewMux()
+
+	mux.Use(middleware.Logger)
+	mux.Use(middleware.Recoverer)
+
+	mux.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"*"},
 
 		AllowedMethods: []string{
@@ -60,25 +70,37 @@ func New(cfg *config.Config) (*Server, error) {
 			http.MethodOptions,
 		},
 
-		AllowedHeaders: []string{"*"},
-
+		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
-		MaxAge:           300,
+
+		MaxAge: 300,
 	}))
 
-	r.Use(s.handleAuth)
+	mux.Use(s.handleAuth)
 
-	r.Mount("/v1", api)
-	r.Mount("/api", api)
+	mux.Route("/v1", func(r chi.Router) {
+		s.api.Attach(r)
+		s.openai.Attach(r)
+	})
 
-	r.Mount("/oai", oai)
-	r.Mount("/ollama", ollama)
+	mux.Route("/api", func(r chi.Router) {
+		s.api.Attach(r)
+	})
 
-	return s, nil
+	mux.Route("/oai/v1", func(r chi.Router) {
+		s.openai.Attach(r)
+	})
+
+	mux.Route("/ollama", func(r chi.Router) {
+		s.ollama.Attach(r)
+	})
+
+	return mux
 }
 
 func (s *Server) ListenAndServe() error {
-	return http.ListenAndServe(s.Address, s)
+	r := s.Handler()
+	return http.ListenAndServe(s.Address, r)
 }
 
 func (s *Server) handleAuth(next http.Handler) http.Handler {
