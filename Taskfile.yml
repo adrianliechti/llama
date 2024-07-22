@@ -3,7 +3,7 @@
 version: "3"
 
 vars:
-  REPOSITORY: adrianliechti/llama-platform
+  REPOSITORY: ghcr.io/adrianliechti/llama-platform
 
 includes:
   llama:
