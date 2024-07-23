@@ -6,13 +6,10 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/index/aisearch"
-	"github.com/adrianliechti/llama/pkg/index/bing"
 	"github.com/adrianliechti/llama/pkg/index/chroma"
 	"github.com/adrianliechti/llama/pkg/index/custom"
-	"github.com/adrianliechti/llama/pkg/index/duckduckgo"
 	"github.com/adrianliechti/llama/pkg/index/elasticsearch"
 	"github.com/adrianliechti/llama/pkg/index/memory"
-	"github.com/adrianliechti/llama/pkg/index/tavily"
 	"github.com/adrianliechti/llama/pkg/index/weaviate"
 )
 
@@ -69,15 +66,6 @@ func createIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 	case "aisearch":
 		return aisearchIndex(cfg)
 
-	case "bing":
-		return bingIndex(cfg)
-
-	case "duckduckgo":
-		return duckduckgoIndex(cfg)
-
-	case "tavily":
-		return tavilyIndex(cfg)
-
 	case "custom":
 		return customIndex(cfg)
 
@@ -126,24 +114,6 @@ func aisearchIndex(cfg indexConfig) (index.Provider, error) {
 	var options []aisearch.Option
 
 	return aisearch.New(cfg.URL, cfg.Namespace, cfg.Token, options...)
-}
-
-func bingIndex(cfg indexConfig) (index.Provider, error) {
-	var options []bing.Option
-
-	return bing.New(cfg.Token, options...)
-}
-
-func duckduckgoIndex(cfg indexConfig) (index.Provider, error) {
-	var options []duckduckgo.Option
-
-	return duckduckgo.New(options...)
-}
-
-func tavilyIndex(cfg indexConfig) (index.Provider, error) {
-	var options []tavily.Option
-
-	return tavily.New(cfg.Token, options...)
 }
 
 func customIndex(cfg indexConfig) (*custom.Client, error) {

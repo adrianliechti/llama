@@ -1,5 +1,11 @@
 package tavily
 
+type Result struct {
+	Title    string
+	Content  string
+	Location string
+}
+
 type SearchResult struct {
 	Query string `json:"query"`
 

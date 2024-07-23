@@ -1,5 +1,11 @@
 package bing
 
+type Result struct {
+	Title    string
+	Content  string
+	Location string
+}
+
 type SearchResponse struct {
 	WebPages struct {
 		Value []WebPage `json:"value"`

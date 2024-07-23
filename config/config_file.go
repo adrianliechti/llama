@@ -134,9 +134,6 @@ type toolConfig struct {
 
 	URL   string `yaml:"url"`
 	Token string `yaml:"token"`
-
-	Model string `yaml:"model"`
-	Index string `yaml:"index"`
 }
 
 type filterConfig struct {
