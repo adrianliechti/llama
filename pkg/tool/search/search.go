@@ -20,8 +20,8 @@ type Tool struct {
 
 func New(index index.Provider) (*Tool, error) {
 	t := &Tool{
-		name:        "search_tool",
-		description: "Get information on recent events from the web.",
+		name:        "search_online",
+		description: "Search online if the requested information cannot be found in the language model or the information could be present in a time after the language model was trained.",
 
 		index: index,
 	}
@@ -58,7 +58,7 @@ func (*Tool) Parameters() jsonschema.Definition {
 		Properties: map[string]jsonschema.Definition{
 			"query": {
 				Type:        jsonschema.DataTypeString,
-				Description: "The search query to use. For example: \"Latest news on Nvidia stock performance\"",
+				Description: "the text to search online to get the necessary information",
 			},
 		},
 
@@ -79,7 +79,7 @@ func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, err
 		return nil, errors.New("invalid query parameter")
 	}
 
-	documents, err := t.index.Query(ctx, query, nil)
+	documents, err := t.index.Query(ctx, query, &index.QueryOptions{})
 
 	if err != nil {
 		return nil, err

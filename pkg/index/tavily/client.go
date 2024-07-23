@@ -61,6 +61,10 @@ func (c *Client) Delete(ctx context.Context, ids ...string) error {
 }
 
 func (c *Client) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
+	if options == nil {
+		options = new(index.QueryOptions)
+
+	}
 	u, _ := url.Parse("https://api.tavily.com/search")
 
 	body := map[string]any{
@@ -100,6 +104,10 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		}
 
 		results = append(results, result)
+	}
+
+	if options.Limit != nil {
+		results = results[:*options.Limit]
 	}
 
 	return results, nil

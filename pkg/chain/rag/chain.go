@@ -78,15 +78,15 @@ func WithIndex(index index.Provider) Option {
 	}
 }
 
-func WithLimit(val int) Option {
+func WithLimit(limit int) Option {
 	return func(c *Chain) {
-		c.limit = &val
+		c.limit = &limit
 	}
 }
 
-func WithDistance(val float32) Option {
+func WithDistance(distance float32) Option {
 	return func(c *Chain) {
-		c.distance = &val
+		c.distance = &distance
 	}
 }
 
