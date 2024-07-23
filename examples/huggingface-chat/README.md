@@ -10,7 +10,7 @@ open [localhost:8501](http://localhost:8501) in your favorite browser
 
 
 ```shell
-curl http://localhost:8080/oai/v1/chat/completions \
+curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "llama3-8b-instruct",
@@ -24,7 +24,7 @@ curl http://localhost:8080/oai/v1/chat/completions \
 ```
 
 ```shell
-curl http://localhost:8080/oai/v1/embeddings \
+curl http://localhost:8080/v1/embeddings \
   -H "Content-Type: application/json" \
   -d '{
     "model": "all-mpnet-base-v2",

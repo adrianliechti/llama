@@ -15,7 +15,7 @@ spec:
           imagePullPolicy: Always
           env:
             - name: OPENAI_BASE_URL
-              value: http://platform/oai/v1
+              value: http://platform/v1
           ports:
             - containerPort: 8501
           resources: {}

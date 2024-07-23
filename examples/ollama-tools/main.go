@@ -9,7 +9,7 @@ import (
 
 func main() {
 	config := openai.DefaultConfig("")
-	config.BaseURL = "http://localhost:8080/oai/v1"
+	config.BaseURL = "http://localhost:8080/v1"
 
 	model := "llama3-tool-use"
 

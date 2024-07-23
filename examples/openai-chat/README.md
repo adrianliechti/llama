@@ -17,7 +17,7 @@ open [localhost:8501](http://localhost:8501) in your favorite browser
 https://platform.openai.com/docs/api-reference/chat/create
 
 ```shell
-curl http://localhost:8080/oai/v1/chat/completions \
+curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-4-turbo",
@@ -39,7 +39,7 @@ curl http://localhost:8080/oai/v1/chat/completions \
 https://platform.openai.com/docs/guides/vision
 
 ```shell
-curl http://localhost:8080/oai/v1/chat/completions \
+curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-4-turbo",
@@ -70,7 +70,7 @@ curl http://localhost:8080/oai/v1/chat/completions \
 curl -o jfk.wav https://github.com/ggerganov/whisper.cpp/raw/master/samples/jfk.wav
 
 # Run Transcriptions
-curl http://localhost:8080/oai/v1/audio/transcriptions \
+curl http://localhost:8080/v1/audio/transcriptions \
   -H "Content-Type: multipart/form-data" \
   -F file="@jfk.wav" \
   -F model="whisper-1"

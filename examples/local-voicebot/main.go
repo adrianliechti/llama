@@ -17,7 +17,7 @@ func main() {
 	ctx := context.Background()
 
 	config := openai.DefaultConfig("")
-	config.BaseURL = "http://localhost:8080/oai/v1"
+	config.BaseURL = "http://localhost:8080/v1"
 
 	completionModel := "mistral-7b-instruct"
 	synthesizerModel := "tts-1"

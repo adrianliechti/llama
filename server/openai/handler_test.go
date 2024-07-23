@@ -22,7 +22,7 @@ type TestContext struct {
 
 func newTestContext() *TestContext {
 	config := openai.DefaultConfig("")
-	config.BaseURL = "http://localhost:8080/oai/v1"
+	config.BaseURL = "http://localhost:8080/v1"
 
 	client := openai.NewClientWithConfig(config)
 

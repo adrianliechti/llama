@@ -36,7 +36,7 @@ $ open http://localhost:8501
 The Completion API provides compatibility for the OpenAI API standard, allowing easier integrations into existing applications. (Documentation: https://platform.openai.com/docs/api-reference/chat/create)
 
 ```shell
-curl http://localhost:8080/oai/v1/chat/completions \
+curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "mistral",
@@ -58,7 +58,7 @@ curl http://localhost:8080/oai/v1/chat/completions \
 The Vision API provides compatibility for the OpenAI API standard, allowing easier integrations into existing applications. (Documentation: https://platform.openai.com/docs/guides/vision)
 
 ```shell
-curl http://localhost:8080/oai/v1/chat/completions \
+curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "llava",

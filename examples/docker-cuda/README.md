@@ -8,7 +8,7 @@ curl -Lo /models/whisper-ggml-medium.bin https://huggingface.co/ggerganov/whispe
 ```
 
 ```shell
-curl http://localhost:8080/oai/v1/embeddings \
+curl http://localhost:8080/v1/embeddings \
   -H "Content-Type: application/json" \
   -d '{
     "input": "Hello!",
@@ -17,7 +17,7 @@ curl http://localhost:8080/oai/v1/embeddings \
 ```
 
 ```shell
-curl http://localhost:8080/oai/v1/chat/completions \
+curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "mistral-7b-instruct",
@@ -31,7 +31,7 @@ curl http://localhost:8080/oai/v1/chat/completions \
 ```
 
 ```shell
-curl http://localhost:8080/oai/v1/audio/speech \
+curl http://localhost:8080/v1/audio/speech \
   -H "Content-Type: application/json" \
   -d '{
     "model": "tts-1",
@@ -42,7 +42,7 @@ curl http://localhost:8080/oai/v1/audio/speech \
 ```
 
 ```shell
-curl http://localhost:8080/oai/v1/audio/transcriptions \
+curl http://localhost:8080/v1/audio/transcriptions \
   -H "Content-Type: multipart/form-data" \
   -F file="@speech.wav" \
   -F model="whisper-1"
