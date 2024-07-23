@@ -10,9 +10,9 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/adrianliechti/llama/pkg/chain"
+	"github.com/adrianliechti/llama/pkg/chain/agent"
 	"github.com/adrianliechti/llama/pkg/chain/assistant"
 	"github.com/adrianliechti/llama/pkg/chain/rag"
-	"github.com/adrianliechti/llama/pkg/chain/toolbox"
 
 	"github.com/adrianliechti/llama/pkg/to"
 	"github.com/adrianliechti/llama/pkg/tool"
@@ -124,8 +124,8 @@ func createChain(cfg chainConfig, context chainContext) (chain.Provider, error) 
 	case "rag":
 		return ragChain(cfg, context)
 
-	case "toolbox":
-		return toolboxChain(cfg, context)
+	case "agent":
+		return agentChain(cfg, context)
 
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
@@ -192,20 +192,20 @@ func ragChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	return rag.New(options...)
 }
 
-func toolboxChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
-	var options []toolbox.Option
+func agentChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
+	var options []agent.Option
 
 	if context.Completer != nil {
-		options = append(options, toolbox.WithCompleter(context.Completer))
+		options = append(options, agent.WithCompleter(context.Completer))
 	}
 
 	if context.Tools != nil {
-		options = append(options, toolbox.WithTools(to.Values(context.Tools)...))
+		options = append(options, agent.WithTools(to.Values(context.Tools)...))
 	}
 
 	if cfg.Temperature != nil {
-		options = append(options, toolbox.WithTemperature(*cfg.Temperature))
+		options = append(options, agent.WithTemperature(*cfg.Temperature))
 	}
 
-	return toolbox.New(options...)
+	return agent.New(options...)
 }
