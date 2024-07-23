@@ -86,7 +86,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 		return &provider.Completion{
 			ID:     id,
-			Reason: provider.CompletionReasonStop,
+			Reason: toCompletionReason(chat),
 
 			Message: provider.Message{
 				Role:    role,
@@ -323,6 +323,10 @@ func toFunctionCalls(calls []ToolCall) []provider.FunctionCall {
 }
 
 func toCompletionReason(chat ChatResponse) provider.CompletionReason {
+	if len(chat.Message.ToolCalls) > 0 {
+		return provider.CompletionReasonFunction
+	}
+
 	if chat.Done {
 		return provider.CompletionReasonStop
 	}

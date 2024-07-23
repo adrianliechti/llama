@@ -67,16 +67,10 @@ func (*Tool) Parameters() jsonschema.Definition {
 }
 
 func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, error) {
-	val, ok := parameters["query"]
+	query, ok := parameters["query"].(string)
 
 	if !ok {
 		return nil, errors.New("missing query parameter")
-	}
-
-	query, ok := val.(string)
-
-	if !ok {
-		return nil, errors.New("invalid query parameter")
 	}
 
 	documents, err := t.index.Query(ctx, query, &index.QueryOptions{})
