@@ -1,6 +1,6 @@
 services:
   platform:
-    image: adrianliechti/llama-platform
+    image: ghcr.io/adrianliechti/llama-platform
     pull_policy: always
     build:
       context: ../../

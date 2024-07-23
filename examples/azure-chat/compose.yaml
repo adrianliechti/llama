@@ -1,6 +1,6 @@
 services:
   platform:
-    image: adrianliechti/llama-platform
+    image: ghcr.io/adrianliechti/llama-platform
     pull_policy: always
     build:
       context: ../../
@@ -12,7 +12,7 @@ services:
         target: /config.yaml
   
   web:
-    image: adrianliechti/llama-streamlit
+    image: ghcr.io/adrianliechti/llama-streamlit
     pull_policy: always
     ports:
       - 8501:8501
