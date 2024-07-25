@@ -11,6 +11,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/tool"
+	"github.com/adrianliechti/llama/pkg/translator"
 )
 
 type Config struct {
@@ -23,13 +24,14 @@ type Config struct {
 	embedder    map[string]provider.Embedder
 	completer   map[string]provider.Completer
 	synthesizer map[string]provider.Synthesizer
-	translator  map[string]provider.Translator
+
 	transcriber map[string]provider.Transcriber
 	renderer    map[string]provider.Renderer
 
 	indexes     map[string]index.Provider
 	extractors  map[string]extractor.Provider
 	classifiers map[string]classifier.Provider
+	translators map[string]translator.Provider
 
 	tools  map[string]tool.Tool
 	chains map[string]chain.Provider
@@ -93,16 +95,6 @@ func (cfg *Config) Synthesizer(model string) (provider.Synthesizer, error) {
 	return nil, errors.New("synthesizer not found: " + model)
 }
 
-func (cfg *Config) Translator(model string) (provider.Translator, error) {
-	if cfg.translator != nil {
-		if t, ok := cfg.translator[model]; ok {
-			return t, nil
-		}
-	}
-
-	return nil, errors.New("translator not found: " + model)
-}
-
 func (cfg *Config) Transcriber(model string) (provider.Transcriber, error) {
 	if cfg.transcriber != nil {
 		if t, ok := cfg.transcriber[model]; ok {
@@ -163,6 +155,16 @@ func (cfg *Config) Classifier(id string) (classifier.Provider, error) {
 	return nil, errors.New("classifier not found: " + id)
 }
 
+func (cfg *Config) Translator(model string) (translator.Provider, error) {
+	if cfg.translators != nil {
+		if t, ok := cfg.translators[model]; ok {
+			return t, nil
+		}
+	}
+
+	return nil, errors.New("translator not found: " + model)
+}
+
 func Parse(path string) (*Config, error) {
 	file, err := parseFile(path)
 
@@ -182,7 +184,7 @@ func Parse(path string) (*Config, error) {
 		return nil, err
 	}
 
-	if err := c.registerIndexes(file); err != nil {
+	if err := c.registerTranslators(file); err != nil {
 		return nil, err
 	}
 
@@ -191,6 +193,10 @@ func Parse(path string) (*Config, error) {
 	}
 
 	if err := c.registerClassifiers(file); err != nil {
+		return nil, err
+	}
+
+	if err := c.registerIndexes(file); err != nil {
 		return nil, err
 	}
 

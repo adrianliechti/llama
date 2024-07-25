@@ -6,10 +6,8 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/anthropic"
-	"github.com/adrianliechti/llama/pkg/provider/azuretranslator"
 	"github.com/adrianliechti/llama/pkg/provider/coqui"
 	"github.com/adrianliechti/llama/pkg/provider/custom"
-	"github.com/adrianliechti/llama/pkg/provider/deepl"
 	"github.com/adrianliechti/llama/pkg/provider/groq"
 	"github.com/adrianliechti/llama/pkg/provider/huggingface"
 	"github.com/adrianliechti/llama/pkg/provider/langchain"
@@ -52,16 +50,6 @@ func (cfg *Config) RegisterSynthesizer(model string, s provider.Synthesizer) {
 	}
 
 	cfg.synthesizer[model] = s
-}
-
-func (cfg *Config) RegisterTranslator(model string, t provider.Translator) {
-	cfg.RegisterModel(model)
-
-	if cfg.translator == nil {
-		cfg.translator = make(map[string]provider.Translator)
-	}
-
-	cfg.translator[model] = t
 }
 
 func (cfg *Config) RegisterTranscriber(model string, t provider.Transcriber) {
@@ -113,10 +101,6 @@ func (cfg *Config) registerProviders(f *configFile) error {
 
 			if synthesizer, ok := r.(provider.Synthesizer); ok {
 				cfg.RegisterSynthesizer(id, synthesizer)
-			}
-
-			if translator, ok := r.(provider.Translator); ok {
-				cfg.RegisterTranslator(id, translator)
 			}
 
 			if transcriber, ok := r.(provider.Transcriber); ok {
@@ -200,20 +184,6 @@ func anthropicProvider(cfg providerConfig, model string) (*anthropic.Client, err
 	return anthropic.New(options...)
 }
 
-func azuretranslatorProvider(cfg providerConfig, model string) (*azuretranslator.Client, error) {
-	var options []azuretranslator.Option
-
-	if cfg.Token != "" {
-		options = append(options, azuretranslator.WithToken(cfg.Token))
-	}
-
-	if model != "" {
-		options = append(options, azuretranslator.WithLanguage(model))
-	}
-
-	return azuretranslator.New(cfg.URL, options...)
-}
-
 func coquiProvider(cfg providerConfig) (*coqui.Client, error) {
 	var options []coqui.Option
 
@@ -224,20 +194,6 @@ func customProvider(cfg providerConfig, model string) (*custom.Client, error) {
 	var options []custom.Option
 
 	return custom.New(cfg.URL, options...)
-}
-
-func deeplProvider(cfg providerConfig, model string) (*deepl.Client, error) {
-	var options []deepl.Option
-
-	if cfg.Token != "" {
-		options = append(options, deepl.WithToken(cfg.Token))
-	}
-
-	if model != "" {
-		options = append(options, deepl.WithLanguage(model))
-	}
-
-	return deepl.New(cfg.URL, options...)
 }
 
 func groqProvider(cfg providerConfig, model string) (*groq.Client, error) {

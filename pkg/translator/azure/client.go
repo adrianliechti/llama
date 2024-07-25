@@ -1,4 +1,4 @@
-package deepl
+package azure
 
 import (
 	"bytes"
@@ -7,17 +7,14 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/translator"
 )
 
 type Client struct {
-	provider.Completer
-	provider.Translator
+	translator.Provider
 }
 
 func New(url string, options ...Option) (*Client, error) {
-	var err error
-
 	t, err := NewTranslator(url, options...)
 
 	if err != nil {
@@ -25,8 +22,7 @@ func New(url string, options ...Option) (*Client, error) {
 	}
 
 	return &Client{
-		Translator: t,
-		Completer:  t,
+		Provider: t,
 	}, nil
 }
 

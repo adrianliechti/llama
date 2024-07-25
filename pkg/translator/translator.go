@@ -1,10 +1,10 @@
-package provider
+package translator
 
 import (
 	"context"
 )
 
-type Translator interface {
+type Provider interface {
 	Translate(ctx context.Context, content string, options *TranslateOptions) (*Translation, error)
 }
 
