@@ -208,6 +208,10 @@ func convertID(id string) string {
 		return uuid.NewString()
 	}
 
+	if _, err := uuid.Parse(id); err == nil {
+		return id
+	}
+
 	return uuid.NewMD5(uuid.NameSpaceOID, []byte(id)).String()
 }
 
