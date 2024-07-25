@@ -245,6 +245,22 @@ indexes:
 ```
 
 
+#### Qdrant
+
+```shell
+$ docker run -p 6333:6333 qdrant/qdrant:v1.10.1
+```
+
+```yaml
+indexes:
+  docs:
+    type: qdrant
+    url: http://localhost:6333
+    namespace: docs
+    embedding: text-embedding-ada-002
+```
+
+
 #### In-Memory
 
 ```yaml
@@ -327,7 +343,7 @@ https://unstructured.io
 
 ```shell
 # using Docker
-docker run -it --rm -p 9085:8000 quay.io/unstructured-io/unstructured-api:0.0.64 --port 8000 --host 0.0.0.0
+docker run -it --rm -p 9085:8000 quay.io/unstructured-io/unstructured-api:0.0.75 --port 8000 --host 0.0.0.0
 ```
 
 ```yaml

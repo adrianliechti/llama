@@ -10,6 +10,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/index/custom"
 	"github.com/adrianliechti/llama/pkg/index/elasticsearch"
 	"github.com/adrianliechti/llama/pkg/index/memory"
+	"github.com/adrianliechti/llama/pkg/index/qdrant"
 	"github.com/adrianliechti/llama/pkg/index/weaviate"
 )
 
@@ -63,6 +64,9 @@ func createIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 	case "weaviate":
 		return weaviateIndex(cfg, context)
 
+	case "qdrant":
+		return qdrantIndex(cfg, context)
+
 	case "aisearch":
 		return aisearchIndex(cfg)
 
@@ -108,6 +112,16 @@ func weaviateIndex(cfg indexConfig, context indexContext) (index.Provider, error
 	}
 
 	return weaviate.New(cfg.URL, cfg.Namespace, options...)
+}
+
+func qdrantIndex(cfg indexConfig, context indexContext) (index.Provider, error) {
+	var options []qdrant.Option
+
+	if context.Embedder != nil {
+		options = append(options, qdrant.WithEmbedder(context.Embedder))
+	}
+
+	return qdrant.New(cfg.URL, cfg.Namespace, options...)
 }
 
 func aisearchIndex(cfg indexConfig) (index.Provider, error) {
