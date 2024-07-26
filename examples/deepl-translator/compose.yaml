@@ -26,9 +26,10 @@ configs:
     content: |
       providers:
         - type: deepl
-          token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+          token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx          
           models:
             english-translator:
               id: EN
+              
             german-translator:
               id: DE

@@ -37,11 +37,9 @@ configs:
         - type: ollama
           url: http://host.docker.internal:11434
           models:
-            mistral:
-              id: mistral:latest
+            - mistral
         
         - type: langchain
           url: http://jupyter:9999
           models:
-            jupyter:
-              id: default
+            - jupyter

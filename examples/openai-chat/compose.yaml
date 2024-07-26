@@ -27,34 +27,14 @@ configs:
       providers:
         - type: openai
           token: ${OPENAI_API_KEY}
- 
+
+          # https://platform.openai.com/docs/models
           models:
-            gpt-3.5-turbo:
-              id: gpt-3.5-turbo
-
-            gpt-4-turbo:
-              id: gpt-4-turbo
-
-            text-embedding-ada-002:
-              id: text-embedding-ada-002
-
-            text-embedding-3-small:
-              id: text-embedding-3-small
-
-            text-embedding-3-large:
-              id: text-embedding-3-large
-            
-            tts-1:
-              id: tts-1
-      
-            tts-1-hd:
-              id: tts-1-hd
-            
-            whisper-1:
-              id: whisper-1
-            
-            dall-e-2:
-              id: dall-e-2
-      
-            dall-e-3:
-              id: dall-e-3
+            - gpt-4o
+            - gpt-4o-mini
+            - text-embedding-3-small
+            - text-embedding-3-large
+            - whisper-1
+            - dall-e-3
+            - tts-1
+            - tts-1-hd

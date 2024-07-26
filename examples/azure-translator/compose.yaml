@@ -31,5 +31,6 @@ configs:
           models:
             english-translator:
               id: en
+              
             german-translator:
               id: de

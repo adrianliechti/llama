@@ -17,21 +17,18 @@ configs:
       providers:
         - type: llama
           url: http://host.docker.internal:9081
-
           models:
             mistral-7b-instruct:
               id: mistral-7b-instruct-v0.2.Q4_K_M.gguf
 
         - type: whisper
           url: http://host.docker.internal:9085
-
           models:
             whisper-1:
               id: whisper-ggml-medium.bin
         
         - type: mimic
           url: http://host.docker.internal:59125
-
           models:
             tts-1:
               id: mimic-3

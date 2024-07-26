@@ -35,8 +35,9 @@ configs:
       providers:
         - type: ollama
           url: http://ollama:11434
+
+          # https://ollama.com/library
           models:
-            phi3:
-              id: phi3:latest
+            - phi3
 volumes:
   ollama_data:

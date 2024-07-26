@@ -18,5 +18,5 @@ configs:
         - type: ollama
           url: http://host.docker.internal:11434
           models:
-            llama3-tool-use:
-              id: llama3-groq-tool-use
+            llama:
+              id: llama3.1:latest

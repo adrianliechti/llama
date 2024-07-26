@@ -28,9 +28,10 @@ configs:
         - type: openai
           url: ${OPENAI_BASE_URL}
           token: ${OPENAI_API_KEY}
- 
+
+          # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models
           models:
-            gpt-3.5-turbo:
+            - gpt-3.5-turbo:
               id: gpt-35-turbo
  
             gpt-4-turbo:

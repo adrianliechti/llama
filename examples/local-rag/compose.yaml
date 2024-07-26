@@ -48,7 +48,7 @@ configs:
               id: llama3.1:latest
             
             nomic-embed-text-v1:
-              id: nomic-embed-text
+              id: nomic-embed-text:latest
 
       indexes:
         docs:

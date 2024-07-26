@@ -8,11 +8,9 @@ data:
       - type: llama
         url: http://phi
         models:
-          phi-3-mini-instruct:
-            id: default
+          - phi-3-mini-instruct
             
       - type: llama
         url: http://llama
         models:
-          llama-3-8b-instruct:
-            id: default
+          - llama-3-8b-instruct

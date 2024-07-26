@@ -56,7 +56,7 @@ type providerConfig struct {
 	URL   string `yaml:"url"`
 	Token string `yaml:"token"`
 
-	Models map[string]modelConfig `yaml:"models"`
+	Models modelsConfig `yaml:"models"`
 }
 
 type ModelType string
@@ -67,6 +67,42 @@ const (
 	ModelTypeTranslator  ModelType = "translator"
 	ModelTypeTranscriber ModelType = "transcriber"
 )
+
+type modelsConfig map[string]modelConfig
+
+func (c *modelsConfig) UnmarshalYAML(value *yaml.Node) error {
+	var config map[string]modelConfig
+
+	if err := value.Decode(&config); err == nil {
+		for id, model := range config {
+			if model.ID == "" {
+				model.ID = id
+			}
+
+			config[id] = model
+		}
+
+		*c = config
+		return nil
+	}
+
+	var list []string
+
+	if err := value.Decode(&list); err == nil {
+		config = make(map[string]modelConfig)
+
+		for _, id := range list {
+			config[id] = modelConfig{
+				ID: id,
+			}
+		}
+
+		*c = config
+		return nil
+	}
+
+	return errors.New("invalid models config")
+}
 
 type modelConfig struct {
 	ID string `yaml:"id"`

@@ -28,15 +28,11 @@ configs:
         - type: huggingface
           url: https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct
           token: ${HF_TOKEN}
-
           models:
-            llama3-8b-instruct:
-              id: tgi
+            - llama3-8b-instruct
         
         - type: huggingface
           url: https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-mpnet-base-v2
           token: ${HF_TOKEN}
-
           models:
-            all-mpnet-base-v2:
-              id: tei
+            - all-mpnet-base-v2

@@ -18,15 +18,16 @@ https://platform.openai.com/docs/api-reference
 providers:
   - type: openai
     token: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    models:
-      gpt-3.5-turbo:
-        id: gpt-3.5-turbo-1106
 
-      gpt-4:
-        id: gpt-4-1106-preview
-        
-      text-embedding-ada-002:
-        id: text-embedding-ada-002
+    models:
+      - gpt-4o
+      - gpt-4o-mini
+      - text-embedding-3-small
+      - text-embedding-3-large
+      - whisper-1
+      - dall-e-3
+      - tts-1
+      - tts-1-hd
 ```
 
 
@@ -60,6 +61,7 @@ https://www.anthropic.com/api
 providers:
   - type: anthropic
     token: sk-ant-apixx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     models:
       claude-3-opus:
         id: claude-3-opus-20240229
@@ -82,7 +84,7 @@ providers:
 
     models:
       mistral-7b-instruct:
-        id: mistral
+        id: mistral:latest
 ```
 
 
@@ -110,8 +112,7 @@ providers:
     url: http://localhost:9081
 
     models:
-      mistral-7b-instruct:
-        id: /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+      - mistral-7b-instruct
 ```
 
 
@@ -133,8 +134,7 @@ providers:
     url: http://localhost:9085
 
     models:
-      whisper:
-        id: whisper
+      - whisper
 ```
 
 
@@ -146,10 +146,17 @@ https://huggingface.co/
 providers:
   - type: huggingface
     url: https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1
+    token: hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    
+    models:
+      - mistral-7B-instruct
+  
+  - type: huggingface
+    url: https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2
+    token: hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     models:
-      mistral-7B-instruct:
-        id: tgi
+      - huggingface-minilm-l6-2
 ```
 
 
@@ -164,11 +171,10 @@ docker run -it -p 59125:59125 -v $(pwd)/models/mimic3:/home/mimic3/.local/share/
 ```yaml
 providers:
   - type: mimic
-      url: http://localhost:59125
-  
-      models:
-        tts-1:
-          id: mimic-3
+    url: http://localhost:59125
+
+    models:
+      - mimic-3
 ```
 
 ```shell
@@ -185,8 +191,7 @@ providers:
     url: http://localhost:5002
 
     models:
-      coqui-1:
-        id: coqui-1
+      - coqui-1
 ```
 
 
@@ -200,8 +205,7 @@ providers:
     url: http://your-langchain-server:8000
 
     models:
-      langchain:
-        id: default
+      - langchain
 ```
 
 
