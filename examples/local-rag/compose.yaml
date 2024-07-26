@@ -45,8 +45,7 @@ configs:
           url: http://host.docker.internal:11434
           models:
             llama:
-              id: llama3.1:latest
-            
+              id: llama3.1:latest   
             nomic-embed-text-v1:
               id: nomic-embed-text
 
