@@ -28,14 +28,9 @@ configs:
         - type: ollama
           url: http://host.docker.internal:11434
           models:
-            gemma:
-              id: gemma:latest
-            
-            mistral:
-              id: mistral:latest
-            
-            llava:
-              id: llava:latest
+            - gemma
+            - mistral
+            - llava
             
       chains:
         terminal:
