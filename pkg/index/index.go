@@ -19,8 +19,7 @@ type ListOptions struct {
 }
 
 type QueryOptions struct {
-	Limit    *int
-	Distance *float32
+	Limit *int
 
 	Filters map[string]string
 }
@@ -39,7 +38,7 @@ type Document struct {
 
 type Result struct {
 	Document
-	Distance float32
+	Score float32
 }
 
 type Embedder = provider.Embedder

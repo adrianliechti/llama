@@ -383,7 +383,6 @@ chains:
     model: mistral-7b-instruct
 
     # limit: 10
-    # distance: 1
 
     # filters:
     #  {metadata-key}:

@@ -272,13 +272,9 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	var results []index.Result
 
 	for _, r := range result.Result {
-		var distance float32 = 0.0
-
-		if r.Score < 1 {
-			distance = 1.0 - r.Score
-		}
-
 		results = append(results, index.Result{
+			Score: r.Score,
+
 			Document: index.Document{
 				ID: r.ID,
 
@@ -290,8 +286,6 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 				Embedding: r.Vector,
 			},
-
-			Distance: distance,
 		})
 	}
 

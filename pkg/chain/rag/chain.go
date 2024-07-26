@@ -24,7 +24,6 @@ type Chain struct {
 	index index.Provider
 
 	limit       *int
-	distance    *float32
 	temperature *float32
 
 	filters map[string]classifier.Provider
@@ -84,12 +83,6 @@ func WithLimit(limit int) Option {
 	}
 }
 
-func WithDistance(distance float32) Option {
-	return func(c *Chain) {
-		c.distance = &distance
-	}
-}
-
 func WithTemperature(temperature float32) Option {
 	return func(c *Chain) {
 		c.temperature = &temperature
@@ -130,8 +123,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 	}
 
 	results, err := c.index.Query(ctx, message.Content, &index.QueryOptions{
-		Limit:    c.limit,
-		Distance: c.distance,
+		Limit: c.limit,
 
 		Filters: filters,
 	})

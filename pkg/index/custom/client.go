@@ -69,23 +69,16 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	}
 
 	var limit *int32
-	var distance *float32
 
 	if options.Limit != nil {
 		val := int32(*options.Limit)
 		limit = &val
 	}
 
-	if options.Distance != nil {
-		val := float32(*options.Distance)
-		distance = &val
-	}
-
 	data, err := c.client.Query(ctx, &QueryRequest{
 		Query: query,
 
-		Limit:    limit,
-		Distance: distance,
+		Limit: limit,
 	})
 
 	if err != nil {
@@ -96,6 +89,8 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 	for _, r := range data.Results {
 		result := index.Result{
+			Score: r.Score,
+
 			Document: index.Document{
 				ID: r.Document.Id,
 
@@ -107,8 +102,6 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 				Embedding: r.Document.Embedding,
 			},
-
-			Distance: r.Distance,
 		}
 
 		results = append(results, result)

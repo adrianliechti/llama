@@ -291,6 +291,8 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		}
 
 		r := index.Result{
+			Score: d.Additional.Certainty,
+
 			Document: index.Document{
 				ID: key,
 
@@ -300,8 +302,6 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 				Metadata: metadata,
 			},
-
-			Distance: d.Additional.Distance,
 		}
 
 		results = append(results, r)
@@ -453,8 +453,9 @@ type document struct {
 }
 
 type additional struct {
-	ID       string  `json:"id"`
-	Distance float32 `json:"distance"`
+	ID        string  `json:"id"`
+	Distance  float32 `json:"distance"`
+	Certainty float32 `json:"certainty"`
 }
 
 func jsonReader(v any) io.Reader {

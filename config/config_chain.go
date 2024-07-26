@@ -177,10 +177,6 @@ func ragChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 		options = append(options, rag.WithLimit(*cfg.Limit))
 	}
 
-	if cfg.Distance != nil {
-		options = append(options, rag.WithDistance(*cfg.Distance))
-	}
-
 	if cfg.Temperature != nil {
 		options = append(options, rag.WithTemperature(*cfg.Temperature))
 	}

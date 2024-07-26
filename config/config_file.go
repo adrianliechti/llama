@@ -123,7 +123,6 @@ type chainConfig struct {
 	Tools []string `yaml:"tools"`
 
 	Limit       *int     `yaml:"limit"`
-	Distance    *float32 `yaml:"distance"`
 	Temperature *float32 `yaml:"temperature"`
 
 	Filters map[string]filterConfig `yaml:"filters"`

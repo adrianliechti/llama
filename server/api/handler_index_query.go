@@ -29,8 +29,7 @@ func (s *Handler) handleIndexQuery(w http.ResponseWriter, r *http.Request) {
 	}
 
 	options := &index.QueryOptions{
-		Limit:    query.Limit,
-		Distance: query.Distance,
+		Limit: query.Limit,
 	}
 
 	result, err := i.Query(r.Context(), query.Text, options)
@@ -44,14 +43,14 @@ func (s *Handler) handleIndexQuery(w http.ResponseWriter, r *http.Request) {
 
 	for _, r := range result {
 		results = append(results, Result{
+			Score: to.Ptr(r.Score),
+
 			Document: Document{
 				ID: r.ID,
 
 				Content:  r.Content,
 				Metadata: r.Metadata,
 			},
-
-			Distance: to.Ptr(r.Distance),
 		})
 	}
 

@@ -81,6 +81,7 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 	var results []index.Document
 
 	for _, hit := range result.Hits.Hits {
+
 		results = append(results, index.Document{
 			ID:       hit.Document.ID,
 			Content:  hit.Document.Content,
@@ -188,6 +189,8 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 	for _, hit := range result.Hits.Hits {
 		results = append(results, index.Result{
+			Score: hit.Score,
+
 			Document: index.Document{
 				ID: hit.Document.ID,
 

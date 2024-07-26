@@ -258,7 +258,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 			content := result.Documents[i][j]
 			metadata := result.Metadatas[i][j]
 
-			distance := result.Distances[i][j]
+			score := 1 - result.Distances[i][j]
 
 			filename := metadata["filename"]
 			filepart := metadata["filepart"]
@@ -278,7 +278,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 			}
 
 			r := index.Result{
-				Distance: distance,
+				Score: score,
 
 				Document: index.Document{
 					ID: id,
@@ -289,12 +289,6 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 					Metadata: metadata,
 				},
-			}
-
-			if options.Distance != nil {
-				if r.Distance > *options.Distance {
-					continue
-				}
 			}
 
 			results = append(results, r)

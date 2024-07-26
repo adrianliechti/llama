@@ -12,9 +12,8 @@ message QueryRequest {
   string query = 1;
 
   optional int32 limit = 2;
-  optional float distance = 3;
 
-  map<string, string> filters = 4;
+  map<string, string> filters = 3;
 }
 
 message Results {
@@ -24,7 +23,7 @@ message Results {
 message Result {
   Document document = 1;
 
-  float distance = 2; 
+  float score = 2; 
 }
 
 message Document {
