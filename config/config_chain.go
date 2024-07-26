@@ -13,6 +13,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/chain/agent"
 	"github.com/adrianliechti/llama/pkg/chain/assistant"
 	"github.com/adrianliechti/llama/pkg/chain/rag"
+	"github.com/adrianliechti/llama/pkg/chain/ragfusion"
 
 	"github.com/adrianliechti/llama/pkg/to"
 	"github.com/adrianliechti/llama/pkg/tool"
@@ -124,6 +125,9 @@ func createChain(cfg chainConfig, context chainContext) (chain.Provider, error) 
 	case "rag":
 		return ragChain(cfg, context)
 
+	case "rag-fusion":
+		return ragfusionChain(cfg, context)
+
 	case "agent":
 		return agentChain(cfg, context)
 
@@ -186,6 +190,40 @@ func ragChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	}
 
 	return rag.New(options...)
+}
+
+func ragfusionChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
+	var options []ragfusion.Option
+
+	if context.Completer != nil {
+		options = append(options, ragfusion.WithCompleter(context.Completer))
+	}
+
+	if context.Template != nil {
+		options = append(options, ragfusion.WithTemplate(context.Template))
+	}
+
+	if context.Messages != nil {
+		options = append(options, ragfusion.WithMessages(context.Messages...))
+	}
+
+	if context.Index != nil {
+		options = append(options, ragfusion.WithIndex(context.Index))
+	}
+
+	if cfg.Limit != nil {
+		options = append(options, ragfusion.WithLimit(*cfg.Limit))
+	}
+
+	if cfg.Temperature != nil {
+		options = append(options, ragfusion.WithTemperature(*cfg.Temperature))
+	}
+
+	for k, v := range cfg.Filters {
+		options = append(options, ragfusion.WithFilter(k, context.Classifiers[v.Classifier]))
+	}
+
+	return ragfusion.New(options...)
 }
 
 func agentChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
