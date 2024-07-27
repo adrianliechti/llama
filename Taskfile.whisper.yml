@@ -9,12 +9,22 @@ tasks:
       - whisper-server
         --port 9083
         --convert
-        --model ./models/whisper-ggml-medium.bin
+        --model ./models/whisper-medium.bin
 
   download-model:
     cmds:
       - mkdir -p models
-      - curl -s -L -o models/whisper-ggml-medium.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin
+      - curl -s -L -o models/whisper-medium.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin?download=true
 
     status:
-      - test -f models/whisper-ggml-medium.bin
+      - test -f models/whisper-medium.bin
+  
+  test:
+    cmds:
+      - curl -Lo jfk.wav https://github.com/ggerganov/whisper.cpp/raw/master/samples/jfk.wav
+      - |
+        curl http://localhost:8080/v1/audio/transcriptions \
+          -H "Content-Type: multipart/form-data" \
+          -F file="@jfk.wav" \
+          -F model="whisper-medium"
+      - rm jfk.wav

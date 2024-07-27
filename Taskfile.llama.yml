@@ -4,13 +4,32 @@ version: "3"
 
 tasks:
   server:
+    deps: [ download-model ]
     cmds:
       - llama-server 
         --port 9081
         --log-disable
-        --ctx-size 32768
-        --grp-attn-n 4
-        --grp-attn-w 4096
-        --hf-repo TheBloke/Mistral-7B-Instruct-v0.2-GGUF
-        --hf-file mistral-7b-instruct-v0.2.Q4_K_M.gguf
-        --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+        --model ./models/phi-3.1-mini-4k-instruct.gguf 
+  
+  download-model:
+    cmds:
+      - mkdir -p models
+      - curl -s -L -o models/phi-3.1-mini-4k-instruct.gguf https://huggingface.co/bartowski/Phi-3.1-mini-4k-instruct-GGUF/resolve/main/Phi-3.1-mini-4k-instruct-Q4_K_M.gguf?download=true
+
+    status:
+      - test -f models/phi-3.1-mini-4k-instruct.gguf 
+  
+  test:
+    cmds:
+      - |
+        curl http://localhost:8080/v1/chat/completions \
+          -H "Content-Type: application/json" \
+          -d '{
+            "model": "phi-3.1-mini-4k-instruct",
+            "messages": [
+              {
+                "role": "user",
+                 "content": "Hello!"
+              }
+            ]
+          }'
