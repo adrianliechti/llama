@@ -4,8 +4,9 @@ type Document struct {
 	ID string `json:"id"`
 
 	Title    string `json:"title"`
-	Content  string `json:"content"`
 	Location string `json:"location"`
+
+	Content string `json:"content"`
 
 	Metadata map[string]string `json:"metadata"`
 }

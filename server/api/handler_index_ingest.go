@@ -81,13 +81,13 @@ func (s *Handler) handleIngestWithExtractor(w http.ResponseWriter, r *http.Reque
 
 	for i, p := range data.Blocks {
 		document := index.Document{
-			ID:      fmt.Sprintf("%s#%d", file.Name, i),
-			Content: p.Content,
+			ID: fmt.Sprintf("%s#%d", file.Name, i),
 
-			Metadata: map[string]string{
-				"filename": file.Name,
-				"filepart": fmt.Sprintf("%d", i),
-			},
+			Title:    file.Name,
+			Location: fmt.Sprintf("file.Name#%d", i),
+
+			Content:  p.Content,
+			Metadata: map[string]string{},
 		}
 
 		documents = append(documents, document)

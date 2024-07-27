@@ -91,11 +91,29 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 	results := make([]index.Document, 0)
 
 	for i := range result.IDs {
-		r := index.Document{
-			ID: result.IDs[i],
+		id := result.IDs[i]
+		content := result.Documents[i]
 
-			Content:  result.Documents[i],
-			Metadata: result.Metadatas[i],
+		metadata := result.Metadatas[i]
+
+		if metadata == nil {
+			metadata = make(map[string]string)
+		}
+
+		title := metadata["_title"]
+		delete(metadata, "_title")
+
+		location := metadata["_location"]
+		delete(metadata, "_location")
+
+		r := index.Document{
+			ID: id,
+
+			Title:    title,
+			Location: location,
+
+			Content:  content,
+			Metadata: metadata,
 		}
 
 		results = append(results, r)
@@ -131,6 +149,12 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 			d.ID = uuid.NewString()
 		}
 
+		metadata := d.Metadata
+
+		if metadata == nil {
+			metadata = make(map[string]string)
+		}
+
 		if len(d.Embedding) == 0 && c.embedder != nil {
 			embedding, err := c.embedder.Embed(ctx, d.Content)
 
@@ -146,7 +170,7 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 		body.Embeddings[i] = d.Embedding
 
 		body.Documents[i] = d.Content
-		body.Metadatas[i] = d.Metadata
+		body.Metadatas[i] = metadata
 	}
 
 	resp, err := c.client.Post(u, "application/json", jsonReader(body))
@@ -260,22 +284,15 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 			score := 1 - result.Distances[i][j]
 
-			filename := metadata["filename"]
-			filepart := metadata["filepart"]
-
-			title := id
-			location := id
-
-			if filename != "" {
-				title = filename
-				location = filename
+			if metadata == nil {
+				metadata = make(map[string]string)
 			}
 
-			if filepart != "" {
-				if location != "" {
-					location += "#" + filepart
-				}
-			}
+			title := metadata["_title"]
+			delete(metadata, "_title")
+
+			location := metadata["_location"]
+			delete(metadata, "_location")
 
 			r := index.Result{
 				Score: score,
@@ -284,9 +301,9 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 					ID: id,
 
 					Title:    title,
-					Content:  content,
 					Location: location,
 
+					Content:  content,
 					Metadata: metadata,
 				},
 			}
@@ -355,14 +372,4 @@ func jsonReader(v any) io.Reader {
 
 	enc.Encode(v)
 	return b
-}
-
-func toFloat32s(v []float64) []float32 {
-	result := make([]float32, len(v))
-
-	for i, x := range v {
-		result[i] = float32(x)
-	}
-
-	return result
 }

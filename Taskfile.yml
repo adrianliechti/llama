@@ -24,6 +24,12 @@ includes:
   chroma:
     taskfile: ./Taskfile.chroma.yml
   
+  opensearch:
+    taskfile: ./Taskfile.opensearch.yml
+
+  qdrant:
+    taskfile: ./Taskfile.qdrant.yml
+
   weaviate:
     taskfile: ./Taskfile.weaviate.yml
 

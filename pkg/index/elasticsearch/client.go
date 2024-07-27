@@ -83,7 +83,11 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 	for _, hit := range result.Hits.Hits {
 
 		results = append(results, index.Document{
-			ID:       hit.Document.ID,
+			ID: hit.Document.ID,
+
+			Title:    hit.Document.Title,
+			Location: hit.Document.Location,
+
 			Content:  hit.Document.Content,
 			Metadata: hit.Document.Metadata,
 		})
@@ -106,9 +110,9 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 			ID: d.ID,
 
 			Title:    d.Title,
-			Content:  d.Content,
 			Location: d.Location,
 
+			Content:  d.Content,
 			Metadata: d.Metadata,
 		}
 
@@ -195,9 +199,9 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 				ID: hit.Document.ID,
 
 				Title:    hit.Document.Title,
-				Content:  hit.Document.Content,
 				Location: hit.Document.Location,
 
+				Content:  hit.Document.Content,
 				Metadata: hit.Document.Metadata,
 			},
 		})

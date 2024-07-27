@@ -108,19 +108,32 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		}
 
 		for _, o := range page.Objects {
+			metadata := maps.Clone(o.Properties)
+
 			key := o.Properties["key"]
+			delete(metadata, "key")
+
+			title := o.Properties["title"]
+			delete(metadata, "title")
+
+			location := o.Properties["location"]
+			delete(metadata, "location")
+
 			content := o.Properties["content"]
+			delete(metadata, "content")
 
 			if key == "" {
 				key = o.ID
 			}
 
-			metadata := maps.Clone(o.Properties)
-			delete(metadata, "content")
-
 			d := index.Document{
-				ID:      key,
-				Content: content,
+				ID: key,
+
+				Title:    title,
+				Location: location,
+
+				Content:  content,
+				Metadata: metadata,
 			}
 
 			cursor = o.ID
@@ -267,27 +280,11 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 	for _, d := range result.Data.Get[c.class] {
 		key := d.Additional.ID
-		title := d.Additional.ID
-		location := d.Additional.ID
 
 		metadata := map[string]string{}
 
 		if d.Key != "" {
 			key = d.Key
-		}
-
-		if d.FileName != "" {
-			metadata["filename"] = d.FileName
-			title = d.FileName
-			location = d.FileName
-		}
-
-		if d.FilePart != "" {
-			metadata["filepart"] = d.FilePart
-
-			if location != "" {
-				location += "#" + d.FilePart
-			}
 		}
 
 		r := index.Result{
@@ -296,10 +293,10 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 			Document: index.Document{
 				ID: key,
 
-				Title:    title,
-				Content:  d.Content,
-				Location: location,
+				Title:    d.Title,
+				Location: d.Location,
 
+				Content:  d.Content,
 				Metadata: metadata,
 			},
 		}
@@ -330,25 +327,11 @@ func (c *Client) createObject(d index.Document) error {
 	}
 
 	properties["key"] = d.ID
+
+	properties["title"] = d.Title
+	properties["location"] = d.Location
+
 	properties["content"] = d.Content
-
-	filename := d.Metadata["filename"]
-	filepart := d.Metadata["filepart"]
-
-	if filename == "" {
-		filename = d.ID
-
-		if d.Location != "" {
-			filename = d.Location
-		}
-	}
-
-	if filepart == "" {
-		filepart = "0"
-	}
-
-	properties["filename"] = filename
-	properties["filepart"] = filepart
 
 	body := map[string]any{
 		"id": convertID(d.ID),
@@ -383,6 +366,10 @@ func (c *Client) updateObject(ctx context.Context, d index.Document) error {
 	}
 
 	properties["key"] = d.ID
+
+	properties["title"] = d.Title
+	properties["location"] = d.Location
+
 	properties["content"] = d.Content
 
 	body := map[string]any{
@@ -442,12 +429,12 @@ type errorDetail struct {
 }
 
 type document struct {
-	Key     string `json:"key"`
-	Content string `json:"content"`
+	Key string `json:"key"`
 
-	// HACK
-	FileName string `json:"filename,omitempty"`
-	FilePart string `json:"filepart,omitempty"`
+	Title    string `json:"title,omitempty"`
+	Location string `json:"location,omitempty"`
+
+	Content string `json:"content"`
 
 	Additional additional `json:"_additional"`
 }
