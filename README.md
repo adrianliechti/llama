@@ -92,7 +92,11 @@ providers:
 
     # https://docs.cohere.com/docs/models
     models:
-      - command-r-plus
+      cohere-command-r-plus:
+        id: command-r-plus
+      
+      cohere-embed-multilingual-v3:
+        id: embed-multilingual-v3.0
 ```
 
 

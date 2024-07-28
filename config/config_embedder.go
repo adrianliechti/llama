@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/provider/cohere"
 	"github.com/adrianliechti/llama/pkg/provider/huggingface"
 	"github.com/adrianliechti/llama/pkg/provider/llama"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
@@ -24,6 +25,9 @@ func (cfg *Config) RegisterEmbedder(model string, e provider.Embedder) {
 func createEmbedder(cfg providerConfig, model string) (provider.Embedder, error) {
 	switch strings.ToLower(cfg.Type) {
 
+	case "cohere":
+		return cohereEmbedder(cfg, model)
+
 	case "huggingface":
 		return huggingfaceEmbedder(cfg, model)
 
@@ -39,6 +43,20 @@ func createEmbedder(cfg providerConfig, model string) (provider.Embedder, error)
 	default:
 		return nil, errors.New("invalid embedder type: " + cfg.Type)
 	}
+}
+
+func cohereEmbedder(cfg providerConfig, model string) (provider.Embedder, error) {
+	var options []cohere.Option
+
+	if cfg.Token != "" {
+		options = append(options, cohere.WithToken(cfg.Token))
+	}
+
+	if model != "" {
+		options = append(options, cohere.WithModel(model))
+	}
+
+	return cohere.NewEmbedder(options...)
 }
 
 func huggingfaceEmbedder(cfg providerConfig, model string) (provider.Embedder, error) {
