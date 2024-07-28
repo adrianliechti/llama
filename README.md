@@ -209,6 +209,20 @@ providers:
 ```
 
 
+### Routers
+
+#### Round-robin Load Balancer
+
+```yaml
+routers:
+  llama-lb:
+    type: roundrobin
+    models:
+      - llama-3-8b
+      - groq-llama-3-8b
+      - huggingface-llama-3-8b
+```
+
 ### Vector Databses / Indexes
 
 #### Chroma
