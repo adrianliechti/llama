@@ -16,6 +16,8 @@ import (
 	"github.com/google/uuid"
 )
 
+var _ provider.Completer = (*Completer)(nil)
+
 type Completer struct {
 	*Config
 }

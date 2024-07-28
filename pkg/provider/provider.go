@@ -6,6 +6,8 @@ import (
 	"github.com/adrianliechti/llama/pkg/jsonschema"
 )
 
+type Provider = any
+
 type Model struct {
 	ID string
 }

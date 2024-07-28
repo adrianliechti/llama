@@ -8,22 +8,6 @@ import (
 	"net/http"
 )
 
-type Client struct {
-	*Completer
-}
-
-func New(options ...Option) (*Client, error) {
-	c, err := NewCompleter(options...)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &Client{
-		Completer: c,
-	}, nil
-}
-
 func convertError(resp *http.Response) error {
 	data, _ := io.ReadAll(resp.Body)
 

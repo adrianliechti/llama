@@ -37,6 +37,8 @@ type configFile struct {
 	Extractors  map[string]extractorConfig  `yaml:"extractors"`
 	Classifiers map[string]classifierConfig `yaml:"classifiers"`
 
+	Routers map[string]routerConfig `yaml:"routers"`
+
 	Tools  map[string]toolConfig  `yaml:"tools"`
 	Chains map[string]chainConfig `yaml:"chains"`
 }
@@ -56,21 +58,12 @@ type providerConfig struct {
 	URL   string `yaml:"url"`
 	Token string `yaml:"token"`
 
-	Models modelsConfig `yaml:"models"`
+	Models providerModelsConfig `yaml:"models"`
 }
 
-type ModelType string
+type providerModelsConfig map[string]modelConfig
 
-const (
-	ModelTypeCompleter   ModelType = "completer"
-	ModelTypeEmbedder    ModelType = "embedder"
-	ModelTypeTranslator  ModelType = "translator"
-	ModelTypeTranscriber ModelType = "transcriber"
-)
-
-type modelsConfig map[string]modelConfig
-
-func (c *modelsConfig) UnmarshalYAML(value *yaml.Node) error {
+func (c *providerModelsConfig) UnmarshalYAML(value *yaml.Node) error {
 	var config map[string]modelConfig
 
 	if err := value.Decode(&config); err == nil {
@@ -103,6 +96,18 @@ func (c *modelsConfig) UnmarshalYAML(value *yaml.Node) error {
 
 	return errors.New("invalid models config")
 }
+
+type ModelType string
+
+const (
+	ModelTypeAuto        ModelType = ""
+	ModelTypeCompleter   ModelType = "completer"
+	ModelTypeEmbedder    ModelType = "embedder"
+	ModelTypeRenderer    ModelType = "renderer"
+	ModelTypeSynthesizer ModelType = "synthesizer"
+	ModelTypeTranscriber ModelType = "transcriber"
+	ModelTypeTranslator  ModelType = "translator"
+)
 
 type modelConfig struct {
 	ID string `yaml:"id"`
@@ -145,6 +150,14 @@ type classifierConfig struct {
 
 	Classes map[string]string `yaml:"classes"`
 }
+
+type routerConfig struct {
+	Type string `yaml:"type"`
+
+	Models routerModelsConfig `yaml:"models"`
+}
+
+type routerModelsConfig []string
 
 type chainConfig struct {
 	Type string `yaml:"type"`

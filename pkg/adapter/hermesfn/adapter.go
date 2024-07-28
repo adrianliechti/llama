@@ -77,16 +77,8 @@ func (a *Adapter) Complete(ctx context.Context, messages []provider.Message, opt
 		}
 	}
 
-	completion, err := a.completer.Complete(ctx, input, &provider.CompleteOptions{
-		Stream: options.Stream,
-
-		Stop: options.Stop,
-
-		MaxTokens:   options.MaxTokens,
-		Temperature: options.Temperature,
-
-		Format: options.Format,
-	})
+	completionOptions := options.Clone()
+	completion, err := a.completer.Complete(ctx, input, &completionOptions)
 
 	if err != nil {
 		return nil, err

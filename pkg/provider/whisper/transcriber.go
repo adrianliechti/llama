@@ -15,9 +15,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var (
-	_ provider.Transcriber = (*Transcriber)(nil)
-)
+var _ provider.Transcriber = (*Transcriber)(nil)
 
 type Transcriber struct {
 	*Config

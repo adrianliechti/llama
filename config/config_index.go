@@ -29,7 +29,6 @@ type indexContext struct {
 func (cfg *Config) registerIndexes(f *configFile) error {
 	for id, i := range f.Indexes {
 		var err error
-
 		context := indexContext{}
 
 		if i.Embedding != "" {
@@ -52,6 +51,9 @@ func (cfg *Config) registerIndexes(f *configFile) error {
 
 func createIndex(cfg indexConfig, context indexContext) (index.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
+	case "aisearch":
+		return aisearchIndex(cfg)
+
 	case "chroma":
 		return chromaIndex(cfg, context)
 
@@ -61,14 +63,11 @@ func createIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 	case "memory":
 		return memoryIndex(cfg, context)
 
-	case "weaviate":
-		return weaviateIndex(cfg, context)
-
 	case "qdrant":
 		return qdrantIndex(cfg, context)
 
-	case "aisearch":
-		return aisearchIndex(cfg)
+	case "weaviate":
+		return weaviateIndex(cfg, context)
 
 	case "custom":
 		return customIndex(cfg)
@@ -76,6 +75,12 @@ func createIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 	default:
 		return nil, errors.New("invalid index type: " + cfg.Type)
 	}
+}
+
+func aisearchIndex(cfg indexConfig) (index.Provider, error) {
+	var options []aisearch.Option
+
+	return aisearch.New(cfg.URL, cfg.Namespace, cfg.Token, options...)
 }
 
 func chromaIndex(cfg indexConfig, context indexContext) (index.Provider, error) {
@@ -104,16 +109,6 @@ func memoryIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 	return memory.New(options...)
 }
 
-func weaviateIndex(cfg indexConfig, context indexContext) (index.Provider, error) {
-	var options []weaviate.Option
-
-	if context.Embedder != nil {
-		options = append(options, weaviate.WithEmbedder(context.Embedder))
-	}
-
-	return weaviate.New(cfg.URL, cfg.Namespace, options...)
-}
-
 func qdrantIndex(cfg indexConfig, context indexContext) (index.Provider, error) {
 	var options []qdrant.Option
 
@@ -124,10 +119,14 @@ func qdrantIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 	return qdrant.New(cfg.URL, cfg.Namespace, options...)
 }
 
-func aisearchIndex(cfg indexConfig) (index.Provider, error) {
-	var options []aisearch.Option
+func weaviateIndex(cfg indexConfig, context indexContext) (index.Provider, error) {
+	var options []weaviate.Option
 
-	return aisearch.New(cfg.URL, cfg.Namespace, cfg.Token, options...)
+	if context.Embedder != nil {
+		options = append(options, weaviate.WithEmbedder(context.Embedder))
+	}
+
+	return weaviate.New(cfg.URL, cfg.Namespace, options...)
 }
 
 func customIndex(cfg indexConfig) (*custom.Client, error) {

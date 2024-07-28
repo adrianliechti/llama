@@ -118,18 +118,37 @@ func (cfg *Config) registerChains(f *configFile) error {
 
 func createChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
+
+	case "agent":
+		return agentChain(cfg, context)
+
 	case "assistant":
 		return assistantChain(cfg, context)
 
 	case "rag":
 		return ragChain(cfg, context)
 
-	case "agent":
-		return agentChain(cfg, context)
-
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
 	}
+}
+
+func agentChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
+	var options []agent.Option
+
+	if context.Completer != nil {
+		options = append(options, agent.WithCompleter(context.Completer))
+	}
+
+	if context.Tools != nil {
+		options = append(options, agent.WithTools(to.Values(context.Tools)...))
+	}
+
+	if cfg.Temperature != nil {
+		options = append(options, agent.WithTemperature(*cfg.Temperature))
+	}
+
+	return agent.New(options...)
 }
 
 func assistantChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
@@ -186,22 +205,4 @@ func ragChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	}
 
 	return rag.New(options...)
-}
-
-func agentChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
-	var options []agent.Option
-
-	if context.Completer != nil {
-		options = append(options, agent.WithCompleter(context.Completer))
-	}
-
-	if context.Tools != nil {
-		options = append(options, agent.WithTools(to.Values(context.Tools)...))
-	}
-
-	if cfg.Temperature != nil {
-		options = append(options, agent.WithTemperature(*cfg.Temperature))
-	}
-
-	return agent.New(options...)
 }

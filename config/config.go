@@ -194,6 +194,10 @@ func Parse(path string) (*Config, error) {
 		return nil, err
 	}
 
+	if err := c.registerRouters(file); err != nil {
+		return nil, err
+	}
+
 	if err := c.registerTools(file); err != nil {
 		return nil, err
 	}

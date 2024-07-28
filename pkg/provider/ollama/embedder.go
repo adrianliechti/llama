@@ -71,3 +71,13 @@ type EmbeddingRequest struct {
 type EmbeddingResponse struct {
 	Embedding []float64 `json:"embedding"`
 }
+
+func toFloat32s(v []float64) []float32 {
+	result := make([]float32, len(v))
+
+	for i, x := range v {
+		result[i] = float32(x)
+	}
+
+	return result
+}

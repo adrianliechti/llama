@@ -1,4 +1,4 @@
-package deepl
+package huggingface
 
 import (
 	"bytes"
@@ -6,29 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
-
-	"github.com/adrianliechti/llama/pkg/provider"
 )
-
-type Client struct {
-	provider.Completer
-	provider.Translator
-}
-
-func New(url string, options ...Option) (*Client, error) {
-	var err error
-
-	t, err := NewTranslator(url, options...)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &Client{
-		Translator: t,
-		Completer:  t,
-	}, nil
-}
 
 func convertError(resp *http.Response) error {
 	data, _ := io.ReadAll(resp.Body)

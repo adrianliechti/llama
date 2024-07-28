@@ -14,25 +14,20 @@ import (
 )
 
 var (
-	_ provider.Completer = (*Client)(nil)
+	_ provider.Completer = (*Completer)(nil)
 )
 
-type Client struct {
-	url string
-
-	model string
-
+type Completer struct {
+	*Config
 	client CompleterClient
 }
 
-type Option func(*Client)
-
-func New(url string, options ...Option) (*Client, error) {
+func NewCompleter(url string, options ...Option) (*Completer, error) {
 	if url == "" || !strings.HasPrefix(url, "grpc://") {
 		return nil, errors.New("invalid url")
 	}
 
-	c := &Client{
+	c := &Config{
 		url: url,
 	}
 
@@ -40,9 +35,7 @@ func New(url string, options ...Option) (*Client, error) {
 		option(c)
 	}
 
-	url = strings.TrimPrefix(c.url, "grpc://")
-
-	conn, err := grpc.Dial(url,
+	conn, err := grpc.NewClient(strings.TrimPrefix(c.url, "grpc://"),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 
@@ -50,18 +43,13 @@ func New(url string, options ...Option) (*Client, error) {
 		return nil, err
 	}
 
-	c.client = NewCompleterClient(conn)
-
-	return c, nil
+	return &Completer{
+		Config: c,
+		client: NewCompleterClient(conn),
+	}, nil
 }
 
-func WithModel(model string) Option {
-	return func(c *Client) {
-		c.model = model
-	}
-}
-
-func (c *Client) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+func (c *Completer) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = &provider.CompleteOptions{}
 	}
