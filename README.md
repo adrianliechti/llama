@@ -6,6 +6,11 @@ Open Source LLM Platform to build and deploy applications at scale
 ![Logo](docs/icon.png)
 
 
+## Architecture
+
+![Architecture](docs/architecture.png)
+
+
 ## Integrations & Configuration
 
 ### LLM Providers
@@ -242,6 +247,7 @@ python3 TTS/server/server.py --list_models
 python3 TTS/server/server.py --model_name tts_models/en/vctk/vits
 ```
 
+
 #### Coqui
 
 ```yaml
@@ -281,6 +287,7 @@ routers:
       - groq-llama-3-8b
       - huggingface-llama-3-8b
 ```
+
 
 ### Vector Databses / Indexes
 
@@ -374,6 +381,7 @@ extractors:
     type: text
 ```
 
+
 #### Code
 
 Supported Languages:
@@ -396,6 +404,7 @@ extractors:
   code:
     type: code
 ```
+
 
 #### Tesseract
 
