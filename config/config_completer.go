@@ -8,6 +8,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/adapter/hermesfn"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/anthropic"
+	"github.com/adrianliechti/llama/pkg/provider/cohere"
 	"github.com/adrianliechti/llama/pkg/provider/custom"
 	"github.com/adrianliechti/llama/pkg/provider/groq"
 	"github.com/adrianliechti/llama/pkg/provider/huggingface"
@@ -33,6 +34,9 @@ func createCompleter(cfg providerConfig, model string) (provider.Completer, erro
 
 	case "anthropic":
 		return anthropicCompleter(cfg, model)
+
+	case "cohere":
+		return cohereCompleter(cfg, model)
 
 	case "groq":
 		return groqCompleter(cfg, model)
@@ -90,6 +94,20 @@ func anthropicCompleter(cfg providerConfig, model string) (provider.Completer, e
 	}
 
 	return anthropic.NewCompleter(options...)
+}
+
+func cohereCompleter(cfg providerConfig, model string) (provider.Completer, error) {
+	var options []cohere.Option
+
+	if cfg.Token != "" {
+		options = append(options, cohere.WithToken(cfg.Token))
+	}
+
+	if model != "" {
+		options = append(options, cohere.WithModel(model))
+	}
+
+	return cohere.NewCompleter(options...)
 }
 
 func groqCompleter(cfg providerConfig, model string) (provider.Completer, error) {

@@ -42,6 +42,11 @@ providers:
     token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     models:
+      # https://docs.anthropic.com/en/docs/models-overview
+      #
+      # {alias}:
+      #   - id: {azure oai deployment name}
+
       gpt-3.5-turbo:
         id: gpt-35-turbo-16k
 
@@ -63,8 +68,57 @@ providers:
     token: sk-ant-apixx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     models:
+      # https://docs.anthropic.com/en/docs/models-overview
+      #
+      # {alias}:
+      #   - id: {anthropic api model name}
+
       claude-3-opus:
         id: claude-3-opus-20240229
+```
+
+
+#### Cohere
+
+```yaml
+providers:
+  - type: cohere
+    token: ${COHERE_API_TOKEN}
+
+    # https://docs.cohere.com/docs/models
+    models:
+      - command-r-plus
+```
+
+
+### Groq
+
+```yaml
+providers:
+  - type: groq
+    token: ${GROQ_API_TOKEN}
+
+    # https://console.groq.com/docs/models
+    models:
+      groq-llama-3-8b:
+        id: llama3-8b-8192
+
+      groq-whisper-1:
+        id: whisper-large-v3
+```
+
+
+### Mistral AI
+
+```yaml
+providers:
+  - type: mistral
+    token: ${MISTRAL_API_TOKEN}
+
+    # https://docs.mistral.ai/getting-started/models/
+    models:
+      mistral-large:
+        id: mistral-large-latest
 ```
 
 
@@ -83,6 +137,11 @@ providers:
     url: http://localhost:11434
 
     models:
+      # https://ollama.com/library
+      #
+      # {alias}:
+      #   - id: {ollama model name with optional version}
+
       mistral-7b-instruct:
         id: mistral:latest
 ```
