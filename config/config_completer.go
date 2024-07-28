@@ -4,8 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/adapter"
-	"github.com/adrianliechti/llama/pkg/adapter/hermesfn"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/anthropic"
 	"github.com/adrianliechti/llama/pkg/provider/cohere"
@@ -64,17 +62,6 @@ func createCompleter(cfg providerConfig, model string) (provider.Completer, erro
 
 	default:
 		return nil, errors.New("invalid completer type: " + cfg.Type)
-	}
-}
-
-func createCompleterAdapter(name string, completer provider.Completer) (adapter.Provider, error) {
-	switch strings.ToLower(name) {
-
-	case "hermesfn", "hermes-function-calling":
-		return hermesfn.New(completer)
-
-	default:
-		return nil, errors.New("invalid adapter type: " + name)
 	}
 }
 

@@ -17,16 +17,6 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				if m.Adapter != "" {
-					adapter, err := createCompleterAdapter(m.Adapter, completer)
-
-					if err != nil {
-						return err
-					}
-
-					completer = adapter
-				}
-
 				cfg.RegisterCompleter(id, completer)
 
 			case ModelTypeEmbedder:

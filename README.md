@@ -503,19 +503,3 @@ POST http://localhost:8080/v1/index/{index-name}
     }
 ]
 ```
-
-
-### Function Calling
-
-#### Hermes Function Calling
-
-```yaml
-providers:
-  - type: llama
-    url: http://localhost:9081
-
-    models:
-      hermes-2-pro:
-        id: /models/Hermes-2-Pro-Mistral-7B.Q4_K_M.gguf
-        adapter: hermesfn
-```
