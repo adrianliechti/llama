@@ -316,7 +316,7 @@ Supported Languages:
 - Ruby
 - Rust
 - Scala
-- Swfit
+- Swift
 
 ```yaml
 extractors:
