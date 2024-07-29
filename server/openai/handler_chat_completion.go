@@ -41,7 +41,7 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	functions, err := toFunctions(req.Tools)
+	tools, err := toTools(req.Tools)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -58,8 +58,8 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	options := &provider.CompleteOptions{
-		Stop:      stops,
-		Functions: functions,
+		Stop:  stops,
+		Tools: tools,
 
 		MaxTokens:   req.MaxTokens,
 		Temperature: req.Temperature,
@@ -113,8 +113,8 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 							//Role:    fromMessageRole(completion.Role),
 							Content: completion.Message.Content,
 
-							ToolCalls:  oaiToolCalls(completion.Message.FunctionCalls),
-							ToolCallID: completion.Message.Function,
+							ToolCalls:  oaiToolCalls(completion.Message.ToolCalls),
+							ToolCallID: completion.Message.Tool,
 						},
 					},
 				},
@@ -161,8 +161,8 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 						Role:    oaiMessageRole(completion.Message.Role),
 						Content: completion.Message.Content,
 
-						ToolCalls:  oaiToolCalls(completion.Message.FunctionCalls),
-						ToolCallID: completion.Message.Function,
+						ToolCalls:  oaiToolCalls(completion.Message.ToolCalls),
+						ToolCallID: completion.Message.Tool,
 					},
 				},
 			},
@@ -201,8 +201,8 @@ func toMessages(s []ChatCompletionMessage) ([]provider.Message, error) {
 
 			Files: files,
 
-			Function:      m.ToolCallID,
-			FunctionCalls: toFuncionCalls(m.ToolCalls),
+			Tool:      m.ToolCallID,
+			ToolCalls: toToolCalls(m.ToolCalls),
 		})
 
 	}
@@ -222,7 +222,7 @@ func toMessageRole(r MessageRole) provider.MessageRole {
 		return provider.MessageRoleAssistant
 
 	case MessageRoleTool:
-		return provider.MessageRoleFunction
+		return provider.MessageRoleTool
 
 	default:
 		return ""
@@ -285,12 +285,12 @@ func toFile(url string) (*provider.File, error) {
 	return nil, fmt.Errorf("invalid url")
 }
 
-func toFunctions(tools []Tool) ([]provider.Function, error) {
-	var result []provider.Function
+func toTools(tools []Tool) ([]provider.Tool, error) {
+	var result []provider.Tool
 
 	for _, t := range tools {
 		if t.Type == ToolTypeFunction && t.ToolFunction != nil {
-			function := provider.Function{
+			function := provider.Tool{
 				Name:        t.ToolFunction.Name,
 				Description: t.ToolFunction.Description,
 			}
@@ -318,12 +318,12 @@ func toFunctions(tools []Tool) ([]provider.Function, error) {
 	return result, nil
 }
 
-func toFuncionCalls(calls []ToolCall) []provider.FunctionCall {
-	var result []provider.FunctionCall
+func toToolCalls(calls []ToolCall) []provider.ToolCall {
+	var result []provider.ToolCall
 
 	for _, c := range calls {
 		if c.Type == ToolTypeFunction && c.Function != nil {
-			result = append(result, provider.FunctionCall{
+			result = append(result, provider.ToolCall{
 				ID: c.ID,
 
 				Name:      c.Function.Name,
@@ -346,7 +346,7 @@ func oaiMessageRole(r provider.MessageRole) MessageRole {
 	case provider.MessageRoleAssistant:
 		return MessageRoleAssistant
 
-	case provider.MessageRoleFunction:
+	case provider.MessageRoleTool:
 		return MessageRoleTool
 
 	default:
@@ -370,7 +370,7 @@ func oaiFinishReason(val provider.CompletionReason) *FinishReason {
 	}
 }
 
-func oaiToolCalls(calls []provider.FunctionCall) []ToolCall {
+func oaiToolCalls(calls []provider.ToolCall) []ToolCall {
 	result := make([]ToolCall, 0)
 
 	for _, c := range calls {

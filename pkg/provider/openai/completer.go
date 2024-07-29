@@ -62,7 +62,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				Role:    toMessageRole(choice.Message.Role),
 				Content: choice.Message.Content,
 
-				FunctionCalls: toFunctionCalls(choice.Message.ToolCalls),
+				ToolCalls: toToolCalls(choice.Message.ToolCalls),
 			},
 		}, nil
 	} else {
@@ -104,7 +104,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			result.Message.Role = role
 			result.Message.Content += choice.Delta.Content
-			result.Message.FunctionCalls = toFunctionCalls(choice.Delta.ToolCalls)
+			result.Message.ToolCalls = toToolCalls(choice.Delta.ToolCalls)
 
 			options.Stream <- provider.Completion{
 				ID:     result.ID,
@@ -114,7 +114,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 					Role:    role,
 					Content: choice.Delta.Content,
 
-					FunctionCalls: toFunctionCalls(choice.Delta.ToolCalls),
+					ToolCalls: toToolCalls(choice.Delta.ToolCalls),
 				},
 			}
 
@@ -158,15 +158,15 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 		req.Temperature = *options.Temperature
 	}
 
-	for _, f := range options.Functions {
+	for _, t := range options.Tools {
 		tool := openai.Tool{
 			Type: openai.ToolTypeFunction,
 
 			Function: &openai.FunctionDefinition{
-				Name:       f.Name,
-				Parameters: f.Parameters,
+				Name:       t.Name,
+				Parameters: t.Parameters,
 
-				Description: f.Description,
+				Description: t.Description,
 			},
 		}
 
@@ -178,7 +178,7 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 			Role:    convertMessageRole(m.Role),
 			Content: m.Content,
 
-			ToolCallID: m.Function,
+			ToolCallID: m.Tool,
 		}
 
 		if len(m.Files) > 0 {
@@ -210,14 +210,14 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 			}
 		}
 
-		for _, f := range m.FunctionCalls {
+		for _, t := range m.ToolCalls {
 			call := openai.ToolCall{
-				ID:   f.ID,
+				ID:   t.ID,
 				Type: openai.ToolTypeFunction,
 
 				Function: openai.FunctionCall{
-					Name:      f.Name,
-					Arguments: f.Arguments,
+					Name:      t.Name,
+					Arguments: t.Arguments,
 				},
 			}
 
@@ -242,7 +242,7 @@ func convertMessageRole(r provider.MessageRole) string {
 	case provider.MessageRoleAssistant:
 		return openai.ChatMessageRoleAssistant
 
-	case provider.MessageRoleFunction:
+	case provider.MessageRoleTool:
 		return openai.ChatMessageRoleTool
 
 	default:
@@ -263,19 +263,19 @@ func toMessageRole(role string) provider.MessageRole {
 		return provider.MessageRoleAssistant
 
 	case openai.ChatMessageRoleTool:
-		return provider.MessageRoleFunction
+		return provider.MessageRoleTool
 
 	default:
 		return ""
 	}
 }
 
-func toFunctionCalls(calls []openai.ToolCall) []provider.FunctionCall {
-	var result []provider.FunctionCall
+func toToolCalls(calls []openai.ToolCall) []provider.ToolCall {
+	var result []provider.ToolCall
 
 	for _, c := range calls {
 		if c.Type == openai.ToolTypeFunction {
-			result = append(result, provider.FunctionCall{
+			result = append(result, provider.ToolCall{
 				ID: c.ID,
 
 				Name:      c.Function.Name,

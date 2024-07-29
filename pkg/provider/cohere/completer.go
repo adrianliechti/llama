@@ -180,7 +180,7 @@ func convertMessageRole(role provider.MessageRole) MessageRole {
 	case provider.MessageRoleAssistant:
 		return MessageRoleAssistant
 
-	case provider.MessageRoleFunction:
+	case provider.MessageRoleTool:
 		return MessageRoleTool
 	}
 
@@ -199,7 +199,7 @@ func toMessageRole(role MessageRole) provider.MessageRole {
 		return provider.MessageRoleAssistant
 
 	case MessageRoleTool:
-		return provider.MessageRoleFunction
+		return provider.MessageRoleTool
 	}
 
 	return ""
