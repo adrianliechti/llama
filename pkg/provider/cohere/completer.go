@@ -228,6 +228,11 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 
 		Model:   model,
 		Message: message.Content,
+
+		MaxTokens:   options.MaxTokens,
+		Temperature: options.Temperature,
+
+		StopSequences: options.Stop,
 	}
 
 	for _, m := range messages[:len(messages)-1] {
@@ -237,6 +242,10 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 		}
 
 		req.History = append(req.History, message)
+	}
+
+	if options.Format == provider.CompletionFormatJSON {
+		req.ResponseFormat = ResponseFormatJSON
 	}
 
 	return req, nil
@@ -249,6 +258,13 @@ var (
 	MessageRoleUser      MessageRole = "USER"
 	MessageRoleAssistant MessageRole = "CHATBOT"
 	MessageRoleTool      MessageRole = "TOOL"
+)
+
+type ResponseFormat string
+
+var (
+	ResponseFormatText ResponseFormat = "text"
+	ResponseFormatJSON ResponseFormat = "json_object"
 )
 
 type FinishReason string
@@ -264,13 +280,17 @@ type Message struct {
 }
 
 type ChatRequest struct {
-	Model string `json:"model"`
-
 	Stream bool `json:"stream,omitempty"`
 
-	Message string `json:"message"`
-
+	Model   string    `json:"model"`
+	Message string    `json:"message"`
 	History []Message `json:"chat_history"`
+
+	MaxTokens   *int     `json:"max_tokens,omitempty"`
+	Temperature *float32 `json:"temperature,omitempty"`
+
+	StopSequences  []string       `json:"stop_sequences,omitempty"`
+	ResponseFormat ResponseFormat `json:"response_format,omitempty"`
 }
 
 type ChatResponse struct {
