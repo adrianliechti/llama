@@ -1,11 +1,15 @@
 package otel
 
 import (
+	"context"
+
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 )
 
 func Setup(serviceName, serviceVersion string) error {
+	ctx := context.Background()
+
 	resource, err := resource.Merge(
 		resource.Default(),
 		resource.NewWithAttributes(
@@ -23,15 +27,15 @@ func Setup(serviceName, serviceVersion string) error {
 		return err
 	}
 
-	if err := setupTracer(resource); err != nil {
+	if err := setupTracer(ctx, resource); err != nil {
 		return err
 	}
 
-	if err := setupMeter(resource); err != nil {
+	if err := setupMeter(ctx, resource); err != nil {
 		return err
 	}
 
-	if err := setupLogger(resource); err != nil {
+	if err := setupLogger(ctx, resource); err != nil {
 		return err
 	}
 

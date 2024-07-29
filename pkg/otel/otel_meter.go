@@ -1,19 +1,19 @@
 package otel
 
 import (
-	"io"
+	"context"
 	"time"
 
 	"go.opentelemetry.io/otel"
 
 	"go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/resource"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
-	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 )
 
-func setupMeter(resource *resource.Resource) error {
-	exporter, err := stdoutmetric.New(stdoutmetric.WithWriter(io.Discard), stdoutmetric.WithPrettyPrint())
+func setupMeter(ctx context.Context, resource *sdkresource.Resource) error {
+	exporter, err := otlpmetrichttp.New(ctx)
 
 	if err != nil {
 		return err

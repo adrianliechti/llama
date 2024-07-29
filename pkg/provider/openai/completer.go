@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"github.com/adrianliechti/llama/pkg/otel"
@@ -59,6 +60,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		choice := completion.Choices[0]
 
 		span.AddEvent(choice.Message.Content)
+		slog.Info("provider", "openai", "completion", "content", choice.Message.Content)
 
 		return &provider.Completion{
 			ID:     completion.ID,
@@ -130,6 +132,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		}
 
 		span.AddEvent(result.Message.Content)
+		slog.Info("provider", "openai", "completion", "content", result.Message.Content)
 
 		return &result, nil
 	}

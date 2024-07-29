@@ -3,10 +3,11 @@ package otel
 import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/resource"
+
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 )
 
-func newPropagator(resource *resource.Resource) error {
+func newPropagator(resource *sdkresource.Resource) error {
 	propagator := propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},
 		propagation.Baggage{},
