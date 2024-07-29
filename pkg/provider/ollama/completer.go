@@ -28,7 +28,8 @@ func NewCompleter(url string, options ...Option) (*Completer, error) {
 	}
 
 	c := &Config{
-		url:    url,
+		url: url,
+
 		client: http.DefaultClient,
 	}
 

@@ -39,5 +39,9 @@ func Setup(serviceName, serviceVersion string) error {
 		return err
 	}
 
+	if err := setupHTTP(ctx, resource); err != nil {
+		return err
+	}
+
 	return nil
 }

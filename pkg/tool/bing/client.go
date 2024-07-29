@@ -14,14 +14,16 @@ import (
 var _ tool.Tool = &Tool{}
 
 type Tool struct {
+	token string
+
 	client *http.Client
-	token  string
 }
 
 func New(token string, options ...Option) (*Tool, error) {
 	t := &Tool{
+		token: token,
+
 		client: http.DefaultClient,
-		token:  token,
 	}
 
 	for _, option := range options {
