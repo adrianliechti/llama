@@ -3,6 +3,7 @@ package openai
 import (
 	"context"
 
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/sashabaranov/go-openai"
@@ -17,7 +18,7 @@ type Embedder struct {
 
 func NewEmbedder(options ...Option) (*Embedder, error) {
 	cfg := &Config{
-		model: string(openai.AdaEmbeddingV2),
+		model: string(openai.SmallEmbedding3),
 	}
 
 	for _, option := range options {
@@ -35,6 +36,9 @@ func (c *Embedder) Embed(ctx context.Context, content string) (provider.Embeddin
 		Input: content,
 		Model: openai.EmbeddingModel(c.model),
 	}
+
+	ctx, span := otel.StartSpan(ctx, "openai-embedder")
+	defer span.End()
 
 	result, err := c.client.CreateEmbeddings(ctx, req)
 

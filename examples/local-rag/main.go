@@ -37,6 +37,11 @@ func main() {
 	var fileignores []string
 
 	switch strings.ToLower(*extractorFlag) {
+	case "text":
+		filetypes = []string{
+			".txt", ".html", ".md",
+		}
+
 	case "code":
 		filetypes = []string{
 			".c", ".h", ".cpp", ".hpp", ".m", ".cs", ".vb", ".java", ".js", ".mjs", ".py", ".rb", ".sql", ".sh", ".bat",

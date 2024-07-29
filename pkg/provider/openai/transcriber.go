@@ -3,6 +3,7 @@ package openai
 import (
 	"context"
 
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/google/uuid"
@@ -35,6 +36,9 @@ func (c *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 	if options == nil {
 		options = new(provider.TranscribeOptions)
 	}
+
+	ctx, span := otel.StartSpan(ctx, "openai-transcriber")
+	defer span.End()
 
 	id := uuid.NewString()
 

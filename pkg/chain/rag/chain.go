@@ -8,6 +8,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/text"
@@ -110,10 +111,17 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		return nil, errors.New("last message must be from user")
 	}
 
+	query := strings.TrimSpace(message.Content)
+
+	ctx, span := otel.StartSpan(ctx, "rag")
+	defer span.End()
+
+	span.SetAttributes(otel.String("query", query))
+
 	filters := map[string]string{}
 
 	for k, c := range c.filters {
-		v, err := c.Classify(ctx, message.Content)
+		v, err := c.Classify(ctx, query)
 
 		if err != nil || v == "" {
 			continue
@@ -122,7 +130,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		filters[k] = v
 	}
 
-	results, err := c.index.Query(ctx, message.Content, &index.QueryOptions{
+	results, err := c.index.Query(ctx, query, &index.QueryOptions{
 		Limit: c.limit,
 
 		Filters: filters,
@@ -133,7 +141,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 	}
 
 	data := promptData{
-		Input: strings.TrimSpace(message.Content),
+		Input: query,
 	}
 
 	for _, r := range results {
@@ -152,7 +160,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		return nil, err
 	}
 
-	println(prompt)
+	span.SetAttributes(otel.String("prompt", prompt))
 
 	message = provider.Message{
 		Role:    provider.MessageRoleUser,
@@ -161,5 +169,13 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	messages[len(messages)-1] = message
 
-	return c.completer.Complete(ctx, messages, options)
+	result, err := c.completer.Complete(ctx, messages, options)
+
+	if err != nil {
+		return nil, err
+	}
+
+	span.SetAttributes(otel.String("answer", result.Message.Content))
+
+	return result, nil
 }

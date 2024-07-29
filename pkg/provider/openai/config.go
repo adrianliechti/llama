@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -44,6 +45,7 @@ func WithModel(model string) Option {
 
 func (c *Config) newClient() *openai.Client {
 	config := openai.DefaultConfig(c.token)
+	config.HTTPClient = otel.HTTPClient()
 
 	if c.url != "" {
 		config.BaseURL = c.url

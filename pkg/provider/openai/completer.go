@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"io"
-	"log/slog"
 	"net/http"
 
 	"github.com/adrianliechti/llama/pkg/otel"
@@ -23,7 +22,7 @@ type Completer struct {
 
 func NewCompleter(options ...Option) (*Completer, error) {
 	cfg := &Config{
-		model: openai.GPT3Dot5Turbo,
+		model: openai.GPT4oMini,
 	}
 
 	for _, option := range options {
@@ -41,7 +40,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		options = new(provider.CompleteOptions)
 	}
 
-	ctx, span := otel.StartSpan(ctx, "openai")
+	ctx, span := otel.StartSpan(ctx, "openai-completer")
 	defer span.End()
 
 	req, err := convertCompletionRequest(c.model, messages, options)
@@ -59,8 +58,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 		choice := completion.Choices[0]
 
-		span.AddEvent(choice.Message.Content)
-		slog.Info("provider", "openai", "completion", "content", choice.Message.Content)
+		span.SetAttributes(otel.String("text", choice.Message.Content))
 
 		return &provider.Completion{
 			ID:     completion.ID,
@@ -114,6 +112,8 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			result.Message.Content += choice.Delta.Content
 			result.Message.FunctionCalls = toFunctionCalls(choice.Delta.ToolCalls)
 
+			span.AddEvent(choice.Delta.Content)
+
 			options.Stream <- provider.Completion{
 				ID:     result.ID,
 				Reason: result.Reason,
@@ -131,8 +131,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			}
 		}
 
-		span.AddEvent(result.Message.Content)
-		slog.Info("provider", "openai", "completion", "content", result.Message.Content)
+		span.SetAttributes(otel.String("text", result.Message.Content))
 
 		return &result, nil
 	}
