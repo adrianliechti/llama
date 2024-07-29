@@ -7,19 +7,24 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
-	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 )
 
-func setupTracer() error {
-	exporter, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
+func setupTracer(resource *resource.Resource) error {
+	exporter, err := otlptracehttp.New(context.Background())
+	//exporter, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
 
 	if err != nil {
 		return err
 	}
 
 	provider := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithBatcher(exporter, sdktrace.WithBatchTimeout(time.Second)),
+		sdktrace.WithResource(resource),
 	)
 
 	otel.SetTracerProvider(provider)

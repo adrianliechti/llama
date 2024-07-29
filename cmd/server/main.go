@@ -31,7 +31,7 @@ func main() {
 		panic(err)
 	}
 
-	if err := otel.Setup("llama"); err != nil {
+	if err := otel.Setup("llama", "0.0.1"); err != nil {
 		panic(err)
 	}
 
