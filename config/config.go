@@ -6,7 +6,6 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/authorizer"
 	"github.com/adrianliechti/llama/pkg/chain"
-	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
@@ -27,9 +26,8 @@ type Config struct {
 	transcriber map[string]provider.Transcriber
 	renderer    map[string]provider.Renderer
 
-	indexes     map[string]index.Provider
-	extractors  map[string]extractor.Provider
-	classifiers map[string]classifier.Provider
+	indexes    map[string]index.Provider
+	extractors map[string]extractor.Provider
 
 	tools  map[string]tool.Tool
 	chains map[string]chain.Provider
@@ -153,16 +151,6 @@ func (cfg *Config) Tool(id string) (tool.Tool, error) {
 	return nil, errors.New("tool not found: " + id)
 }
 
-func (cfg *Config) Classifier(id string) (classifier.Provider, error) {
-	if cfg.classifiers != nil {
-		if c, ok := cfg.classifiers[id]; ok {
-			return c, nil
-		}
-	}
-
-	return nil, errors.New("classifier not found: " + id)
-}
-
 func Parse(path string) (*Config, error) {
 	file, err := parseFile(path)
 
@@ -187,10 +175,6 @@ func Parse(path string) (*Config, error) {
 	}
 
 	if err := c.registerExtractors(file); err != nil {
-		return nil, err
-	}
-
-	if err := c.registerClassifiers(file); err != nil {
 		return nil, err
 	}
 

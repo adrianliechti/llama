@@ -444,21 +444,6 @@ extractors:
 ```
 
 
-### Classifications
-
-#### LLM Classifier
-
-```yaml
-classifiers:
-  {classifier-id}:
-    type: llm
-    model: mistral-7b-instruct
-    classes:
-      class-1: "...Description when to use Class 1..."
-      class-2: "...Description when to use Class 2..."
-```
-
-
 ## Use Cases
 
 ### Retrieval Augmented Generation (RAG)
@@ -473,10 +458,6 @@ chains:
     model: mistral-7b-instruct
 
     # limit: 10
-
-    # filters:
-    #  {metadata-key}:
-    #    classifier: {classifier-id}
 ```
 
 

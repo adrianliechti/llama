@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/chain"
-	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
@@ -25,8 +24,6 @@ type Chain struct {
 
 	limit       *int
 	temperature *float32
-
-	filters map[string]classifier.Provider
 }
 
 type Option func(*Chain)
@@ -34,8 +31,6 @@ type Option func(*Chain)
 func New(options ...Option) (*Chain, error) {
 	c := &Chain{
 		template: prompt.MustTemplate(promptTemplate),
-
-		filters: map[string]classifier.Provider{},
 	}
 
 	for _, option := range options {
@@ -89,12 +84,6 @@ func WithTemperature(temperature float32) Option {
 	}
 }
 
-func WithFilter(name string, classifier classifier.Provider) Option {
-	return func(c *Chain) {
-		c.filters[name] = classifier
-	}
-}
-
 func (c *Chain) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
@@ -110,22 +99,8 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		return nil, errors.New("last message must be from user")
 	}
 
-	filters := map[string]string{}
-
-	for k, c := range c.filters {
-		v, err := c.Classify(ctx, message.Content)
-
-		if err != nil || v == "" {
-			continue
-		}
-
-		filters[k] = v
-	}
-
 	results, err := c.index.Query(ctx, message.Content, &index.QueryOptions{
 		Limit: c.limit,
-
-		Filters: filters,
 	})
 
 	if err != nil {
