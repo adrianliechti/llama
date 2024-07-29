@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/sashabaranov/go-openai"
@@ -39,6 +40,9 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		options = new(provider.CompleteOptions)
 	}
 
+	ctx, span := otel.StartSpan(ctx, "openai")
+	defer span.End()
+
 	req, err := convertCompletionRequest(c.model, messages, options)
 
 	if err != nil {
@@ -53,6 +57,8 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		}
 
 		choice := completion.Choices[0]
+
+		span.AddEvent(choice.Message.Content)
 
 		return &provider.Completion{
 			ID:     completion.ID,
@@ -122,6 +128,8 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				break
 			}
 		}
+
+		span.AddEvent(result.Message.Content)
 
 		return &result, nil
 	}

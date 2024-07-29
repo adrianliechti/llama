@@ -11,6 +11,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 type Server struct {
@@ -73,6 +75,8 @@ func New(cfg *config.Config) (*Server, error) {
 
 		MaxAge: 300,
 	}))
+
+	mux.Use(otelhttp.NewMiddleware("http"))
 
 	mux.Use(s.handleAuth)
 
