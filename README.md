@@ -171,13 +171,13 @@ providers:
           id: mimic-3
 ```
 
+#### Coqui
+
 ```shell
 docker run --rm -it -p 5002:5002 --platform linux/amd64 --entrypoint /bin/bash ghcr.io/coqui-ai/tts-cpu
 python3 TTS/server/server.py --list_models
-python3 TTS/server/server.py --model_name tts_models/en/vctk/vits
+python3 TTS/server/server.py --model_name tts_models/multilingual/multi-dataset/xtts_v2
 ```
-
-#### Coqui
 
 ```yaml
 providers:

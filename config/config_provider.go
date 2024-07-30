@@ -19,6 +19,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/mistral"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
+	"github.com/adrianliechti/llama/pkg/provider/replicate"
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
 
 	"github.com/adrianliechti/llama/pkg/adapter"
@@ -160,6 +161,9 @@ func createProvider(cfg providerConfig, model string) (any, error) {
 	case "mistral":
 		return mistralProvider(cfg, model)
 
+	case "replicate":
+		return replicateProvider(cfg, model)
+
 	case "groq":
 		return groqProvider(cfg, model)
 
@@ -284,6 +288,20 @@ func mistralProvider(cfg providerConfig, model string) (*mistral.Client, error) 
 	}
 
 	return mistral.New(options...)
+}
+
+func replicateProvider(cfg providerConfig, model string) (*replicate.Client, error) {
+	var options []replicate.Option
+
+	if cfg.Token != "" {
+		options = append(options, replicate.WithToken(cfg.Token))
+	}
+
+	if model != "" {
+		options = append(options, replicate.WithModel(model))
+	}
+
+	return replicate.New(options...)
 }
 
 func groqProvider(cfg providerConfig, model string) (*groq.Client, error) {
