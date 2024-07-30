@@ -7,6 +7,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"gopkg.in/yaml.v3"
 )
 
@@ -33,9 +34,8 @@ type configFile struct {
 
 	Providers []providerConfig `yaml:"providers"`
 
-	Indexes     map[string]indexConfig      `yaml:"indexes"`
-	Extractors  map[string]extractorConfig  `yaml:"extractors"`
-	Classifiers map[string]classifierConfig `yaml:"classifiers"`
+	Indexes    map[string]indexConfig     `yaml:"indexes"`
+	Extractors map[string]extractorConfig `yaml:"extractors"`
 
 	Routers map[string]routerConfig `yaml:"routers"`
 
@@ -138,17 +138,6 @@ type extractorConfig struct {
 	ChunkOverlap *int `yaml:"chunkOverlap"`
 }
 
-type classifierConfig struct {
-	Type string `yaml:"type"`
-
-	Model string `yaml:"model"`
-
-	Template string    `yaml:"template"`
-	Messages []message `yaml:"messages"`
-
-	Classes map[string]string `yaml:"classes"`
-}
-
 type routerConfig struct {
 	Type string `yaml:"type"`
 
@@ -171,8 +160,6 @@ type chainConfig struct {
 
 	Limit       *int     `yaml:"limit"`
 	Temperature *float32 `yaml:"temperature"`
-
-	Filters map[string]filterConfig `yaml:"filters"`
 }
 
 type toolConfig struct {
@@ -180,10 +167,6 @@ type toolConfig struct {
 
 	URL   string `yaml:"url"`
 	Token string `yaml:"token"`
-}
-
-type filterConfig struct {
-	Classifier string `yaml:"classifier"`
 }
 
 type message struct {

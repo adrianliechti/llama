@@ -10,8 +10,8 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/google/uuid"
 
+	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
 )
 

@@ -19,7 +19,7 @@ type File struct {
 	Content io.Reader
 }
 
-type Function struct {
+type Tool struct {
 	Name        string
 	Description string
 

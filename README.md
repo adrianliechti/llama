@@ -100,7 +100,7 @@ providers:
 ```
 
 
-### Groq
+#### Groq
 
 ```yaml
 providers:
@@ -117,7 +117,7 @@ providers:
 ```
 
 
-### Mistral AI
+#### Mistral AI
 
 ```yaml
 providers:
@@ -359,7 +359,7 @@ indexes:
 ```
 
 
-##### OpenSearch / Elasticsearch
+#### OpenSearch / Elasticsearch
 
 ```shell
 # using Docker
@@ -388,21 +388,6 @@ extractors:
 
 #### Code
 
-Supported Languages:
-
-- C#
-- C++
-- Go
-- Java
-- Kotlin
-- Java Script
-- Type Script
-- Python
-- Ruby
-- Rust
-- Scala
-- Swfit
-
 ```yaml
 extractors:
   code:
@@ -427,6 +412,23 @@ extractors:
 ```
 
 
+#### Tika
+
+```shell
+# using Docker
+docker run -it --rm -p 9998:9998 apache/tika:3.0.0.0-BETA2-full
+```
+
+```yaml
+extractors:  
+  tika:
+    type: tika
+    url: http://localhost:9998
+    chunkSize: 4000
+    chunkOverlap: 200
+```
+
+
 #### Unstructured
 
 https://unstructured.io
@@ -444,21 +446,6 @@ extractors:
 ```
 
 
-### Classifications
-
-#### LLM Classifier
-
-```yaml
-classifiers:
-  {classifier-id}:
-    type: llm
-    model: mistral-7b-instruct
-    classes:
-      class-1: "...Description when to use Class 1..."
-      class-2: "...Description when to use Class 2..."
-```
-
-
 ## Use Cases
 
 ### Retrieval Augmented Generation (RAG)
@@ -473,10 +460,6 @@ chains:
     model: mistral-7b-instruct
 
     # limit: 10
-
-    # filters:
-    #  {metadata-key}:
-    #    classifier: {classifier-id}
 ```
 
 

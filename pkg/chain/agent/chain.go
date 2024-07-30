@@ -69,26 +69,26 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		options.Temperature = c.temperature
 	}
 
-	functions := make(map[string]provider.Function)
+	tools := make(map[string]provider.Tool)
 
-	for _, f := range c.tools {
-		functions[f.Name()] = provider.Function{
-			Name:        f.Name(),
-			Description: f.Description(),
+	for _, t := range c.tools {
+		tools[t.Name()] = provider.Tool{
+			Name:        t.Name(),
+			Description: t.Description(),
 
-			Parameters: f.Parameters(),
+			Parameters: t.Parameters(),
 		}
 	}
 
-	for _, f := range options.Functions {
-		functions[f.Name] = f
+	for _, t := range options.Tools {
+		tools[t.Name] = t
 	}
 
 	input := slices.Clone(messages)
 
 	inputOptions := &provider.CompleteOptions{
 		Temperature: options.Temperature,
-		Functions:   to.Values(functions),
+		Tools:       to.Values(tools),
 	}
 
 	for {
@@ -104,12 +104,12 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 			input = append(input, provider.Message{
 				Role: provider.MessageRoleAssistant,
 
-				Content:       completion.Message.Content,
-				FunctionCalls: completion.Message.FunctionCalls,
+				Content:   completion.Message.Content,
+				ToolCalls: completion.Message.ToolCalls,
 			})
 
-			for _, f := range completion.Message.FunctionCalls {
-				tool, found := c.tools[f.Name]
+			for _, t := range completion.Message.ToolCalls {
+				tool, found := c.tools[t.Name]
 
 				if !found {
 					continue
@@ -117,7 +117,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 				var params map[string]any
 
-				if err := json.Unmarshal([]byte(f.Arguments), &params); err != nil {
+				if err := json.Unmarshal([]byte(t.Arguments), &params); err != nil {
 					return nil, err
 				}
 
@@ -134,10 +134,10 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 				}
 
 				input = append(input, provider.Message{
-					Role: provider.MessageRoleFunction,
+					Role: provider.MessageRoleTool,
 
-					Function: f.ID,
-					Content:  string(data),
+					Tool:    t.ID,
+					Content: string(data),
 				})
 
 				loop = true

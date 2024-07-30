@@ -93,7 +93,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				Role:    role,
 				Content: content,
 
-				FunctionCalls: toFunctionCalls(chat.Message.ToolCalls),
+				ToolCalls: toToolCalls(chat.Message.ToolCalls),
 			},
 		}, nil
 	} else {
@@ -171,7 +171,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 					Role:    role,
 					Content: content,
 
-					FunctionCalls: toFunctionCalls(chat.Message.ToolCalls),
+					ToolCalls: toToolCalls(chat.Message.ToolCalls),
 				},
 			}
 		}
@@ -210,15 +210,15 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 		req.Options["temperature"] = *options.Temperature
 	}
 
-	for _, f := range options.Functions {
+	for _, t := range options.Tools {
 		tool := Tool{
 			Type: "function",
 
 			Function: ToolFunction{
-				Name:       f.Name,
-				Parameters: f.Parameters,
+				Name:       t.Name,
+				Parameters: t.Parameters,
 
-				Description: f.Description,
+				Description: t.Description,
 			},
 		}
 
@@ -244,13 +244,13 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 			}
 		}
 
-		for _, f := range m.FunctionCalls {
+		for _, t := range m.ToolCalls {
 			var arguments map[string]any
-			json.Unmarshal([]byte(f.Arguments), &arguments)
+			json.Unmarshal([]byte(t.Arguments), &arguments)
 
 			call := ToolCall{
 				Function: ToolCallFunction{
-					Name:      f.Name,
+					Name:      t.Name,
 					Arguments: arguments,
 				},
 			}
@@ -273,7 +273,7 @@ func convertMessageRole(r provider.MessageRole) MessageRole {
 	case provider.MessageRoleUser:
 		return MessageRoleUser
 
-	case provider.MessageRoleFunction:
+	case provider.MessageRoleTool:
 		return MessageRoleTool
 
 	case provider.MessageRoleAssistant:
@@ -294,7 +294,7 @@ func toMessageRole(role MessageRole) provider.MessageRole {
 		return provider.MessageRoleUser
 
 	case MessageRoleTool:
-		return provider.MessageRoleFunction
+		return provider.MessageRoleTool
 
 	case MessageRoleAssistant:
 		return provider.MessageRoleAssistant
@@ -304,15 +304,15 @@ func toMessageRole(role MessageRole) provider.MessageRole {
 	}
 }
 
-func toFunctionCalls(calls []ToolCall) []provider.FunctionCall {
-	var result []provider.FunctionCall
+func toToolCalls(calls []ToolCall) []provider.ToolCall {
+	var result []provider.ToolCall
 
 	uuid := uuid.NewString()
 
 	for _, c := range calls {
 		arguments, _ := json.Marshal(c.Function.Arguments)
 
-		result = append(result, provider.FunctionCall{
+		result = append(result, provider.ToolCall{
 			ID: uuid,
 
 			Name:      c.Function.Name,
