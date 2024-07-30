@@ -5,8 +5,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/metric"
 
-	"go.opentelemetry.io/otel/sdk/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
@@ -19,11 +20,27 @@ func setupMeter(ctx context.Context, resource *sdkresource.Resource) error {
 		return err
 	}
 
-	provider := metric.NewMeterProvider(
-		metric.WithReader(metric.NewPeriodicReader(exporter, metric.WithInterval(3*time.Second))),
+	provider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(exporter, sdkmetric.WithInterval(3*time.Second))),
 	)
 
 	otel.SetMeterProvider(provider)
 
 	return nil
 }
+
+func Meter(name string) metric.Meter {
+	return otel.Meter(name)
+}
+
+// var totalRequests = prometheus.NewCounterVec(
+// 	prometheus.CounterOpts{
+// 		Name: "http_requests_total",
+// 		Help: "Number of get requests.",
+// 	},
+// 	[]string{"path"},
+// )
+
+// func ReportModel(id string) error {
+
+// }
