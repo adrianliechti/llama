@@ -28,7 +28,8 @@ func NewCompleter(url string, options ...Option) (*Completer, error) {
 	}
 
 	c := &Config{
-		url:    url,
+		url: url,
+
 		client: http.DefaultClient,
 	}
 
@@ -265,7 +266,6 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 
 func convertMessageRole(r provider.MessageRole) MessageRole {
 	switch r {
-
 	case provider.MessageRoleSystem:
 		return MessageRoleSystem
 
@@ -285,7 +285,6 @@ func convertMessageRole(r provider.MessageRole) MessageRole {
 
 func toMessageRole(role MessageRole) provider.MessageRole {
 	switch role {
-
 	case MessageRoleSystem:
 		return provider.MessageRoleSystem
 

@@ -23,7 +23,7 @@ type Renderer struct {
 
 func NewRenderer(options ...Option) (*Renderer, error) {
 	cfg := &Config{
-		model: string(openai.CreateImageModelDallE2),
+		model: string(openai.CreateImageModelDallE3),
 	}
 
 	for _, option := range options {

@@ -17,7 +17,7 @@ type Embedder struct {
 
 func NewEmbedder(options ...Option) (*Embedder, error) {
 	cfg := &Config{
-		model: string(openai.AdaEmbeddingV2),
+		model: string(openai.SmallEmbedding3),
 	}
 
 	for _, option := range options {

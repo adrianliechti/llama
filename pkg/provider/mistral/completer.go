@@ -235,7 +235,6 @@ type Message struct {
 
 func convertMessageRole(role provider.MessageRole) MessageRole {
 	switch role {
-
 	case provider.MessageRoleSystem:
 		return MessageRoleSystem
 
@@ -255,7 +254,6 @@ func convertMessageRole(role provider.MessageRole) MessageRole {
 
 func toMessageRole(role MessageRole) provider.MessageRole {
 	switch role {
-
 	case MessageRoleSystem:
 		return provider.MessageRoleSystem
 

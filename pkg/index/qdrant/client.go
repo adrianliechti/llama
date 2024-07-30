@@ -11,6 +11,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/to"
+
 	"github.com/google/uuid"
 )
 
@@ -31,9 +32,9 @@ func New(url string, namespace string, options ...Option) (*Client, error) {
 	c := &Client{
 		url: url,
 
-		client: http.DefaultClient,
-
 		namespace: namespace,
+
+		client: http.DefaultClient,
 	}
 
 	for _, option := range options {

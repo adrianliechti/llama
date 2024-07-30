@@ -3,9 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 
 	"github.com/adrianliechti/llama/config"
 	"github.com/adrianliechti/llama/server"
+
+	"github.com/adrianliechti/llama/pkg/otel"
 )
 
 func main() {
@@ -28,6 +31,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	if err := otel.Setup("llama", "0.0.1"); err != nil {
+		panic(err)
+	}
+
+	slog.SetDefault(otel.Logger("llama"))
 
 	if err := s.ListenAndServe(); err != nil {
 		panic(err)

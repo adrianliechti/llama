@@ -24,6 +24,11 @@ func (cfg *Config) RegisterModel(id string) {
 type modelContext struct {
 	ID string
 
+	Type ModelType
+
+	Name        string
+	Description string
+
 	Stops    []string
 	Template *prompt.Template
 }

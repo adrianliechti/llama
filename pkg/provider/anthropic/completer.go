@@ -24,7 +24,8 @@ type Completer struct {
 
 func NewCompleter(options ...Option) (*Completer, error) {
 	c := &Config{
-		url:    "https://api.anthropic.com",
+		url: "https://api.anthropic.com",
+
 		client: http.DefaultClient,
 	}
 

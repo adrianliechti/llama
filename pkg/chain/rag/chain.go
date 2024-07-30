@@ -99,7 +99,9 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		return nil, errors.New("last message must be from user")
 	}
 
-	results, err := c.index.Query(ctx, message.Content, &index.QueryOptions{
+	query := strings.TrimSpace(message.Content)
+
+	results, err := c.index.Query(ctx, query, &index.QueryOptions{
 		Limit: c.limit,
 	})
 
@@ -108,7 +110,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 	}
 
 	data := promptData{
-		Input: strings.TrimSpace(message.Content),
+		Input: query,
 	}
 
 	for _, r := range results {
@@ -127,8 +129,6 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		return nil, err
 	}
 
-	println(prompt)
-
 	message = provider.Message{
 		Role:    provider.MessageRoleUser,
 		Content: prompt,
@@ -136,5 +136,11 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	messages[len(messages)-1] = message
 
-	return c.completer.Complete(ctx, messages, options)
+	result, err := c.completer.Complete(ctx, messages, options)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

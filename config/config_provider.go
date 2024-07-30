@@ -11,6 +11,11 @@ func (cfg *Config) registerProviders(f *configFile) error {
 
 			context := modelContext{
 				ID: m.ID,
+
+				Type: detectModelType(id),
+
+				Name:        m.Name,
+				Description: m.Description,
 			}
 
 			if len(m.Stops) > 0 {
@@ -23,8 +28,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 				}
 			}
 
-			switch detectModelType(id) {
-
+			switch context.Type {
 			case ModelTypeCompleter:
 				completer, err := createCompleter(p, context)
 
@@ -32,7 +36,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterCompleter(id, completer)
+				cfg.RegisterCompleter(p.Type, id, completer)
 
 			case ModelTypeEmbedder:
 				embedder, err := createEmbedder(p, context)
@@ -41,7 +45,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterEmbedder(id, embedder)
+				cfg.RegisterEmbedder(p.Type, id, embedder)
 
 			case ModelTypeRenderer:
 				renderer, err := createRenderer(p, context)
@@ -50,7 +54,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterRenderer(id, renderer)
+				cfg.RegisterRenderer(p.Type, id, renderer)
 
 			case ModelTypeSynthesizer:
 				synthesizer, err := createSynthesizer(p, context)
@@ -59,7 +63,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterSynthesizer(id, synthesizer)
+				cfg.RegisterSynthesizer(p.Type, id, synthesizer)
 
 			case ModelTypeTranscriber:
 				transcriber, err := createTranscriber(p, context)
@@ -68,7 +72,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterTranscriber(id, transcriber)
+				cfg.RegisterTranscriber(p.Type, id, transcriber)
 
 			case ModelTypeTranslator:
 				translator, err := createTranslator(p, context)
@@ -77,7 +81,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterTranslator(id, translator)
+				cfg.RegisterTranslator(p.Type, id, translator)
 
 			default:
 				return errors.New("invalid model type: " + id)

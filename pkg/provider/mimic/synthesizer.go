@@ -80,7 +80,6 @@ func (s *Synthesizer) Synthesize(ctx context.Context, content string, options *p
 
 func (s *Synthesizer) voice(val string) string {
 	switch strings.ToLower(val) {
-
 	case "en", "english":
 		return "en_US/vctk_low#p239"
 

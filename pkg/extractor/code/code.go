@@ -88,26 +88,37 @@ func getSeperators(input extractor.File) []string {
 	switch strings.ToLower(path.Ext(input.Name)) {
 	case ".cs":
 		return languageCSharp
+
 	case ".cpp":
 		return languageCPP
+
 	case ".go":
 		return languageGo
+
 	case ".java":
 		return languageJava
+
 	case ".kt":
 		return languageKotlin
+
 	case ".js", ".jsm":
 		return languageJavaScript
+
 	case ".ts", ".tsx":
 		return languageTypeScript
+
 	case ".py":
 		return languagePython
+
 	case ".rb":
 		return languageRuby
+
 	case ".rs":
 		return languageRust
+
 	case ".sc", ".scala":
 		return languageScala
+
 	case ".swift":
 		return languageSwift
 	}
