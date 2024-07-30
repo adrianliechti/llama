@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 )
 
 type ObservableSynthesizer interface {
@@ -23,14 +23,10 @@ type synthesizer struct {
 	provider string
 
 	synthesizer provider.Synthesizer
-
-	embeddingMeter metric.Int64Counter
 }
 
 func NewSynthesizer(provider, model string, p provider.Synthesizer) ObservableSynthesizer {
 	library := strings.ToLower(provider)
-
-	embeddingMeter, _ := otel.Meter(library).Int64Counter("llm_platform_audio")
 
 	return &synthesizer{
 		synthesizer: p,
@@ -40,8 +36,6 @@ func NewSynthesizer(provider, model string, p provider.Synthesizer) ObservableSy
 
 		model:    model,
 		provider: provider,
-
-		embeddingMeter: embeddingMeter,
 	}
 }
 
@@ -54,13 +48,10 @@ func (p *synthesizer) Synthesize(ctx context.Context, content string, options *p
 
 	result, err := p.synthesizer.Synthesize(ctx, content, options)
 
-	p.embeddingMeter.Add(ctx, 1, metric.WithAttributes(
-		attribute.String("provider", strings.ToLower(p.provider)),
-		attribute.String("model", strings.ToLower(p.model)),
-	))
+	meterRequest(ctx, p.library, p.provider, p.model, "synthesis")
 
 	if content != "" {
-		span.SetAttributes(attribute.String("prompt", content))
+		span.SetAttributes(attribute.String("input", content))
 	}
 
 	return result, err

@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 )
 
 type ObservableEmbedder interface {
@@ -23,14 +23,10 @@ type embedder struct {
 	provider string
 
 	embedder provider.Embedder
-
-	embeddingMeter metric.Int64Counter
 }
 
 func NewEmbedder(provider, model string, p provider.Embedder) ObservableEmbedder {
 	library := strings.ToLower(provider)
-
-	embeddingMeter, _ := otel.Meter(library).Int64Counter("llm_platform_embedding")
 
 	return &embedder{
 		embedder: p,
@@ -40,8 +36,6 @@ func NewEmbedder(provider, model string, p provider.Embedder) ObservableEmbedder
 
 		model:    model,
 		provider: provider,
-
-		embeddingMeter: embeddingMeter,
 	}
 }
 
@@ -54,13 +48,10 @@ func (p *embedder) Embed(ctx context.Context, content string) (provider.Embeddin
 
 	result, err := p.embedder.Embed(ctx, content)
 
-	p.embeddingMeter.Add(ctx, 1, metric.WithAttributes(
-		attribute.String("provider", strings.ToLower(p.provider)),
-		attribute.String("model", strings.ToLower(p.model)),
-	))
+	meterRequest(ctx, p.library, p.provider, p.model, "embedding")
 
 	if content != "" {
-		span.SetAttributes(attribute.String("text", content))
+		span.SetAttributes(attribute.String("input", content))
 	}
 
 	return result, err

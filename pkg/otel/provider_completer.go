@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 )
 
 type ObservableCompleter interface {
@@ -23,14 +23,10 @@ type completer struct {
 	provider string
 
 	completer provider.Completer
-
-	completionMeter metric.Int64Counter
 }
 
 func NewCompleter(provider, model string, p provider.Completer) ObservableCompleter {
 	library := strings.ToLower(provider)
-
-	completionMeter, _ := otel.Meter(library).Int64Counter("llm_platform_completion")
 
 	return &completer{
 		completer: p,
@@ -40,8 +36,6 @@ func NewCompleter(provider, model string, p provider.Completer) ObservableComple
 
 		model:    model,
 		provider: provider,
-
-		completionMeter: completionMeter,
 	}
 }
 
@@ -54,26 +48,19 @@ func (p *completer) Complete(ctx context.Context, messages []provider.Message, o
 
 	result, err := p.completer.Complete(ctx, messages, options)
 
-	p.completionMeter.Add(ctx, 1, metric.WithAttributes(
-		attribute.String("provider", strings.ToLower(p.provider)),
-		attribute.String("model", strings.ToLower(p.model)),
-	))
+	meterRequest(ctx, p.library, p.provider, p.model, "completion")
 
 	if len(messages) > 0 {
-		message := messages[len(messages)-1]
+		input := messages[len(messages)-1].Content
 
-		if message.Content != "" {
-			span.SetAttributes(attribute.String("prompt", message.Content))
+		if input != "" {
+			span.SetAttributes(attribute.String("input", input))
 		}
 	}
 
 	if result != nil {
 		if result.Message.Content != "" {
 			span.SetAttributes(attribute.String("output", result.Message.Content))
-		}
-
-		if result.Reason != "" {
-			span.SetAttributes(attribute.String("reason", string(result.Reason)))
 		}
 	}
 

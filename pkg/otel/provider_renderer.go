@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 )
 
 type ObservableRenderer interface {
@@ -23,14 +23,10 @@ type renderer struct {
 	provider string
 
 	renderer provider.Renderer
-
-	embeddingMeter metric.Int64Counter
 }
 
 func NewRenderer(provider, model string, p provider.Renderer) ObservableRenderer {
 	library := strings.ToLower(provider)
-
-	embeddingMeter, _ := otel.Meter(library).Int64Counter("llm_platform_image")
 
 	return &renderer{
 		renderer: p,
@@ -40,8 +36,6 @@ func NewRenderer(provider, model string, p provider.Renderer) ObservableRenderer
 
 		model:    model,
 		provider: provider,
-
-		embeddingMeter: embeddingMeter,
 	}
 }
 
@@ -54,10 +48,11 @@ func (p *renderer) Render(ctx context.Context, input string, options *provider.R
 
 	result, err := p.renderer.Render(ctx, input, options)
 
-	p.embeddingMeter.Add(ctx, 1, metric.WithAttributes(
-		attribute.String("provider", strings.ToLower(p.provider)),
-		attribute.String("model", strings.ToLower(p.model)),
-	))
+	meterRequest(ctx, p.library, p.provider, p.model, "rendering")
+
+	if input != "" {
+		span.SetAttributes(attribute.String("input", input))
+	}
 
 	return result, err
 }

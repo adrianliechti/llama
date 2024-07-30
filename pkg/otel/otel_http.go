@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
-func setupHTTP(ctx context.Context, resource *sdkresource.Resource) error {
+func setupHTTP(_ context.Context, _ *sdkresource.Resource) error {
 	rt := Transport(http.DefaultTransport)
 
 	http.DefaultTransport = rt

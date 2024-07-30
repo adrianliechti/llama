@@ -21,6 +21,7 @@ func setupMeter(ctx context.Context, resource *sdkresource.Resource) error {
 
 	provider := sdkmetric.NewMeterProvider(
 		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(exporter, sdkmetric.WithInterval(3*time.Second))),
+		sdkmetric.WithResource(resource),
 	)
 
 	otel.SetMeterProvider(provider)

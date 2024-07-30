@@ -7,7 +7,7 @@ import (
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 )
 
-func newPropagator(resource *sdkresource.Resource) error {
+func newPropagator(_ *sdkresource.Resource) error {
 	propagator := propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},
 		propagation.Baggage{},

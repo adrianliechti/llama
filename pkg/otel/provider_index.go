@@ -8,7 +8,6 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 )
 
 type ObservableIndex interface {
@@ -23,14 +22,10 @@ type indexer struct {
 	provider string
 
 	index index.Provider
-
-	queryMeter metric.Int64Counter
 }
 
 func NewIndex(provider, index string, p index.Provider) ObservableIndex {
 	library := strings.ToLower(provider)
-
-	queryMeter, _ := otel.Meter(library).Int64Counter("llm_platform_query")
 
 	return &indexer{
 		index: p,
@@ -39,8 +34,6 @@ func NewIndex(provider, index string, p index.Provider) ObservableIndex {
 		library: library,
 
 		provider: provider,
-
-		queryMeter: queryMeter,
 	}
 }
 
@@ -78,11 +71,11 @@ func (p *indexer) Query(ctx context.Context, query string, options *index.QueryO
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 
-	p.queryMeter.Add(ctx, 1, metric.WithAttributes(
-		attribute.String("provider", strings.ToLower(p.provider)),
-	))
-
 	result, err := p.index.Query(ctx, query, options)
+
+	if query != "" {
+		span.SetAttributes(attribute.String("query", query))
+	}
 
 	if result != nil {
 		var outputs []string
@@ -92,7 +85,7 @@ func (p *indexer) Query(ctx context.Context, query string, options *index.QueryO
 		}
 
 		if len(outputs) > 0 {
-			span.SetAttributes(attribute.StringSlice("output", outputs))
+			span.SetAttributes(attribute.StringSlice("results", outputs))
 		}
 	}
 

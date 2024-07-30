@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 )
 
 type ObservableTranslator interface {
@@ -23,14 +23,10 @@ type translator struct {
 	provider string
 
 	translator provider.Translator
-
-	embeddingMeter metric.Int64Counter
 }
 
 func NewTranslator(provider, model string, p provider.Translator) ObservableTranslator {
 	library := strings.ToLower(provider)
-
-	embeddingMeter, _ := otel.Meter(library).Int64Counter("llm_platform_translation")
 
 	return &translator{
 		translator: p,
@@ -40,8 +36,6 @@ func NewTranslator(provider, model string, p provider.Translator) ObservableTran
 
 		model:    model,
 		provider: provider,
-
-		embeddingMeter: embeddingMeter,
 	}
 }
 
@@ -54,13 +48,16 @@ func (p *translator) Translate(ctx context.Context, content string, options *pro
 
 	result, err := p.translator.Translate(ctx, content, options)
 
-	p.embeddingMeter.Add(ctx, 1, metric.WithAttributes(
-		attribute.String("provider", strings.ToLower(p.provider)),
-		attribute.String("model", strings.ToLower(p.model)),
-	))
+	meterRequest(ctx, p.library, p.provider, p.model, "translation")
 
 	if content != "" {
-		span.SetAttributes(attribute.String("text", content))
+		span.SetAttributes(attribute.String("input", content))
+	}
+
+	if result != nil {
+		if result.Content != "" {
+			span.SetAttributes(attribute.String("output", result.Content))
+		}
 	}
 
 	return result, err
