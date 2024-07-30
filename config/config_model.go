@@ -3,6 +3,7 @@ package config
 import (
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
@@ -18,6 +19,13 @@ func (cfg *Config) RegisterModel(id string) {
 	cfg.models[id] = provider.Model{
 		ID: id,
 	}
+}
+
+type modelContext struct {
+	ID string
+
+	Stops    []string
+	Template *prompt.Template
 }
 
 func detectModelType(id string) ModelType {

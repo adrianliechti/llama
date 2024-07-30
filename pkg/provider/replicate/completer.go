@@ -2,13 +2,14 @@ package replicate
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
+	"unicode"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 )
@@ -21,7 +22,8 @@ type Completer struct {
 
 func NewCompleter(options ...Option) (*Completer, error) {
 	c := &Config{
-		url:    "https://api.replicate.com",
+		url: "https://api.replicate.com",
+
 		client: http.DefaultClient,
 	}
 
@@ -40,17 +42,37 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 	}
 
 	url, _ := url.JoinPath(c.url, "/v1/models/", c.model, "/predictions")
-	body, err := convertCompletionRequest(c.model, messages, options)
+	body, err := c.convertPredictionRequest(messages, options)
 
 	if err != nil {
 		return nil, err
 	}
 
+	req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
+	req.Header.Set("Authorization", "Bearer "+c.token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return nil, convertError(resp)
+	}
+
+	var prediction PredictionResponse
+
+	if err := json.NewDecoder(resp.Body).Decode(&prediction); err != nil {
+		return nil, err
+	}
+
 	if options.Stream == nil {
-		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
+		req, _ := http.NewRequestWithContext(ctx, "GET", prediction.URLs.Get, nil)
 		req.Header.Set("Authorization", "Bearer "+c.token)
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "text/event-stream")
 
 		resp, err := c.client.Do(req)
 
@@ -64,29 +86,28 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			return nil, convertError(resp)
 		}
 
-		var completion ChatCompletionResponse
+		var prediction PredictionResponse
 
-		if err := json.NewDecoder(resp.Body).Decode(&completion); err != nil {
+		if err := json.NewDecoder(resp.Body).Decode(&prediction); err != nil {
 			return nil, err
 		}
 
-		choice := completion.Choices[0]
+		content := strings.Join(prediction.Output, "")
 
 		return &provider.Completion{
-			ID:     completion.ID,
-			Reason: toCompletionReason(choice.FinishReason),
+			ID:     prediction.ID,
+			Reason: provider.CompletionReasonStop,
 
 			Message: provider.Message{
-				Role:    toMessageRole(choice.Message.Role),
-				Content: choice.Message.Content,
+				Role:    provider.MessageRoleAssistant,
+				Content: content,
 			},
 		}, nil
 	} else {
 		defer close(options.Stream)
 
-		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
+		req, _ := http.NewRequestWithContext(ctx, "GET", prediction.URLs.Stream, nil)
 		req.Header.Set("Authorization", "Bearer "+c.token)
-		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "text/event-stream")
 
 		resp, err := c.client.Do(req)
@@ -104,13 +125,20 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		reader := bufio.NewReader(resp.Body)
 
 		result := &provider.Completion{
+			ID: prediction.ID,
+
 			Message: provider.Message{
 				Role: provider.MessageRoleAssistant,
 			},
 		}
 
+		var currentID string
+		var currentEvent string
+
+		_ = currentID
+
 		for i := 0; ; i++ {
-			data, err := reader.ReadBytes('\n')
+			data, err := reader.ReadString('\n')
 
 			if err != nil {
 				if errors.Is(err, io.EOF) {
@@ -120,43 +148,38 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				return nil, err
 			}
 
-			data = bytes.TrimSpace(data)
-
-			if bytes.HasPrefix(data, []byte("event:")) {
+			if strings.HasPrefix(data, "id:") {
+				currentID = strings.TrimSpace(strings.TrimPrefix(data, "id:"))
 				continue
 			}
 
-			data = bytes.TrimPrefix(data, []byte("data:"))
-			data = bytes.TrimSpace(data)
-
-			if len(data) == 0 {
+			if strings.HasPrefix(data, "event:") {
+				currentEvent = strings.TrimSpace(strings.TrimPrefix(data, "event:"))
 				continue
 			}
 
-			if bytes.HasPrefix(data, []byte("[DONE]")) {
-				break
+			if currentEvent != "output" {
+				continue
 			}
 
-			var completion ChatCompletionResponse
+			content := strings.TrimPrefix(data, "data:")
 
-			if err := json.Unmarshal([]byte(data), &completion); err != nil {
-				return nil, err
+			if strings.TrimSpace(content) == "" {
+				continue
 			}
 
-			choice := completion.Choices[0]
+			if i == 0 {
+				content = strings.TrimLeftFunc(content, unicode.IsSpace)
+			}
 
-			result.ID = completion.ID
-			result.Reason = toCompletionReason(choice.FinishReason)
-
-			result.Message.Role = toMessageRole(choice.Delta.Role)
-			result.Message.Content += choice.Delta.Content
+			result.Message.Content += content
 
 			options.Stream <- provider.Completion{
 				ID:     result.ID,
 				Reason: result.Reason,
 
 				Message: provider.Message{
-					Content: choice.Delta.Content,
+					Content: content,
 				},
 			}
 		}
@@ -165,33 +188,58 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 	}
 }
 
-func convertCompletionRequest(model string, messages []provider.Message, options *provider.CompleteOptions) (*ChatCompletionRequest, error) {
+func (c *Completer) convertPredictionRequest(messages []provider.Message, options *provider.CompleteOptions) (*PredictionRequest, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
 	}
 
-	req := &ChatCompletionRequest{
-		Model: model,
-
-		Stream: options.Stream != nil,
+	req := &PredictionRequest{
+		Input: PredictionInput{
+			StopSequences:  c.stops,
+			PromptTemplate: c.template,
+		},
 	}
 
 	for _, m := range messages {
-		message := Message{
-			Role:    convertMessageRole(m.Role),
-			Content: m.Content,
+		if m.Role == provider.MessageRoleSystem {
+			req.Input.System = m.Content
 		}
 
-		req.Messages = append(req.Messages, message)
+		if m.Role == provider.MessageRoleUser {
+			req.Input.Prompt = m.Content
+		}
 	}
 
 	return req, nil
 }
 
 type PredictionRequest struct {
-	Input any `json:"input"`
+	Input PredictionInput `json:"input"`
 }
 
-type PredictionRequest struct {
-	Input any `json:"input"`
+type PredictionResponse struct {
+	ID string `json:"id"`
+
+	Input  PredictionInput  `json:"input,omitempty"`
+	Output PredictionOutput `json:"output,omitempty"`
+
+	URLs struct {
+		Cancel string `json:"cancel,omitempty"`
+		Get    string `json:"get,omitempty"`
+		Stream string `json:"stream,omitempty"`
+	} `json:"urls,omitempty"`
 }
+
+type PredictionInput struct {
+	Prompt         string `json:"prompt,omitempty"`
+	PromptTemplate string `json:"prompt_template,omitempty"`
+
+	System string `json:"system_prompt,omitempty"`
+
+	MaxTokens   *int     `json:"max_tokens,omitempty"`
+	Temperature *float32 `json:"temperature,omitempty"`
+
+	StopSequences string `json:"stop_sequences,omitempty"`
+}
+
+type PredictionOutput []string

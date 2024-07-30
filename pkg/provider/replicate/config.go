@@ -8,6 +8,9 @@ type Config struct {
 	token string
 	model string
 
+	stops    string
+	template string
+
 	client *http.Client
 }
 
@@ -34,5 +37,17 @@ func WithToken(token string) Option {
 func WithModel(model string) Option {
 	return func(c *Config) {
 		c.model = model
+	}
+}
+
+func WithStops(stops string) Option {
+	return func(c *Config) {
+		c.stops = stops
+	}
+}
+
+func WithTemplate(template string) Option {
+	return func(c *Config) {
+		c.template = template
 	}
 }

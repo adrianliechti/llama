@@ -116,6 +116,9 @@ type modelConfig struct {
 
 	Name        string `yaml:"name"`
 	Description string `yaml:"description"`
+
+	Stops    []string `yaml:"stops"`
+	Template string   `yaml:"template"`
 }
 
 type indexConfig struct {

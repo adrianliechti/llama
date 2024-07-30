@@ -18,7 +18,7 @@ func (cfg *Config) RegisterRenderer(model string, r provider.Renderer) {
 	cfg.renderer[model] = r
 }
 
-func createRenderer(cfg providerConfig, model string) (provider.Renderer, error) {
+func createRenderer(cfg providerConfig, model modelContext) (provider.Renderer, error) {
 	switch strings.ToLower(cfg.Type) {
 
 	case "openai":
@@ -29,7 +29,7 @@ func createRenderer(cfg providerConfig, model string) (provider.Renderer, error)
 	}
 }
 
-func openaiRenderer(cfg providerConfig, model string) (provider.Renderer, error) {
+func openaiRenderer(cfg providerConfig, model modelContext) (provider.Renderer, error) {
 	var options []openai.Option
 
 	if cfg.URL != "" {
@@ -40,8 +40,8 @@ func openaiRenderer(cfg providerConfig, model string) (provider.Renderer, error)
 		options = append(options, openai.WithToken(cfg.Token))
 	}
 
-	if model != "" {
-		options = append(options, openai.WithModel(model))
+	if model.ID != "" {
+		options = append(options, openai.WithModel(model.ID))
 	}
 
 	return openai.NewRenderer(options...)

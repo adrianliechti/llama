@@ -15,6 +15,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/mistral"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
+	"github.com/adrianliechti/llama/pkg/provider/replicate"
 )
 
 func (cfg *Config) RegisterCompleter(model string, c provider.Completer) {
@@ -27,7 +28,7 @@ func (cfg *Config) RegisterCompleter(model string, c provider.Completer) {
 	cfg.completer[model] = c
 }
 
-func createCompleter(cfg providerConfig, model string) (provider.Completer, error) {
+func createCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	switch strings.ToLower(cfg.Type) {
 
 	case "anthropic":
@@ -57,6 +58,9 @@ func createCompleter(cfg providerConfig, model string) (provider.Completer, erro
 	case "openai":
 		return openaiCompleter(cfg, model)
 
+	case "replicate":
+		return replicateCompleter(cfg, model)
+
 	case "custom":
 		return customCompleter(cfg, model)
 
@@ -65,7 +69,7 @@ func createCompleter(cfg providerConfig, model string) (provider.Completer, erro
 	}
 }
 
-func anthropicCompleter(cfg providerConfig, model string) (provider.Completer, error) {
+func anthropicCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	var options []anthropic.Option
 
 	if cfg.URL != "" {
@@ -76,42 +80,42 @@ func anthropicCompleter(cfg providerConfig, model string) (provider.Completer, e
 		options = append(options, anthropic.WithToken(cfg.Token))
 	}
 
-	if model != "" {
-		options = append(options, anthropic.WithModel(model))
+	if model.ID != "" {
+		options = append(options, anthropic.WithModel(model.ID))
 	}
 
 	return anthropic.NewCompleter(options...)
 }
 
-func cohereCompleter(cfg providerConfig, model string) (provider.Completer, error) {
+func cohereCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	var options []cohere.Option
 
 	if cfg.Token != "" {
 		options = append(options, cohere.WithToken(cfg.Token))
 	}
 
-	if model != "" {
-		options = append(options, cohere.WithModel(model))
+	if model.ID != "" {
+		options = append(options, cohere.WithModel(model.ID))
 	}
 
 	return cohere.NewCompleter(options...)
 }
 
-func groqCompleter(cfg providerConfig, model string) (provider.Completer, error) {
+func groqCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	var options []groq.Option
 
 	if cfg.Token != "" {
 		options = append(options, groq.WithToken(cfg.Token))
 	}
 
-	if model != "" {
-		options = append(options, groq.WithModel(model))
+	if model.ID != "" {
+		options = append(options, groq.WithModel(model.ID))
 	}
 
 	return groq.NewCompleter(options...)
 }
 
-func huggingfaceCompleter(cfg providerConfig, model string) (provider.Completer, error) {
+func huggingfaceCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	var options []huggingface.Option
 
 	if cfg.Token != "" {
@@ -121,47 +125,47 @@ func huggingfaceCompleter(cfg providerConfig, model string) (provider.Completer,
 	return huggingface.NewCompleter(cfg.URL, options...)
 }
 
-func langchainCompleter(cfg providerConfig, model string) (provider.Completer, error) {
+func langchainCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	var options []langchain.Option
 
 	return langchain.NewCompleter(cfg.URL, options...)
 }
 
-func llamaCompleter(cfg providerConfig, model string) (provider.Completer, error) {
+func llamaCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	var options []llama.Option
 
-	if model != "" {
-		options = append(options, llama.WithModel(model))
+	if model.ID != "" {
+		options = append(options, llama.WithModel(model.ID))
 	}
 
 	return llama.NewCompleter(cfg.URL, options...)
 }
 
-func mistralCompleter(cfg providerConfig, model string) (provider.Completer, error) {
+func mistralCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	var options []mistral.Option
 
 	if cfg.Token != "" {
 		options = append(options, mistral.WithToken(cfg.Token))
 	}
 
-	if model != "" {
-		options = append(options, mistral.WithModel(model))
+	if model.ID != "" {
+		options = append(options, mistral.WithModel(model.ID))
 	}
 
 	return mistral.NewCompleter(options...)
 }
 
-func ollamaCompleter(cfg providerConfig, model string) (provider.Completer, error) {
+func ollamaCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	var options []ollama.Option
 
-	if model != "" {
-		options = append(options, ollama.WithModel(model))
+	if model.ID != "" {
+		options = append(options, ollama.WithModel(model.ID))
 	}
 
 	return ollama.NewCompleter(cfg.URL, options...)
 }
 
-func openaiCompleter(cfg providerConfig, model string) (provider.Completer, error) {
+func openaiCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	var options []openai.Option
 
 	if cfg.URL != "" {
@@ -172,14 +176,51 @@ func openaiCompleter(cfg providerConfig, model string) (provider.Completer, erro
 		options = append(options, openai.WithToken(cfg.Token))
 	}
 
-	if model != "" {
-		options = append(options, openai.WithModel(model))
+	if model.ID != "" {
+		options = append(options, openai.WithModel(model.ID))
 	}
 
 	return openai.NewCompleter(options...)
 }
 
-func customCompleter(cfg providerConfig, model string) (provider.Completer, error) {
+func replicateCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
+	var options []replicate.Option
+
+	if cfg.URL != "" {
+		options = append(options, replicate.WithURL(cfg.URL))
+	}
+
+	if cfg.Token != "" {
+		options = append(options, replicate.WithToken(cfg.Token))
+	}
+
+	if model.ID != "" {
+		options = append(options, replicate.WithModel(model.ID))
+	}
+
+	if len(model.Stops) > 0 {
+		stops := strings.Join(model.Stops, ",")
+		options = append(options, replicate.WithStops(stops))
+	}
+
+	if model.Template != nil {
+		template, err := model.Template.Execute(nil)
+
+		if err != nil {
+			return nil, err
+		}
+
+		options = append(options, replicate.WithTemplate(template))
+	}
+
+	if model.ID != "" {
+		options = append(options, replicate.WithModel(model.ID))
+	}
+
+	return replicate.NewCompleter(options...)
+}
+
+func customCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	var options []custom.Option
 
 	return custom.NewCompleter(cfg.URL, options...)
