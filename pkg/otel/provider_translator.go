@@ -15,7 +15,7 @@ type ObservableTranslator interface {
 	provider.Translator
 }
 
-type translator struct {
+type observableTranslator struct {
 	name    string
 	library string
 
@@ -28,7 +28,7 @@ type translator struct {
 func NewTranslator(provider, model string, p provider.Translator) ObservableTranslator {
 	library := strings.ToLower(provider)
 
-	return &translator{
+	return &observableTranslator{
 		translator: p,
 
 		name:    strings.TrimSuffix(strings.ToLower(provider), "-translator") + "-translator",
@@ -39,10 +39,10 @@ func NewTranslator(provider, model string, p provider.Translator) ObservableTran
 	}
 }
 
-func (p *translator) otelSetup() {
+func (p *observableTranslator) otelSetup() {
 }
 
-func (p *translator) Translate(ctx context.Context, content string, options *provider.TranslateOptions) (*provider.Translation, error) {
+func (p *observableTranslator) Translate(ctx context.Context, content string, options *provider.TranslateOptions) (*provider.Translation, error) {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 

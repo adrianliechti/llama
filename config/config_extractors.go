@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/otel"
+
 	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/extractor/code"
 	"github.com/adrianliechti/llama/pkg/extractor/tesseract"
@@ -12,12 +14,18 @@ import (
 	"github.com/adrianliechti/llama/pkg/extractor/unstructured"
 )
 
-func (cfg *Config) RegisterExtractor(model string, e extractor.Provider) {
+func (cfg *Config) RegisterExtractor(name string, p extractor.Provider) {
 	if cfg.extractors == nil {
 		cfg.extractors = make(map[string]extractor.Provider)
 	}
 
-	cfg.extractors[model] = e
+	extractor, ok := p.(otel.ObservableExtractor)
+
+	if !ok {
+		extractor = otel.NewExtractor(name, p)
+	}
+
+	cfg.extractors[name] = extractor
 }
 
 func (cfg *Config) Extractor(id string) (extractor.Provider, error) {

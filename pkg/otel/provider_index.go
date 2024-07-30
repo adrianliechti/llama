@@ -15,7 +15,7 @@ type ObservableIndex interface {
 	index.Provider
 }
 
-type indexer struct {
+type observableIndex struct {
 	name    string
 	library string
 
@@ -27,7 +27,7 @@ type indexer struct {
 func NewIndex(provider, index string, p index.Provider) ObservableIndex {
 	library := strings.ToLower(provider)
 
-	return &indexer{
+	return &observableIndex{
 		index: p,
 
 		name:    strings.TrimSuffix(strings.ToLower(provider), "-index") + "-index",
@@ -37,10 +37,10 @@ func NewIndex(provider, index string, p index.Provider) ObservableIndex {
 	}
 }
 
-func (p *indexer) otelSetup() {
+func (p *observableIndex) otelSetup() {
 }
 
-func (p *indexer) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+func (p *observableIndex) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 
@@ -49,7 +49,7 @@ func (p *indexer) List(ctx context.Context, options *index.ListOptions) ([]index
 	return result, err
 }
 
-func (p *indexer) Index(ctx context.Context, documents ...index.Document) error {
+func (p *observableIndex) Index(ctx context.Context, documents ...index.Document) error {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 
@@ -58,7 +58,7 @@ func (p *indexer) Index(ctx context.Context, documents ...index.Document) error 
 	return err
 }
 
-func (p *indexer) Delete(ctx context.Context, ids ...string) error {
+func (p *observableIndex) Delete(ctx context.Context, ids ...string) error {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 
@@ -67,7 +67,7 @@ func (p *indexer) Delete(ctx context.Context, ids ...string) error {
 	return err
 }
 
-func (p *indexer) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
+func (p *observableIndex) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 

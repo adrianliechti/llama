@@ -14,7 +14,7 @@ type ObservableTranscriber interface {
 	provider.Transcriber
 }
 
-type transcriber struct {
+type observableTranscriber struct {
 	name    string
 	library string
 
@@ -27,7 +27,7 @@ type transcriber struct {
 func NewTranscriber(provider, model string, p provider.Transcriber) ObservableTranscriber {
 	library := strings.ToLower(provider)
 
-	return &transcriber{
+	return &observableTranscriber{
 		transcriber: p,
 
 		name:    strings.TrimSuffix(strings.ToLower(provider), "-transcriber") + "-transcriber",
@@ -38,10 +38,10 @@ func NewTranscriber(provider, model string, p provider.Transcriber) ObservableTr
 	}
 }
 
-func (p *transcriber) otelSetup() {
+func (p *observableTranscriber) otelSetup() {
 }
 
-func (p *transcriber) Transcribe(ctx context.Context, input provider.File, options *provider.TranscribeOptions) (*provider.Transcription, error) {
+func (p *observableTranscriber) Transcribe(ctx context.Context, input provider.File, options *provider.TranscribeOptions) (*provider.Transcription, error) {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 

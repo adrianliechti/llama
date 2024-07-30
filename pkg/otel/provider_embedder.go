@@ -15,7 +15,7 @@ type ObservableEmbedder interface {
 	provider.Embedder
 }
 
-type embedder struct {
+type observableEmbedder struct {
 	name    string
 	library string
 
@@ -28,7 +28,7 @@ type embedder struct {
 func NewEmbedder(provider, model string, p provider.Embedder) ObservableEmbedder {
 	library := strings.ToLower(provider)
 
-	return &embedder{
+	return &observableEmbedder{
 		embedder: p,
 
 		name:    strings.TrimSuffix(strings.ToLower(provider), "-embedder") + "-embedder",
@@ -39,10 +39,10 @@ func NewEmbedder(provider, model string, p provider.Embedder) ObservableEmbedder
 	}
 }
 
-func (p *embedder) otelSetup() {
+func (p *observableEmbedder) otelSetup() {
 }
 
-func (p *embedder) Embed(ctx context.Context, content string) (provider.Embeddings, error) {
+func (p *observableEmbedder) Embed(ctx context.Context, content string) (provider.Embeddings, error) {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 

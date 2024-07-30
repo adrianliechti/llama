@@ -15,7 +15,7 @@ type ObservableSynthesizer interface {
 	provider.Synthesizer
 }
 
-type synthesizer struct {
+type observableSynthesizer struct {
 	name    string
 	library string
 
@@ -28,7 +28,7 @@ type synthesizer struct {
 func NewSynthesizer(provider, model string, p provider.Synthesizer) ObservableSynthesizer {
 	library := strings.ToLower(provider)
 
-	return &synthesizer{
+	return &observableSynthesizer{
 		synthesizer: p,
 
 		name:    strings.TrimSuffix(strings.ToLower(provider), "-synthesizer") + "-synthesizer",
@@ -39,10 +39,10 @@ func NewSynthesizer(provider, model string, p provider.Synthesizer) ObservableSy
 	}
 }
 
-func (p *synthesizer) otelSetup() {
+func (p *observableSynthesizer) otelSetup() {
 }
 
-func (p *synthesizer) Synthesize(ctx context.Context, content string, options *provider.SynthesizeOptions) (*provider.Synthesis, error) {
+func (p *observableSynthesizer) Synthesize(ctx context.Context, content string, options *provider.SynthesizeOptions) (*provider.Synthesis, error) {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 

@@ -15,7 +15,7 @@ type ObservableRenderer interface {
 	provider.Renderer
 }
 
-type renderer struct {
+type observableRenderer struct {
 	name    string
 	library string
 
@@ -28,7 +28,7 @@ type renderer struct {
 func NewRenderer(provider, model string, p provider.Renderer) ObservableRenderer {
 	library := strings.ToLower(provider)
 
-	return &renderer{
+	return &observableRenderer{
 		renderer: p,
 
 		name:    strings.TrimSuffix(strings.ToLower(provider), "-renderer") + "-renderer",
@@ -39,10 +39,10 @@ func NewRenderer(provider, model string, p provider.Renderer) ObservableRenderer
 	}
 }
 
-func (p *renderer) otelSetup() {
+func (p *observableRenderer) otelSetup() {
 }
 
-func (p *renderer) Render(ctx context.Context, input string, options *provider.RenderOptions) (*provider.Image, error) {
+func (p *observableRenderer) Render(ctx context.Context, input string, options *provider.RenderOptions) (*provider.Image, error) {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 

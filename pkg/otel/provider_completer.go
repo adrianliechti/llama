@@ -15,7 +15,7 @@ type ObservableCompleter interface {
 	provider.Completer
 }
 
-type completer struct {
+type observableCompleter struct {
 	name    string
 	library string
 
@@ -28,7 +28,7 @@ type completer struct {
 func NewCompleter(provider, model string, p provider.Completer) ObservableCompleter {
 	library := strings.ToLower(provider)
 
-	return &completer{
+	return &observableCompleter{
 		completer: p,
 
 		name:    strings.TrimSuffix(strings.ToLower(provider), "-completer") + "-completer",
@@ -39,10 +39,10 @@ func NewCompleter(provider, model string, p provider.Completer) ObservableComple
 	}
 }
 
-func (p *completer) otelSetup() {
+func (p *observableCompleter) otelSetup() {
 }
 
-func (p *completer) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+func (p *observableCompleter) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 

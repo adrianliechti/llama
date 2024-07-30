@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/otel"
+
 	"github.com/adrianliechti/llama/pkg/tool"
 	"github.com/adrianliechti/llama/pkg/tool/bing"
 	"github.com/adrianliechti/llama/pkg/tool/custom"
@@ -11,12 +13,18 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool/tavily"
 )
 
-func (c *Config) RegisterTool(id string, val tool.Tool) {
+func (c *Config) RegisterTool(name string, p tool.Tool) {
 	if c.tools == nil {
 		c.tools = make(map[string]tool.Tool)
 	}
 
-	c.tools[id] = val
+	tool, ok := p.(otel.ObservableTool)
+
+	if !ok {
+		tool = otel.NewTool(name, p)
+	}
+
+	c.tools[name] = tool
 }
 
 func (cfg *Config) Tool(id string) (tool.Tool, error) {
