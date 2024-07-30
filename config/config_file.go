@@ -7,6 +7,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"gopkg.in/yaml.v3"
 )
 
@@ -33,9 +34,10 @@ type configFile struct {
 
 	Providers []providerConfig `yaml:"providers"`
 
-	Indexes     map[string]indexConfig      `yaml:"indexes"`
-	Extractors  map[string]extractorConfig  `yaml:"extractors"`
-	Classifiers map[string]classifierConfig `yaml:"classifiers"`
+	Indexes    map[string]indexConfig     `yaml:"indexes"`
+	Extractors map[string]extractorConfig `yaml:"extractors"`
+
+	Routers map[string]routerConfig `yaml:"routers"`
 
 	Tools  map[string]toolConfig  `yaml:"tools"`
 	Chains map[string]chainConfig `yaml:"chains"`
@@ -56,16 +58,55 @@ type providerConfig struct {
 	URL   string `yaml:"url"`
 	Token string `yaml:"token"`
 
-	Models map[string]modelConfig `yaml:"models"`
+	Models providerModelsConfig `yaml:"models"`
+}
+
+type providerModelsConfig map[string]modelConfig
+
+func (c *providerModelsConfig) UnmarshalYAML(value *yaml.Node) error {
+	var config map[string]modelConfig
+
+	if err := value.Decode(&config); err == nil {
+		for id, model := range config {
+			if model.ID == "" {
+				model.ID = id
+			}
+
+			config[id] = model
+		}
+
+		*c = config
+		return nil
+	}
+
+	var list []string
+
+	if err := value.Decode(&list); err == nil {
+		config = make(map[string]modelConfig)
+
+		for _, id := range list {
+			config[id] = modelConfig{
+				ID: id,
+			}
+		}
+
+		*c = config
+		return nil
+	}
+
+	return errors.New("invalid models config")
 }
 
 type ModelType string
 
 const (
+	ModelTypeAuto        ModelType = ""
 	ModelTypeCompleter   ModelType = "completer"
 	ModelTypeEmbedder    ModelType = "embedder"
-	ModelTypeTranslator  ModelType = "translator"
+	ModelTypeRenderer    ModelType = "renderer"
+	ModelTypeSynthesizer ModelType = "synthesizer"
 	ModelTypeTranscriber ModelType = "transcriber"
+	ModelTypeTranslator  ModelType = "translator"
 )
 
 type modelConfig struct {
@@ -75,8 +116,6 @@ type modelConfig struct {
 
 	Name        string `yaml:"name"`
 	Description string `yaml:"description"`
-
-	Adapter string `yaml:"adapter"`
 }
 
 type indexConfig struct {
@@ -99,16 +138,13 @@ type extractorConfig struct {
 	ChunkOverlap *int `yaml:"chunkOverlap"`
 }
 
-type classifierConfig struct {
+type routerConfig struct {
 	Type string `yaml:"type"`
 
-	Model string `yaml:"model"`
-
-	Template string    `yaml:"template"`
-	Messages []message `yaml:"messages"`
-
-	Classes map[string]string `yaml:"classes"`
+	Models routerModelsConfig `yaml:"models"`
 }
+
+type routerModelsConfig []string
 
 type chainConfig struct {
 	Type string `yaml:"type"`
@@ -123,10 +159,7 @@ type chainConfig struct {
 	Tools []string `yaml:"tools"`
 
 	Limit       *int     `yaml:"limit"`
-	Distance    *float32 `yaml:"distance"`
 	Temperature *float32 `yaml:"temperature"`
-
-	Filters map[string]filterConfig `yaml:"filters"`
 }
 
 type toolConfig struct {
@@ -134,13 +167,6 @@ type toolConfig struct {
 
 	URL   string `yaml:"url"`
 	Token string `yaml:"token"`
-
-	Model string `yaml:"model"`
-	Index string `yaml:"index"`
-}
-
-type filterConfig struct {
-	Classifier string `yaml:"classifier"`
 }
 
 type message struct {

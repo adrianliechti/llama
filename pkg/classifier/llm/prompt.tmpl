@@ -1,9 +1,0 @@
-Classify the given input in one of these classes:
-{{ range .Classes }}
-{{ .Name }}: {{ .Description }}
-{{- end }}
-
-You MUST answer only with the name of the class, which is one of {{ $sep := "" }}{{- range .Classes }}{{ $sep }}{{ .Name }}{{ $sep = ", " }}{{- end }}.
-
-Input: {{ .Input }}
-Class: 

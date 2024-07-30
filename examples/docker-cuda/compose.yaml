@@ -1,6 +1,6 @@
 services:
   platform:
-    image: adrianliechti/llama-platform
+    image: ghcr.io/adrianliechti/llama-platform
     pull_policy: always
     build:
       context: ../../
@@ -70,12 +70,12 @@ services:
               capabilities: [gpu]
   
   web:
-    image: adrianliechti/llama-streamlit
+    image: ghcr.io/adrianliechti/llama-streamlit
     pull_policy: always
     ports:
       - 8501:8501
     environment:
-      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+      - OPENAI_BASE_URL=http://platform:8080/v1
     depends_on:
       - platform
   
@@ -86,23 +86,19 @@ configs:
         - type: huggingface
           url: http://mistral-7b-instruct
           models:
-            mistral-7b-instruct:
-              id: tgi
+            - mistral-7b-instruct
         
         - type: huggingface
           url: http://nomic-embed-text
           models:
-            nomic-embed-text:
-              id: tei
+            - nomic-embed-text
         
         - type: whisper
           url: http://whisper:8000
           models:
-            whisper-1:
-              id: default
+            - whisper-1
         
         - type: mimic
           url: http://mimic:59125
           models:
-            tts-1:
-              id: default
+            - tts-1

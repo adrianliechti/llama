@@ -36,8 +36,6 @@ func NewCompleter(url string, options ...Option) (*Completer, error) {
 		option(c)
 	}
 
-	go c.ensureModel()
-
 	return &Completer{
 		Config: c,
 	}, nil
@@ -88,11 +86,13 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 		return &provider.Completion{
 			ID:     id,
-			Reason: provider.CompletionReasonStop,
+			Reason: toCompletionReason(chat),
 
 			Message: provider.Message{
 				Role:    role,
 				Content: content,
+
+				ToolCalls: toToolCalls(chat.Message.ToolCalls),
 			},
 		}, nil
 	} else {
@@ -169,6 +169,8 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				Message: provider.Message{
 					Role:    role,
 					Content: content,
+
+					ToolCalls: toToolCalls(chat.Message.ToolCalls),
 				},
 			}
 		}
@@ -207,6 +209,21 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 		req.Options["temperature"] = *options.Temperature
 	}
 
+	for _, t := range options.Tools {
+		tool := Tool{
+			Type: "function",
+
+			Function: ToolFunction{
+				Name:       t.Name,
+				Parameters: t.Parameters,
+
+				Description: t.Description,
+			},
+		}
+
+		req.Tools = append(req.Tools, tool)
+	}
+
 	for i, m := range messages {
 		message := Message{
 			Role:    convertMessageRole(m.Role),
@@ -226,6 +243,20 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 			}
 		}
 
+		for _, t := range m.ToolCalls {
+			var arguments map[string]any
+			json.Unmarshal([]byte(t.Arguments), &arguments)
+
+			call := ToolCall{
+				Function: ToolCallFunction{
+					Name:      t.Name,
+					Arguments: arguments,
+				},
+			}
+
+			message.ToolCalls = append(message.ToolCalls, call)
+		}
+
 		req.Messages = append(req.Messages, message)
 	}
 
@@ -240,6 +271,9 @@ func convertMessageRole(r provider.MessageRole) MessageRole {
 
 	case provider.MessageRoleUser:
 		return MessageRoleUser
+
+	case provider.MessageRoleTool:
+		return MessageRoleTool
 
 	case provider.MessageRoleAssistant:
 		return MessageRoleAssistant
@@ -258,18 +292,41 @@ func toMessageRole(role MessageRole) provider.MessageRole {
 	case MessageRoleUser:
 		return provider.MessageRoleUser
 
+	case MessageRoleTool:
+		return provider.MessageRoleTool
+
 	case MessageRoleAssistant:
 		return provider.MessageRoleAssistant
-
-	// case MessageRoleTool:
-	// 	return provider.MessageRoleFunction
 
 	default:
 		return ""
 	}
 }
 
+func toToolCalls(calls []ToolCall) []provider.ToolCall {
+	var result []provider.ToolCall
+
+	uuid := uuid.NewString()
+
+	for _, c := range calls {
+		arguments, _ := json.Marshal(c.Function.Arguments)
+
+		result = append(result, provider.ToolCall{
+			ID: uuid,
+
+			Name:      c.Function.Name,
+			Arguments: string(arguments),
+		})
+	}
+
+	return result
+}
+
 func toCompletionReason(chat ChatResponse) provider.CompletionReason {
+	if len(chat.Message.ToolCalls) > 0 {
+		return provider.CompletionReasonFunction
+	}
+
 	if chat.Done {
 		return provider.CompletionReasonStop
 	}
@@ -283,6 +340,7 @@ var (
 	MessageRoleSystem    MessageRole = "system"
 	MessageRoleUser      MessageRole = "user"
 	MessageRoleAssistant MessageRole = "assistant"
+	MessageRoleTool      MessageRole = "tool"
 )
 
 type MessageImage []byte
@@ -292,6 +350,8 @@ type Message struct {
 	Content string      `json:"content"`
 
 	Images []MessageImage `json:"images,omitempty"`
+
+	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 }
 
 type ChatRequest struct {
@@ -302,7 +362,30 @@ type ChatRequest struct {
 
 	Messages []Message `json:"messages"`
 
+	Tools []Tool `json:"tools,omitempty"`
+
 	Options map[string]interface{} `json:"options"`
+}
+
+type Tool struct {
+	Type     string       `json:"type"`
+	Function ToolFunction `json:"function"`
+}
+
+type ToolFunction struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+
+	Parameters any `json:"parameters"`
+}
+
+type ToolCall struct {
+	Function ToolCallFunction `json:"function"`
+}
+
+type ToolCallFunction struct {
+	Name      string         `json:"name"`
+	Arguments map[string]any `json:"arguments"`
 }
 
 type ChatResponse struct {

@@ -107,16 +107,11 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 DOCUMENTS:
 	for _, d := range c.documents {
+		score := cosineSimilarity(embedding, d.Embedding)
+
 		r := index.Result{
+			Score:    score,
 			Document: d,
-
-			Distance: 1.0 - cosineSimilarity(embedding, d.Embedding),
-		}
-
-		if options.Distance != nil {
-			if r.Distance > *options.Distance {
-				continue
-			}
 		}
 
 		for k, v := range options.Filters {
@@ -135,7 +130,7 @@ DOCUMENTS:
 	}
 
 	sort.Slice(results, func(i, j int) bool {
-		return results[i].Distance < results[j].Distance
+		return results[i].Score > results[j].Score
 	})
 
 	if options.Limit != nil {

@@ -4,15 +4,14 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/classifier"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/adrianliechti/llama/pkg/chain"
+	"github.com/adrianliechti/llama/pkg/chain/agent"
 	"github.com/adrianliechti/llama/pkg/chain/assistant"
 	"github.com/adrianliechti/llama/pkg/chain/rag"
-	"github.com/adrianliechti/llama/pkg/chain/toolbox"
 
 	"github.com/adrianliechti/llama/pkg/to"
 	"github.com/adrianliechti/llama/pkg/tool"
@@ -38,8 +37,6 @@ type chainContext struct {
 	Messages []provider.Message
 
 	Tools map[string]tool.Tool
-
-	Classifiers map[string]classifier.Provider
 }
 
 func (cfg *Config) registerChains(f *configFile) error {
@@ -47,9 +44,8 @@ func (cfg *Config) registerChains(f *configFile) error {
 		var err error
 
 		context := chainContext{
-			Tools:       make(map[string]tool.Tool),
-			Messages:    make([]provider.Message, 0),
-			Classifiers: make(map[string]classifier.Provider),
+			Tools:    make(map[string]tool.Tool),
+			Messages: make([]provider.Message, 0),
 		}
 
 		if c.Index != "" {
@@ -92,18 +88,6 @@ func (cfg *Config) registerChains(f *configFile) error {
 			context.Tools[tool.Name()] = tool
 		}
 
-		for _, v := range c.Filters {
-			if v.Classifier != "" {
-				classifier, err := cfg.Classifier(v.Classifier)
-
-				if err != nil {
-					return err
-				}
-
-				context.Classifiers[v.Classifier] = classifier
-			}
-		}
-
 		chain, err := createChain(c, context)
 
 		if err != nil {
@@ -118,18 +102,37 @@ func (cfg *Config) registerChains(f *configFile) error {
 
 func createChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
+
+	case "agent":
+		return agentChain(cfg, context)
+
 	case "assistant":
 		return assistantChain(cfg, context)
 
 	case "rag":
 		return ragChain(cfg, context)
 
-	case "toolbox":
-		return toolboxChain(cfg, context)
-
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
 	}
+}
+
+func agentChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
+	var options []agent.Option
+
+	if context.Completer != nil {
+		options = append(options, agent.WithCompleter(context.Completer))
+	}
+
+	if context.Tools != nil {
+		options = append(options, agent.WithTools(to.Values(context.Tools)...))
+	}
+
+	if cfg.Temperature != nil {
+		options = append(options, agent.WithTemperature(*cfg.Temperature))
+	}
+
+	return agent.New(options...)
 }
 
 func assistantChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
@@ -177,35 +180,9 @@ func ragChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 		options = append(options, rag.WithLimit(*cfg.Limit))
 	}
 
-	if cfg.Distance != nil {
-		options = append(options, rag.WithDistance(*cfg.Distance))
-	}
-
 	if cfg.Temperature != nil {
 		options = append(options, rag.WithTemperature(*cfg.Temperature))
 	}
 
-	for k, v := range cfg.Filters {
-		options = append(options, rag.WithFilter(k, context.Classifiers[v.Classifier]))
-	}
-
 	return rag.New(options...)
-}
-
-func toolboxChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
-	var options []toolbox.Option
-
-	if context.Completer != nil {
-		options = append(options, toolbox.WithCompleter(context.Completer))
-	}
-
-	if context.Tools != nil {
-		options = append(options, toolbox.WithTools(to.Values(context.Tools)...))
-	}
-
-	if cfg.Temperature != nil {
-		options = append(options, toolbox.WithTemperature(*cfg.Temperature))
-	}
-
-	return toolbox.New(options...)
 }

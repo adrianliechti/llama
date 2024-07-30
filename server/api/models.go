@@ -9,13 +9,12 @@ type Document struct {
 }
 
 type Result struct {
+	Score    *float32 `json:"score,omitempty"`
 	Document `json:",inline"`
-	Distance *float32 `json:"distance,omitempty"`
 }
 
 type Query struct {
 	Text string `json:"text,omitempty"`
 
-	Limit    *int     `json:"limit,omitempty"`
-	Distance *float32 `json:"distance,omitempty"`
+	Limit *int `json:"limit,omitempty"`
 }

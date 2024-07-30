@@ -175,6 +175,9 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 		Model: model,
 
 		Stream: options.Stream != nil,
+
+		MaxTokens:   options.MaxTokens,
+		Temperature: options.Temperature,
 	}
 
 	for _, m := range messages {
@@ -192,9 +195,12 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 type ChatCompletionRequest struct {
 	Model string `json:"model"`
 
+	Messages []Message `json:"messages"`
+
 	Stream bool `json:"stream"`
 
-	Messages []Message `json:"messages"`
+	MaxTokens   *int     `json:"max_tokens,omitempty"`
+	Temperature *float32 `json:"temperature,omitempty"`
 }
 
 type ChatCompletionResponse struct {
@@ -239,7 +245,7 @@ func convertMessageRole(role provider.MessageRole) MessageRole {
 	case provider.MessageRoleAssistant:
 		return MessageRoleAssistant
 
-	case provider.MessageRoleFunction:
+	case provider.MessageRoleTool:
 		return MessageRoleTool
 
 	default:
@@ -260,7 +266,7 @@ func toMessageRole(role MessageRole) provider.MessageRole {
 		return provider.MessageRoleAssistant
 
 	case MessageRoleTool:
-		return provider.MessageRoleFunction
+		return provider.MessageRoleTool
 
 	default:
 		return ""

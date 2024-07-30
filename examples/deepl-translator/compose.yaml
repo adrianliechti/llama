@@ -1,6 +1,6 @@
 services:
   platform:
-    image: adrianliechti/llama-platform
+    image: ghcr.io/adrianliechti/llama-platform
     pull_policy: always
     build:
       context: ../../
@@ -12,12 +12,12 @@ services:
         target: /config.yaml
   
   web:
-    image: adrianliechti/llama-streamlit
+    image: ghcr.io/adrianliechti/llama-streamlit
     pull_policy: always
     ports:
       - 8501:8501
     environment:
-      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+      - OPENAI_BASE_URL=http://platform:8080/v1
     depends_on:
       - platform
   
@@ -26,9 +26,10 @@ configs:
     content: |
       providers:
         - type: deepl
-          token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+          token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx          
           models:
             english-translator:
               id: EN
+              
             german-translator:
               id: DE

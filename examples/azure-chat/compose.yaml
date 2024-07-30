@@ -1,6 +1,6 @@
 services:
   platform:
-    image: adrianliechti/llama-platform
+    image: ghcr.io/adrianliechti/llama-platform
     pull_policy: always
     build:
       context: ../../
@@ -12,12 +12,12 @@ services:
         target: /config.yaml
   
   web:
-    image: adrianliechti/llama-streamlit
+    image: ghcr.io/adrianliechti/llama-streamlit
     pull_policy: always
     ports:
       - 8501:8501
     environment:
-      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+      - OPENAI_BASE_URL=http://platform:8080/v1
     depends_on:
       - platform
   
@@ -28,9 +28,10 @@ configs:
         - type: openai
           url: ${OPENAI_BASE_URL}
           token: ${OPENAI_API_KEY}
- 
+
+          # https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models
           models:
-            gpt-3.5-turbo:
+            - gpt-3.5-turbo:
               id: gpt-35-turbo
  
             gpt-4-turbo:

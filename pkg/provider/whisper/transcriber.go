@@ -12,12 +12,11 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"github.com/google/uuid"
 )
 
-var (
-	_ provider.Transcriber = (*Transcriber)(nil)
-)
+var _ provider.Transcriber = (*Transcriber)(nil)
 
 type Transcriber struct {
 	*Config

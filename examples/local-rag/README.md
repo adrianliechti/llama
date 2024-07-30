@@ -14,7 +14,7 @@ $ ollama start
 Download [Mistral](https://mistral.ai) Model
 
 ```shell
-$ ollama pull mistral
+$ ollama pull llama3.1
 $ ollama pull nomic-embed-text
 ```
 

@@ -3,7 +3,7 @@
 version: "3"
 
 vars:
-  REPOSITORY: adrianliechti/llama-platform
+  REPOSITORY: ghcr.io/adrianliechti/llama-platform
 
 includes:
   llama:
@@ -24,6 +24,12 @@ includes:
   chroma:
     taskfile: ./Taskfile.chroma.yml
   
+  opensearch:
+    taskfile: ./Taskfile.opensearch.yml
+
+  qdrant:
+    taskfile: ./Taskfile.qdrant.yml
+
   weaviate:
     taskfile: ./Taskfile.weaviate.yml
 
@@ -44,4 +50,4 @@ tasks:
 
   webui:
     cmds:
-      - docker run -it --rm --pull always -p 8501:8501 -e OPENAI_BASE_URL=http://host.docker.internal:8080/oai/v1 adrianliechti/llama-streamlit
+      - docker run -it --rm --pull always -p 8501:8501 -e OPENAI_BASE_URL=http://host.docker.internal:8080/v1 ghcr.io/adrianliechti/llama-streamlit

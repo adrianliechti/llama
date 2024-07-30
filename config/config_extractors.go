@@ -8,6 +8,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/extractor/code"
 	"github.com/adrianliechti/llama/pkg/extractor/tesseract"
 	"github.com/adrianliechti/llama/pkg/extractor/text"
+	"github.com/adrianliechti/llama/pkg/extractor/tika"
 	"github.com/adrianliechti/llama/pkg/extractor/unstructured"
 )
 
@@ -43,6 +44,9 @@ func createExtractor(cfg extractorConfig) (extractor.Provider, error) {
 
 	case "tesseract":
 		return tesseractExtractor(cfg)
+
+	case "tika":
+		return tikaExtractor(cfg)
 
 	case "unstructured":
 		return unstructuredExtractor(cfg)
@@ -92,6 +96,20 @@ func tesseractExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	}
 
 	return tesseract.New(cfg.URL, options...)
+}
+
+func tikaExtractor(cfg extractorConfig) (extractor.Provider, error) {
+	var options []tika.Option
+
+	if cfg.ChunkSize != nil {
+		options = append(options, tika.WithChunkSize(*cfg.ChunkSize))
+	}
+
+	if cfg.ChunkOverlap != nil {
+		options = append(options, tika.WithChunkOverlap(*cfg.ChunkOverlap))
+	}
+
+	return tika.New(cfg.URL, options...)
 }
 
 func unstructuredExtractor(cfg extractorConfig) (extractor.Provider, error) {

@@ -8,12 +8,11 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"github.com/google/uuid"
 )
 
-var (
-	_ provider.Synthesizer = (*Synthesizer)(nil)
-)
+var _ provider.Synthesizer = (*Synthesizer)(nil)
 
 type Synthesizer struct {
 	*Config

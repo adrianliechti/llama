@@ -81,8 +81,13 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 	var results []index.Document
 
 	for _, hit := range result.Hits.Hits {
+
 		results = append(results, index.Document{
-			ID:       hit.Document.ID,
+			ID: hit.Document.ID,
+
+			Title:    hit.Document.Title,
+			Location: hit.Document.Location,
+
 			Content:  hit.Document.Content,
 			Metadata: hit.Document.Metadata,
 		})
@@ -105,9 +110,9 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 			ID: d.ID,
 
 			Title:    d.Title,
-			Content:  d.Content,
 			Location: d.Location,
 
+			Content:  d.Content,
 			Metadata: d.Metadata,
 		}
 
@@ -188,13 +193,15 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 	for _, hit := range result.Hits.Hits {
 		results = append(results, index.Result{
+			Score: hit.Score,
+
 			Document: index.Document{
 				ID: hit.Document.ID,
 
 				Title:    hit.Document.Title,
-				Content:  hit.Document.Content,
 				Location: hit.Document.Location,
 
+				Content:  hit.Document.Content,
 				Metadata: hit.Document.Metadata,
 			},
 		})
@@ -206,6 +213,10 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 func convertID(id string) string {
 	if id == "" {
 		return uuid.NewString()
+	}
+
+	if _, err := uuid.Parse(id); err == nil {
+		return id
 	}
 
 	return uuid.NewMD5(uuid.NameSpaceOID, []byte(id)).String()

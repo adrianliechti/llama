@@ -30,8 +30,6 @@ func NewEmbedder(url string, options ...Option) (*Embedder, error) {
 		option(c)
 	}
 
-	go c.ensureModel()
-
 	return &Embedder{
 		Config: c,
 	}, nil
@@ -72,4 +70,14 @@ type EmbeddingRequest struct {
 
 type EmbeddingResponse struct {
 	Embedding []float64 `json:"embedding"`
+}
+
+func toFloat32s(v []float64) []float32 {
+	result := make([]float32, len(v))
+
+	for i, x := range v {
+		result[i] = float32(x)
+	}
+
+	return result
 }

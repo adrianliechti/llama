@@ -6,6 +6,11 @@ Open Source LLM Platform to build and deploy applications at scale
 ![Logo](docs/icon.png)
 
 
+## Architecture
+
+![Architecture](docs/architecture.png)
+
+
 ## Integrations & Configuration
 
 ### LLM Providers
@@ -18,15 +23,16 @@ https://platform.openai.com/docs/api-reference
 providers:
   - type: openai
     token: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    models:
-      gpt-3.5-turbo:
-        id: gpt-3.5-turbo-1106
 
-      gpt-4:
-        id: gpt-4-1106-preview
-        
-      text-embedding-ada-002:
-        id: text-embedding-ada-002
+    models:
+      - gpt-4o
+      - gpt-4o-mini
+      - text-embedding-3-small
+      - text-embedding-3-large
+      - whisper-1
+      - dall-e-3
+      - tts-1
+      - tts-1-hd
 ```
 
 
@@ -41,6 +47,11 @@ providers:
     token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     models:
+      # https://docs.anthropic.com/en/docs/models-overview
+      #
+      # {alias}:
+      #   - id: {azure oai deployment name}
+
       gpt-3.5-turbo:
         id: gpt-35-turbo-16k
 
@@ -60,9 +71,63 @@ https://www.anthropic.com/api
 providers:
   - type: anthropic
     token: sk-ant-apixx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     models:
+      # https://docs.anthropic.com/en/docs/models-overview
+      #
+      # {alias}:
+      #   - id: {anthropic api model name}
+
       claude-3-opus:
         id: claude-3-opus-20240229
+```
+
+
+#### Cohere
+
+```yaml
+providers:
+  - type: cohere
+    token: ${COHERE_API_TOKEN}
+
+    # https://docs.cohere.com/docs/models
+    models:
+      cohere-command-r-plus:
+        id: command-r-plus
+      
+      cohere-embed-multilingual-v3:
+        id: embed-multilingual-v3.0
+```
+
+
+#### Groq
+
+```yaml
+providers:
+  - type: groq
+    token: ${GROQ_API_TOKEN}
+
+    # https://console.groq.com/docs/models
+    models:
+      groq-llama-3-8b:
+        id: llama3-8b-8192
+
+      groq-whisper-1:
+        id: whisper-large-v3
+```
+
+
+#### Mistral AI
+
+```yaml
+providers:
+  - type: mistral
+    token: ${MISTRAL_API_TOKEN}
+
+    # https://docs.mistral.ai/getting-started/models/
+    models:
+      mistral-large:
+        id: mistral-large-latest
 ```
 
 
@@ -81,8 +146,13 @@ providers:
     url: http://localhost:11434
 
     models:
+      # https://ollama.com/library
+      #
+      # {alias}:
+      #   - id: {ollama model name with optional version}
+
       mistral-7b-instruct:
-        id: mistral
+        id: mistral:latest
 ```
 
 
@@ -110,8 +180,7 @@ providers:
     url: http://localhost:9081
 
     models:
-      mistral-7b-instruct:
-        id: /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+      - mistral-7b-instruct
 ```
 
 
@@ -133,8 +202,7 @@ providers:
     url: http://localhost:9085
 
     models:
-      whisper:
-        id: whisper
+      - whisper
 ```
 
 
@@ -146,10 +214,17 @@ https://huggingface.co/
 providers:
   - type: huggingface
     url: https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1
+    token: hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    
+    models:
+      - mistral-7B-instruct
+  
+  - type: huggingface
+    url: https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2
+    token: hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     models:
-      mistral-7B-instruct:
-        id: tgi
+      - huggingface-minilm-l6-2
 ```
 
 
@@ -164,12 +239,12 @@ docker run -it -p 59125:59125 -v $(pwd)/models/mimic3:/home/mimic3/.local/share/
 ```yaml
 providers:
   - type: mimic
-      url: http://localhost:59125
-  
-      models:
-        tts-1:
-          id: mimic-3
+    url: http://localhost:59125
+
+    models:
+      - mimic-3
 ```
+
 
 #### Coqui
 
@@ -185,8 +260,7 @@ providers:
     url: http://localhost:5002
 
     models:
-      coqui-1:
-        id: coqui-1
+      - coqui-1
 ```
 
 
@@ -200,8 +274,22 @@ providers:
     url: http://your-langchain-server:8000
 
     models:
-      langchain:
-        id: default
+      - langchain
+```
+
+
+### Routers
+
+#### Round-robin Load Balancer
+
+```yaml
+routers:
+  llama-lb:
+    type: roundrobin
+    models:
+      - llama-3-8b
+      - groq-llama-3-8b
+      - huggingface-llama-3-8b
 ```
 
 
@@ -245,6 +333,22 @@ indexes:
 ```
 
 
+#### Qdrant
+
+```shell
+$ docker run -p 6333:6333 qdrant/qdrant:v1.10.1
+```
+
+```yaml
+indexes:
+  docs:
+    type: qdrant
+    url: http://localhost:6333
+    namespace: docs
+    embedding: text-embedding-ada-002
+```
+
+
 #### In-Memory
 
 ```yaml
@@ -255,7 +359,7 @@ indexes:
 ```
 
 
-##### OpenSearch / Elasticsearch
+#### OpenSearch / Elasticsearch
 
 ```shell
 # using Docker
@@ -281,28 +385,15 @@ extractors:
     type: text
 ```
 
+
 #### Code
-
-Supported Languages:
-
-- C#
-- C++
-- Go
-- Java
-- Kotlin
-- Java Script
-- Type Script
-- Python
-- Ruby
-- Rust
-- Scala
-- Swfit
 
 ```yaml
 extractors:
   code:
     type: code
 ```
+
 
 #### Tesseract
 
@@ -321,13 +412,30 @@ extractors:
 ```
 
 
+#### Tika
+
+```shell
+# using Docker
+docker run -it --rm -p 9998:9998 apache/tika:3.0.0.0-BETA2-full
+```
+
+```yaml
+extractors:  
+  tika:
+    type: tika
+    url: http://localhost:9998
+    chunkSize: 4000
+    chunkOverlap: 200
+```
+
+
 #### Unstructured
 
 https://unstructured.io
 
 ```shell
 # using Docker
-docker run -it --rm -p 9085:8000 quay.io/unstructured-io/unstructured-api:0.0.64 --port 8000 --host 0.0.0.0
+docker run -it --rm -p 9085:8000 quay.io/unstructured-io/unstructured-api:0.0.75 --port 8000 --host 0.0.0.0
 ```
 
 ```yaml
@@ -335,21 +443,6 @@ extractors:
   unstructured:
     type: unstructured
     url: http://localhost:9085
-```
-
-
-### Classifications
-
-#### LLM Classifier
-
-```yaml
-classifiers:
-  {classifier-id}:
-    type: llm
-    model: mistral-7b-instruct
-    classes:
-      class-1: "...Description when to use Class 1..."
-      class-2: "...Description when to use Class 2..."
 ```
 
 
@@ -367,11 +460,6 @@ chains:
     model: mistral-7b-instruct
 
     # limit: 10
-    # distance: 1
-
-    # filters:
-    #  {metadata-key}:
-    #    classifier: {classifier-id}
 ```
 
 
@@ -410,20 +498,4 @@ POST http://localhost:8080/v1/index/{index-name}
         }
     }
 ]
-```
-
-
-### Function Calling
-
-#### Hermes Function Calling
-
-```yaml
-providers:
-  - type: llama
-    url: http://localhost:9081
-
-    models:
-      hermes-2-pro:
-        id: /models/Hermes-2-Pro-Mistral-7B.Q4_K_M.gguf
-        adapter: hermesfn
 ```

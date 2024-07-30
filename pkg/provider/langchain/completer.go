@@ -13,8 +13,11 @@ import (
 	"unicode"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"github.com/google/uuid"
 )
+
+var _ provider.Completer = (*Completer)(nil)
 
 type Completer struct {
 	*Config

@@ -11,6 +11,8 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
+var _ provider.Translator = (*Translator)(nil)
+
 type Translator struct {
 	*Config
 }

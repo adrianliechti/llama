@@ -14,8 +14,8 @@ type Message struct {
 
 	Files []File
 
-	Function      string
-	FunctionCalls []FunctionCall
+	Tool      string
+	ToolCalls []ToolCall
 }
 
 type MessageRole string
@@ -24,10 +24,10 @@ const (
 	MessageRoleSystem    MessageRole = "system"
 	MessageRoleUser      MessageRole = "user"
 	MessageRoleAssistant MessageRole = "assistant"
-	MessageRoleFunction  MessageRole = "function"
+	MessageRoleTool      MessageRole = "tool"
 )
 
-type FunctionCall struct {
+type ToolCall struct {
 	ID string
 
 	Name      string
@@ -37,13 +37,27 @@ type FunctionCall struct {
 type CompleteOptions struct {
 	Stream chan<- Completion
 
-	Stop      []string
-	Functions []Function
+	Stop  []string
+	Tools []Tool
 
 	MaxTokens   *int
 	Temperature *float32
 
 	Format CompletionFormat
+}
+
+func (o CompleteOptions) Clone() CompleteOptions {
+	return CompleteOptions{
+		Stream: o.Stream,
+
+		Stop:  o.Stop,
+		Tools: o.Tools,
+
+		MaxTokens:   o.MaxTokens,
+		Temperature: o.Temperature,
+
+		Format: o.Format,
+	}
 }
 
 type Completion struct {

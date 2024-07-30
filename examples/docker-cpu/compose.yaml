@@ -1,6 +1,6 @@
 services:
   platform:
-    image: adrianliechti/llama-platform
+    image: ghcr.io/adrianliechti/llama-platform
     pull_policy: always
     build:
       context: ../../
@@ -28,12 +28,12 @@ services:
       - ../../models:/models
   
   web:
-    image: adrianliechti/llama-streamlit
+    image: ghcr.io/adrianliechti/llama-streamlit
     pull_policy: always
     ports:
       - 8501:8501
     environment:
-      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+      - OPENAI_BASE_URL=http://platform:8080/v1
     depends_on:
       - platform
   
@@ -44,11 +44,9 @@ configs:
         - type: llama
           url: http://mistral-7b-instruct:8000
           models:
-            mistral-7b-instruct:
-              id: default
+            - mistral-7b-instruct
         
         - type: llama
           url: http://nomic-embed-text:8000
           models:
-            nomic-embed-text:
-              id: default
+            - nomic-embed-text

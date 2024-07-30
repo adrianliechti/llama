@@ -82,8 +82,6 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	w.WriteField("chunking_strategy", "by_title")
 	w.WriteField("max_characters", fmt.Sprintf("%d", c.chunkSize))
 	w.WriteField("overlap", fmt.Sprintf("%d", c.chunkOverlap))
-	w.WriteField("skip_infer_table_types", "")
-	w.WriteField("pdf_infer_table_structure", "true")
 
 	file, err := w.CreateFormFile("files", input.Name)
 

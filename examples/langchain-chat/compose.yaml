@@ -1,6 +1,6 @@
 services:
   platform:
-    image: adrianliechti/llama-platform
+    image: ghcr.io/adrianliechti/llama-platform
     pull_policy: always
     build:
       context: ../../
@@ -16,19 +16,19 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      - OPENAI_API_BASE=http://platform:8080/oai/v1
+      - OPENAI_API_BASE=http://platform:8080/v1
       - OPENAI_API_KEY=NA
       - MODEL_NAME=mistral
     ports:
       - 8000:8000
   
   web:
-    image: adrianliechti/llama-streamlit
+    image: ghcr.io/adrianliechti/llama-streamlit
     pull_policy: always
     ports:
       - 8501:8501
     environment:
-      - OPENAI_BASE_URL=http://platform:8080/oai/v1
+      - OPENAI_BASE_URL=http://platform:8080/v1
     depends_on:
       - platform
   
@@ -39,11 +39,9 @@ configs:
         - type: ollama
           url: http://host.docker.internal:11434
           models:
-            mistral:
-              id: mistral:latest
+            - mistral
         
         - type: langchain
           url: http://langserve:8000
           models:
-            langchain:
-              id: default
+            - langchain

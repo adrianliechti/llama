@@ -1,7 +1,7 @@
 # Run Platform in Docker / CPU
 
 ```shell
-curl http://localhost:8080/oai/v1/embeddings \
+curl http://localhost:8080/v1/embeddings \
   -H "Content-Type: application/json" \
   -d '{
     "input": "Hello!",
@@ -10,7 +10,7 @@ curl http://localhost:8080/oai/v1/embeddings \
 ```
 
 ```shell
-curl http://localhost:8080/oai/v1/chat/completions \
+curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "mistral-7b-instruct",

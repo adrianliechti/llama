@@ -6,15 +6,12 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/index/aisearch"
-	"github.com/adrianliechti/llama/pkg/index/bing"
 	"github.com/adrianliechti/llama/pkg/index/chroma"
 	"github.com/adrianliechti/llama/pkg/index/custom"
-	"github.com/adrianliechti/llama/pkg/index/duckduckgo"
 	"github.com/adrianliechti/llama/pkg/index/elasticsearch"
 	"github.com/adrianliechti/llama/pkg/index/memory"
-	"github.com/adrianliechti/llama/pkg/index/tavily"
+	"github.com/adrianliechti/llama/pkg/index/qdrant"
 	"github.com/adrianliechti/llama/pkg/index/weaviate"
-	"github.com/adrianliechti/llama/pkg/index/wikipedia"
 )
 
 func (cfg *Config) RegisterIndex(id string, i index.Provider) {
@@ -32,7 +29,6 @@ type indexContext struct {
 func (cfg *Config) registerIndexes(f *configFile) error {
 	for id, i := range f.Indexes {
 		var err error
-
 		context := indexContext{}
 
 		if i.Embedding != "" {
@@ -55,6 +51,9 @@ func (cfg *Config) registerIndexes(f *configFile) error {
 
 func createIndex(cfg indexConfig, context indexContext) (index.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
+	case "aisearch":
+		return aisearchIndex(cfg)
+
 	case "chroma":
 		return chromaIndex(cfg, context)
 
@@ -64,23 +63,11 @@ func createIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 	case "memory":
 		return memoryIndex(cfg, context)
 
+	case "qdrant":
+		return qdrantIndex(cfg, context)
+
 	case "weaviate":
 		return weaviateIndex(cfg, context)
-
-	case "aisearch":
-		return aisearchIndex(cfg)
-
-	case "bing":
-		return bingIndex(cfg)
-
-	case "duckduckgo":
-		return duckduckgoIndex(cfg)
-
-	case "tavily":
-		return tavilyIndex(cfg)
-
-	case "wikipedia":
-		return wikipediaIndex(cfg)
 
 	case "custom":
 		return customIndex(cfg)
@@ -88,6 +75,12 @@ func createIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 	default:
 		return nil, errors.New("invalid index type: " + cfg.Type)
 	}
+}
+
+func aisearchIndex(cfg indexConfig) (index.Provider, error) {
+	var options []aisearch.Option
+
+	return aisearch.New(cfg.URL, cfg.Namespace, cfg.Token, options...)
 }
 
 func chromaIndex(cfg indexConfig, context indexContext) (index.Provider, error) {
@@ -116,6 +109,16 @@ func memoryIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 	return memory.New(options...)
 }
 
+func qdrantIndex(cfg indexConfig, context indexContext) (index.Provider, error) {
+	var options []qdrant.Option
+
+	if context.Embedder != nil {
+		options = append(options, qdrant.WithEmbedder(context.Embedder))
+	}
+
+	return qdrant.New(cfg.URL, cfg.Namespace, options...)
+}
+
 func weaviateIndex(cfg indexConfig, context indexContext) (index.Provider, error) {
 	var options []weaviate.Option
 
@@ -124,36 +127,6 @@ func weaviateIndex(cfg indexConfig, context indexContext) (index.Provider, error
 	}
 
 	return weaviate.New(cfg.URL, cfg.Namespace, options...)
-}
-
-func aisearchIndex(cfg indexConfig) (index.Provider, error) {
-	var options []aisearch.Option
-
-	return aisearch.New(cfg.URL, cfg.Namespace, cfg.Token, options...)
-}
-
-func bingIndex(cfg indexConfig) (index.Provider, error) {
-	var options []bing.Option
-
-	return bing.New(cfg.Token, options...)
-}
-
-func duckduckgoIndex(cfg indexConfig) (index.Provider, error) {
-	var options []duckduckgo.Option
-
-	return duckduckgo.New(options...)
-}
-
-func tavilyIndex(cfg indexConfig) (index.Provider, error) {
-	var options []tavily.Option
-
-	return tavily.New(cfg.Token, options...)
-}
-
-func wikipediaIndex(cfg indexConfig) (index.Provider, error) {
-	var options []wikipedia.Option
-
-	return wikipedia.New(options...)
 }
 
 func customIndex(cfg indexConfig) (*custom.Client, error) {

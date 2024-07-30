@@ -4,6 +4,7 @@ version: "3"
 
 tasks:
   server:
+    deps: [ download-model ]
     cmds:
       - llama-server 
         --port 9082
@@ -13,6 +14,22 @@ tasks:
         --batch-size 8192
         --rope-scaling yarn
         --rope-freq-scale .75
-        --hf-repo nomic-ai/nomic-embed-text-v1.5-GGUF
-        --hf-file nomic-embed-text-v1.5.Q4_K_M.gguf
-        --model ./models/nomic-embed-text-v1.5.Q4_K_M.gguf
+        --model ./models/nomic-embed-text-v1.5.gguf
+  
+  download-model:
+    cmds:
+      - mkdir -p models
+      - curl -s -L -o models/nomic-embed-text-v1.5.gguf  https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.f16.gguf?download=true
+
+    status:
+      - test -f models/nomic-embed-text-v1.5.gguf
+  
+  test:
+    cmds:
+      - |
+        curl http://localhost:8080/v1/embeddings \
+          -H "Content-Type: application/json" \
+          -d '{
+            "model": "nomic-embed-text-v1.5",
+            "input": "Hello!"
+          }'
