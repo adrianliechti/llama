@@ -239,10 +239,13 @@ func toRole(role provider.MessageRole) MessageType {
 	switch role {
 	case provider.MessageRoleSystem:
 		return MessageTypeHuman
+
 	case provider.MessageRoleUser:
 		return MessageTypeHuman
+
 	case provider.MessageRoleAssistant:
 		return MessageTypeAI
+
 	default:
 		return ""
 	}

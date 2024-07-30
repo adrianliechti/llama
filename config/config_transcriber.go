@@ -27,9 +27,8 @@ func (cfg *Config) RegisterTranscriber(name, model string, p provider.Transcribe
 	cfg.transcriber[model] = transcriber
 }
 
-func createTranscriber(cfg providerConfig, model string) (provider.Transcriber, error) {
+func createTranscriber(cfg providerConfig, model modelContext) (provider.Transcriber, error) {
 	switch strings.ToLower(cfg.Type) {
-
 	case "groq":
 		return groqTranscriber(cfg, model)
 
@@ -44,21 +43,21 @@ func createTranscriber(cfg providerConfig, model string) (provider.Transcriber, 
 	}
 }
 
-func groqTranscriber(cfg providerConfig, model string) (provider.Transcriber, error) {
+func groqTranscriber(cfg providerConfig, model modelContext) (provider.Transcriber, error) {
 	var options []groq.Option
 
 	if cfg.Token != "" {
 		options = append(options, groq.WithToken(cfg.Token))
 	}
 
-	if model != "" {
-		options = append(options, groq.WithModel(model))
+	if model.ID != "" {
+		options = append(options, groq.WithModel(model.ID))
 	}
 
 	return groq.NewTranscriber(options...)
 }
 
-func openaiTranscriber(cfg providerConfig, model string) (provider.Transcriber, error) {
+func openaiTranscriber(cfg providerConfig, model modelContext) (provider.Transcriber, error) {
 	var options []openai.Option
 
 	if cfg.URL != "" {
@@ -69,14 +68,14 @@ func openaiTranscriber(cfg providerConfig, model string) (provider.Transcriber, 
 		options = append(options, openai.WithToken(cfg.Token))
 	}
 
-	if model != "" {
-		options = append(options, openai.WithModel(model))
+	if model.ID != "" {
+		options = append(options, openai.WithModel(model.ID))
 	}
 
 	return openai.NewTranscriber(options...)
 }
 
-func whisperTranscriber(cfg providerConfig, model string) (provider.Transcriber, error) {
+func whisperTranscriber(cfg providerConfig, model modelContext) (provider.Transcriber, error) {
 	var options []whisper.Option
 
 	return whisper.NewTranscriber(cfg.URL, options...)

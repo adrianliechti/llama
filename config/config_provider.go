@@ -7,11 +7,18 @@ import (
 func (cfg *Config) registerProviders(f *configFile) error {
 	for _, p := range f.Providers {
 		for id, m := range p.Models {
+			context := modelContext{
+				ID: m.ID,
 
-			switch detectModelType(id) {
+				Type: detectModelType(id),
 
+				Name:        m.Name,
+				Description: m.Description,
+			}
+
+			switch context.Type {
 			case ModelTypeCompleter:
-				completer, err := createCompleter(p, m.ID)
+				completer, err := createCompleter(p, context)
 
 				if err != nil {
 					return err
@@ -20,7 +27,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 				cfg.RegisterCompleter(p.Type, id, completer)
 
 			case ModelTypeEmbedder:
-				embedder, err := createEmbedder(p, m.ID)
+				embedder, err := createEmbedder(p, context)
 
 				if err != nil {
 					return err
@@ -29,7 +36,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 				cfg.RegisterEmbedder(p.Type, id, embedder)
 
 			case ModelTypeRenderer:
-				renderer, err := createRenderer(p, m.ID)
+				renderer, err := createRenderer(p, context)
 
 				if err != nil {
 					return err
@@ -38,7 +45,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 				cfg.RegisterRenderer(p.Type, id, renderer)
 
 			case ModelTypeSynthesizer:
-				synthesizer, err := createSynthesizer(p, m.ID)
+				synthesizer, err := createSynthesizer(p, context)
 
 				if err != nil {
 					return err
@@ -47,7 +54,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 				cfg.RegisterSynthesizer(p.Type, id, synthesizer)
 
 			case ModelTypeTranscriber:
-				transcriber, err := createTranscriber(p, m.ID)
+				transcriber, err := createTranscriber(p, context)
 
 				if err != nil {
 					return err
@@ -56,7 +63,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 				cfg.RegisterTranscriber(p.Type, id, transcriber)
 
 			case ModelTypeTranslator:
-				translator, err := createTranslator(p, m.ID)
+				translator, err := createTranslator(p, context)
 
 				if err != nil {
 					return err

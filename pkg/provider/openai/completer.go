@@ -232,7 +232,6 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 
 func convertMessageRole(r provider.MessageRole) string {
 	switch r {
-
 	case provider.MessageRoleSystem:
 		return openai.ChatMessageRoleSystem
 
@@ -252,7 +251,6 @@ func convertMessageRole(r provider.MessageRole) string {
 
 func toMessageRole(role string) provider.MessageRole {
 	switch role {
-
 	case openai.ChatMessageRoleSystem:
 		return provider.MessageRoleSystem
 

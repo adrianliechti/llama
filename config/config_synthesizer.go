@@ -27,9 +27,8 @@ func (cfg *Config) RegisterSynthesizer(name, model string, p provider.Synthesize
 	cfg.synthesizer[model] = synthesizer
 }
 
-func createSynthesizer(cfg providerConfig, model string) (provider.Synthesizer, error) {
+func createSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesizer, error) {
 	switch strings.ToLower(cfg.Type) {
-
 	case "coqui":
 		return coquiSynthesizer(cfg, model)
 
@@ -44,19 +43,19 @@ func createSynthesizer(cfg providerConfig, model string) (provider.Synthesizer, 
 	}
 }
 
-func coquiSynthesizer(cfg providerConfig, model string) (provider.Synthesizer, error) {
+func coquiSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesizer, error) {
 	var options []coqui.Option
 
 	return coqui.NewSynthesizer(cfg.URL, options...)
 }
 
-func mimicSynthesizer(cfg providerConfig, model string) (provider.Synthesizer, error) {
+func mimicSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesizer, error) {
 	var options []mimic.Option
 
 	return mimic.NewSynthesizer(cfg.URL, options...)
 }
 
-func openaiSynthesizer(cfg providerConfig, model string) (provider.Synthesizer, error) {
+func openaiSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesizer, error) {
 	var options []openai.Option
 
 	if cfg.URL != "" {
@@ -67,8 +66,8 @@ func openaiSynthesizer(cfg providerConfig, model string) (provider.Synthesizer, 
 		options = append(options, openai.WithToken(cfg.Token))
 	}
 
-	if model != "" {
-		options = append(options, openai.WithModel(model))
+	if model.ID != "" {
+		options = append(options, openai.WithModel(model.ID))
 	}
 
 	return openai.NewSynthesizer(options...)

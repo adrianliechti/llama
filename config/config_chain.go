@@ -102,7 +102,6 @@ func (cfg *Config) registerChains(f *configFile) error {
 
 func createChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
-
 	case "agent":
 		return agentChain(cfg, context)
 
