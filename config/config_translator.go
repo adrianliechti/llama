@@ -4,19 +4,26 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/azuretranslator"
 	"github.com/adrianliechti/llama/pkg/provider/deepl"
 )
 
-func (cfg *Config) RegisterTranslator(model string, t provider.Translator) {
+func (cfg *Config) RegisterTranslator(name, model string, p provider.Translator) {
 	cfg.RegisterModel(model)
 
 	if cfg.translator == nil {
 		cfg.translator = make(map[string]provider.Translator)
 	}
 
-	cfg.translator[model] = t
+	translator, ok := p.(otel.ObservableTranslator)
+
+	if !ok {
+		translator = otel.NewTranslator(name, model, p)
+	}
+
+	cfg.translator[model] = translator
 }
 
 func createTranslator(cfg providerConfig, model string) (provider.Translator, error) {

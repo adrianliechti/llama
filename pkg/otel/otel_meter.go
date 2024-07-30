@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/metric"
 
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
@@ -28,19 +27,3 @@ func setupMeter(ctx context.Context, resource *sdkresource.Resource) error {
 
 	return nil
 }
-
-func Meter(name string) metric.Meter {
-	return otel.Meter(name)
-}
-
-// var totalRequests = prometheus.NewCounterVec(
-// 	prometheus.CounterOpts{
-// 		Name: "http_requests_total",
-// 		Help: "Number of get requests.",
-// 	},
-// 	[]string{"path"},
-// )
-
-// func ReportModel(id string) error {
-
-// }

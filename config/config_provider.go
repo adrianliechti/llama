@@ -17,7 +17,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterCompleter(id, completer)
+				cfg.RegisterCompleter(p.Type, id, completer)
 
 			case ModelTypeEmbedder:
 				embedder, err := createEmbedder(p, m.ID)
@@ -26,7 +26,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterEmbedder(id, embedder)
+				cfg.RegisterEmbedder(p.Type, id, embedder)
 
 			case ModelTypeRenderer:
 				renderer, err := createRenderer(p, m.ID)
@@ -35,7 +35,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterRenderer(id, renderer)
+				cfg.RegisterRenderer(p.Type, id, renderer)
 
 			case ModelTypeSynthesizer:
 				synthesizer, err := createSynthesizer(p, m.ID)
@@ -44,7 +44,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterSynthesizer(id, synthesizer)
+				cfg.RegisterSynthesizer(p.Type, id, synthesizer)
 
 			case ModelTypeTranscriber:
 				transcriber, err := createTranscriber(p, m.ID)
@@ -53,7 +53,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterTranscriber(id, transcriber)
+				cfg.RegisterTranscriber(p.Type, id, transcriber)
 
 			case ModelTypeTranslator:
 				translator, err := createTranslator(p, m.ID)
@@ -62,7 +62,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterTranslator(id, translator)
+				cfg.RegisterTranslator(p.Type, id, translator)
 
 			default:
 				return errors.New("invalid model type: " + id)

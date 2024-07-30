@@ -45,3 +45,7 @@ func Setup(serviceName, serviceVersion string) error {
 
 	return nil
 }
+
+type Observable interface {
+	otelSetup()
+}

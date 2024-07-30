@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/anthropic"
 	"github.com/adrianliechti/llama/pkg/provider/cohere"
@@ -17,14 +18,20 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
-func (cfg *Config) RegisterCompleter(model string, c provider.Completer) {
+func (cfg *Config) RegisterCompleter(name, model string, p provider.Completer) {
 	cfg.RegisterModel(model)
 
 	if cfg.completer == nil {
 		cfg.completer = make(map[string]provider.Completer)
 	}
 
-	cfg.completer[model] = c
+	completer, ok := p.(otel.ObservableCompleter)
+
+	if !ok {
+		completer = otel.NewCompleter(name, model, p)
+	}
+
+	cfg.completer[model] = completer
 }
 
 func createCompleter(cfg providerConfig, model string) (provider.Completer, error) {

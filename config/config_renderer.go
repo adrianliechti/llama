@@ -4,18 +4,25 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
-func (cfg *Config) RegisterRenderer(model string, r provider.Renderer) {
+func (cfg *Config) RegisterRenderer(name, model string, p provider.Renderer) {
 	cfg.RegisterModel(model)
 
 	if cfg.renderer == nil {
 		cfg.renderer = make(map[string]provider.Renderer)
 	}
 
-	cfg.renderer[model] = r
+	renderer, ok := p.(otel.ObservableRenderer)
+
+	if !ok {
+		renderer = otel.NewRenderer(name, model, p)
+	}
+
+	cfg.renderer[model] = renderer
 }
 
 func createRenderer(cfg providerConfig, model string) (provider.Renderer, error) {

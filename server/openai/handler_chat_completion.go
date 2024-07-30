@@ -17,10 +17,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/google/uuid"
-
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 )
 
 func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
@@ -30,9 +26,6 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
-
-	meter, _ := otel.Meter("openai").Int64Counter("llm_platform_completion")
-	meter.Add(r.Context(), 1, metric.WithAttributes(attribute.String("model", req.Model)))
 
 	completer, err := h.Completer(req.Model)
 

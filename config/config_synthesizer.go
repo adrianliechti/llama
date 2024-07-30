@@ -4,20 +4,27 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/coqui"
 	"github.com/adrianliechti/llama/pkg/provider/mimic"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
-func (cfg *Config) RegisterSynthesizer(model string, s provider.Synthesizer) {
+func (cfg *Config) RegisterSynthesizer(name, model string, p provider.Synthesizer) {
 	cfg.RegisterModel(model)
 
 	if cfg.synthesizer == nil {
 		cfg.synthesizer = make(map[string]provider.Synthesizer)
 	}
 
-	cfg.synthesizer[model] = s
+	synthesizer, ok := p.(otel.ObservableSynthesizer)
+
+	if !ok {
+		synthesizer = otel.NewSynthesizer(name, model, p)
+	}
+
+	cfg.synthesizer[model] = synthesizer
 }
 
 func createSynthesizer(cfg providerConfig, model string) (provider.Synthesizer, error) {

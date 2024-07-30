@@ -4,20 +4,27 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/groq"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
 )
 
-func (cfg *Config) RegisterTranscriber(model string, t provider.Transcriber) {
+func (cfg *Config) RegisterTranscriber(name, model string, p provider.Transcriber) {
 	cfg.RegisterModel(model)
 
 	if cfg.transcriber == nil {
 		cfg.transcriber = make(map[string]provider.Transcriber)
 	}
 
-	cfg.transcriber[model] = t
+	transcriber, ok := p.(otel.ObservableTranscriber)
+
+	if !ok {
+		transcriber = otel.NewTranscriber(name, model, p)
+	}
+
+	cfg.transcriber[model] = transcriber
 }
 
 func createTranscriber(cfg providerConfig, model string) (provider.Transcriber, error) {

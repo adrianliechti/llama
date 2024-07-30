@@ -8,7 +8,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/google/uuid"
@@ -41,9 +40,6 @@ func (r *Renderer) Render(ctx context.Context, input string, options *provider.R
 	if options == nil {
 		options = new(provider.RenderOptions)
 	}
-
-	ctx, span := otel.StartSpan(ctx, "openai-renderer")
-	defer span.End()
 
 	req := openai.ImageRequest{
 		Prompt: input,

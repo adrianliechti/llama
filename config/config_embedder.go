@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/cohere"
 	"github.com/adrianliechti/llama/pkg/provider/huggingface"
@@ -12,14 +13,20 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
-func (cfg *Config) RegisterEmbedder(model string, e provider.Embedder) {
+func (cfg *Config) RegisterEmbedder(name, model string, p provider.Embedder) {
 	cfg.RegisterModel(model)
 
 	if cfg.embedder == nil {
 		cfg.embedder = make(map[string]provider.Embedder)
 	}
 
-	cfg.embedder[model] = e
+	embedder, ok := p.(otel.ObservableEmbedder)
+
+	if !ok {
+		embedder = otel.NewEmbedder(name, model, p)
+	}
+
+	cfg.embedder[model] = embedder
 }
 
 func createEmbedder(cfg providerConfig, model string) (provider.Embedder, error) {

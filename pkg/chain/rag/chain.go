@@ -7,7 +7,6 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/index"
-	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/text"
@@ -102,11 +101,6 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	query := strings.TrimSpace(message.Content)
 
-	ctx, span := otel.StartSpan(ctx, "rag")
-	defer span.End()
-
-	span.SetAttributes(otel.String("query", query))
-
 	results, err := c.index.Query(ctx, query, &index.QueryOptions{
 		Limit: c.limit,
 	})
@@ -135,8 +129,6 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		return nil, err
 	}
 
-	span.SetAttributes(otel.String("prompt", prompt))
-
 	message = provider.Message{
 		Role:    provider.MessageRoleUser,
 		Content: prompt,
@@ -149,8 +141,6 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 	if err != nil {
 		return nil, err
 	}
-
-	span.SetAttributes(otel.String("answer", result.Message.Content))
 
 	return result, nil
 }

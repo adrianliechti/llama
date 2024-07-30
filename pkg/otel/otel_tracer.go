@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
 
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -29,8 +28,4 @@ func setupTracer(ctx context.Context, resource *sdkresource.Resource) error {
 	otel.SetTracerProvider(provider)
 
 	return nil
-}
-
-func StartSpan(ctx context.Context, name string) (context.Context, trace.Span) {
-	return otel.Tracer(name).Start(ctx, name)
 }

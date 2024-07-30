@@ -3,7 +3,6 @@ package openai
 import (
 	"context"
 
-	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/google/uuid"
@@ -36,9 +35,6 @@ func (s *Synthesizer) Synthesize(ctx context.Context, content string, options *p
 	if options == nil {
 		options = new(provider.SynthesizeOptions)
 	}
-
-	ctx, span := otel.StartSpan(ctx, "openai-synthesizer")
-	defer span.End()
 
 	req := openai.CreateSpeechRequest{
 		Input: content,
