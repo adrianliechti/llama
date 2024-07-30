@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/otel"
+
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/index/aisearch"
 	"github.com/adrianliechti/llama/pkg/index/chroma"
@@ -12,7 +14,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/index/memory"
 	"github.com/adrianliechti/llama/pkg/index/qdrant"
 	"github.com/adrianliechti/llama/pkg/index/weaviate"
-	"github.com/adrianliechti/llama/pkg/otel"
 )
 
 func (cfg *Config) RegisterIndex(name, id string, p index.Provider) {
@@ -27,6 +28,26 @@ func (cfg *Config) RegisterIndex(name, id string, p index.Provider) {
 	}
 
 	cfg.indexes[id] = index
+}
+
+func (cfg *Config) Index(id string) (index.Provider, error) {
+	if cfg.indexes != nil {
+		if i, ok := cfg.indexes[id]; ok {
+			return i, nil
+		}
+	}
+
+	return nil, errors.New("index not found: " + id)
+}
+
+type indexConfig struct {
+	Type string `yaml:"type"`
+
+	URL   string `yaml:"url"`
+	Token string `yaml:"token"`
+
+	Namespace string `yaml:"namespace"`
+	Embedding string `yaml:"embedding"`
 }
 
 type indexContext struct {

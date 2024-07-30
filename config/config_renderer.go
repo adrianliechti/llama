@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/otel"
+
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
@@ -23,6 +24,16 @@ func (cfg *Config) RegisterRenderer(name, model string, p provider.Renderer) {
 	}
 
 	cfg.renderer[model] = renderer
+}
+
+func (cfg *Config) Renderer(model string) (provider.Renderer, error) {
+	if cfg.renderer != nil {
+		if t, ok := cfg.renderer[model]; ok {
+			return t, nil
+		}
+	}
+
+	return nil, errors.New("renderer not found: " + model)
 }
 
 func createRenderer(cfg providerConfig, model modelContext) (provider.Renderer, error) {

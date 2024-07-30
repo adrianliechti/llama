@@ -20,6 +20,26 @@ func (cfg *Config) RegisterExtractor(model string, e extractor.Provider) {
 	cfg.extractors[model] = e
 }
 
+func (cfg *Config) Extractor(id string) (extractor.Provider, error) {
+	if cfg.extractors != nil {
+		if e, ok := cfg.extractors[id]; ok {
+			return e, nil
+		}
+	}
+
+	return nil, errors.New("extractor not found: " + id)
+}
+
+type extractorConfig struct {
+	Type string `yaml:"type"`
+
+	URL   string `yaml:"url"`
+	Token string `yaml:"token"`
+
+	ChunkSize    *int `yaml:"chunkSize"`
+	ChunkOverlap *int `yaml:"chunkOverlap"`
+}
+
 func (cfg *Config) registerExtractors(f *configFile) error {
 	for id, c := range f.Extractors {
 		extractor, err := createExtractor(c)

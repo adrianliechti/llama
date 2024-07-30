@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/otel"
+
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/azuretranslator"
 	"github.com/adrianliechti/llama/pkg/provider/deepl"
@@ -24,6 +25,16 @@ func (cfg *Config) RegisterTranslator(name, model string, p provider.Translator)
 	}
 
 	cfg.translator[model] = translator
+}
+
+func (cfg *Config) Translator(model string) (provider.Translator, error) {
+	if cfg.translator != nil {
+		if t, ok := cfg.translator[model]; ok {
+			return t, nil
+		}
+	}
+
+	return nil, errors.New("translator not found: " + model)
 }
 
 func createTranslator(cfg providerConfig, model modelContext) (provider.Translator, error) {

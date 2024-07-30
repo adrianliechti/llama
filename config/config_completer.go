@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/otel"
+
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/anthropic"
 	"github.com/adrianliechti/llama/pkg/provider/cohere"
@@ -32,6 +33,22 @@ func (cfg *Config) RegisterCompleter(name, model string, p provider.Completer) {
 	}
 
 	cfg.completer[model] = completer
+}
+
+func (cfg *Config) Completer(model string) (provider.Completer, error) {
+	if cfg.completer != nil {
+		if c, ok := cfg.completer[model]; ok {
+			return c, nil
+		}
+	}
+
+	if cfg.chains != nil {
+		if c, ok := cfg.chains[model]; ok {
+			return c, nil
+		}
+	}
+
+	return nil, errors.New("completer not found: " + model)
 }
 
 func createCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {

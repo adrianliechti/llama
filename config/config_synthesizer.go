@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/otel"
+
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/coqui"
 	"github.com/adrianliechti/llama/pkg/provider/mimic"
@@ -25,6 +26,16 @@ func (cfg *Config) RegisterSynthesizer(name, model string, p provider.Synthesize
 	}
 
 	cfg.synthesizer[model] = synthesizer
+}
+
+func (cfg *Config) Synthesizer(model string) (provider.Synthesizer, error) {
+	if cfg.synthesizer != nil {
+		if s, ok := cfg.synthesizer[model]; ok {
+			return s, nil
+		}
+	}
+
+	return nil, errors.New("synthesizer not found: " + model)
 }
 
 func createSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesizer, error) {

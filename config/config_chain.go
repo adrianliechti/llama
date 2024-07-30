@@ -27,6 +27,22 @@ func (cfg *Config) RegisterChain(model string, c chain.Provider) {
 	cfg.chains[model] = c
 }
 
+type chainConfig struct {
+	Type string `yaml:"type"`
+
+	Model     string `yaml:"model"`
+	Index     string `yaml:"index"`
+	Embedding string `yaml:"embedding"`
+
+	Template string    `yaml:"template"`
+	Messages []message `yaml:"messages"`
+
+	Tools []string `yaml:"tools"`
+
+	Limit       *int     `yaml:"limit"`
+	Temperature *float32 `yaml:"temperature"`
+}
+
 type chainContext struct {
 	Index index.Provider
 

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/otel"
+
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/groq"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
@@ -25,6 +26,16 @@ func (cfg *Config) RegisterTranscriber(name, model string, p provider.Transcribe
 	}
 
 	cfg.transcriber[model] = transcriber
+}
+
+func (cfg *Config) Transcriber(model string) (provider.Transcriber, error) {
+	if cfg.transcriber != nil {
+		if t, ok := cfg.transcriber[model]; ok {
+			return t, nil
+		}
+	}
+
+	return nil, errors.New("transcriber not found: " + model)
 }
 
 func createTranscriber(cfg providerConfig, model modelContext) (provider.Transcriber, error) {

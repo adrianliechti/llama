@@ -2,6 +2,8 @@ package config
 
 import (
 	"errors"
+
+	"gopkg.in/yaml.v3"
 )
 
 func (cfg *Config) registerProviders(f *configFile) error {
@@ -78,4 +80,49 @@ func (cfg *Config) registerProviders(f *configFile) error {
 	}
 
 	return nil
+}
+
+type providerConfig struct {
+	Type string `yaml:"type"`
+
+	URL   string `yaml:"url"`
+	Token string `yaml:"token"`
+
+	Models providerModelsConfig `yaml:"models"`
+}
+
+type providerModelsConfig map[string]modelConfig
+
+func (c *providerModelsConfig) UnmarshalYAML(value *yaml.Node) error {
+	var config map[string]modelConfig
+
+	if err := value.Decode(&config); err == nil {
+		for id, model := range config {
+			if model.ID == "" {
+				model.ID = id
+			}
+
+			config[id] = model
+		}
+
+		*c = config
+		return nil
+	}
+
+	var list []string
+
+	if err := value.Decode(&list); err == nil {
+		config = make(map[string]modelConfig)
+
+		for _, id := range list {
+			config[id] = modelConfig{
+				ID: id,
+			}
+		}
+
+		*c = config
+		return nil
+	}
+
+	return errors.New("invalid models config")
 }

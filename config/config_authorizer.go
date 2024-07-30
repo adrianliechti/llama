@@ -9,6 +9,15 @@ import (
 	"github.com/adrianliechti/llama/pkg/authorizer/static"
 )
 
+type authorizerConfig struct {
+	Type string `yaml:"type"`
+
+	Token string `yaml:"token"`
+
+	Issuer   string `yaml:"issuer"`
+	Audience string `yaml:"audience"`
+}
+
 func (c *Config) registerAuthorizer(f *configFile) error {
 	for _, a := range f.Authorizers {
 		authorizer, err := createAuthorizer(a)

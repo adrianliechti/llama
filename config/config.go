@@ -1,8 +1,7 @@
 package config
 
 import (
-	"errors"
-	"sort"
+	"os"
 
 	"github.com/adrianliechti/llama/pkg/authorizer"
 	"github.com/adrianliechti/llama/pkg/chain"
@@ -10,6 +9,8 @@ import (
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/tool"
+
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
@@ -19,136 +20,18 @@ type Config struct {
 
 	models map[string]provider.Model
 
-	embedder    map[string]provider.Embedder
 	completer   map[string]provider.Completer
-	synthesizer map[string]provider.Synthesizer
-	translator  map[string]provider.Translator
-	transcriber map[string]provider.Transcriber
+	embedder    map[string]provider.Embedder
 	renderer    map[string]provider.Renderer
+	synthesizer map[string]provider.Synthesizer
+	transcriber map[string]provider.Transcriber
+	translator  map[string]provider.Translator
 
 	indexes    map[string]index.Provider
 	extractors map[string]extractor.Provider
 
 	tools  map[string]tool.Tool
 	chains map[string]chain.Provider
-}
-
-func (cfg *Config) Models() []provider.Model {
-	var result []provider.Model
-
-	for _, m := range cfg.models {
-		result = append(result, m)
-	}
-
-	sort.SliceStable(result, func(i, j int) bool { return result[i].ID < result[j].ID })
-
-	return result
-}
-
-func (cfg *Config) Model(id string) (*provider.Model, error) {
-	if cfg.models != nil {
-		if m, ok := cfg.models[id]; ok {
-			return &m, nil
-		}
-	}
-
-	return nil, errors.New("model not found: " + id)
-}
-
-func (cfg *Config) Embedder(model string) (provider.Embedder, error) {
-	if cfg.embedder != nil {
-		if e, ok := cfg.embedder[model]; ok {
-			return e, nil
-		}
-	}
-
-	return nil, errors.New("embedder not found: " + model)
-}
-
-func (cfg *Config) Completer(model string) (provider.Completer, error) {
-	if cfg.completer != nil {
-		if c, ok := cfg.completer[model]; ok {
-			return c, nil
-		}
-	}
-
-	if cfg.chains != nil {
-		if c, ok := cfg.chains[model]; ok {
-			return c, nil
-		}
-	}
-
-	return nil, errors.New("completer not found: " + model)
-}
-
-func (cfg *Config) Synthesizer(model string) (provider.Synthesizer, error) {
-	if cfg.synthesizer != nil {
-		if s, ok := cfg.synthesizer[model]; ok {
-			return s, nil
-		}
-	}
-
-	return nil, errors.New("synthesizer not found: " + model)
-}
-
-func (cfg *Config) Translator(model string) (provider.Translator, error) {
-	if cfg.translator != nil {
-		if t, ok := cfg.translator[model]; ok {
-			return t, nil
-		}
-	}
-
-	return nil, errors.New("translator not found: " + model)
-}
-
-func (cfg *Config) Transcriber(model string) (provider.Transcriber, error) {
-	if cfg.transcriber != nil {
-		if t, ok := cfg.transcriber[model]; ok {
-			return t, nil
-		}
-	}
-
-	return nil, errors.New("transcriber not found: " + model)
-}
-
-func (cfg *Config) Renderer(model string) (provider.Renderer, error) {
-	if cfg.renderer != nil {
-		if t, ok := cfg.renderer[model]; ok {
-			return t, nil
-		}
-	}
-
-	return nil, errors.New("renderer not found: " + model)
-}
-
-func (cfg *Config) Index(id string) (index.Provider, error) {
-	if cfg.indexes != nil {
-		if i, ok := cfg.indexes[id]; ok {
-			return i, nil
-		}
-	}
-
-	return nil, errors.New("index not found: " + id)
-}
-
-func (cfg *Config) Extractor(id string) (extractor.Provider, error) {
-	if cfg.extractors != nil {
-		if e, ok := cfg.extractors[id]; ok {
-			return e, nil
-		}
-	}
-
-	return nil, errors.New("extractor not found: " + id)
-}
-
-func (cfg *Config) Tool(id string) (tool.Tool, error) {
-	if cfg.tools != nil {
-		if t, ok := cfg.tools[id]; ok {
-			return t, nil
-		}
-	}
-
-	return nil, errors.New("tool not found: " + id)
 }
 
 func Parse(path string) (*Config, error) {
@@ -178,10 +61,6 @@ func Parse(path string) (*Config, error) {
 		return nil, err
 	}
 
-	if err := c.registerRouters(file); err != nil {
-		return nil, err
-	}
-
 	if err := c.registerTools(file); err != nil {
 		return nil, err
 	}
@@ -190,5 +69,41 @@ func Parse(path string) (*Config, error) {
 		return nil, err
 	}
 
+	if err := c.registerRouters(file); err != nil {
+		return nil, err
+	}
+
 	return c, nil
+}
+
+type configFile struct {
+	Authorizers []authorizerConfig `yaml:"authorizers"`
+
+	Providers []providerConfig `yaml:"providers"`
+
+	Indexes    map[string]indexConfig     `yaml:"indexes"`
+	Extractors map[string]extractorConfig `yaml:"extractors"`
+
+	Routers map[string]routerConfig `yaml:"routers"`
+
+	Tools  map[string]toolConfig  `yaml:"tools"`
+	Chains map[string]chainConfig `yaml:"chains"`
+}
+
+func parseFile(path string) (*configFile, error) {
+	data, err := os.ReadFile(path)
+
+	if err != nil {
+		return nil, err
+	}
+
+	data = []byte(os.ExpandEnv(string(data)))
+
+	var config configFile
+
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		return nil, err
+	}
+
+	return &config, nil
 }

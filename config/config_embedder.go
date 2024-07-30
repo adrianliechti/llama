@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/otel"
+
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/cohere"
 	"github.com/adrianliechti/llama/pkg/provider/huggingface"
@@ -27,6 +28,16 @@ func (cfg *Config) RegisterEmbedder(name, model string, p provider.Embedder) {
 	}
 
 	cfg.embedder[model] = embedder
+}
+
+func (cfg *Config) Embedder(model string) (provider.Embedder, error) {
+	if cfg.embedder != nil {
+		if e, ok := cfg.embedder[model]; ok {
+			return e, nil
+		}
+	}
+
+	return nil, errors.New("embedder not found: " + model)
 }
 
 func createEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {

@@ -5,8 +5,15 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"github.com/adrianliechti/llama/pkg/router/roundrobin"
 )
+
+type routerConfig struct {
+	Type string `yaml:"type"`
+
+	Models []string `yaml:"models"`
+}
 
 type routerContext struct {
 	Completers []provider.Completer

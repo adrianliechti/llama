@@ -19,6 +19,23 @@ func (c *Config) RegisterTool(id string, val tool.Tool) {
 	c.tools[id] = val
 }
 
+func (cfg *Config) Tool(id string) (tool.Tool, error) {
+	if cfg.tools != nil {
+		if t, ok := cfg.tools[id]; ok {
+			return t, nil
+		}
+	}
+
+	return nil, errors.New("tool not found: " + id)
+}
+
+type toolConfig struct {
+	Type string `yaml:"type"`
+
+	URL   string `yaml:"url"`
+	Token string `yaml:"token"`
+}
+
 func (cfg *Config) registerTools(f *configFile) error {
 	for id, t := range f.Tools {
 		var err error
