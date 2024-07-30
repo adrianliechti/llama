@@ -47,7 +47,7 @@ func (p *transcriber) Transcribe(ctx context.Context, input provider.File, optio
 
 	result, err := p.transcriber.Transcribe(ctx, input, options)
 
-	meterRequest(ctx, p.library, p.provider, p.model, "transcription")
+	meterRequest(ctx, p.library, p.provider, "transcribe", p.model)
 
 	return result, err
 }

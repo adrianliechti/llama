@@ -48,7 +48,7 @@ func (p *renderer) Render(ctx context.Context, input string, options *provider.R
 
 	result, err := p.renderer.Render(ctx, input, options)
 
-	meterRequest(ctx, p.library, p.provider, p.model, "rendering")
+	meterRequest(ctx, p.library, p.provider, "render", p.model)
 
 	if input != "" {
 		span.SetAttributes(attribute.String("input", input))

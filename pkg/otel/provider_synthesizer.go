@@ -48,7 +48,7 @@ func (p *synthesizer) Synthesize(ctx context.Context, content string, options *p
 
 	result, err := p.synthesizer.Synthesize(ctx, content, options)
 
-	meterRequest(ctx, p.library, p.provider, p.model, "synthesis")
+	meterRequest(ctx, p.library, p.provider, "synthesize", p.model)
 
 	if content != "" {
 		span.SetAttributes(attribute.String("input", content))

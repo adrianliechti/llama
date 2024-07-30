@@ -48,7 +48,7 @@ func (p *translator) Translate(ctx context.Context, content string, options *pro
 
 	result, err := p.translator.Translate(ctx, content, options)
 
-	meterRequest(ctx, p.library, p.provider, p.model, "translation")
+	meterRequest(ctx, p.library, p.provider, "translate", p.model)
 
 	if content != "" {
 		span.SetAttributes(attribute.String("input", content))

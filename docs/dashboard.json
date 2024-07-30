@@ -144,7 +144,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "sum by(kind) (llm_requests_total)",
+          "expr": "sum by(operation) (llm_requests_total)",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,

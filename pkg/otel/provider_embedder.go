@@ -48,7 +48,7 @@ func (p *embedder) Embed(ctx context.Context, content string) (provider.Embeddin
 
 	result, err := p.embedder.Embed(ctx, content)
 
-	meterRequest(ctx, p.library, p.provider, p.model, "embedding")
+	meterRequest(ctx, p.library, p.provider, "embed", p.model)
 
 	if content != "" {
 		span.SetAttributes(attribute.String("input", content))

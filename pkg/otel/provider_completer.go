@@ -48,7 +48,7 @@ func (p *completer) Complete(ctx context.Context, messages []provider.Message, o
 
 	result, err := p.completer.Complete(ctx, messages, options)
 
-	meterRequest(ctx, p.library, p.provider, p.model, "completion")
+	meterRequest(ctx, p.library, p.provider, "complete", p.model)
 
 	if len(messages) > 0 {
 		input := messages[len(messages)-1].Content
