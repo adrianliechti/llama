@@ -20,7 +20,7 @@ func (h *Handler) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := embedder.Embed(r.Context(), req.Prompt)
+	embedding, err := embedder.Embed(r.Context(), req.Prompt)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -28,7 +28,7 @@ func (h *Handler) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result := EmbeddingResponse{
-		Embedding: toFloat64s(data),
+		Embedding: toFloat64s(embedding.Data),
 	}
 
 	writeJson(w, result)

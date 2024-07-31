@@ -66,6 +66,8 @@ type Completion struct {
 	Reason CompletionReason
 
 	Message Message
+
+	Usage *Usage
 }
 
 type CompletionFormat string
@@ -77,7 +79,7 @@ const (
 type CompletionReason string
 
 const (
-	CompletionReasonStop     CompletionReason = "stop"
-	CompletionReasonLength   CompletionReason = "length"
-	CompletionReasonFunction CompletionReason = "function"
+	CompletionReasonStop   CompletionReason = "stop"
+	CompletionReasonLength CompletionReason = "length"
+	CompletionReasonTool   CompletionReason = "tool"
 )

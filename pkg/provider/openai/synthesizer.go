@@ -32,6 +32,10 @@ func NewSynthesizer(options ...Option) (*Synthesizer, error) {
 }
 
 func (s *Synthesizer) Synthesize(ctx context.Context, content string, options *provider.SynthesizeOptions) (*provider.Synthesis, error) {
+	if options == nil {
+		options = new(provider.SynthesizeOptions)
+	}
+
 	req := openai.CreateSpeechRequest{
 		Input: content,
 

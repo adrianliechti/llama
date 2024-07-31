@@ -22,7 +22,8 @@ func NewEmbedder(url string, options ...Option) (*Embedder, error) {
 	}
 
 	c := &Config{
-		url:    url,
+		url: url,
+
 		client: http.DefaultClient,
 	}
 
@@ -35,7 +36,7 @@ func NewEmbedder(url string, options ...Option) (*Embedder, error) {
 	}, nil
 }
 
-func (e *Embedder) Embed(ctx context.Context, content string) (provider.Embeddings, error) {
+func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
 	body := &EmbeddingRequest{
 		Model:  e.model,
 		Prompt: strings.TrimSpace(content),
@@ -60,7 +61,9 @@ func (e *Embedder) Embed(ctx context.Context, content string) (provider.Embeddin
 		return nil, err
 	}
 
-	return toFloat32s(result.Embedding), nil
+	return &provider.Embedding{
+		Data: toFloat32s(result.Embedding),
+	}, nil
 }
 
 type EmbeddingRequest struct {

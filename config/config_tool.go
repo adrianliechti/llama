@@ -9,14 +9,39 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool/custom"
 	"github.com/adrianliechti/llama/pkg/tool/duckduckgo"
 	"github.com/adrianliechti/llama/pkg/tool/tavily"
+
+	"github.com/adrianliechti/llama/pkg/otel"
 )
 
-func (c *Config) RegisterTool(id string, val tool.Tool) {
+func (c *Config) RegisterTool(name, alias string, p tool.Tool) {
 	if c.tools == nil {
 		c.tools = make(map[string]tool.Tool)
 	}
 
-	c.tools[id] = val
+	tool, ok := p.(otel.ObservableTool)
+
+	if !ok {
+		tool = otel.NewTool(name, p)
+	}
+
+	c.tools[alias] = tool
+}
+
+func (cfg *Config) Tool(id string) (tool.Tool, error) {
+	if cfg.tools != nil {
+		if t, ok := cfg.tools[id]; ok {
+			return t, nil
+		}
+	}
+
+	return nil, errors.New("tool not found: " + id)
+}
+
+type toolConfig struct {
+	Type string `yaml:"type"`
+
+	URL   string `yaml:"url"`
+	Token string `yaml:"token"`
 }
 
 func (cfg *Config) registerTools(f *configFile) error {
@@ -29,7 +54,7 @@ func (cfg *Config) registerTools(f *configFile) error {
 			return err
 		}
 
-		cfg.RegisterTool(id, tool)
+		cfg.RegisterTool(t.Type, id, tool)
 	}
 
 	return nil

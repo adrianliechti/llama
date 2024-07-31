@@ -28,7 +28,8 @@ func NewCompleter(url string, options ...Option) (*Completer, error) {
 	}
 
 	c := &Config{
-		url:    url,
+		url: url,
+
 		client: http.DefaultClient,
 	}
 
@@ -71,14 +72,14 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			return nil, convertError(resp)
 		}
 
-		var chat ChatResponse
+		var response ChatResponse
 
-		if err := json.NewDecoder(resp.Body).Decode(&chat); err != nil {
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			return nil, err
 		}
 
-		role := toMessageRole(chat.Message.Role)
-		content := strings.TrimSpace(chat.Message.Content)
+		role := toMessageRole(response.Message.Role)
+		content := strings.TrimSpace(response.Message.Content)
 
 		if role == "" {
 			role = provider.MessageRoleAssistant
@@ -86,13 +87,18 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 		return &provider.Completion{
 			ID:     id,
-			Reason: toCompletionReason(chat),
+			Reason: toCompletionReason(response),
 
 			Message: provider.Message{
 				Role:    role,
 				Content: content,
 
-				ToolCalls: toToolCalls(chat.Message.ToolCalls),
+				ToolCalls: toToolCalls(response.Message.ToolCalls),
+			},
+
+			Usage: &provider.Usage{
+				InputTokens:  response.InputTokens,
+				OutputTokens: response.OutputTokens,
 			},
 		}, nil
 	} else {
@@ -122,6 +128,8 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			Message: provider.Message{
 				Role: provider.MessageRoleAssistant,
 			},
+
+			Usage: &provider.Usage{},
 		}
 
 		for i := 0; ; i++ {
@@ -139,27 +147,33 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				continue
 			}
 
-			var chat ChatResponse
+			var response ChatResponse
 
-			if err := json.Unmarshal([]byte(data), &chat); err != nil {
+			if err := json.Unmarshal([]byte(data), &response); err != nil {
 				return nil, err
 			}
 
-			var content = chat.Message.Content
+			var content = response.Message.Content
 
 			if i == 0 {
 				content = strings.TrimLeftFunc(content, unicode.IsSpace)
 			}
 
-			role := toMessageRole(chat.Message.Role)
+			role := toMessageRole(response.Message.Role)
 
-			if role == "" {
-				role = provider.MessageRoleAssistant
+			if role != "" {
+				result.Message.Role = role
 			}
 
-			result.Reason = toCompletionReason(chat)
+			if response.InputTokens > 0 {
+				result.Usage.InputTokens = response.InputTokens
+			}
 
-			result.Message.Role = role
+			if response.OutputTokens > 0 {
+				result.Usage.OutputTokens = response.OutputTokens
+			}
+
+			result.Reason = toCompletionReason(response)
 			result.Message.Content += content
 
 			options.Stream <- provider.Completion{
@@ -170,9 +184,13 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 					Role:    role,
 					Content: content,
 
-					ToolCalls: toToolCalls(chat.Message.ToolCalls),
+					ToolCalls: toToolCalls(response.Message.ToolCalls),
 				},
 			}
+		}
+
+		if result.Usage.OutputTokens == 0 {
+			result.Usage = nil
 		}
 
 		return result, nil
@@ -265,7 +283,6 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 
 func convertMessageRole(r provider.MessageRole) MessageRole {
 	switch r {
-
 	case provider.MessageRoleSystem:
 		return MessageRoleSystem
 
@@ -285,7 +302,6 @@ func convertMessageRole(r provider.MessageRole) MessageRole {
 
 func toMessageRole(role MessageRole) provider.MessageRole {
 	switch role {
-
 	case MessageRoleSystem:
 		return provider.MessageRoleSystem
 
@@ -324,7 +340,7 @@ func toToolCalls(calls []ToolCall) []provider.ToolCall {
 
 func toCompletionReason(chat ChatResponse) provider.CompletionReason {
 	if len(chat.Message.ToolCalls) > 0 {
-		return provider.CompletionReasonFunction
+		return provider.CompletionReasonTool
 	}
 
 	if chat.Done {
@@ -393,4 +409,7 @@ type ChatResponse struct {
 	Message Message `json:"message"`
 
 	Done bool `json:"done"`
+
+	InputTokens  int `json:"prompt_eval_count"`
+	OutputTokens int `json:"eval_count"`
 }

@@ -24,7 +24,8 @@ type Completer struct {
 
 func NewCompleter(options ...Option) (*Completer, error) {
 	c := &Config{
-		url:    "https://api.anthropic.com",
+		url: "https://api.anthropic.com",
+
 		client: http.DefaultClient,
 	}
 
@@ -40,6 +41,10 @@ func NewCompleter(options ...Option) (*Completer, error) {
 func (c *Completer) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
+	}
+
+	if len(options.Tools) > 0 {
+		return nil, errors.New("tools are not yet supported")
 	}
 
 	url, _ := url.JoinPath(c.url, "/v1/messages")
@@ -67,7 +72,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			return nil, convertError(resp)
 		}
 
-		var response MessagesResponse
+		var response MessageResponse
 
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			return nil, err
@@ -87,6 +92,11 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			Message: provider.Message{
 				Role:    role,
 				Content: content,
+			},
+
+			Usage: &provider.Usage{
+				InputTokens:  response.Usage.InputTokens,
+				OutputTokens: response.Usage.OutputTokens,
 			},
 		}, nil
 	} else {
@@ -111,10 +121,13 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 		reader := bufio.NewReader(resp.Body)
 
-		var resultID string
-		var resultText strings.Builder
-		var resultRole provider.MessageRole
-		var resultReason provider.CompletionReason
+		result := &provider.Completion{
+			Message: provider.Message{
+				Role: provider.MessageRoleAssistant,
+			},
+
+			Usage: &provider.Usage{},
+		}
 
 		for i := 0; ; i++ {
 			data, err := reader.ReadBytes('\n')
@@ -140,19 +153,35 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				continue
 			}
 
-			var event MessagesEvent
+			var event MessageEvent
 
 			if err := json.Unmarshal([]byte(data), &event); err != nil {
 				return nil, err
 			}
 
 			if event.Message != nil {
-				resultID = event.Message.ID
+				result.ID = event.Message.ID
+
+				if event.Message.Usage.InputTokens > 0 {
+					result.Usage.InputTokens = event.Message.Usage.InputTokens
+				}
+
+				if event.Message.Usage.OutputTokens > 0 {
+					result.Usage.OutputTokens = event.Message.Usage.OutputTokens
+				}
 			}
 
 			if event.Type == EventTypeMessageStop {
-				resultReason = provider.CompletionReasonStop
+				result.Reason = provider.CompletionReasonStop
 				break
+			}
+
+			if event.Usage.InputTokens > 0 {
+				result.Usage.InputTokens = event.Usage.InputTokens
+			}
+
+			if event.Usage.OutputTokens > 0 {
+				result.Usage.OutputTokens = event.Usage.OutputTokens
 			}
 
 			if event.Type != EventTypeContentBlockDelta || event.Delta == nil {
@@ -165,30 +194,24 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				content = strings.TrimLeftFunc(content, unicode.IsSpace)
 			}
 
-			resultText.WriteString(content)
-
-			resultRole = provider.MessageRoleAssistant
+			result.Message.Content += content
 
 			options.Stream <- provider.Completion{
-				ID:     resultID,
-				Reason: resultReason,
+				ID:     result.ID,
+				Reason: result.Reason,
 
 				Message: provider.Message{
-					Role:    resultRole,
+					Role:    result.Message.Role,
 					Content: content,
 				},
 			}
 		}
 
-		return &provider.Completion{
-			ID:     resultID,
-			Reason: resultReason,
+		if result.Usage.OutputTokens == 0 {
+			result.Usage = nil
+		}
 
-			Message: provider.Message{
-				Role:    resultRole,
-				Content: resultText.String(),
-			},
-		}, nil
+		return result, nil
 	}
 }
 
@@ -392,7 +415,12 @@ var (
 	StopReasonStopSequence StopReason = "stop_sequence"
 )
 
-type MessagesResponse struct {
+type Usage struct {
+	InputTokens  int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
+}
+
+type MessageResponse struct {
 	ID string `json:"id"`
 
 	Type  ResponseType `json:"type"`
@@ -401,6 +429,15 @@ type MessagesResponse struct {
 	Role MessageRole `json:"role"`
 
 	Content []Content `json:"content"`
+
+	StopReason   StopReason `json:"stop_reason,omitempty"`
+	StopSequence []string   `json:"stop_sequence,omitempty"`
+
+	Usage Usage `json:"usage"`
+}
+
+type MessageDelta struct {
+	Text string `json:"text,omitempty"`
 
 	StopReason   StopReason `json:"stop_reason,omitempty"`
 	StopSequence []string   `json:"stop_sequence,omitempty"`
@@ -420,14 +457,13 @@ var (
 	EventTypeContentBlockStop  EventType = "content_block_stop"
 )
 
-type MessagesEvent struct {
+type MessageEvent struct {
 	Type EventType `json:"type"`
 
 	Index int `json:"index"`
 
-	Message      *MessagesResponse `json:"message,omitempty"`
-	MessageDelta *MessagesResponse `json:"message_delta,omitempty"`
+	Message *MessageResponse `json:"message,omitempty"`
+	Delta   *MessageDelta    `json:"delta,omitempty"`
 
-	ContentBlock *Content `json:"content_block,omitempty"`
-	Delta        *Content `json:"delta,omitempty"`
+	Usage Usage `json:"usage"`
 }

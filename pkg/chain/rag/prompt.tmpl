@@ -1,8 +1,16 @@
 {{- if .Results -}}
-Use the provided search results delimited by triple quotes to answer questions."
+Use the provided documents to answer questions:
 {{ range .Results }}
-"""{{ .Content }}"""
+---
+{{- if .Title }}
+Title: {{ .Title }}
+{{- end }}
+{{- if .Location }}
+Location: {{ .Location }}
+{{- end }}
+{{ .Content }}
 {{ end }}
 {{- end -}}
 
+---
 Question: {{ .Input }}

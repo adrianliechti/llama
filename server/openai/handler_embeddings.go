@@ -41,7 +41,7 @@ func (h *Handler) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i, input := range inputs {
-		data, err := embedder.Embed(r.Context(), input)
+		embedding, err := embedder.Embed(r.Context(), input)
 
 		if err != nil {
 			writeError(w, http.StatusBadRequest, err)
@@ -52,7 +52,7 @@ func (h *Handler) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 			Object: "embedding",
 
 			Index:     i,
-			Embedding: data,
+			Embedding: embedding.Data,
 		})
 	}
 

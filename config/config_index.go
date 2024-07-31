@@ -12,14 +12,42 @@ import (
 	"github.com/adrianliechti/llama/pkg/index/memory"
 	"github.com/adrianliechti/llama/pkg/index/qdrant"
 	"github.com/adrianliechti/llama/pkg/index/weaviate"
+
+	"github.com/adrianliechti/llama/pkg/otel"
 )
 
-func (cfg *Config) RegisterIndex(id string, i index.Provider) {
+func (cfg *Config) RegisterIndex(name, alias string, p index.Provider) {
 	if cfg.indexes == nil {
 		cfg.indexes = make(map[string]index.Provider)
 	}
 
-	cfg.indexes[id] = i
+	index, ok := p.(otel.ObservableIndex)
+
+	if !ok {
+		index = otel.NewIndex(name, alias, p)
+	}
+
+	cfg.indexes[alias] = index
+}
+
+func (cfg *Config) Index(id string) (index.Provider, error) {
+	if cfg.indexes != nil {
+		if i, ok := cfg.indexes[id]; ok {
+			return i, nil
+		}
+	}
+
+	return nil, errors.New("index not found: " + id)
+}
+
+type indexConfig struct {
+	Type string `yaml:"type"`
+
+	URL   string `yaml:"url"`
+	Token string `yaml:"token"`
+
+	Namespace string `yaml:"namespace"`
+	Embedding string `yaml:"embedding"`
 }
 
 type indexContext struct {
@@ -43,7 +71,7 @@ func (cfg *Config) registerIndexes(f *configFile) error {
 			return err
 		}
 
-		cfg.RegisterIndex(id, index)
+		cfg.RegisterIndex(i.Type, id, index)
 	}
 
 	return nil

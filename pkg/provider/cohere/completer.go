@@ -2,7 +2,6 @@ package cohere
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -10,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"unicode"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 )
@@ -102,14 +100,14 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 		reader := bufio.NewReader(resp.Body)
 
-		var resultID string
-
-		var resultText strings.Builder
-		var resultRole provider.MessageRole
-		var resultReason provider.CompletionReason
+		result := &provider.Completion{
+			Message: provider.Message{
+				Role: provider.MessageRoleAssistant,
+			},
+		}
 
 		for i := 0; ; i++ {
-			data, err := reader.ReadBytes('\n')
+			data, err := reader.ReadString('\n')
 
 			if err != nil {
 				if errors.Is(err, io.EOF) {
@@ -119,7 +117,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				return nil, err
 			}
 
-			data = bytes.TrimSpace(data)
+			data = strings.TrimSpace(data)
 
 			if len(data) == 0 {
 				continue
@@ -132,40 +130,28 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			}
 
 			if event.ID != "" {
-				resultID = event.ID
+				result.ID = event.ID
 			}
 
-			var content = event.Text
-
-			if i == 0 {
-				content = strings.TrimLeftFunc(content, unicode.IsSpace)
-			}
-
-			resultText.WriteString(content)
-
-			resultRole = provider.MessageRoleAssistant
-			resultReason = toCompletionReason(event.FinishReason)
+			result.Reason = toCompletionReason(event.FinishReason)
+			result.Message.Content += event.Text
 
 			options.Stream <- provider.Completion{
-				ID:     resultID,
-				Reason: resultReason,
+				ID:     result.ID,
+				Reason: result.Reason,
 
 				Message: provider.Message{
-					Role:    resultRole,
-					Content: content,
+					Role:    result.Message.Role,
+					Content: event.Text,
 				},
 			}
 		}
 
-		return &provider.Completion{
-			ID:     resultID,
-			Reason: resultReason,
+		if result.Usage.OutputTokens == 0 {
+			result.Usage = nil
+		}
 
-			Message: provider.Message{
-				Role:    resultRole,
-				Content: resultText.String(),
-			},
-		}, nil
+		return result, nil
 	}
 }
 
@@ -299,6 +285,8 @@ type ChatResponse struct {
 	Text string `json:"text"`
 
 	FinishReason FinishReason `json:"finish_reason"`
+
+	Metadata Metadata `json:"meta"`
 }
 
 type ChatEvent struct {
@@ -310,4 +298,13 @@ type ChatEvent struct {
 	Text string `json:"text"`
 
 	FinishReason FinishReason `json:"finish_reason"`
+}
+
+type Metadata struct {
+	Usage Usage `json:"billed_units"`
+}
+
+type Usage struct {
+	InputTokens  int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
 }

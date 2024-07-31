@@ -6,21 +6,38 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
+
+	"github.com/adrianliechti/llama/pkg/otel"
 )
 
-func (cfg *Config) RegisterRenderer(model string, r provider.Renderer) {
+func (cfg *Config) RegisterRenderer(name, model string, p provider.Renderer) {
 	cfg.RegisterModel(model)
 
 	if cfg.renderer == nil {
 		cfg.renderer = make(map[string]provider.Renderer)
 	}
 
-	cfg.renderer[model] = r
+	renderer, ok := p.(otel.ObservableRenderer)
+
+	if !ok {
+		renderer = otel.NewRenderer(name, model, p)
+	}
+
+	cfg.renderer[model] = renderer
 }
 
-func createRenderer(cfg providerConfig, model string) (provider.Renderer, error) {
-	switch strings.ToLower(cfg.Type) {
+func (cfg *Config) Renderer(model string) (provider.Renderer, error) {
+	if cfg.renderer != nil {
+		if t, ok := cfg.renderer[model]; ok {
+			return t, nil
+		}
+	}
 
+	return nil, errors.New("renderer not found: " + model)
+}
+
+func createRenderer(cfg providerConfig, model modelContext) (provider.Renderer, error) {
+	switch strings.ToLower(cfg.Type) {
 	case "openai":
 		return openaiRenderer(cfg, model)
 
@@ -29,7 +46,7 @@ func createRenderer(cfg providerConfig, model string) (provider.Renderer, error)
 	}
 }
 
-func openaiRenderer(cfg providerConfig, model string) (provider.Renderer, error) {
+func openaiRenderer(cfg providerConfig, model modelContext) (provider.Renderer, error) {
 	var options []openai.Option
 
 	if cfg.URL != "" {
@@ -40,8 +57,8 @@ func openaiRenderer(cfg providerConfig, model string) (provider.Renderer, error)
 		options = append(options, openai.WithToken(cfg.Token))
 	}
 
-	if model != "" {
-		options = append(options, openai.WithModel(model))
+	if model.ID != "" {
+		options = append(options, openai.WithModel(model.ID))
 	}
 
 	return openai.NewRenderer(options...)

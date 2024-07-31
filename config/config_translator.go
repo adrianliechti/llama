@@ -7,21 +7,38 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/azuretranslator"
 	"github.com/adrianliechti/llama/pkg/provider/deepl"
+
+	"github.com/adrianliechti/llama/pkg/otel"
 )
 
-func (cfg *Config) RegisterTranslator(model string, t provider.Translator) {
+func (cfg *Config) RegisterTranslator(name, model string, p provider.Translator) {
 	cfg.RegisterModel(model)
 
 	if cfg.translator == nil {
 		cfg.translator = make(map[string]provider.Translator)
 	}
 
-	cfg.translator[model] = t
+	translator, ok := p.(otel.ObservableTranslator)
+
+	if !ok {
+		translator = otel.NewTranslator(name, model, p)
+	}
+
+	cfg.translator[model] = translator
 }
 
-func createTranslator(cfg providerConfig, model string) (provider.Translator, error) {
-	switch strings.ToLower(cfg.Type) {
+func (cfg *Config) Translator(model string) (provider.Translator, error) {
+	if cfg.translator != nil {
+		if t, ok := cfg.translator[model]; ok {
+			return t, nil
+		}
+	}
 
+	return nil, errors.New("translator not found: " + model)
+}
+
+func createTranslator(cfg providerConfig, model modelContext) (provider.Translator, error) {
+	switch strings.ToLower(cfg.Type) {
 	case "azuretranslator":
 		return azureTranslator(cfg, model)
 
@@ -33,29 +50,29 @@ func createTranslator(cfg providerConfig, model string) (provider.Translator, er
 	}
 }
 
-func azureTranslator(cfg providerConfig, model string) (provider.Translator, error) {
+func azureTranslator(cfg providerConfig, model modelContext) (provider.Translator, error) {
 	var options []azuretranslator.Option
 
 	if cfg.Token != "" {
 		options = append(options, azuretranslator.WithToken(cfg.Token))
 	}
 
-	if model != "" {
-		options = append(options, azuretranslator.WithLanguage(model))
+	if model.ID != "" {
+		options = append(options, azuretranslator.WithLanguage(model.ID))
 	}
 
 	return azuretranslator.NewTranslator(cfg.URL, options...)
 }
 
-func deeplTranslator(cfg providerConfig, model string) (provider.Translator, error) {
+func deeplTranslator(cfg providerConfig, model modelContext) (provider.Translator, error) {
 	var options []deepl.Option
 
 	if cfg.Token != "" {
 		options = append(options, deepl.WithToken(cfg.Token))
 	}
 
-	if model != "" {
-		options = append(options, deepl.WithLanguage(model))
+	if model.ID != "" {
+		options = append(options, deepl.WithLanguage(model.ID))
 	}
 
 	return deepl.NewTranslator(cfg.URL, options...)

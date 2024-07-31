@@ -21,7 +21,7 @@ type Completer struct {
 
 func NewCompleter(options ...Option) (*Completer, error) {
 	cfg := &Config{
-		model: openai.GPT3Dot5Turbo,
+		model: openai.GPT4oMini,
 	}
 
 	for _, option := range options {
@@ -64,6 +64,11 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 				ToolCalls: toToolCalls(choice.Message.ToolCalls),
 			},
+
+			Usage: &provider.Usage{
+				InputTokens:  completion.Usage.PromptTokens,
+				OutputTokens: completion.Usage.CompletionTokens,
+			},
 		}, nil
 	} else {
 		defer close(options.Stream)
@@ -83,12 +88,25 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		for {
 			completion, err := stream.Recv()
 
-			if errors.Is(err, io.EOF) {
-				break
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+
+				return nil, err
 			}
 
-			if err != nil {
-				return nil, err
+			result.ID = completion.ID
+
+			if completion.Usage != nil {
+				result.Usage = &provider.Usage{
+					InputTokens:  completion.Usage.PromptTokens,
+					OutputTokens: completion.Usage.CompletionTokens,
+				}
+			}
+
+			if len(completion.Choices) == 0 {
+				continue
 			}
 
 			choice := completion.Choices[0]
@@ -99,7 +117,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				role = provider.MessageRoleAssistant
 			}
 
-			result.ID = completion.ID
 			result.Reason = toCompletionResult(choice.FinishReason)
 
 			result.Message.Role = role
@@ -117,10 +134,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 					ToolCalls: toToolCalls(choice.Delta.ToolCalls),
 				},
 			}
-
-			if choice.FinishReason != "" {
-				break
-			}
 		}
 
 		return &result, nil
@@ -134,6 +147,12 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 
 	req := &openai.ChatCompletionRequest{
 		Model: model,
+	}
+
+	if options.Stream != nil {
+		req.StreamOptions = &openai.StreamOptions{
+			IncludeUsage: true,
+		}
 	}
 
 	if options.Format == provider.CompletionFormatJSON {
@@ -232,7 +251,6 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 
 func convertMessageRole(r provider.MessageRole) string {
 	switch r {
-
 	case provider.MessageRoleSystem:
 		return openai.ChatMessageRoleSystem
 
@@ -252,7 +270,6 @@ func convertMessageRole(r provider.MessageRole) string {
 
 func toMessageRole(role string) provider.MessageRole {
 	switch role {
-
 	case openai.ChatMessageRoleSystem:
 		return provider.MessageRoleSystem
 
@@ -296,7 +313,7 @@ func toCompletionResult(val openai.FinishReason) provider.CompletionReason {
 		return provider.CompletionReasonLength
 
 	case openai.FinishReasonToolCalls:
-		return provider.CompletionReasonFunction
+		return provider.CompletionReasonTool
 
 	default:
 		return ""

@@ -5,8 +5,15 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"github.com/adrianliechti/llama/pkg/router/roundrobin"
 )
+
+type routerConfig struct {
+	Type string `yaml:"type"`
+
+	Models []string `yaml:"models"`
+}
 
 type routerContext struct {
 	Completers []provider.Completer
@@ -26,14 +33,14 @@ func (cfg *Config) registerRouters(f *configFile) error {
 			context.Completers = append(context.Completers, completer)
 		}
 
-		r, err := createRouter(r, context)
+		router, err := createRouter(r, context)
 
 		if err != nil {
 			return err
 		}
 
-		if completer, ok := r.(provider.Completer); ok {
-			cfg.RegisterCompleter(id, completer)
+		if completer, ok := router.(provider.Completer); ok {
+			cfg.RegisterCompleter(r.Type, id, completer)
 		}
 	}
 

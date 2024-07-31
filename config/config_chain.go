@@ -13,18 +13,41 @@ import (
 	"github.com/adrianliechti/llama/pkg/chain/assistant"
 	"github.com/adrianliechti/llama/pkg/chain/rag"
 
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/to"
 	"github.com/adrianliechti/llama/pkg/tool"
 )
 
-func (cfg *Config) RegisterChain(model string, c chain.Provider) {
+func (cfg *Config) RegisterChain(name, model string, p chain.Provider) {
 	cfg.RegisterModel(model)
 
 	if cfg.chains == nil {
 		cfg.chains = make(map[string]chain.Provider)
 	}
 
-	cfg.chains[model] = c
+	chain, ok := p.(otel.ObservableChain)
+
+	if !ok {
+		chain = otel.NewCompleter(name, model, p)
+	}
+
+	cfg.chains[model] = chain
+}
+
+type chainConfig struct {
+	Type string `yaml:"type"`
+
+	Model     string `yaml:"model"`
+	Index     string `yaml:"index"`
+	Embedding string `yaml:"embedding"`
+
+	Template string    `yaml:"template"`
+	Messages []message `yaml:"messages"`
+
+	Tools []string `yaml:"tools"`
+
+	Limit       *int     `yaml:"limit"`
+	Temperature *float32 `yaml:"temperature"`
 }
 
 type chainContext struct {
@@ -94,7 +117,7 @@ func (cfg *Config) registerChains(f *configFile) error {
 			return err
 		}
 
-		cfg.RegisterChain(id, chain)
+		cfg.RegisterChain(c.Type, id, chain)
 	}
 
 	return nil
@@ -102,7 +125,6 @@ func (cfg *Config) registerChains(f *configFile) error {
 
 func createChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
-
 	case "agent":
 		return agentChain(cfg, context)
 

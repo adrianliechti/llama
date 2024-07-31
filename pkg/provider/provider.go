@@ -32,3 +32,8 @@ type Image struct {
 	Name    string
 	Content io.ReadCloser
 }
+
+type Usage struct {
+	InputTokens  int
+	OutputTokens int
+}

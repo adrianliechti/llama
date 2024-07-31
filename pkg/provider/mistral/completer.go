@@ -2,13 +2,14 @@ package mistral
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
+	"unicode"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 )
@@ -51,7 +52,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
 		req.Header.Set("Authorization", "Bearer "+c.token)
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "text/event-stream")
 
 		resp, err := c.client.Do(req)
 
@@ -81,6 +81,11 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				Role:    toMessageRole(choice.Message.Role),
 				Content: choice.Message.Content,
 			},
+
+			Usage: &provider.Usage{
+				InputTokens:  completion.Usage.PromptTokens,
+				OutputTokens: completion.Usage.CompletionTokens,
+			},
 		}, nil
 	} else {
 		defer close(options.Stream)
@@ -108,10 +113,12 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			Message: provider.Message{
 				Role: provider.MessageRoleAssistant,
 			},
+
+			Usage: &provider.Usage{},
 		}
 
 		for i := 0; ; i++ {
-			data, err := reader.ReadBytes('\n')
+			data, err := reader.ReadString('\n')
 
 			if err != nil {
 				if errors.Is(err, io.EOF) {
@@ -121,21 +128,16 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				return nil, err
 			}
 
-			data = bytes.TrimSpace(data)
-
-			if bytes.HasPrefix(data, []byte("event:")) {
+			if !strings.HasPrefix(data, "data:") {
 				continue
 			}
 
-			data = bytes.TrimPrefix(data, []byte("data:"))
-			data = bytes.TrimSpace(data)
+			data = strings.TrimPrefix(data, "data:")
+			data = strings.TrimLeftFunc(data, unicode.IsSpace)
+			data = strings.TrimRight(data, "\n")
 
-			if len(data) == 0 {
+			if len(data) == 0 || data == "[DONE]" {
 				continue
-			}
-
-			if bytes.HasPrefix(data, []byte("[DONE]")) {
-				break
 			}
 
 			var completion ChatCompletionResponse
@@ -144,12 +146,29 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				return nil, err
 			}
 
+			result.ID = completion.ID
+
+			if completion.Usage.PromptTokens > 0 {
+				result.Usage.InputTokens = completion.Usage.PromptTokens
+			}
+
+			if completion.Usage.CompletionTokens > 0 {
+				result.Usage.OutputTokens = completion.Usage.CompletionTokens
+			}
+
+			if len(completion.Choices) == 0 {
+				continue
+			}
+
 			choice := completion.Choices[0]
 
-			result.ID = completion.ID
-			result.Reason = toCompletionReason(choice.FinishReason)
+			role := toMessageRole(choice.Message.Role)
 
-			result.Message.Role = toMessageRole(choice.Delta.Role)
+			if role != "" {
+				result.Message.Role = role
+			}
+
+			result.Reason = toCompletionReason(choice.FinishReason)
 			result.Message.Content += choice.Delta.Content
 
 			options.Stream <- provider.Completion{
@@ -157,9 +176,14 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				Reason: result.Reason,
 
 				Message: provider.Message{
+					Role:    result.Message.Role,
 					Content: choice.Delta.Content,
 				},
 			}
+		}
+
+		if result.Usage.OutputTokens == 0 {
+			result.Usage = nil
 		}
 
 		return result, nil
@@ -208,6 +232,8 @@ type ChatCompletionResponse struct {
 	Model string `json:"model"`
 
 	Choices []ChatCompletionChoice `json:"choices"`
+
+	Usage Usage `json:"usage"`
 }
 
 type ChatCompletionChoice struct {
@@ -233,9 +259,14 @@ type Message struct {
 	Content string      `json:"content"`
 }
 
+type Usage struct {
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+	TotalTokens      int `json:"total_tokens"`
+}
+
 func convertMessageRole(role provider.MessageRole) MessageRole {
 	switch role {
-
 	case provider.MessageRoleSystem:
 		return MessageRoleSystem
 
@@ -255,7 +286,6 @@ func convertMessageRole(role provider.MessageRole) MessageRole {
 
 func toMessageRole(role MessageRole) provider.MessageRole {
 	switch role {
-
 	case MessageRoleSystem:
 		return provider.MessageRoleSystem
 
@@ -282,7 +312,7 @@ func toCompletionReason(val string) provider.CompletionReason {
 		return provider.CompletionReasonLength
 
 	case "tool_calls":
-		return provider.CompletionReasonFunction
+		return provider.CompletionReasonTool
 	}
 
 	return ""

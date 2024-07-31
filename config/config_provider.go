@@ -2,67 +2,76 @@ package config
 
 import (
 	"errors"
+
+	"gopkg.in/yaml.v3"
 )
 
 func (cfg *Config) registerProviders(f *configFile) error {
 	for _, p := range f.Providers {
 		for id, m := range p.Models {
+			context := modelContext{
+				ID: m.ID,
 
-			switch detectModelType(id) {
+				Type: detectModelType(id),
 
+				Name:        m.Name,
+				Description: m.Description,
+			}
+
+			switch context.Type {
 			case ModelTypeCompleter:
-				completer, err := createCompleter(p, m.ID)
+				completer, err := createCompleter(p, context)
 
 				if err != nil {
 					return err
 				}
 
-				cfg.RegisterCompleter(id, completer)
+				cfg.RegisterCompleter(p.Type, id, completer)
 
 			case ModelTypeEmbedder:
-				embedder, err := createEmbedder(p, m.ID)
+				embedder, err := createEmbedder(p, context)
 
 				if err != nil {
 					return err
 				}
 
-				cfg.RegisterEmbedder(id, embedder)
+				cfg.RegisterEmbedder(p.Type, id, embedder)
 
 			case ModelTypeRenderer:
-				renderer, err := createRenderer(p, m.ID)
+				renderer, err := createRenderer(p, context)
 
 				if err != nil {
 					return err
 				}
 
-				cfg.RegisterRenderer(id, renderer)
+				cfg.RegisterRenderer(p.Type, id, renderer)
 
 			case ModelTypeSynthesizer:
-				synthesizer, err := createSynthesizer(p, m.ID)
+				synthesizer, err := createSynthesizer(p, context)
 
 				if err != nil {
 					return err
 				}
 
-				cfg.RegisterSynthesizer(id, synthesizer)
+				cfg.RegisterSynthesizer(p.Type, id, synthesizer)
 
 			case ModelTypeTranscriber:
-				transcriber, err := createTranscriber(p, m.ID)
+				transcriber, err := createTranscriber(p, context)
 
 				if err != nil {
 					return err
 				}
 
-				cfg.RegisterTranscriber(id, transcriber)
+				cfg.RegisterTranscriber(p.Type, id, transcriber)
 
 			case ModelTypeTranslator:
-				translator, err := createTranslator(p, m.ID)
+				translator, err := createTranslator(p, context)
 
 				if err != nil {
 					return err
 				}
 
-				cfg.RegisterTranslator(id, translator)
+				cfg.RegisterTranslator(p.Type, id, translator)
 
 			default:
 				return errors.New("invalid model type: " + id)
@@ -71,4 +80,49 @@ func (cfg *Config) registerProviders(f *configFile) error {
 	}
 
 	return nil
+}
+
+type providerConfig struct {
+	Type string `yaml:"type"`
+
+	URL   string `yaml:"url"`
+	Token string `yaml:"token"`
+
+	Models providerModelsConfig `yaml:"models"`
+}
+
+type providerModelsConfig map[string]modelConfig
+
+func (c *providerModelsConfig) UnmarshalYAML(value *yaml.Node) error {
+	var config map[string]modelConfig
+
+	if err := value.Decode(&config); err == nil {
+		for id, model := range config {
+			if model.ID == "" {
+				model.ID = id
+			}
+
+			config[id] = model
+		}
+
+		*c = config
+		return nil
+	}
+
+	var list []string
+
+	if err := value.Decode(&list); err == nil {
+		config = make(map[string]modelConfig)
+
+		for _, id := range list {
+			config[id] = modelConfig{
+				ID: id,
+			}
+		}
+
+		*c = config
+		return nil
+	}
+
+	return errors.New("invalid models config")
 }

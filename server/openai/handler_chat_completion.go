@@ -53,6 +53,7 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 	switch v := req.Stop.(type) {
 	case string:
 		stops = []string{v}
+
 	case []string:
 		stops = v
 	}
@@ -362,7 +363,7 @@ func oaiFinishReason(val provider.CompletionReason) *FinishReason {
 	case provider.CompletionReasonLength:
 		return &FinishReasonLength
 
-	case provider.CompletionReasonFunction:
+	case provider.CompletionReasonTool:
 		return &FinishReasonToolCalls
 
 	default:

@@ -11,6 +11,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/to"
+
 	"github.com/google/uuid"
 )
 
@@ -31,9 +32,9 @@ func New(url string, namespace string, options ...Option) (*Client, error) {
 	c := &Client{
 		url: url,
 
-		client: http.DefaultClient,
-
 		namespace: namespace,
+
+		client: http.DefaultClient,
 	}
 
 	for _, option := range options {
@@ -148,7 +149,7 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 				return err
 			}
 
-			d.Embedding = embedding
+			d.Embedding = embedding.Data
 		}
 
 		points = append(points, point{
@@ -241,7 +242,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	u, _ := url.JoinPath(c.url, "collections/"+c.namespace+"/points/search")
 
 	body := map[string]any{
-		"vector": embedding,
+		"vector": embedding.Data,
 		"limit":  options.Limit,
 
 		"with_vector":  true,
@@ -310,7 +311,7 @@ func (c *Client) ensureCollection(name string) error {
 
 		body := map[string]any{
 			"vectors": map[string]any{
-				"size":     len(embeddings),
+				"size":     len(embeddings.Data),
 				"distance": "Cosine",
 			},
 		}

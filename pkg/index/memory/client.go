@@ -67,7 +67,7 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 				return err
 			}
 
-			d.Embedding = embedding
+			d.Embedding = embedding.Data
 		}
 
 		if len(d.Embedding) == 0 {
@@ -107,7 +107,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 DOCUMENTS:
 	for _, d := range c.documents {
-		score := cosineSimilarity(embedding, d.Embedding)
+		score := cosineSimilarity(embedding.Data, d.Embedding)
 
 		r := index.Result{
 			Score:    score,

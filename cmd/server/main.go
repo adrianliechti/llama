@@ -6,6 +6,8 @@ import (
 
 	"github.com/adrianliechti/llama/config"
 	"github.com/adrianliechti/llama/server"
+
+	"github.com/adrianliechti/llama/pkg/otel"
 )
 
 func main() {
@@ -26,6 +28,10 @@ func main() {
 	s, err := server.New(cfg)
 
 	if err != nil {
+		panic(err)
+	}
+
+	if err := otel.Setup("llama", "0.0.1"); err != nil {
 		panic(err)
 	}
 
