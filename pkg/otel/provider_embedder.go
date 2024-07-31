@@ -54,5 +54,12 @@ func (p *observableEmbedder) Embed(ctx context.Context, content string) (*provid
 		span.SetAttributes(attribute.String("input", content))
 	}
 
+	if result != nil {
+		if result.Usage != nil {
+			tokens := int64(result.Usage.InputTokens) + int64(result.Usage.OutputTokens)
+			meterTokens(ctx, p.library, p.provider, "embed", p.model, tokens)
+		}
+	}
+
 	return result, err
 }

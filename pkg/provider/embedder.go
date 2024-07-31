@@ -10,4 +10,6 @@ type Embedder interface {
 
 type Embedding struct {
 	Data []float32
+
+	Usage *Usage
 }

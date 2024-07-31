@@ -44,5 +44,10 @@ func (c *Embedder) Embed(ctx context.Context, content string) (*provider.Embeddi
 
 	return &provider.Embedding{
 		Data: result.Data[0].Embedding,
+
+		Usage: &provider.Usage{
+			InputTokens:  result.Usage.PromptTokens,
+			OutputTokens: result.Usage.CompletionTokens,
+		},
 	}, nil
 }

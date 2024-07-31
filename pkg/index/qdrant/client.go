@@ -242,7 +242,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	u, _ := url.JoinPath(c.url, "collections/"+c.namespace+"/points/search")
 
 	body := map[string]any{
-		"vector": embedding,
+		"vector": embedding.Data,
 		"limit":  options.Limit,
 
 		"with_vector":  true,
