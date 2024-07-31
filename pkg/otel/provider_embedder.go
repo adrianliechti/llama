@@ -50,7 +50,7 @@ func (p *observableEmbedder) Embed(ctx context.Context, content string) (*provid
 
 	meterRequest(ctx, p.library, p.provider, "embed", p.model)
 
-	if content != "" {
+	if EnableDebug {
 		span.SetAttributes(attribute.String("input", content))
 	}
 

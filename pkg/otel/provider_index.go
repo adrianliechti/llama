@@ -73,19 +73,19 @@ func (p *observableIndex) Query(ctx context.Context, query string, options *inde
 
 	result, err := p.index.Query(ctx, query, options)
 
-	if query != "" {
+	if EnableDebug {
 		span.SetAttributes(attribute.String("query", query))
-	}
 
-	if result != nil {
-		var outputs []string
+		if result != nil {
+			var outputs []string
 
-		for _, r := range result {
-			outputs = append(outputs, r.Content)
-		}
+			for _, r := range result {
+				outputs = append(outputs, r.Content)
+			}
 
-		if len(outputs) > 0 {
-			span.SetAttributes(attribute.StringSlice("results", outputs))
+			if len(outputs) > 0 {
+				span.SetAttributes(attribute.StringSlice("results", outputs))
+			}
 		}
 	}
 

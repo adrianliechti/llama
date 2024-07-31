@@ -50,13 +50,13 @@ func (p *observableTranslator) Translate(ctx context.Context, content string, op
 
 	meterRequest(ctx, p.library, p.provider, "translate", p.model)
 
-	if content != "" {
+	if EnableDebug {
 		span.SetAttributes(attribute.String("input", content))
-	}
 
-	if result != nil {
-		if result.Content != "" {
-			span.SetAttributes(attribute.String("output", result.Content))
+		if result != nil {
+			if result.Content != "" {
+				span.SetAttributes(attribute.String("output", result.Content))
+			}
 		}
 	}
 

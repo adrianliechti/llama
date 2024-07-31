@@ -50,19 +50,23 @@ func (p *observableCompleter) Complete(ctx context.Context, messages []provider.
 
 	meterRequest(ctx, p.library, p.provider, "complete", p.model)
 
-	if len(messages) > 0 {
-		input := messages[len(messages)-1].Content
+	if EnableDebug {
+		if len(messages) > 0 {
+			input := messages[len(messages)-1].Content
 
-		if input != "" {
-			span.SetAttributes(attribute.String("input", input))
+			if input != "" {
+				span.SetAttributes(attribute.String("input", input))
+			}
+		}
+
+		if result != nil {
+			if result.Message.Content != "" {
+				span.SetAttributes(attribute.String("output", result.Message.Content))
+			}
 		}
 	}
 
 	if result != nil {
-		if result.Message.Content != "" {
-			span.SetAttributes(attribute.String("output", result.Message.Content))
-		}
-
 		if result.Usage != nil {
 			tokens := int64(result.Usage.InputTokens) + int64(result.Usage.OutputTokens)
 			meterTokens(ctx, p.library, p.provider, "complete", p.model, tokens)

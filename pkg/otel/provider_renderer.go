@@ -50,7 +50,7 @@ func (p *observableRenderer) Render(ctx context.Context, input string, options *
 
 	meterRequest(ctx, p.library, p.provider, "render", p.model)
 
-	if input != "" {
+	if EnableDebug {
 		span.SetAttributes(attribute.String("input", input))
 	}
 

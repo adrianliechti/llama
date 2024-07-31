@@ -50,7 +50,7 @@ func (p *observableSynthesizer) Synthesize(ctx context.Context, content string, 
 
 	meterRequest(ctx, p.library, p.provider, "synthesize", p.model)
 
-	if content != "" {
+	if EnableDebug {
 		span.SetAttributes(attribute.String("input", content))
 	}
 
