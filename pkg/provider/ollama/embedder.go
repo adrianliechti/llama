@@ -38,11 +38,14 @@ func NewEmbedder(url string, options ...Option) (*Embedder, error) {
 
 func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
 	body := &EmbeddingRequest{
-		Model:  e.model,
-		Prompt: strings.TrimSpace(content),
+		Model: e.model,
+
+		Input: []string{
+			strings.TrimSpace(content),
+		},
 	}
 
-	u, _ := url.JoinPath(e.url, "/api/embeddings")
+	u, _ := url.JoinPath(e.url, "/api/embed")
 	resp, err := e.client.Post(u, "application/json", jsonReader(body))
 
 	if err != nil {
@@ -62,25 +65,21 @@ func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embeddi
 	}
 
 	return &provider.Embedding{
-		Data: toFloat32s(result.Embedding),
+		Data: result.Embeddings[0],
+
+		Usage: &provider.Usage{
+			InputTokens: result.PromptEvalCount,
+		},
 	}, nil
 }
 
 type EmbeddingRequest struct {
-	Model  string `json:"model"`
-	Prompt string `json:"prompt"`
+	Model string   `json:"model"`
+	Input []string `json:"input"`
 }
 
 type EmbeddingResponse struct {
-	Embedding []float64 `json:"embedding"`
-}
+	Embeddings [][]float32 `json:"embeddings"`
 
-func toFloat32s(v []float64) []float32 {
-	result := make([]float32, len(v))
-
-	for i, x := range v {
-		result[i] = float32(x)
-	}
-
-	return result
+	PromptEvalCount int `json:"prompt_eval_count,omitempty"`
 }
