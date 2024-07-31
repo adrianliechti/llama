@@ -66,6 +66,8 @@ type Completion struct {
 	Reason CompletionReason
 
 	Message Message
+
+	Usage *Usage
 }
 
 type CompletionFormat string

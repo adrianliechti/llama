@@ -299,6 +299,8 @@ type ChatResponse struct {
 	Text string `json:"text"`
 
 	FinishReason FinishReason `json:"finish_reason"`
+
+	Metadata Metadata `json:"meta"`
 }
 
 type ChatEvent struct {
@@ -310,4 +312,13 @@ type ChatEvent struct {
 	Text string `json:"text"`
 
 	FinishReason FinishReason `json:"finish_reason"`
+}
+
+type Metadata struct {
+	Usage Usage `json:"billed_units"`
+}
+
+type Usage struct {
+	InputTokens  int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
 }

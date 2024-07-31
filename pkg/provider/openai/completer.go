@@ -64,6 +64,11 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 				ToolCalls: toToolCalls(choice.Message.ToolCalls),
 			},
+
+			Usage: &provider.Usage{
+				InputTokens:  completion.Usage.PromptTokens,
+				OutputTokens: completion.Usage.CompletionTokens,
+			},
 		}, nil
 	} else {
 		defer close(options.Stream)
@@ -106,6 +111,13 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			result.Message.Content += choice.Delta.Content
 			result.Message.ToolCalls = toToolCalls(choice.Delta.ToolCalls)
 
+			if completion.Usage != nil {
+				result.Usage = &provider.Usage{
+					InputTokens:  completion.Usage.PromptTokens,
+					OutputTokens: completion.Usage.CompletionTokens,
+				}
+			}
+
 			options.Stream <- provider.Completion{
 				ID:     result.ID,
 				Reason: result.Reason,
@@ -134,6 +146,12 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 
 	req := &openai.ChatCompletionRequest{
 		Model: model,
+	}
+
+	if options.Stream != nil {
+		req.StreamOptions = &openai.StreamOptions{
+			IncludeUsage: true,
+		}
 	}
 
 	if options.Format == provider.CompletionFormatJSON {
