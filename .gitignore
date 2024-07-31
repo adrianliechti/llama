@@ -1,8 +1,6 @@
-/tmp
-/bin
 /models
-config.yaml
+/config.yaml
 
+.env
+.vscode
 .DS_Store
-/.vscode
-/.env
