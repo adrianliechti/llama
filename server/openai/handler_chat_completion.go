@@ -363,7 +363,7 @@ func oaiFinishReason(val provider.CompletionReason) *FinishReason {
 	case provider.CompletionReasonLength:
 		return &FinishReasonLength
 
-	case provider.CompletionReasonFunction:
+	case provider.CompletionReasonTool:
 		return &FinishReasonToolCalls
 
 	default:

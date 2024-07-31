@@ -313,7 +313,7 @@ func toCompletionResult(val openai.FinishReason) provider.CompletionReason {
 		return provider.CompletionReasonLength
 
 	case openai.FinishReasonToolCalls:
-		return provider.CompletionReasonFunction
+		return provider.CompletionReasonTool
 
 	default:
 		return ""

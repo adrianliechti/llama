@@ -79,7 +79,7 @@ const (
 type CompletionReason string
 
 const (
-	CompletionReasonStop     CompletionReason = "stop"
-	CompletionReasonLength   CompletionReason = "length"
-	CompletionReasonFunction CompletionReason = "function"
+	CompletionReasonStop   CompletionReason = "stop"
+	CompletionReasonLength CompletionReason = "length"
+	CompletionReasonTool   CompletionReason = "tool"
 )

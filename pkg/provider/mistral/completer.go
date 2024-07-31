@@ -280,7 +280,7 @@ func toCompletionReason(val string) provider.CompletionReason {
 		return provider.CompletionReasonLength
 
 	case "tool_calls":
-		return provider.CompletionReasonFunction
+		return provider.CompletionReasonTool
 	}
 
 	return ""
