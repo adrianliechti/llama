@@ -14,8 +14,10 @@ services:
       - ollama
   
   ollama:
-    image: ollama/ollama
+    image: ghcr.io/adrianliechti/ollama
     pull_policy: always
+    environment:
+      - MODEL=phi3
     volumes:
       - ollama_data:/root/.ollama
 

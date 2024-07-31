@@ -39,7 +39,7 @@ curl http://localhost:8080/v1/index/docs/unstructured \
 ```
 
 ```shell
-go run . -url http://localhost:8080 -index docs -path $HOME/Documents
+docker run -it --rm -v ./:/docs -w /docs ghcr.io/adrianliechti/llama-platform /ingest -url http://host.docker.internal:8080
 ```
 
 ## Open Web UI
