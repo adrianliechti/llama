@@ -159,7 +159,7 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 				return err
 			}
 
-			d.Embedding = embedding
+			d.Embedding = embedding.Data
 		}
 
 		if len(d.Embedding) == 0 {
@@ -217,7 +217,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		return nil, err
 	}
 
-	for i, v := range embedding {
+	for i, v := range embedding.Data {
 		if i > 0 {
 			vector.WriteString(", ")
 		}
@@ -229,7 +229,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		Class: c.class,
 
 		Query:  query,
-		Vector: embedding,
+		Vector: embedding.Data,
 
 		Limit: options.Limit,
 		Where: options.Filters,

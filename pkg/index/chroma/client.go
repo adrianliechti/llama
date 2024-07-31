@@ -162,7 +162,7 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 				return err
 			}
 
-			d.Embedding = embedding
+			d.Embedding = embedding.Data
 		}
 
 		body.IDs[i] = d.ID
@@ -237,7 +237,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 	body := map[string]any{
 		"query_embeddings": [][]float32{
-			embedding,
+			embedding.Data,
 		},
 
 		"include": []string{

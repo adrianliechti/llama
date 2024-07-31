@@ -32,7 +32,7 @@ func NewEmbedder(options ...Option) (*Embedder, error) {
 	}, nil
 }
 
-func (e *Embedder) Embed(ctx context.Context, content string) (provider.Embeddings, error) {
+func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
 	url, _ := url.JoinPath(e.url, "/v1/embed")
 
 	body := map[string]any{
@@ -77,7 +77,9 @@ func (e *Embedder) Embed(ctx context.Context, content string) (provider.Embeddin
 		return nil, errors.New("invalid embeddings")
 	}
 
-	return floats[0], nil
+	return &provider.Embedding{
+		Data: floats[0],
+	}, nil
 }
 
 type EmbedResponse struct {

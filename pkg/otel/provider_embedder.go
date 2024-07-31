@@ -42,7 +42,7 @@ func NewEmbedder(provider, model string, p provider.Embedder) ObservableEmbedder
 func (p *observableEmbedder) otelSetup() {
 }
 
-func (p *observableEmbedder) Embed(ctx context.Context, content string) (provider.Embeddings, error) {
+func (p *observableEmbedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 

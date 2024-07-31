@@ -43,7 +43,7 @@ func NewEmbedder(url string, options ...Option) (*Embedder, error) {
 	}, nil
 }
 
-func (e *Embedder) Embed(ctx context.Context, content string) (provider.Embeddings, error) {
+func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
 	body := map[string]any{
 		"inputs": strings.TrimSpace(content),
 	}
@@ -73,13 +73,17 @@ func (e *Embedder) Embed(ctx context.Context, content string) (provider.Embeddin
 	var result1 []float32
 
 	if err := json.Unmarshal(data, &result1); err == nil {
-		return result1, nil
+		return &provider.Embedding{
+			Data: result1,
+		}, nil
 	}
 
 	var result2 [][]float32
 
 	if err := json.Unmarshal(data, &result2); err == nil && len(result2) > 0 {
-		return result2[0], nil
+		return &provider.Embedding{
+			Data: result2[0],
+		}, nil
 	}
 
 	return nil, errors.New("unable to embed input")

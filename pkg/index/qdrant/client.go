@@ -149,7 +149,7 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 				return err
 			}
 
-			d.Embedding = embedding
+			d.Embedding = embedding.Data
 		}
 
 		points = append(points, point{
@@ -311,7 +311,7 @@ func (c *Client) ensureCollection(name string) error {
 
 		body := map[string]any{
 			"vectors": map[string]any{
-				"size":     len(embeddings),
+				"size":     len(embeddings.Data),
 				"distance": "Cosine",
 			},
 		}
