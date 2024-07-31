@@ -88,12 +88,25 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		for {
 			completion, err := stream.Recv()
 
-			if errors.Is(err, io.EOF) {
-				break
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+
+				return nil, err
 			}
 
-			if err != nil {
-				return nil, err
+			result.ID = completion.ID
+
+			if completion.Usage != nil {
+				result.Usage = &provider.Usage{
+					InputTokens:  completion.Usage.PromptTokens,
+					OutputTokens: completion.Usage.CompletionTokens,
+				}
+			}
+
+			if len(completion.Choices) == 0 {
+				continue
 			}
 
 			choice := completion.Choices[0]
@@ -104,19 +117,11 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				role = provider.MessageRoleAssistant
 			}
 
-			result.ID = completion.ID
 			result.Reason = toCompletionResult(choice.FinishReason)
 
 			result.Message.Role = role
 			result.Message.Content += choice.Delta.Content
 			result.Message.ToolCalls = toToolCalls(choice.Delta.ToolCalls)
-
-			if completion.Usage != nil {
-				result.Usage = &provider.Usage{
-					InputTokens:  completion.Usage.PromptTokens,
-					OutputTokens: completion.Usage.CompletionTokens,
-				}
-			}
 
 			options.Stream <- provider.Completion{
 				ID:     result.ID,
@@ -128,10 +133,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 					ToolCalls: toToolCalls(choice.Delta.ToolCalls),
 				},
-			}
-
-			if choice.FinishReason != "" {
-				break
 			}
 		}
 
