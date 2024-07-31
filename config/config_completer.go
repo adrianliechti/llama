@@ -4,8 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/otel"
-
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/anthropic"
 	"github.com/adrianliechti/llama/pkg/provider/cohere"
@@ -17,6 +15,8 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/mistral"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
+
+	"github.com/adrianliechti/llama/pkg/otel"
 )
 
 func (cfg *Config) RegisterCompleter(name, model string, p provider.Completer) {

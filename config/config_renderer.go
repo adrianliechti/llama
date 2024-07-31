@@ -4,10 +4,10 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/otel"
-
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
+
+	"github.com/adrianliechti/llama/pkg/otel"
 )
 
 func (cfg *Config) RegisterRenderer(name, model string, p provider.Renderer) {

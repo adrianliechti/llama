@@ -4,8 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/otel"
-
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/index/aisearch"
 	"github.com/adrianliechti/llama/pkg/index/chroma"
@@ -14,9 +12,11 @@ import (
 	"github.com/adrianliechti/llama/pkg/index/memory"
 	"github.com/adrianliechti/llama/pkg/index/qdrant"
 	"github.com/adrianliechti/llama/pkg/index/weaviate"
+
+	"github.com/adrianliechti/llama/pkg/otel"
 )
 
-func (cfg *Config) RegisterIndex(name, id string, p index.Provider) {
+func (cfg *Config) RegisterIndex(name, alias string, p index.Provider) {
 	if cfg.indexes == nil {
 		cfg.indexes = make(map[string]index.Provider)
 	}
@@ -24,10 +24,10 @@ func (cfg *Config) RegisterIndex(name, id string, p index.Provider) {
 	index, ok := p.(otel.ObservableIndex)
 
 	if !ok {
-		index = otel.NewIndex(name, id, p)
+		index = otel.NewIndex(name, alias, p)
 	}
 
-	cfg.indexes[id] = index
+	cfg.indexes[alias] = index
 }
 
 func (cfg *Config) Index(id string) (index.Provider, error) {

@@ -4,12 +4,12 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/otel"
-
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/coqui"
 	"github.com/adrianliechti/llama/pkg/provider/mimic"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
+
+	"github.com/adrianliechti/llama/pkg/otel"
 )
 
 func (cfg *Config) RegisterSynthesizer(name, model string, p provider.Synthesizer) {

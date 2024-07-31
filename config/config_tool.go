@@ -4,16 +4,16 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/otel"
-
 	"github.com/adrianliechti/llama/pkg/tool"
 	"github.com/adrianliechti/llama/pkg/tool/bing"
 	"github.com/adrianliechti/llama/pkg/tool/custom"
 	"github.com/adrianliechti/llama/pkg/tool/duckduckgo"
 	"github.com/adrianliechti/llama/pkg/tool/tavily"
+
+	"github.com/adrianliechti/llama/pkg/otel"
 )
 
-func (c *Config) RegisterTool(name string, p tool.Tool) {
+func (c *Config) RegisterTool(name, alias string, p tool.Tool) {
 	if c.tools == nil {
 		c.tools = make(map[string]tool.Tool)
 	}
@@ -24,7 +24,7 @@ func (c *Config) RegisterTool(name string, p tool.Tool) {
 		tool = otel.NewTool(name, p)
 	}
 
-	c.tools[name] = tool
+	c.tools[alias] = tool
 }
 
 func (cfg *Config) Tool(id string) (tool.Tool, error) {
@@ -54,7 +54,7 @@ func (cfg *Config) registerTools(f *configFile) error {
 			return err
 		}
 
-		cfg.RegisterTool(id, tool)
+		cfg.RegisterTool(t.Type, id, tool)
 	}
 
 	return nil

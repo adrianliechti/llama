@@ -4,11 +4,11 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/otel"
-
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/azuretranslator"
 	"github.com/adrianliechti/llama/pkg/provider/deepl"
+
+	"github.com/adrianliechti/llama/pkg/otel"
 )
 
 func (cfg *Config) RegisterTranslator(name, model string, p provider.Translator) {

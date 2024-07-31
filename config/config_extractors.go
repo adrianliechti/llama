@@ -4,17 +4,17 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/otel"
-
 	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/extractor/code"
 	"github.com/adrianliechti/llama/pkg/extractor/tesseract"
 	"github.com/adrianliechti/llama/pkg/extractor/text"
 	"github.com/adrianliechti/llama/pkg/extractor/tika"
 	"github.com/adrianliechti/llama/pkg/extractor/unstructured"
+
+	"github.com/adrianliechti/llama/pkg/otel"
 )
 
-func (cfg *Config) RegisterExtractor(name string, p extractor.Provider) {
+func (cfg *Config) RegisterExtractor(name, alias string, p extractor.Provider) {
 	if cfg.extractors == nil {
 		cfg.extractors = make(map[string]extractor.Provider)
 	}
@@ -25,7 +25,7 @@ func (cfg *Config) RegisterExtractor(name string, p extractor.Provider) {
 		extractor = otel.NewExtractor(name, p)
 	}
 
-	cfg.extractors[name] = extractor
+	cfg.extractors[alias] = extractor
 }
 
 func (cfg *Config) Extractor(id string) (extractor.Provider, error) {
@@ -49,14 +49,14 @@ type extractorConfig struct {
 }
 
 func (cfg *Config) registerExtractors(f *configFile) error {
-	for id, c := range f.Extractors {
-		extractor, err := createExtractor(c)
+	for id, e := range f.Extractors {
+		extractor, err := createExtractor(e)
 
 		if err != nil {
 			return err
 		}
 
-		cfg.RegisterExtractor(id, extractor)
+		cfg.RegisterExtractor(e.Type, id, extractor)
 	}
 
 	return nil
