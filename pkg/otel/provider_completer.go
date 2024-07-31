@@ -62,6 +62,11 @@ func (p *observableCompleter) Complete(ctx context.Context, messages []provider.
 		if result.Message.Content != "" {
 			span.SetAttributes(attribute.String("output", result.Message.Content))
 		}
+
+		if result.Usage != nil {
+			tokens := int64(result.Usage.InputTokens) + int64(result.Usage.OutputTokens)
+			meterTokens(ctx, p.library, p.provider, "complete", p.model, tokens)
+		}
 	}
 
 	return result, err
