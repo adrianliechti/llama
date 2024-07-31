@@ -2,12 +2,27 @@ package otel
 
 import (
 	"context"
+	"os"
 	"strings"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 )
+
+var (
+	EnableDebug     = false
+	EnableTelemetry = false
+)
+
+func init() {
+	EnableDebug = os.Getenv("DEBUG") != ""
+	EnableTelemetry = os.Getenv("TELEMETRY") != ""
+}
+
+type Observable interface {
+	otelSetup()
+}
 
 func meterRequest(ctx context.Context, library, provider, operation, model string) {
 	meter, _ := otel.Meter(library).Int64Counter("llm_requests_total")

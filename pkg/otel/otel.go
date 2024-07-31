@@ -8,6 +8,10 @@ import (
 )
 
 func Setup(serviceName, serviceVersion string) error {
+	if !EnableTelemetry {
+		return nil
+	}
+
 	ctx := context.Background()
 
 	resource, err := resource.Merge(
@@ -44,8 +48,4 @@ func Setup(serviceName, serviceVersion string) error {
 	}
 
 	return nil
-}
-
-type Observable interface {
-	otelSetup()
 }

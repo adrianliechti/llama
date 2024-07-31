@@ -27,10 +27,8 @@ func setupLogger(ctx context.Context, resource *sdkresource.Resource) error {
 
 	global.SetLoggerProvider(provider)
 
-	return nil
-}
+	logger := otelslog.NewLogger("", otelslog.WithLoggerProvider(provider))
+	slog.SetDefault(logger)
 
-func Logger(name string) *slog.Logger {
-	provider := global.GetLoggerProvider()
-	return otelslog.NewLogger(name, otelslog.WithLoggerProvider(provider))
+	return nil
 }
