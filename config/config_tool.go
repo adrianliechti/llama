@@ -8,6 +8,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool/bing"
 	"github.com/adrianliechti/llama/pkg/tool/custom"
 	"github.com/adrianliechti/llama/pkg/tool/duckduckgo"
+	"github.com/adrianliechti/llama/pkg/tool/searxng"
 	"github.com/adrianliechti/llama/pkg/tool/tavily"
 
 	"github.com/adrianliechti/llama/pkg/otel"
@@ -71,6 +72,9 @@ func createTool(cfg toolConfig) (tool.Tool, error) {
 	case "tavily":
 		return tavilyTool(cfg)
 
+	case "searxng":
+		return searxngTool(cfg)
+
 	case "custom":
 		return customTool(cfg)
 
@@ -89,6 +93,12 @@ func duckduckgoTool(cfg toolConfig) (tool.Tool, error) {
 	var options []duckduckgo.Option
 
 	return duckduckgo.New(options...)
+}
+
+func searxngTool(cfg toolConfig) (tool.Tool, error) {
+	var options []searxng.Option
+
+	return searxng.New(cfg.URL, options...)
 }
 
 func tavilyTool(cfg toolConfig) (tool.Tool, error) {
