@@ -21,10 +21,6 @@ type Client struct {
 	url string
 
 	client ToolClient
-
-	name        string
-	description string
-	parameters  *jsonschema.Definition
 }
 
 type Option func(*Client)
@@ -54,42 +50,43 @@ func New(url string, options ...Option) (*Client, error) {
 
 	c.client = NewToolClient(conn)
 
-	info, err := c.client.Info(context.Background(), &InfoRequest{})
-
-	if err != nil {
-		return nil, err
-	}
-
-	c.name = info.Name
-	c.description = info.Description
-
-	if info.Schema != "" {
-		var val jsonschema.Definition
-
-		if err := json.Unmarshal([]byte(info.Schema), &val); err != nil {
-			return nil, err
-		}
-
-		c.parameters = &val
-	}
-
 	return c, nil
 }
 
 func (c *Client) Name() string {
-	return c.name
+	data, err := c.client.Info(context.Background(), &InfoRequest{})
+
+	if err != nil {
+		return ""
+	}
+
+	return data.Name
 }
 
 func (c *Client) Description() string {
-	return c.description
+	data, err := c.client.Info(context.Background(), &InfoRequest{})
+
+	if err != nil {
+		return ""
+	}
+
+	return data.Description
 }
 
 func (c *Client) Parameters() jsonschema.Definition {
-	if c.parameters == nil {
+	data, err := c.client.Info(context.Background(), &InfoRequest{})
+
+	if err != nil {
 		return jsonschema.Definition{}
 	}
 
-	return *c.parameters
+	var result jsonschema.Definition
+
+	if err := json.Unmarshal([]byte(data.Schema), &result); err != nil {
+		return jsonschema.Definition{}
+	}
+
+	return result
 }
 
 func (c *Client) Execute(ctx context.Context, parameters map[string]any) (any, error) {

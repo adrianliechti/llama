@@ -108,7 +108,7 @@ func (cfg *Config) registerChains(f *configFile) error {
 				return err
 			}
 
-			context.Tools[tool.Name()] = tool
+			context.Tools[t] = tool
 		}
 
 		chain, err := createChain(c, context)

@@ -70,8 +70,7 @@ func (s *server) Execute(ctx context.Context, r *custom.ExecuteRequest) (*custom
 	}
 
 	args := input.Args
-
-	args = append(args, "-o", "json")
+	args = append(args, "-o", "wide")
 
 	println("$ kubectl " + strings.Join(args, " "))
 
@@ -83,7 +82,14 @@ func (s *server) Execute(ctx context.Context, r *custom.ExecuteRequest) (*custom
 		return nil, fmt.Errorf("failed to execute command: %w", err)
 	}
 
+	result := map[string]any{
+		"stdout": string(output),
+		"stderr": "",
+	}
+
+	content, _ := json.Marshal(result)
+
 	return &custom.Result{
-		Content: string(output),
+		Content: string(content),
 	}, nil
 }
