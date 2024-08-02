@@ -44,6 +44,12 @@ func main() {
 
 	if strings.Contains(model, "dall-e") {
 		render(ctx, client, model)
+		return
+	}
+
+	if strings.Contains(model, "tts") {
+		synthesize(ctx, client, model)
+		return
 	}
 
 	chat(ctx, client, model)
@@ -212,6 +218,54 @@ LOOP:
 		}
 
 		name := uuid.New().String() + ".png"
+
+		os.WriteFile(name, data, 0600)
+		fmt.Println("Saved: " + name)
+
+		output.WriteString("\n")
+		output.WriteString("\n")
+	}
+}
+
+func synthesize(ctx context.Context, client *openai.Client, model string) {
+	reader := bufio.NewReader(os.Stdin)
+	output := os.Stdout
+
+LOOP:
+	for {
+		output.WriteString(">>> ")
+		input, err := reader.ReadString('\n')
+
+		if err != nil {
+			panic(err)
+		}
+
+		input = strings.TrimSpace(input)
+
+		req := openai.CreateSpeechRequest{
+			Input: input,
+			Model: openai.SpeechModel(model),
+
+			ResponseFormat: openai.SpeechResponseFormatWav,
+		}
+
+		resp, err := client.CreateSpeech(ctx, req)
+
+		if err != nil {
+			output.WriteString(err.Error() + "\n")
+			continue LOOP
+		}
+
+		data, err := io.ReadAll(resp)
+
+		resp.Close()
+
+		if err != nil {
+			output.WriteString(err.Error() + "\n")
+			continue LOOP
+		}
+
+		name := uuid.New().String() + ".wav"
 
 		os.WriteFile(name, data, 0600)
 		fmt.Println("Saved: " + name)
