@@ -49,7 +49,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		completion, err := c.client.CreateChatCompletion(ctx, *req)
 
 		if err != nil {
-			convertError(err)
+			return nil, convertError(err)
 		}
 
 		choice := completion.Choices[0]

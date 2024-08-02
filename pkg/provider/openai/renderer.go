@@ -51,7 +51,7 @@ func (r *Renderer) Render(ctx context.Context, input string, options *provider.R
 	result, err := r.client.CreateImage(ctx, req)
 
 	if err != nil {
-		convertError(err)
+		return nil, convertError(err)
 	}
 
 	if len(result.Data) == 0 {

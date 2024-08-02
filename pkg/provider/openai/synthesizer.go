@@ -48,7 +48,7 @@ func (s *Synthesizer) Synthesize(ctx context.Context, content string, options *p
 	result, err := s.client.CreateSpeech(ctx, req)
 
 	if err != nil {
-		convertError(err)
+		return nil, convertError(err)
 	}
 
 	id := uuid.New().String()

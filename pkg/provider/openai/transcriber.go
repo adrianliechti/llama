@@ -50,7 +50,7 @@ func (c *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 	transcription, err := c.client.CreateTranscription(ctx, req)
 
 	if err != nil {
-		convertError(err)
+		return nil, convertError(err)
 	}
 
 	result := provider.Transcription{
