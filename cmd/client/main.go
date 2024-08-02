@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"errors"
 	"flag"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -24,9 +26,6 @@ func main() {
 
 	ctx := context.Background()
 
-	reader := bufio.NewReader(os.Stdin)
-	output := os.Stdout
-
 	config := openai.DefaultConfig(*tokenFlag)
 	config.BaseURL = *urlFlag
 
@@ -34,38 +33,64 @@ func main() {
 	model := *modelFlag
 
 	if model == "" {
-		list, err := client.ListModels(ctx)
+		val, err := selectModel(ctx, client)
 
 		if err != nil {
 			panic(err)
 		}
 
-		sort.SliceStable(list.Models, func(i, j int) bool {
-			return list.Models[i].ID < list.Models[j].ID
-		})
+		model = val
+	}
 
-		for i, m := range list.Models {
-			output.WriteString(fmt.Sprintf("%2d) ", i+1))
-			output.WriteString(m.ID)
-			output.WriteString("\n")
-		}
+	if strings.Contains(model, "dall-e") {
+		render(ctx, client, model)
+	}
 
-		output.WriteString(" >  ")
-		sel, err := reader.ReadString('\n')
+	chat(ctx, client, model)
+}
 
-		if err != nil {
-			panic(err)
-		}
+func selectModel(ctx context.Context, client *openai.Client) (string, error) {
+	reader := bufio.NewReader(os.Stdin)
+	output := os.Stdout
 
-		idx, err := strconv.Atoi(strings.TrimSpace(sel))
+	list, err := client.ListModels(ctx)
 
-		if err != nil {
-			panic(err)
-		}
+	if err != nil {
+		panic(err)
+	}
 
-		model = list.Models[idx-1].ID
+	sort.SliceStable(list.Models, func(i, j int) bool {
+		return list.Models[i].ID < list.Models[j].ID
+	})
+
+	for i, m := range list.Models {
+		output.WriteString(fmt.Sprintf("%2d) ", i+1))
+		output.WriteString(m.ID)
 		output.WriteString("\n")
 	}
+
+	output.WriteString(" >  ")
+	sel, err := reader.ReadString('\n')
+
+	if err != nil {
+		panic(err)
+	}
+
+	idx, err := strconv.Atoi(strings.TrimSpace(sel))
+
+	if err != nil {
+		panic(err)
+	}
+
+	output.WriteString("\n")
+
+	model := list.Models[idx-1].ID
+	return model, nil
+}
+
+func chat(ctx context.Context, client *openai.Client, model string) {
+	reader := bufio.NewReader(os.Stdin)
+	output := os.Stdout
 
 	var messages []openai.ChatCompletionMessage
 
@@ -143,6 +168,53 @@ LOOP:
 			Role:    openai.ChatMessageRoleAssistant,
 			Content: strings.TrimSpace(buffer.String()),
 		})
+
+		output.WriteString("\n")
+		output.WriteString("\n")
+	}
+}
+
+func render(ctx context.Context, client *openai.Client, model string) {
+	reader := bufio.NewReader(os.Stdin)
+	output := os.Stdout
+
+LOOP:
+	for {
+		output.WriteString(">>> ")
+		input, err := reader.ReadString('\n')
+
+		if err != nil {
+			panic(err)
+		}
+
+		input = strings.TrimSpace(input)
+
+		req := openai.ImageRequest{
+			Prompt: input,
+			Model:  model,
+			//Size:           openai.CreateImageSize1024x1024,
+			ResponseFormat: openai.CreateImageResponseFormatB64JSON,
+			N:              1,
+		}
+
+		resp, err := client.CreateImage(ctx, req)
+
+		if err != nil {
+			output.WriteString(err.Error() + "\n")
+			continue LOOP
+		}
+
+		data, err := base64.StdEncoding.DecodeString(resp.Data[0].B64JSON)
+
+		if err != nil {
+			output.WriteString(err.Error() + "\n")
+			continue LOOP
+		}
+
+		name := uuid.New().String() + ".png"
+
+		os.WriteFile(name, data, 0600)
+		fmt.Println("Saved: " + name)
 
 		output.WriteString("\n")
 		output.WriteString("\n")
