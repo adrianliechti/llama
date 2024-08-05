@@ -13,6 +13,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/langchain"
 	"github.com/adrianliechti/llama/pkg/provider/llama"
 	"github.com/adrianliechti/llama/pkg/provider/mistral"
+	"github.com/adrianliechti/llama/pkg/provider/mistralrs"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 	"github.com/adrianliechti/llama/pkg/provider/torchchat"
@@ -74,6 +75,9 @@ func createCompleter(cfg providerConfig, model modelContext) (provider.Completer
 
 	case "mistral":
 		return mistralCompleter(cfg, model)
+
+	case "mistralrs":
+		return mistralrsCompleter(cfg, model)
 
 	case "ollama":
 		return ollamaCompleter(cfg, model)
@@ -176,6 +180,16 @@ func mistralCompleter(cfg providerConfig, model modelContext) (provider.Complete
 	}
 
 	return mistral.NewCompleter(options...)
+}
+
+func mistralrsCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
+	var options []mistralrs.Option
+
+	if model.ID != "" {
+		options = append(options, mistralrs.WithModel(model.ID))
+	}
+
+	return mistralrs.NewCompleter(cfg.URL, options...)
 }
 
 func ollamaCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {

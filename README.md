@@ -184,6 +184,24 @@ providers:
 ```
 
 
+#### Mistral.RS
+
+https://github.com/EricLBuehler/mistral.rs
+
+```shell
+$ mistralrs-server --port 1234 vision-plain -m microsoft/Phi-3-vision-128k-instruct -a phi3v
+```
+
+```yaml
+providers:
+  - type: mistralrs
+    url: http://localhost:1234
+
+    models:
+      - phi-3-vision
+```
+
+
 #### WHISPER.CPP
 
 https://github.com/ggerganov/whisper.cpp/tree/master/examples/server
