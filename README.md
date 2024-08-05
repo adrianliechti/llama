@@ -189,7 +189,7 @@ providers:
 https://github.com/EricLBuehler/mistral.rs
 
 ```shell
-$ mistralrs-server --port 1234 vision-plain -m microsoft/Phi-3-vision-128k-instruct -a phi3v
+$ mistralrs-server --port 1234 --isq Q4K plain -m meta-llama/Meta-Llama-3.1-8B-Instruct -a llama
 ```
 
 ```yaml
@@ -198,7 +198,9 @@ providers:
     url: http://localhost:1234
 
     models:
-      - phi-3-vision
+      mistralrs-llama-3.1-8b:
+        id: llama
+        
 ```
 
 

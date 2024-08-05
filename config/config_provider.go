@@ -9,10 +9,14 @@ import (
 func (cfg *Config) registerProviders(f *configFile) error {
 	for _, p := range f.Providers {
 		for id, m := range p.Models {
+			if m.Type == "" {
+				m.Type = detectModelType(id)
+			}
+
 			context := modelContext{
 				ID: m.ID,
 
-				Type: detectModelType(id),
+				Type: m.Type,
 
 				Name:        m.Name,
 				Description: m.Description,
