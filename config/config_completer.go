@@ -6,6 +6,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/anthropic"
+	"github.com/adrianliechti/llama/pkg/provider/azureai"
 	"github.com/adrianliechti/llama/pkg/provider/cohere"
 	"github.com/adrianliechti/llama/pkg/provider/custom"
 	"github.com/adrianliechti/llama/pkg/provider/groq"
@@ -57,6 +58,9 @@ func createCompleter(cfg providerConfig, model modelContext) (provider.Completer
 	switch strings.ToLower(cfg.Type) {
 	case "anthropic":
 		return anthropicCompleter(cfg, model)
+
+	case "azureai":
+		return azureaiCompleter(cfg, model)
 
 	case "cohere":
 		return cohereCompleter(cfg, model)
@@ -112,6 +116,20 @@ func anthropicCompleter(cfg providerConfig, model modelContext) (provider.Comple
 	}
 
 	return anthropic.NewCompleter(options...)
+}
+
+func azureaiCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
+	var options []azureai.Option
+
+	if cfg.Token != "" {
+		options = append(options, azureai.WithToken(cfg.Token))
+	}
+
+	if model.ID != "" {
+		options = append(options, azureai.WithModel(model.ID))
+	}
+
+	return azureai.NewCompleter(cfg.URL, options...)
 }
 
 func cohereCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
