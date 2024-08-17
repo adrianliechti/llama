@@ -8,10 +8,14 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"mime"
+	"net/http"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/adrianliechti/llama/config"
 
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
@@ -26,10 +30,10 @@ func main() {
 
 	ctx := context.Background()
 
-	config := openai.DefaultConfig(*tokenFlag)
-	config.BaseURL = *urlFlag
+	cfg := openai.DefaultConfig(*tokenFlag)
+	cfg.BaseURL = *urlFlag
 
-	client := openai.NewClientWithConfig(config)
+	client := openai.NewClientWithConfig(cfg)
 	model := *modelFlag
 
 	if model == "" {
@@ -42,12 +46,12 @@ func main() {
 		model = val
 	}
 
-	if strings.Contains(model, "dall-e") {
+	if config.DetectModelType(model) == config.ModelTypeRenderer {
 		render(ctx, client, model)
 		return
 	}
 
-	if strings.Contains(model, "tts") {
+	if config.DetectModelType(model) == config.ModelTypeSynthesizer {
 		synthesize(ctx, client, model)
 		return
 	}
@@ -217,7 +221,11 @@ LOOP:
 			continue LOOP
 		}
 
-		name := uuid.New().String() + ".png"
+		name := uuid.New().String()
+
+		if ext, _ := mime.ExtensionsByType(http.DetectContentType(data)); len(ext) > 0 {
+			name += ext[0]
+		}
 
 		os.WriteFile(name, data, 0600)
 		fmt.Println("Saved: " + name)
