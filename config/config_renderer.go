@@ -6,6 +6,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
+	"github.com/adrianliechti/llama/pkg/provider/replicate/flux"
 
 	"github.com/adrianliechti/llama/pkg/otel"
 )
@@ -41,6 +42,9 @@ func createRenderer(cfg providerConfig, model modelContext) (provider.Renderer, 
 	case "openai":
 		return openaiRenderer(cfg, model)
 
+	case "replicate":
+		return replicateRenderer(cfg, model)
+
 	default:
 		return nil, errors.New("invalid renderer type: " + cfg.Type)
 	}
@@ -62,4 +66,26 @@ func openaiRenderer(cfg providerConfig, model modelContext) (provider.Renderer, 
 	}
 
 	return openai.NewRenderer(options...)
+}
+
+func replicateRenderer(cfg providerConfig, model modelContext) (provider.Renderer, error) {
+	if strings.HasPrefix(strings.ToLower(model.ID), "black-forest-labs/flux") {
+		var options []flux.Option
+
+		if cfg.URL != "" {
+			options = append(options, flux.WithURL(cfg.URL))
+		}
+
+		if cfg.Token != "" {
+			options = append(options, flux.WithToken(cfg.Token))
+		}
+
+		if model.ID != "" {
+			options = append(options, flux.WithModel(model.ID))
+		}
+
+		return flux.NewRenderer(options...)
+	}
+
+	return nil, errors.New("model not supported: " + model.ID)
 }

@@ -74,7 +74,7 @@ type modelContext struct {
 	Description string
 }
 
-func detectModelType(id string) ModelType {
+func DetectModelType(id string) ModelType {
 	completers := []string{
 		"aya",
 		"claude",
@@ -111,8 +111,14 @@ func detectModelType(id string) ModelType {
 
 	renderers := []string{
 		"dall-e",
+		"flux-dev",
+		"flux-pro",
+		"flux-schnell",
+		"flux.1-dev",
+		"flux.1-pro",
+		"flux.1-schnell",
 		"sd-turbo",
-		"sdxl",
+		"sdxl-turbo",
 		"stable-diffusion",
 	}
 

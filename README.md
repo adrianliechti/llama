@@ -131,6 +131,20 @@ providers:
 ```
 
 
+#### Replicate
+
+https://replicate.com/
+
+```yaml
+providers:
+  - type: replicate
+    token: ${REPLICATE_API_TOKEN}
+    models:
+      replicate-flux-pro:
+        id: black-forest-labs/flux-pro
+```
+
+
 #### Ollama
 
 https://ollama.ai
