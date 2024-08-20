@@ -88,7 +88,7 @@ providers:
 ```yaml
 providers:
   - type: cohere
-    token: ${COHERE_API_TOKEN}
+    token: ${COHERE_API_KEY}
 
     # https://docs.cohere.com/docs/models
     models:
@@ -105,7 +105,7 @@ providers:
 ```yaml
 providers:
   - type: groq
-    token: ${GROQ_API_TOKEN}
+    token: ${GROQ_API_KEY}
 
     # https://console.groq.com/docs/models
     models:
@@ -122,7 +122,7 @@ providers:
 ```yaml
 providers:
   - type: mistral
-    token: ${MISTRAL_API_TOKEN}
+    token: ${MISTRAL_API_KEY}
 
     # https://docs.mistral.ai/getting-started/models/
     models:
@@ -138,7 +138,7 @@ https://replicate.com/
 ```yaml
 providers:
   - type: replicate
-    token: ${REPLICATE_API_TOKEN}
+    token: ${REPLICATE_API_KEY}
     models:
       replicate-flux-pro:
         id: black-forest-labs/flux-pro
@@ -259,6 +259,22 @@ providers:
 
     models:
       - huggingface-minilm-l6-2
+```
+
+
+#### Eleven Labs
+
+```yaml
+providers:
+  - type: elevenlabs
+    token: ${ELEVENLABS_API_KEY}
+
+    models:
+      elevenlabs-sarah:
+        id: EXAVITQu4vr4xnSDxMaL
+      
+      elevenlabs-charlie:
+        id: IKne3meq5aSn9XLyUdCD
 ```
 
 

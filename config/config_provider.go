@@ -10,6 +10,10 @@ func (cfg *Config) registerProviders(f *configFile) error {
 	for _, p := range f.Providers {
 		for id, m := range p.Models {
 			if m.Type == "" {
+				m.Type = DetectModelType(m.ID)
+			}
+
+			if m.Type == "" {
 				m.Type = DetectModelType(id)
 			}
 

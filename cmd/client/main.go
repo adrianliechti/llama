@@ -273,7 +273,11 @@ LOOP:
 			continue LOOP
 		}
 
-		name := uuid.New().String() + ".wav"
+		name := uuid.New().String()
+
+		if ext, _ := mime.ExtensionsByType(http.DetectContentType(data)); len(ext) > 0 {
+			name += ext[0]
+		}
 
 		os.WriteFile(name, data, 0600)
 		fmt.Println("Saved: " + name)

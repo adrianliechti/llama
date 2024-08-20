@@ -6,6 +6,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/coqui"
+	"github.com/adrianliechti/llama/pkg/provider/elevenlabs"
 	"github.com/adrianliechti/llama/pkg/provider/mimic"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 
@@ -43,6 +44,9 @@ func createSynthesizer(cfg providerConfig, model modelContext) (provider.Synthes
 	case "coqui":
 		return coquiSynthesizer(cfg, model)
 
+	case "elevenlabs":
+		return elevenlabsSynthesizer(cfg, model)
+
 	case "mimic":
 		return mimicSynthesizer(cfg, model)
 
@@ -58,6 +62,24 @@ func coquiSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesi
 	var options []coqui.Option
 
 	return coqui.NewSynthesizer(cfg.URL, options...)
+}
+
+func elevenlabsSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesizer, error) {
+	var options []elevenlabs.Option
+
+	if cfg.URL != "" {
+		options = append(options, elevenlabs.WithURL(cfg.URL))
+	}
+
+	if cfg.Token != "" {
+		options = append(options, elevenlabs.WithToken(cfg.Token))
+	}
+
+	if model.ID != "" {
+		options = append(options, elevenlabs.WithModel(model.ID))
+	}
+
+	return elevenlabs.NewSynthesizer(options...)
 }
 
 func mimicSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesizer, error) {
