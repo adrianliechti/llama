@@ -23,8 +23,8 @@ tasks:
     cmds:
       - curl -Lo jfk.wav https://github.com/ggerganov/whisper.cpp/raw/master/samples/jfk.wav
       - |
-        curl http://localhost:8080/v1/audio/transcriptions \
+        curl http://localhost:9083/inference \
           -H "Content-Type: multipart/form-data" \
           -F file="@jfk.wav" \
-          -F model="whisper-medium"
+          -F response_format="json"
       - rm jfk.wav

@@ -27,7 +27,7 @@ tasks:
   test:
     cmds:
       - |
-        curl http://localhost:8080/v1/embeddings \
+        curl http://localhost:9082/v1/embeddings \
           -H "Content-Type: application/json" \
           -d '{
             "model": "nomic-embed-text-v1.5",

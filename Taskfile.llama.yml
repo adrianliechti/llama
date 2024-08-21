@@ -9,23 +9,25 @@ tasks:
       - llama-server 
         --port 9081
         --log-disable
-        --model ./models/phi-3.1-mini-4k-instruct.gguf 
+        --ctx-size 8192
+        --flash-attn
+        --model ./models/llama-3.1-8b-instruct.gguf
   
   download-model:
     cmds:
       - mkdir -p models
-      - curl -s -L -o models/phi-3.1-mini-4k-instruct.gguf https://huggingface.co/bartowski/Phi-3.1-mini-4k-instruct-GGUF/resolve/main/Phi-3.1-mini-4k-instruct-Q4_K_M.gguf?download=true
+      - curl -s -L -o models/llama-3.1-8b-instruct.gguf https://huggingface.co/bartowski/Meta-Llama-3.1-8B-Instruct-GGUF/resolve/main/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf?download=true
 
     status:
-      - test -f models/phi-3.1-mini-4k-instruct.gguf 
+      - test -f models/llama-3.1-8b-instruct.gguf
   
   test:
     cmds:
       - |
-        curl http://localhost:8080/v1/chat/completions \
+        curl http://localhost:9081/v1/chat/completions \
           -H "Content-Type: application/json" \
           -d '{
-            "model": "phi-3.1-mini-4k-instruct",
+            "model": "default",
             "messages": [
               {
                 "role": "user",
