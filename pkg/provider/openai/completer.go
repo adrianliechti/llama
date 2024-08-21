@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 
@@ -39,7 +40,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		options = new(provider.CompleteOptions)
 	}
 
-	req, err := convertCompletionRequest(c.model, messages, options)
+	req, err := c.convertCompletionRequest(messages, options)
 
 	if err != nil {
 		return nil, err
@@ -140,13 +141,13 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 	}
 }
 
-func convertCompletionRequest(model string, messages []provider.Message, options *provider.CompleteOptions) (*openai.ChatCompletionRequest, error) {
+func (c *Completer) convertCompletionRequest(messages []provider.Message, options *provider.CompleteOptions) (*openai.ChatCompletionRequest, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
 	}
 
 	req := &openai.ChatCompletionRequest{
-		Model: model,
+		Model: c.model,
 	}
 
 	if options.Stream != nil {
@@ -159,10 +160,6 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 		req.ResponseFormat = &openai.ChatCompletionResponseFormat{
 			Type: openai.ChatCompletionResponseFormatTypeJSONObject,
 		}
-	}
-
-	if model == "gpt-4-vision-preview" || model == "gpt-4-1106-vision-preview" {
-		req.MaxTokens = 4096
 	}
 
 	if options.Stop != nil {
@@ -244,6 +241,10 @@ func convertCompletionRequest(model string, messages []provider.Message, options
 		}
 
 		req.Messages = append(req.Messages, message)
+	}
+
+	if strings.Contains(c.url, "openai.azure.com") {
+		req.StreamOptions = nil
 	}
 
 	return req, nil

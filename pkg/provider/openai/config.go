@@ -49,12 +49,12 @@ func (c *Config) newClient() *openai.Client {
 		config.BaseURL = c.url
 	}
 
-	if c.client != nil {
-		config.HTTPClient = c.client
-	}
-
 	if strings.Contains(c.url, "openai.azure.com") {
 		config = openai.DefaultAzureConfig(c.token, c.url)
+	}
+
+	if c.client != nil {
+		config.HTTPClient = c.client
 	}
 
 	return openai.NewClientWithConfig(config)
