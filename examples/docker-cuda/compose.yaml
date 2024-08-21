@@ -17,7 +17,7 @@ services:
     command: --hostname 0.0.0.0 --model-id mistralai/Mistral-7B-Instruct-v0.1
     shm_size: 1g
     volumes:
-      - /models:/data
+      - models-data:/data
     deploy:
       resources:
         reservations:
@@ -32,35 +32,7 @@ services:
     command: --hostname 0.0.0.0 --model-id nomic-ai/nomic-embed-text-v1.5
     shm_size: 1g
     volumes:
-      - /models:/data
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-  
-  whisper:
-    image: ghcr.io/ggerganov/whisper.cpp:main-cuda
-    pull_policy: always
-    entrypoint: /app/server
-    command: --host 0.0.0.0 --port 8000 --convert --model /models/whisper-ggml-medium.bin
-    volumes:
-      - /models:/models
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-  
-  mimic:
-    image: mycroftai/mimic3
-    pull_policy: always
-    volumes:
-      - /models:/home/mimic3/.local/share/mycroft/mimic3
+      - models-data:/data
     deploy:
       resources:
         reservations:
@@ -92,13 +64,6 @@ configs:
           url: http://nomic-embed-text
           models:
             - nomic-embed-text
-        
-        - type: whisper
-          url: http://whisper:8000
-          models:
-            - whisper-1
-        
-        - type: mimic
-          url: http://mimic:59125
-          models:
-            - tts-1
+
+volumes:
+  models-data:

@@ -19,7 +19,7 @@ func main() {
 	config := openai.DefaultConfig("")
 	config.BaseURL = "http://localhost:8080/v1"
 
-	completionModel := "mistral-7b-instruct"
+	completionModel := "llama"
 	synthesizerModel := "tts-1"
 	transcriptionModel := "whisper-1"
 

@@ -15,23 +15,14 @@ includes:
   whisper:
     taskfile: ./Taskfile.whisper.yml
   
-  mimic:
-    taskfile: ./Taskfile.minic.yml
+  tts:
+    taskfile: ./Taskfile.tts.yml
   
   unstructured:
     taskfile: ./Taskfile.unstructured.yml
-  
-  chroma:
-    taskfile: ./Taskfile.chroma.yml
-  
-  opensearch:
-    taskfile: ./Taskfile.opensearch.yml
 
   qdrant:
     taskfile: ./Taskfile.qdrant.yml
-
-  weaviate:
-    taskfile: ./Taskfile.weaviate.yml
 
 tasks:
   publish:

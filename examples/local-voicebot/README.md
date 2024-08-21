@@ -8,22 +8,15 @@
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 
-Start LLama & Whisper Server
+### Start Providers
 
 ```shell
 task llama:server
 task whisper:server
+task tts:server
 ```
 
-Start Mimic Server
-
-```
-mkdir -p mimic3
-chmod 777 mimic3
-docker run -it -p 59125:59125 -v $(pwd)/mimic3:/home/mimic3/.local/share/mycroft/mimic3 mycroftai/mimic3
-```
-
-Start Example Application
+### Start Example Application
 
 ```shell
 docker compose up
@@ -37,9 +30,19 @@ The Transcription API provides compatibility for the OpenAI API standard, allowi
 # Download Sample File
 curl -Lo jfk.wav https://github.com/ggerganov/whisper.cpp/raw/master/samples/jfk.wav
 
-# Run Transcriptions
-curl http://localhost:8080/v1/audio/transcriptions \
+# Run Audio Transcriptions
+curl http://localhost:8080/v1/audio/transcription \
   -H "Content-Type: multipart/form-data" \
   -F file="@jfk.wav" \
   -F model="whisper-1"
+
+### Run Audio Speech
+curl http://localhost:8080/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "tts-1",
+    "input": "Today is a wonderful day to build something people love!",
+    "voice": "alloy"
+  }' \
+  --output speech.mp3
 ```

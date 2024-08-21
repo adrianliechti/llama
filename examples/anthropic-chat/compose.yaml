@@ -31,10 +31,7 @@ configs:
           # https://docs.anthropic.com/en/docs/models-overview
           models:
             claude-3-opus:
-              id: claude-3-opus-20240229   
-            
-            claude-3-sonnet:
-              id: claude-3-sonnet-20240229
+              id: claude-3-opus-20240229
             
             claude-3.5-sonnet:
               id: claude-3-5-sonnet-20240620

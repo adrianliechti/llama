@@ -1,9 +1,0 @@
-# https://taskfile.dev
-
-version: "3"
-
-tasks:
-  server:
-    cmds:
-      - chmod 777 ./models
-      - docker run -it -p 59125:59125 -v $(pwd)/models:/home/mimic3/.local/share/mycroft/mimic3 mycroftai/mimic3

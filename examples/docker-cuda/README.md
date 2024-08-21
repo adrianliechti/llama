@@ -1,13 +1,6 @@
 # Run Platform in Docker / CUDA
 
 ```shell
-mkdir /models
-chmod 777 /models
-
-curl -Lo /models/whisper-ggml-medium.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin
-```
-
-```shell
 curl http://localhost:8080/v1/embeddings \
   -H "Content-Type: application/json" \
   -d '{
@@ -28,22 +21,4 @@ curl http://localhost:8080/v1/chat/completions \
       }
     ]
   }'
-```
-
-```shell
-curl http://localhost:8080/v1/audio/speech \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "tts-1",
-    "input": "The quick brown fox jumped over the lazy dog.",
-    "voice": "en"
-  }' \
-  --output speech.wav
-```
-
-```shell
-curl http://localhost:8080/v1/audio/transcriptions \
-  -H "Content-Type: multipart/form-data" \
-  -F file="@speech.wav" \
-  -F model="whisper-1"
 ```

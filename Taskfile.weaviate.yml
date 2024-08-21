@@ -1,8 +1,0 @@
-# https://taskfile.dev
-
-version: "3"
-
-tasks:
-  server:
-    cmds:
-      - docker run -it --rm -p 9084:8080 -v weaviate-data:/var/lib/weaviate -e CLUSTER_HOSTNAME=node1 -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true -e PERSISTENCE_DATA_PATH=/var/lib/weaviate -e DEFAULT_VECTORIZER_MODULE=none cr.weaviate.io/semitechnologies/weaviate:1.25.1

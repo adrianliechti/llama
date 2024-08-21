@@ -5,9 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/provider/coqui"
 	"github.com/adrianliechti/llama/pkg/provider/elevenlabs"
-	"github.com/adrianliechti/llama/pkg/provider/mimic"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 
 	"github.com/adrianliechti/llama/pkg/otel"
@@ -41,14 +39,8 @@ func (cfg *Config) Synthesizer(model string) (provider.Synthesizer, error) {
 
 func createSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesizer, error) {
 	switch strings.ToLower(cfg.Type) {
-	case "coqui":
-		return coquiSynthesizer(cfg, model)
-
 	case "elevenlabs":
 		return elevenlabsSynthesizer(cfg, model)
-
-	case "mimic":
-		return mimicSynthesizer(cfg, model)
 
 	case "openai":
 		return openaiSynthesizer(cfg, model)
@@ -56,12 +48,6 @@ func createSynthesizer(cfg providerConfig, model modelContext) (provider.Synthes
 	default:
 		return nil, errors.New("invalid synthesizer type: " + cfg.Type)
 	}
-}
-
-func coquiSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesizer, error) {
-	var options []coqui.Option
-
-	return coqui.NewSynthesizer(cfg.URL, options...)
 }
 
 func elevenlabsSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesizer, error) {
@@ -80,12 +66,6 @@ func elevenlabsSynthesizer(cfg providerConfig, model modelContext) (provider.Syn
 	}
 
 	return elevenlabs.NewSynthesizer(options...)
-}
-
-func mimicSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesizer, error) {
-	var options []mimic.Option
-
-	return mimic.NewSynthesizer(cfg.URL, options...)
 }
 
 func openaiSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesizer, error) {
