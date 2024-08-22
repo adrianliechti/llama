@@ -46,6 +46,11 @@ func main() {
 		model = val
 	}
 
+	if config.DetectModelType(model) == config.ModelTypeEmbedder {
+		embed(ctx, client, model)
+		return
+	}
+
 	if config.DetectModelType(model) == config.ModelTypeRenderer {
 		render(ctx, client, model)
 		return
@@ -178,6 +183,47 @@ LOOP:
 			Role:    openai.ChatMessageRoleAssistant,
 			Content: strings.TrimSpace(buffer.String()),
 		})
+
+		output.WriteString("\n")
+		output.WriteString("\n")
+	}
+}
+
+func embed(ctx context.Context, client *openai.Client, model string) {
+	reader := bufio.NewReader(os.Stdin)
+	output := os.Stdout
+
+LOOP:
+	for {
+		output.WriteString(">>> ")
+		input, err := reader.ReadString('\n')
+
+		if err != nil {
+			panic(err)
+		}
+
+		input = strings.TrimSpace(input)
+
+		req := openai.EmbeddingRequest{
+			Input: input,
+			Model: openai.EmbeddingModel(model),
+		}
+
+		resp, err := client.CreateEmbeddings(ctx, req)
+
+		if err != nil {
+			output.WriteString(err.Error() + "\n")
+			continue LOOP
+		}
+
+		embeddings := resp.Data[0].Embedding
+
+		for i, e := range embeddings {
+			if i > 0 {
+				output.WriteString(", ")
+			}
+			output.WriteString(fmt.Sprintf("%f", e))
+		}
 
 		output.WriteString("\n")
 		output.WriteString("\n")

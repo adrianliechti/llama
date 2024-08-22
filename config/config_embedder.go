@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/provider/azureai"
 	"github.com/adrianliechti/llama/pkg/provider/cohere"
 	"github.com/adrianliechti/llama/pkg/provider/huggingface"
 	"github.com/adrianliechti/llama/pkg/provider/llama"
@@ -42,8 +43,14 @@ func (cfg *Config) Embedder(model string) (provider.Embedder, error) {
 
 func createEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
 	switch strings.ToLower(cfg.Type) {
+	case "azureai":
+		return azureaiEmbedder(cfg, model)
+
 	case "cohere":
 		return cohereEmbedder(cfg, model)
+
+	case "github":
+		return azureaiEmbedder(cfg, model)
 
 	case "huggingface":
 		return huggingfaceEmbedder(cfg, model)
@@ -60,6 +67,24 @@ func createEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, 
 	default:
 		return nil, errors.New("invalid embedder type: " + cfg.Type)
 	}
+}
+
+func azureaiEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
+	var options []azureai.Option
+
+	if cfg.URL != "" {
+		options = append(options, azureai.WithURL(cfg.URL))
+	}
+
+	if cfg.Token != "" {
+		options = append(options, azureai.WithToken(cfg.Token))
+	}
+
+	if model.ID != "" {
+		options = append(options, azureai.WithModel(model.ID))
+	}
+
+	return azureai.NewEmbedder(cfg.URL, options...)
 }
 
 func cohereEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {

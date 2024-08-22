@@ -65,6 +65,9 @@ func createCompleter(cfg providerConfig, model modelContext) (provider.Completer
 	case "cohere":
 		return cohereCompleter(cfg, model)
 
+	case "github":
+		return azureaiCompleter(cfg, model)
+
 	case "groq":
 		return groqCompleter(cfg, model)
 
@@ -121,6 +124,10 @@ func anthropicCompleter(cfg providerConfig, model modelContext) (provider.Comple
 func azureaiCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	var options []azureai.Option
 
+	if cfg.URL != "" {
+		options = append(options, azureai.WithURL(cfg.URL))
+	}
+
 	if cfg.Token != "" {
 		options = append(options, azureai.WithToken(cfg.Token))
 	}
@@ -129,7 +136,7 @@ func azureaiCompleter(cfg providerConfig, model modelContext) (provider.Complete
 		options = append(options, azureai.WithModel(model.ID))
 	}
 
-	return azureai.NewCompleter(cfg.URL, options...)
+	return azureai.NewCompleter(options...)
 }
 
 func cohereCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
