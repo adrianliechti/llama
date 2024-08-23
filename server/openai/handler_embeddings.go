@@ -2,6 +2,7 @@ package openai
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 )
 
@@ -30,7 +31,7 @@ func (h *Handler) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(inputs) == 0 {
-		writeError(w, http.StatusBadRequest, err)
+		writeError(w, http.StatusBadRequest, errors.New("no input provided"))
 		return
 	}
 
