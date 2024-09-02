@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"mime"
 	"net/http"
 	"regexp"
@@ -135,7 +134,7 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 		// w.(http.Flusher).Flush()
 
 		if err := <-done; err != nil {
-			slog.Error("error in chat completion", "error", err)
+			writeError(w, http.StatusBadRequest, err)
 		}
 
 	} else {

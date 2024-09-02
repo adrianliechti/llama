@@ -4,9 +4,11 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/tool"
 	"github.com/adrianliechti/llama/pkg/tool/bing"
 	"github.com/adrianliechti/llama/pkg/tool/custom"
+	"github.com/adrianliechti/llama/pkg/tool/draw"
 	"github.com/adrianliechti/llama/pkg/tool/duckduckgo"
 	"github.com/adrianliechti/llama/pkg/tool/searxng"
 	"github.com/adrianliechti/llama/pkg/tool/tavily"
@@ -43,13 +45,27 @@ type toolConfig struct {
 
 	URL   string `yaml:"url"`
 	Token string `yaml:"token"`
+
+	Model string `yaml:"model"`
+}
+
+type toolContext struct {
+	Renderer provider.Renderer
 }
 
 func (cfg *Config) registerTools(f *configFile) error {
 	for id, t := range f.Tools {
 		var err error
 
-		tool, err := createTool(t)
+		context := toolContext{}
+
+		if t.Model != "" {
+			if r, err := cfg.Renderer(t.Model); err == nil {
+				context.Renderer = r
+			}
+		}
+
+		tool, err := createTool(t, context)
 
 		if err != nil {
 			return err
@@ -61,10 +77,13 @@ func (cfg *Config) registerTools(f *configFile) error {
 	return nil
 }
 
-func createTool(cfg toolConfig) (tool.Tool, error) {
+func createTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	switch strings.ToLower(cfg.Type) {
 	case "bing":
 		return bingTool(cfg)
+
+	case "draw":
+		return drawTool(cfg, context)
 
 	case "duckduckgo":
 		return duckduckgoTool(cfg)
@@ -87,6 +106,16 @@ func bingTool(cfg toolConfig) (tool.Tool, error) {
 	var options []bing.Option
 
 	return bing.New(cfg.Token, options...)
+}
+
+func drawTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+	var options []draw.Option
+
+	if context.Renderer != nil {
+		options = append(options, draw.WithRenderer(context.Renderer))
+	}
+
+	return draw.New(options...)
 }
 
 func duckduckgoTool(cfg toolConfig) (tool.Tool, error) {

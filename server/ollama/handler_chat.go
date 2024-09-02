@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"mime"
 	"net/http"
 	"time"
@@ -100,7 +99,7 @@ func (h *Handler) handleChat(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := <-done; err != nil {
-			slog.Error("error in chat completion", "error", err)
+			writeError(w, http.StatusBadRequest, err)
 		}
 
 	} else {

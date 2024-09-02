@@ -51,6 +51,7 @@ func (c *Config) newClient() *openai.Client {
 
 	if strings.Contains(c.url, "openai.azure.com") {
 		config = openai.DefaultAzureConfig(c.token, c.url)
+		config.APIVersion = "2024-02-01"
 	}
 
 	if c.client != nil {
