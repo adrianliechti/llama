@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path"
+	"slices"
 	"strings"
 	"time"
 
@@ -22,6 +24,8 @@ type Client struct {
 
 func New(url, token string, options ...Option) (*Client, error) {
 	c := &Config{
+		client: http.DefaultClient,
+
 		chunkSize:    4000,
 		chunkOverlap: 500,
 	}
@@ -42,6 +46,10 @@ func New(url, token string, options ...Option) (*Client, error) {
 func (c *Client) Extract(ctx context.Context, input extractor.File, options *extractor.ExtractOptions) (*extractor.Document, error) {
 	if options == nil {
 		options = &extractor.ExtractOptions{}
+	}
+
+	if !isSupported(input) {
+		return nil, extractor.ErrUnsupported
 	}
 
 	u, _ := url.Parse(strings.TrimRight(c.url, "/") + "/documentintelligence/documentModels/prebuilt-layout:analyze")
@@ -112,6 +120,11 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 
 		return output, nil
 	}
+}
+
+func isSupported(input extractor.File) bool {
+	ext := strings.ToLower(path.Ext(input.Name))
+	return slices.Contains(SupportedExtensions, ext)
 }
 
 func convertError(resp *http.Response) error {

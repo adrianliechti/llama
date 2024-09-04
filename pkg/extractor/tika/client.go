@@ -8,6 +8,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path"
+	"slices"
+	"strings"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/text"
@@ -16,24 +19,15 @@ import (
 var _ extractor.Provider = &Client{}
 
 type Client struct {
-	url string
-
-	client *http.Client
-
-	chunkSize    int
-	chunkOverlap int
+	*Config
 }
-
-type Option func(*Client)
 
 func New(url string, options ...Option) (*Client, error) {
 	if url == "" {
 		return nil, errors.New("invalid url")
 	}
 
-	c := &Client{
-		url: url,
-
+	c := &Config{
 		client: http.DefaultClient,
 
 		chunkSize:    4000,
@@ -44,30 +38,18 @@ func New(url string, options ...Option) (*Client, error) {
 		option(c)
 	}
 
-	return c, nil
-}
-
-func WithClient(client *http.Client) Option {
-	return func(c *Client) {
-		c.client = client
-	}
-}
-
-func WithChunkSize(size int) Option {
-	return func(c *Client) {
-		c.chunkSize = size
-	}
-}
-
-func WithChunkOverlap(overlap int) Option {
-	return func(c *Client) {
-		c.chunkOverlap = overlap
-	}
+	return &Client{
+		Config: c,
+	}, nil
 }
 
 func (c *Client) Extract(ctx context.Context, input extractor.File, options *extractor.ExtractOptions) (*extractor.Document, error) {
 	if options == nil {
 		options = &extractor.ExtractOptions{}
+	}
+
+	if !isSupported(input) {
+		return nil, extractor.ErrUnsupported
 	}
 
 	url, _ := url.JoinPath(c.url, "/tika/text")
@@ -113,6 +95,11 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	}
 
 	return &result, nil
+}
+
+func isSupported(input extractor.File) bool {
+	ext := strings.ToLower(path.Ext(input.Name))
+	return slices.Contains(SupportedExtensions, ext)
 }
 
 func convertError(resp *http.Response) error {

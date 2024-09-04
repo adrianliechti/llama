@@ -10,6 +10,9 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"path"
+	"slices"
+	"strings"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
 )
@@ -22,6 +25,8 @@ type Client struct {
 
 func New(options ...Option) (*Client, error) {
 	c := &Config{
+		client: http.DefaultClient,
+
 		url: "https://api.unstructured.io/general/v0/general",
 
 		chunkSize:     4000,
@@ -41,6 +46,10 @@ func New(options ...Option) (*Client, error) {
 func (c *Client) Extract(ctx context.Context, input extractor.File, options *extractor.ExtractOptions) (*extractor.Document, error) {
 	if options == nil {
 		options = &extractor.ExtractOptions{}
+	}
+
+	if !isSupported(input) {
+		return nil, extractor.ErrUnsupported
 	}
 
 	url, _ := url.JoinPath(c.url, "/general/v0/general")
@@ -113,6 +122,11 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	}
 
 	return &result, nil
+}
+
+func isSupported(input extractor.File) bool {
+	ext := strings.ToLower(path.Ext(input.Name))
+	return slices.Contains(SupportedExtensions, ext)
 }
 
 func convertError(resp *http.Response) error {

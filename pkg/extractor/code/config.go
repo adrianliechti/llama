@@ -1,20 +1,5 @@
 package code
 
-var SupportedExtensions = []string{
-	".cpp",
-	".cs",
-	".go",
-	".java",
-	".js", ".jsm",
-	".kt",
-	".py",
-	".rb",
-	".rs",
-	".sc", ".scala",
-	".swift",
-	".ts", ".tsx",
-}
-
 type Config struct {
 	chunkSize    int
 	chunkOverlap int

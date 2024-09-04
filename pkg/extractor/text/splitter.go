@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path"
+	"slices"
+	"strings"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/text"
@@ -35,6 +38,10 @@ func (s *Splitter) Extract(ctx context.Context, input extractor.File, options *e
 		options = &extractor.ExtractOptions{}
 	}
 
+	if !isSupported(input) {
+		return nil, extractor.ErrUnsupported
+	}
+
 	data, err := io.ReadAll(input.Content)
 
 	if err != nil {
@@ -63,4 +70,9 @@ func (s *Splitter) Extract(ctx context.Context, input extractor.File, options *e
 	}
 
 	return &result, nil
+}
+
+func isSupported(input extractor.File) bool {
+	ext := strings.ToLower(path.Ext(input.Name))
+	return slices.Contains(SupportedExtensions, ext)
 }

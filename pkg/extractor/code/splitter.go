@@ -37,6 +37,10 @@ func (s *Splitter) Extract(ctx context.Context, input extractor.File, options *e
 		options = &extractor.ExtractOptions{}
 	}
 
+	if !isSupported(input) {
+		return nil, extractor.ErrUnsupported
+	}
+
 	data, err := io.ReadAll(input.Content)
 
 	if err != nil {
@@ -69,6 +73,10 @@ func (s *Splitter) Extract(ctx context.Context, input extractor.File, options *e
 	}
 
 	return &result, nil
+}
+
+func isSupported(input extractor.File) bool {
+	return getSeperators(input) != nil
 }
 
 func getSeperators(input extractor.File) []string {
