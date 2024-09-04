@@ -1,4 +1,4 @@
-package azureai
+package azure
 
 import (
 	"github.com/adrianliechti/llama/pkg/provider/openai"

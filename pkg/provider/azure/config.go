@@ -1,4 +1,4 @@
-package azureai
+package azure
 
 import (
 	"net/http"

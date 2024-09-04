@@ -6,7 +6,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/anthropic"
-	"github.com/adrianliechti/llama/pkg/provider/azureai"
+	"github.com/adrianliechti/llama/pkg/provider/azure"
 	"github.com/adrianliechti/llama/pkg/provider/cohere"
 	"github.com/adrianliechti/llama/pkg/provider/custom"
 	"github.com/adrianliechti/llama/pkg/provider/groq"
@@ -58,14 +58,14 @@ func createCompleter(cfg providerConfig, model modelContext) (provider.Completer
 	case "anthropic":
 		return anthropicCompleter(cfg, model)
 
-	case "azureai":
-		return azureaiCompleter(cfg, model)
+	case "azure":
+		return azureCompleter(cfg, model)
 
 	case "cohere":
 		return cohereCompleter(cfg, model)
 
 	case "github":
-		return azureaiCompleter(cfg, model)
+		return azureCompleter(cfg, model)
 
 	case "groq":
 		return groqCompleter(cfg, model)
@@ -117,22 +117,22 @@ func anthropicCompleter(cfg providerConfig, model modelContext) (provider.Comple
 	return anthropic.NewCompleter(options...)
 }
 
-func azureaiCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
-	var options []azureai.Option
+func azureCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
+	var options []azure.Option
 
 	if cfg.URL != "" {
-		options = append(options, azureai.WithURL(cfg.URL))
+		options = append(options, azure.WithURL(cfg.URL))
 	}
 
 	if cfg.Token != "" {
-		options = append(options, azureai.WithToken(cfg.Token))
+		options = append(options, azure.WithToken(cfg.Token))
 	}
 
 	if model.ID != "" {
-		options = append(options, azureai.WithModel(model.ID))
+		options = append(options, azure.WithModel(model.ID))
 	}
 
-	return azureai.NewCompleter(options...)
+	return azure.NewCompleter(options...)
 }
 
 func cohereCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
