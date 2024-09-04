@@ -39,6 +39,8 @@ func (h *Handler) Attach(r chi.Router) {
 	r.Post("/index/{index}/{extractor}", h.handleIngestWithExtractor)
 
 	r.Post("/extract/{extractor}", h.handleExtract)
+
+	r.Post("/partition", h.handlePartition)
 }
 
 func writeJson(w http.ResponseWriter, v any) {
