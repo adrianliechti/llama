@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
+	"github.com/adrianliechti/llama/pkg/extractor/azure"
 	"github.com/adrianliechti/llama/pkg/extractor/code"
 	"github.com/adrianliechti/llama/pkg/extractor/tesseract"
 	"github.com/adrianliechti/llama/pkg/extractor/text"
@@ -70,6 +71,9 @@ func createExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	case "code":
 		return codeExtractor(cfg)
 
+	case "azure":
+		return azureExtractor(cfg)
+
 	case "tesseract":
 		return tesseractExtractor(cfg)
 
@@ -110,6 +114,16 @@ func codeExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	}
 
 	return code.New(options...)
+}
+
+func azureExtractor(cfg extractorConfig) (extractor.Provider, error) {
+	var options []azure.Option
+
+	if cfg.Token != "" {
+		options = append(options, azure.WithToken(cfg.Token))
+	}
+
+	return azure.New(cfg.URL, options...)
 }
 
 func tesseractExtractor(cfg extractorConfig) (extractor.Provider, error) {
