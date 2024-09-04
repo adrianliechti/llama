@@ -28,9 +28,9 @@ func NewTranscriber(url string, options ...Option) (*Transcriber, error) {
 	}
 
 	cfg := &Config{
-		url: url,
-
 		client: http.DefaultClient,
+
+		url: url,
 	}
 
 	for _, option := range options {

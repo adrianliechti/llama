@@ -29,9 +29,9 @@ type Option func(*Client)
 
 func New(url, namespace string, options ...Option) (*Client, error) {
 	c := &Client{
-		url: url,
-
 		client: http.DefaultClient,
+
+		url: url,
 
 		namespace: namespace,
 	}

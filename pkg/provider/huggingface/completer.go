@@ -32,12 +32,12 @@ func NewCompleter(url string, options ...Option) (*Completer, error) {
 	url = strings.TrimSuffix(url, "/v1")
 
 	cfg := &Config{
-		url: url,
-
-		token: "-",
-		model: "tgi",
-
 		client: http.DefaultClient,
+
+		url:   url,
+		token: "-",
+
+		model: "tgi",
 	}
 
 	for _, option := range options {

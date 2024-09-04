@@ -21,9 +21,9 @@ type Completer struct {
 
 func NewCompleter(options ...Option) (*Completer, error) {
 	cfg := &Config{
-		url: "https://api.cohere.com",
-
 		client: http.DefaultClient,
+
+		url: "https://api.cohere.com",
 	}
 
 	for _, option := range options {

@@ -19,9 +19,9 @@ type Synthesizer struct {
 
 func NewSynthesizer(options ...Option) (*Synthesizer, error) {
 	cfg := &Config{
-		url: "https://api.elevenlabs.io",
-
 		client: http.DefaultClient,
+
+		url: "https://api.elevenlabs.io",
 	}
 
 	for _, option := range options {

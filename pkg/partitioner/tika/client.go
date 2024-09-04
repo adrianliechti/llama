@@ -23,12 +23,10 @@ type Client struct {
 }
 
 func New(url string, options ...Option) (*Client, error) {
-	if url == "" {
-		return nil, errors.New("invalid url")
-	}
-
 	c := &Config{
 		client: http.DefaultClient,
+
+		url: url,
 
 		chunkSize:    4000,
 		chunkOverlap: 200,
@@ -36,6 +34,10 @@ func New(url string, options ...Option) (*Client, error) {
 
 	for _, option := range options {
 		option(c)
+	}
+
+	if c.url == "" {
+		return nil, errors.New("invalid url")
 	}
 
 	return &Client{

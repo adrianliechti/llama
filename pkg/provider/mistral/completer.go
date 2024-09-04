@@ -22,9 +22,9 @@ type Completer struct {
 
 func NewCompleter(options ...Option) (*Completer, error) {
 	cfg := &Config{
-		url: "https://api.mistral.ai",
-
 		client: http.DefaultClient,
+
+		url: "https://api.mistral.ai",
 	}
 
 	for _, option := range options {

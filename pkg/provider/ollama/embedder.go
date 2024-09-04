@@ -22,9 +22,9 @@ func NewEmbedder(url string, options ...Option) (*Embedder, error) {
 	}
 
 	c := &Config{
-		url: url,
-
 		client: http.DefaultClient,
+
+		url: url,
 	}
 
 	for _, option := range options {

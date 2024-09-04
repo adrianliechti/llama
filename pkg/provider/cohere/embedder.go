@@ -18,9 +18,9 @@ type Embedder struct {
 
 func NewEmbedder(options ...Option) (*Embedder, error) {
 	cfg := &Config{
-		url: "https://api.cohere.com",
-
 		client: http.DefaultClient,
+
+		url: "https://api.cohere.com",
 	}
 
 	for _, option := range options {

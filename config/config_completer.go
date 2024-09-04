@@ -17,7 +17,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/mistralrs"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
-	"github.com/adrianliechti/llama/pkg/provider/torchchat"
 
 	"github.com/adrianliechti/llama/pkg/otel"
 )
@@ -91,9 +90,6 @@ func createCompleter(cfg providerConfig, model modelContext) (provider.Completer
 
 	case "openai":
 		return openaiCompleter(cfg, model)
-
-	case "torchchat":
-		return torchchatCompleter(cfg, model)
 
 	case "custom":
 		return customCompleter(cfg, model)
@@ -243,16 +239,6 @@ func openaiCompleter(cfg providerConfig, model modelContext) (provider.Completer
 	}
 
 	return openai.NewCompleter(options...)
-}
-
-func torchchatCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
-	var options []torchchat.Option
-
-	if model.ID != "" {
-		options = append(options, torchchat.WithModel(model.ID))
-	}
-
-	return torchchat.NewCompleter(cfg.URL, options...)
 }
 
 func customCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {

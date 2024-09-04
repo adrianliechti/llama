@@ -23,11 +23,11 @@ func NewTranslator(url string, options ...Option) (*Translator, error) {
 	}
 
 	cfg := &Config{
+		client: http.DefaultClient,
+
 		url: url,
 
 		language: "en",
-
-		client: http.DefaultClient,
 	}
 
 	for _, option := range options {

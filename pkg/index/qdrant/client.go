@@ -30,11 +30,11 @@ type Option func(*Client)
 
 func New(url string, namespace string, options ...Option) (*Client, error) {
 	c := &Client{
+		client: http.DefaultClient,
+
 		url: url,
 
 		namespace: namespace,
-
-		client: http.DefaultClient,
 	}
 
 	for _, option := range options {

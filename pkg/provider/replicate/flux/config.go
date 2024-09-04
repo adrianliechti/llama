@@ -17,9 +17,9 @@ type Option func(*Config)
 
 func NewConfig(options ...Option) *Config {
 	c := &Config{
-		url: "https://api.replicate.com/",
-
 		client: http.DefaultClient,
+
+		url: "https://api.replicate.com/",
 	}
 
 	for _, option := range options {
