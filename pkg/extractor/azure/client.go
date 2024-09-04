@@ -17,61 +17,26 @@ import (
 var _ extractor.Provider = &Client{}
 
 type Client struct {
-	client *http.Client
-
-	url   string
-	token string
-
-	chunkSize    int
-	chunkOverlap int
+	*Config
 }
 
-type Option func(*Client)
-
 func New(url, token string, options ...Option) (*Client, error) {
-	if url == "" {
-		return nil, errors.New("invalid url")
-	}
-
-	c := &Client{
-		client: http.DefaultClient,
-
-		url:   url,
-		token: token,
-
+	c := &Config{
 		chunkSize:    4000,
-		chunkOverlap: 200,
+		chunkOverlap: 500,
 	}
 
 	for _, option := range options {
 		option(c)
 	}
 
-	return c, nil
-}
-
-func WithClient(client *http.Client) Option {
-	return func(c *Client) {
-		c.client = client
+	if c.url == "" {
+		return nil, errors.New("invalid url")
 	}
-}
 
-func WithToken(token string) Option {
-	return func(c *Client) {
-		c.token = token
-	}
-}
-
-func WithChunkSize(size int) Option {
-	return func(c *Client) {
-		c.chunkSize = size
-	}
-}
-
-func WithChunkOverlap(overlap int) Option {
-	return func(c *Client) {
-		c.chunkOverlap = overlap
-	}
+	return &Client{
+		Config: c,
+	}, nil
 }
 
 func (c *Client) Extract(ctx context.Context, input extractor.File, options *extractor.ExtractOptions) (*extractor.Document, error) {

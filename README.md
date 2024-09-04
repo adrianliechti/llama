@@ -409,23 +409,6 @@ extractors:
 ```
 
 
-#### Tesseract
-
-https://tesseract-ocr.github.io
-
-```shell
-# using Docker
-docker run -it --rm -p 9086:8884 hertzg/tesseract-server:latest
-```
-
-```yaml
-extractors:
-  tesseract:
-    type: tesseract
-    url: http://localhost:9086
-```
-
-
 #### Tika
 
 ```shell

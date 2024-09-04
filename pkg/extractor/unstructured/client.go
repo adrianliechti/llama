@@ -17,53 +17,25 @@ import (
 var _ extractor.Provider = &Client{}
 
 type Client struct {
-	url string
-
-	client *http.Client
-
-	chunkSize    int
-	chunkOverlap int
+	*Config
 }
 
-type Option func(*Client)
+func New(options ...Option) (*Client, error) {
+	c := &Config{
+		url: "https://api.unstructured.io/general/v0/general",
 
-func New(url string, options ...Option) (*Client, error) {
-	if url == "" {
-		return nil, errors.New("invalid url")
-	}
-
-	c := &Client{
-		url: url,
-
-		client: http.DefaultClient,
-
-		chunkSize:    4000,
-		chunkOverlap: 200,
+		chunkSize:     4000,
+		chunkOverlap:  500,
+		chunkStrategy: "by_title",
 	}
 
 	for _, option := range options {
 		option(c)
 	}
 
-	return c, nil
-}
-
-func WithClient(client *http.Client) Option {
-	return func(c *Client) {
-		c.client = client
-	}
-}
-
-func WithChunkSize(size int) Option {
-	return func(c *Client) {
-		c.chunkSize = size
-	}
-}
-
-func WithChunkOverlap(overlap int) Option {
-	return func(c *Client) {
-		c.chunkOverlap = overlap
-	}
+	return &Client{
+		Config: c,
+	}, nil
 }
 
 func (c *Client) Extract(ctx context.Context, input extractor.File, options *extractor.ExtractOptions) (*extractor.Document, error) {
@@ -77,11 +49,18 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	w := multipart.NewWriter(&b)
 
 	w.WriteField("strategy", "auto")
-	w.WriteField("languages", "eng")
-	w.WriteField("languages", "deu")
-	w.WriteField("chunking_strategy", "by_title")
-	w.WriteField("max_characters", fmt.Sprintf("%d", c.chunkSize))
-	w.WriteField("overlap", fmt.Sprintf("%d", c.chunkOverlap))
+
+	if c.chunkStrategy != "" {
+		w.WriteField("chunking_strategy", c.chunkStrategy)
+	}
+
+	if c.chunkSize > 0 {
+		w.WriteField("max_characters", fmt.Sprintf("%d", c.chunkSize))
+	}
+
+	if c.chunkOverlap > 0 {
+		w.WriteField("overlap", fmt.Sprintf("%d", c.chunkOverlap))
+	}
 
 	file, err := w.CreateFormFile("files", input.Name)
 

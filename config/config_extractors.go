@@ -7,7 +7,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/extractor/azure"
 	"github.com/adrianliechti/llama/pkg/extractor/code"
-	"github.com/adrianliechti/llama/pkg/extractor/tesseract"
 	"github.com/adrianliechti/llama/pkg/extractor/text"
 	"github.com/adrianliechti/llama/pkg/extractor/tika"
 	"github.com/adrianliechti/llama/pkg/extractor/unstructured"
@@ -74,9 +73,6 @@ func createExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	case "azure":
 		return azureExtractor(cfg)
 
-	case "tesseract":
-		return tesseractExtractor(cfg)
-
 	case "tika":
 		return tikaExtractor(cfg)
 
@@ -122,20 +118,6 @@ func azureExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	return azure.New(cfg.URL, cfg.Token, options...)
 }
 
-func tesseractExtractor(cfg extractorConfig) (extractor.Provider, error) {
-	var options []tesseract.Option
-
-	if cfg.ChunkSize != nil {
-		options = append(options, tesseract.WithChunkSize(*cfg.ChunkSize))
-	}
-
-	if cfg.ChunkOverlap != nil {
-		options = append(options, tesseract.WithChunkOverlap(*cfg.ChunkOverlap))
-	}
-
-	return tesseract.New(cfg.URL, options...)
-}
-
 func tikaExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	var options []tika.Option
 
@@ -153,6 +135,14 @@ func tikaExtractor(cfg extractorConfig) (extractor.Provider, error) {
 func unstructuredExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	var options []unstructured.Option
 
+	if cfg.URL != "" {
+		options = append(options, unstructured.WithURL(cfg.URL))
+	}
+
+	if cfg.Token != "" {
+		options = append(options, unstructured.WithToken(cfg.Token))
+	}
+
 	if cfg.ChunkSize != nil {
 		options = append(options, unstructured.WithChunkSize(*cfg.ChunkSize))
 	}
@@ -161,5 +151,5 @@ func unstructuredExtractor(cfg extractorConfig) (extractor.Provider, error) {
 		options = append(options, unstructured.WithChunkOverlap(*cfg.ChunkOverlap))
 	}
 
-	return unstructured.New(cfg.URL, options...)
+	return unstructured.New(options...)
 }

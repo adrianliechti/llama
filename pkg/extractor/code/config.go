@@ -1,5 +1,39 @@
 package code
 
+var SupportedExtensions = []string{
+	".cpp",
+	".cs",
+	".go",
+	".java",
+	".js", ".jsm",
+	".kt",
+	".py",
+	".rb",
+	".rs",
+	".sc", ".scala",
+	".swift",
+	".ts", ".tsx",
+}
+
+type Config struct {
+	chunkSize    int
+	chunkOverlap int
+}
+
+type Option func(*Config)
+
+func WithChunkSize(size int) Option {
+	return func(c *Config) {
+		c.chunkSize = size
+	}
+}
+
+func WithChunkOverlap(overlap int) Option {
+	return func(c *Config) {
+		c.chunkOverlap = overlap
+	}
+}
+
 var (
 	languageCPP = []string{
 		// # Split along class definitions
