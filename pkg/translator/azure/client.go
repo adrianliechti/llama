@@ -11,14 +11,19 @@ import (
 	"github.com/adrianliechti/llama/pkg/translator"
 )
 
-var _ translator.Provider = (*Translator)(nil)
+var _ translator.Provider = (*Client)(nil)
 
-type Translator struct {
-	*Config
+type Client struct {
+	client *http.Client
+
+	url   string
+	token string
+
+	language string
 }
 
-func NewTranslator(url, token string, options ...Option) (*Translator, error) {
-	cfg := &Config{
+func NewTranslator(url, token string, options ...Option) (*Client, error) {
+	c := &Client{
 		client: http.DefaultClient,
 
 		url:   url,
@@ -28,21 +33,19 @@ func NewTranslator(url, token string, options ...Option) (*Translator, error) {
 	}
 
 	for _, option := range options {
-		option(cfg)
+		option(c)
 	}
 
-	return &Translator{
-		Config: cfg,
-	}, nil
+	return c, nil
 }
 
-func (t *Translator) Translate(ctx context.Context, content string, options *translator.TranslateOptions) (*translator.Translation, error) {
+func (c *Client) Translate(ctx context.Context, content string, options *translator.TranslateOptions) (*translator.Translation, error) {
 	if options == nil {
 		options = new(translator.TranslateOptions)
 	}
 
 	if options.Language == "" {
-		options.Language = t.language
+		options.Language = c.language
 	}
 
 	type bodyType struct {
@@ -55,7 +58,7 @@ func (t *Translator) Translate(ctx context.Context, content string, options *tra
 		},
 	}
 
-	u, _ := url.Parse(strings.TrimRight(t.url, "/") + "/translator/text/v3.0/translate")
+	u, _ := url.Parse(strings.TrimRight(c.url, "/") + "/translator/text/v3.0/translate")
 
 	query := u.Query()
 	query.Set("to", options.Language)
@@ -63,10 +66,10 @@ func (t *Translator) Translate(ctx context.Context, content string, options *tra
 	u.RawQuery = query.Encode()
 
 	r, _ := http.NewRequestWithContext(ctx, "POST", u.String(), jsonReader(body))
-	r.Header.Add("Ocp-Apim-Subscription-Key", t.token)
+	r.Header.Add("Ocp-Apim-Subscription-Key", c.token)
 	r.Header.Add("Content-Type", "application/json")
 
-	resp, err := t.client.Do(r)
+	resp, err := c.client.Do(r)
 
 	if err != nil {
 		return nil, err

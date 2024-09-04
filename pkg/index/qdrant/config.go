@@ -6,25 +6,16 @@ import (
 	"github.com/adrianliechti/llama/pkg/index"
 )
 
-type Config struct {
-	client *http.Client
-
-	url string
-
-	embedder  index.Embedder
-	namespace string
-}
-
-type Option func(*Config)
+type Option func(*Client)
 
 func WithClient(client *http.Client) Option {
-	return func(c *Config) {
+	return func(c *Client) {
 		c.client = client
 	}
 }
 
 func WithEmbedder(embedder index.Embedder) Option {
-	return func(c *Config) {
+	return func(c *Client) {
 		c.embedder = embedder
 	}
 }

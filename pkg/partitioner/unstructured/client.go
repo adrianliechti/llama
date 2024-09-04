@@ -20,11 +20,18 @@ import (
 var _ partitioner.Provider = &Client{}
 
 type Client struct {
-	*Config
+	client *http.Client
+
+	url   string
+	token string
+
+	chunkSize     int
+	chunkOverlap  int
+	chunkStrategy string
 }
 
 func New(options ...Option) (*Client, error) {
-	c := &Config{
+	c := &Client{
 		client: http.DefaultClient,
 
 		url: "https://api.unstructured.io/general/v0/general",
@@ -38,9 +45,7 @@ func New(options ...Option) (*Client, error) {
 		option(c)
 	}
 
-	return &Client{
-		Config: c,
-	}, nil
+	return c, nil
 }
 
 func (c *Client) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) ([]partitioner.Partition, error) {

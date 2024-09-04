@@ -19,38 +19,28 @@ var SupportedExtensions = []string{
 	".xlsx",
 }
 
-type Config struct {
-	client *http.Client
-
-	url   string
-	token string
-
-	chunkSize    int
-	chunkOverlap int
-}
-
-type Option func(*Config)
+type Option func(*Client)
 
 func WithClient(client *http.Client) Option {
-	return func(c *Config) {
+	return func(c *Client) {
 		c.client = client
 	}
 }
 
 func WithToken(token string) Option {
-	return func(c *Config) {
+	return func(c *Client) {
 		c.token = token
 	}
 }
 
 func WithChunkSize(size int) Option {
-	return func(c *Config) {
+	return func(c *Client) {
 		c.chunkSize = size
 	}
 }
 
 func WithChunkOverlap(overlap int) Option {
-	return func(c *Config) {
+	return func(c *Client) {
 		c.chunkOverlap = overlap
 	}
 }

@@ -20,11 +20,17 @@ import (
 var _ partitioner.Provider = &Client{}
 
 type Client struct {
-	*Config
+	client *http.Client
+
+	url   string
+	token string
+
+	chunkSize    int
+	chunkOverlap int
 }
 
 func New(url, token string, options ...Option) (*Client, error) {
-	c := &Config{
+	c := &Client{
 		client: http.DefaultClient,
 
 		url:   url,
@@ -42,9 +48,7 @@ func New(url, token string, options ...Option) (*Client, error) {
 		return nil, errors.New("invalid url")
 	}
 
-	return &Client{
-		Config: c,
-	}, nil
+	return c, nil
 }
 
 func (c *Client) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) ([]partitioner.Partition, error) {

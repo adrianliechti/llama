@@ -17,11 +17,16 @@ import (
 var _ index.Provider = &Client{}
 
 type Client struct {
-	*Config
+	client *http.Client
+
+	url string
+
+	embedder  index.Embedder
+	namespace string
 }
 
 func New(url, namespace string, options ...Option) (*Client, error) {
-	c := &Config{
+	c := &Client{
 		client: http.DefaultClient,
 
 		url: url,
@@ -45,7 +50,7 @@ func New(url, namespace string, options ...Option) (*Client, error) {
 		return nil, errors.New("namespace is required")
 	}
 
-	return &Client{c}, nil
+	return c, nil
 }
 
 func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {

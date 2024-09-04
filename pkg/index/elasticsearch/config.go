@@ -4,18 +4,10 @@ import (
 	"net/http"
 )
 
-type Config struct {
-	client *http.Client
-
-	url string
-
-	namespace string
-}
-
-type Option func(*Config)
+type Option func(*Client)
 
 func WithClient(client *http.Client) Option {
-	return func(c *Config) {
+	return func(c *Client) {
 		c.client = client
 	}
 }

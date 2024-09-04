@@ -1,21 +1,16 @@
 package code
 
-type Config struct {
-	chunkSize    int
-	chunkOverlap int
-}
-
-type Option func(*Config)
+type Option func(*Splitter)
 
 func WithChunkSize(size int) Option {
-	return func(c *Config) {
-		c.chunkSize = size
+	return func(s *Splitter) {
+		s.chunkSize = size
 	}
 }
 
 func WithChunkOverlap(overlap int) Option {
-	return func(c *Config) {
-		c.chunkOverlap = overlap
+	return func(s *Splitter) {
+		s.chunkOverlap = overlap
 	}
 }
 

@@ -15,22 +15,21 @@ import (
 var _ partitioner.Provider = &Splitter{}
 
 type Splitter struct {
-	*Config
+	chunkSize    int
+	chunkOverlap int
 }
 
 func New(options ...Option) (*Splitter, error) {
-	c := &Config{
+	s := &Splitter{
 		chunkSize:    4000,
 		chunkOverlap: 200,
 	}
 
 	for _, option := range options {
-		option(c)
+		option(s)
 	}
 
-	return &Splitter{
-		Config: c,
-	}, nil
+	return s, nil
 }
 
 func (s *Splitter) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) ([]partitioner.Partition, error) {

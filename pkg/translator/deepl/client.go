@@ -13,16 +13,21 @@ import (
 	"github.com/google/uuid"
 )
 
-type Translator struct {
-	*Config
+type Client struct {
+	client *http.Client
+
+	url   string
+	token string
+
+	language string
 }
 
-func NewTranslator(url string, options ...Option) (*Translator, error) {
+func NewTranslator(url string, options ...Option) (*Client, error) {
 	if url == "" {
 		url = "https://api-free.deepl.com"
 	}
 
-	cfg := &Config{
+	c := &Client{
 		client: http.DefaultClient,
 
 		url: url,
@@ -31,21 +36,19 @@ func NewTranslator(url string, options ...Option) (*Translator, error) {
 	}
 
 	for _, option := range options {
-		option(cfg)
+		option(c)
 	}
 
-	return &Translator{
-		Config: cfg,
-	}, nil
+	return c, nil
 }
 
-func (t *Translator) Translate(ctx context.Context, content string, options *translator.TranslateOptions) (*translator.Translation, error) {
+func (c *Client) Translate(ctx context.Context, content string, options *translator.TranslateOptions) (*translator.Translation, error) {
 	if options == nil {
 		options = new(translator.TranslateOptions)
 	}
 
 	if options.Language == "" {
-		options.Language = t.language
+		options.Language = c.language
 	}
 
 	type bodyType struct {
@@ -61,12 +64,12 @@ func (t *Translator) Translate(ctx context.Context, content string, options *tra
 		TargetLang: options.Language,
 	}
 
-	u, _ := url.JoinPath(t.url, "/v2/translate")
+	u, _ := url.JoinPath(c.url, "/v2/translate")
 	r, _ := http.NewRequestWithContext(ctx, "POST", u, jsonReader(body))
-	r.Header.Add("Authorization", "DeepL-Auth-Key "+t.token)
+	r.Header.Add("Authorization", "DeepL-Auth-Key "+c.token)
 	r.Header.Add("Content-Type", "application/json")
 
-	resp, err := t.client.Do(r)
+	resp, err := c.client.Do(r)
 
 	if err != nil {
 		return nil, err
