@@ -15,17 +15,12 @@ import (
 var _ index.Provider = &Client{}
 
 type Client struct {
-	embedder index.Embedder
-
+	*Config
 	documents map[string]index.Document
 }
 
-type Option func(*Client)
-
 func New(options ...Option) (*Client, error) {
-	c := &Client{
-		documents: make(map[string]index.Document),
-	}
+	c := &Config{}
 
 	for _, option := range options {
 		option(c)
@@ -35,13 +30,7 @@ func New(options ...Option) (*Client, error) {
 		return nil, errors.New("embedder is required")
 	}
 
-	return c, nil
-}
-
-func WithEmbedder(embedder index.Embedder) Option {
-	return func(c *Client) {
-		c.embedder = embedder
-	}
+	return &Client{c, make(map[string]index.Document)}, nil
 }
 
 func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {

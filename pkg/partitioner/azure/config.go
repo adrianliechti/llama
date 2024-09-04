@@ -1,6 +1,8 @@
 package azure
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/concept-layout?view=doc-intel-4.0.0&tabs=sample-code#input-requirements
 var SupportedExtensions = []string{

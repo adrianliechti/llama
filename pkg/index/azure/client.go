@@ -17,18 +17,11 @@ var (
 )
 
 type Client struct {
-	client *http.Client
-
-	url   string
-	token string
-
-	namespace string
+	*Config
 }
 
-type Option func(*Client)
-
 func New(url, namespace, token string, options ...Option) (*Client, error) {
-	c := &Client{
+	c := &Config{
 		client: http.DefaultClient,
 
 		url:   url,
@@ -41,13 +34,7 @@ func New(url, namespace, token string, options ...Option) (*Client, error) {
 		option(c)
 	}
 
-	return c, nil
-}
-
-func WithClient(client *http.Client) Option {
-	return func(c *Client) {
-		c.client = client
-	}
+	return &Client{c}, nil
 }
 
 func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {

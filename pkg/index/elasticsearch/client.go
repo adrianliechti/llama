@@ -17,17 +17,11 @@ import (
 var _ index.Provider = &Client{}
 
 type Client struct {
-	url string
-
-	client *http.Client
-
-	namespace string
+	*Config
 }
 
-type Option func(*Client)
-
 func New(url, namespace string, options ...Option) (*Client, error) {
-	c := &Client{
+	c := &Config{
 		client: http.DefaultClient,
 
 		url: url,
@@ -39,13 +33,15 @@ func New(url, namespace string, options ...Option) (*Client, error) {
 		option(c)
 	}
 
-	return c, nil
-}
-
-func WithClient(client *http.Client) Option {
-	return func(c *Client) {
-		c.client = client
+	if c.url == "" {
+		return nil, errors.New("url is required")
 	}
+
+	if c.namespace == "" {
+		return nil, errors.New("namespace is required")
+	}
+
+	return &Client{c}, nil
 }
 
 func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {

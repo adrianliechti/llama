@@ -1,6 +1,8 @@
 package ollama
 
-import "time"
+import (
+	"time"
+)
 
 type ModelList struct {
 	Models []Model `json:"models"`
