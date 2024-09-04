@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/translator"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -12,7 +12,7 @@ import (
 
 type ObservableTranslator interface {
 	Observable
-	provider.Translator
+	translator.Provider
 }
 
 type observableTranslator struct {
@@ -22,10 +22,10 @@ type observableTranslator struct {
 	model    string
 	provider string
 
-	translator provider.Translator
+	translator translator.Provider
 }
 
-func NewTranslator(provider, model string, p provider.Translator) ObservableTranslator {
+func NewTranslator(provider, model string, p translator.Provider) ObservableTranslator {
 	library := strings.ToLower(provider)
 
 	return &observableTranslator{
@@ -42,7 +42,7 @@ func NewTranslator(provider, model string, p provider.Translator) ObservableTran
 func (p *observableTranslator) otelSetup() {
 }
 
-func (p *observableTranslator) Translate(ctx context.Context, content string, options *provider.TranslateOptions) (*provider.Translation, error) {
+func (p *observableTranslator) Translate(ctx context.Context, content string, options *translator.TranslateOptions) (*translator.Translation, error) {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 

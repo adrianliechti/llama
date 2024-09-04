@@ -1,4 +1,4 @@
-package aisearch
+package azure
 
 import (
 	"context"

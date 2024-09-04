@@ -1,4 +1,4 @@
-package azuretranslator
+package azure
 
 import (
 	"context"
@@ -8,22 +8,23 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/translator"
 )
 
-var _ provider.Translator = (*Translator)(nil)
+var _ translator.Provider = (*Translator)(nil)
 
 type Translator struct {
 	*Config
 }
 
-func NewTranslator(url string, options ...Option) (*Translator, error) {
+func NewTranslator(url, token string, options ...Option) (*Translator, error) {
 	cfg := &Config{
-		url: url,
+		client: http.DefaultClient,
+
+		url:   url,
+		token: token,
 
 		language: "en",
-
-		client: http.DefaultClient,
 	}
 
 	for _, option := range options {
@@ -35,9 +36,9 @@ func NewTranslator(url string, options ...Option) (*Translator, error) {
 	}, nil
 }
 
-func (t *Translator) Translate(ctx context.Context, content string, options *provider.TranslateOptions) (*provider.Translation, error) {
+func (t *Translator) Translate(ctx context.Context, content string, options *translator.TranslateOptions) (*translator.Translation, error) {
 	if options == nil {
-		options = new(provider.TranslateOptions)
+		options = new(translator.TranslateOptions)
 	}
 
 	if options.Language == "" {
@@ -99,7 +100,7 @@ func (t *Translator) Translate(ctx context.Context, content string, options *pro
 		return nil, errors.New("unable to translate content")
 	}
 
-	return &provider.Translation{
+	return &translator.Translation{
 		Content: result[0].Translations[0].Text,
 	}, nil
 }

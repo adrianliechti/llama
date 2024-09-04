@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/index"
-	"github.com/adrianliechti/llama/pkg/index/aisearch"
+	"github.com/adrianliechti/llama/pkg/index/azure"
 	"github.com/adrianliechti/llama/pkg/index/chroma"
 	"github.com/adrianliechti/llama/pkg/index/custom"
 	"github.com/adrianliechti/llama/pkg/index/elasticsearch"
@@ -79,8 +79,8 @@ func (cfg *Config) registerIndexes(f *configFile) error {
 
 func createIndex(cfg indexConfig, context indexContext) (index.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
-	case "aisearch":
-		return aisearchIndex(cfg)
+	case "azure":
+		return azureIndex(cfg)
 
 	case "chroma":
 		return chromaIndex(cfg, context)
@@ -105,10 +105,10 @@ func createIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 	}
 }
 
-func aisearchIndex(cfg indexConfig) (index.Provider, error) {
-	var options []aisearch.Option
+func azureIndex(cfg indexConfig) (index.Provider, error) {
+	var options []azure.Option
 
-	return aisearch.New(cfg.URL, cfg.Namespace, cfg.Token, options...)
+	return azure.New(cfg.URL, cfg.Namespace, cfg.Token, options...)
 }
 
 func chromaIndex(cfg indexConfig, context indexContext) (index.Provider, error) {

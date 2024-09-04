@@ -1,4 +1,4 @@
-package azuretranslator
+package azure
 
 import (
 	"bytes"

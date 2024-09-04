@@ -1,4 +1,4 @@
-package aisearch
+package azure
 
 type Results struct {
 	Value []Result `json:"value"`

@@ -17,10 +17,10 @@ import (
 var _ extractor.Provider = &Client{}
 
 type Client struct {
+	client *http.Client
+
 	url   string
 	token string
-
-	client *http.Client
 
 	chunkSize    int
 	chunkOverlap int
@@ -28,15 +28,16 @@ type Client struct {
 
 type Option func(*Client)
 
-func New(url string, options ...Option) (*Client, error) {
+func New(url, token string, options ...Option) (*Client, error) {
 	if url == "" {
 		return nil, errors.New("invalid url")
 	}
 
 	c := &Client{
-		url: url,
-
 		client: http.DefaultClient,
+
+		url:   url,
+		token: token,
 
 		chunkSize:    4000,
 		chunkOverlap: 200,

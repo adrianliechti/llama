@@ -1,16 +1,16 @@
-package azuretranslator
+package azure
 
 import (
 	"net/http"
 )
 
 type Config struct {
-	url string
-
-	token    string
-	language string
-
 	client *http.Client
+
+	url   string
+	token string
+
+	language string
 }
 
 type Option func(*Config)

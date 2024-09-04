@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/translator"
 
 	"github.com/google/uuid"
 )
@@ -39,9 +39,9 @@ func NewTranslator(url string, options ...Option) (*Translator, error) {
 	}, nil
 }
 
-func (t *Translator) Translate(ctx context.Context, content string, options *provider.TranslateOptions) (*provider.Translation, error) {
+func (t *Translator) Translate(ctx context.Context, content string, options *translator.TranslateOptions) (*translator.Translation, error) {
 	if options == nil {
-		options = new(provider.TranslateOptions)
+		options = new(translator.TranslateOptions)
 	}
 
 	if options.Language == "" {
@@ -95,7 +95,7 @@ func (t *Translator) Translate(ctx context.Context, content string, options *pro
 		return nil, errors.New("unable to translate content")
 	}
 
-	return &provider.Translation{
+	return &translator.Translation{
 		ID: uuid.New().String(),
 
 		Content: result.Translations[0].Text,

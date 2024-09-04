@@ -119,11 +119,7 @@ func codeExtractor(cfg extractorConfig) (extractor.Provider, error) {
 func azureExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	var options []azure.Option
 
-	if cfg.Token != "" {
-		options = append(options, azure.WithToken(cfg.Token))
-	}
-
-	return azure.New(cfg.URL, options...)
+	return azure.New(cfg.URL, cfg.Token, options...)
 }
 
 func tesseractExtractor(cfg extractorConfig) (extractor.Provider, error) {

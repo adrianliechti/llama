@@ -4,18 +4,16 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/provider/azuretranslator"
-	"github.com/adrianliechti/llama/pkg/provider/deepl"
+	"github.com/adrianliechti/llama/pkg/translator"
+	"github.com/adrianliechti/llama/pkg/translator/azure"
+	"github.com/adrianliechti/llama/pkg/translator/deepl"
 
 	"github.com/adrianliechti/llama/pkg/otel"
 )
 
-func (cfg *Config) RegisterTranslator(name, model string, p provider.Translator) {
-	cfg.RegisterModel(model)
-
+func (cfg *Config) RegisterTranslator(name, model string, p translator.Provider) {
 	if cfg.translator == nil {
-		cfg.translator = make(map[string]provider.Translator)
+		cfg.translator = make(map[string]translator.Provider)
 	}
 
 	translator, ok := p.(otel.ObservableTranslator)
@@ -27,7 +25,7 @@ func (cfg *Config) RegisterTranslator(name, model string, p provider.Translator)
 	cfg.translator[model] = translator
 }
 
-func (cfg *Config) Translator(model string) (provider.Translator, error) {
+func (cfg *Config) Translator(model string) (translator.Provider, error) {
 	if cfg.translator != nil {
 		if t, ok := cfg.translator[model]; ok {
 			return t, nil
@@ -37,9 +35,9 @@ func (cfg *Config) Translator(model string) (provider.Translator, error) {
 	return nil, errors.New("translator not found: " + model)
 }
 
-func createTranslator(cfg providerConfig, model modelContext) (provider.Translator, error) {
+func createTranslator(cfg providerConfig, model modelContext) (translator.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
-	case "azuretranslator":
+	case "azure":
 		return azureTranslator(cfg, model)
 
 	case "deepl":
@@ -50,21 +48,17 @@ func createTranslator(cfg providerConfig, model modelContext) (provider.Translat
 	}
 }
 
-func azureTranslator(cfg providerConfig, model modelContext) (provider.Translator, error) {
-	var options []azuretranslator.Option
-
-	if cfg.Token != "" {
-		options = append(options, azuretranslator.WithToken(cfg.Token))
-	}
+func azureTranslator(cfg providerConfig, model modelContext) (translator.Provider, error) {
+	var options []azure.Option
 
 	if model.ID != "" {
-		options = append(options, azuretranslator.WithLanguage(model.ID))
+		options = append(options, azure.WithLanguage(model.ID))
 	}
 
-	return azuretranslator.NewTranslator(cfg.URL, options...)
+	return azure.NewTranslator(cfg.URL, cfg.Token, options...)
 }
 
-func deeplTranslator(cfg providerConfig, model modelContext) (provider.Translator, error) {
+func deeplTranslator(cfg providerConfig, model modelContext) (translator.Provider, error) {
 	var options []deepl.Option
 
 	if cfg.Token != "" {

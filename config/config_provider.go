@@ -72,15 +72,6 @@ func (cfg *Config) registerProviders(f *configFile) error {
 
 				cfg.RegisterTranscriber(p.Type, id, transcriber)
 
-			case ModelTypeTranslator:
-				translator, err := createTranslator(p, context)
-
-				if err != nil {
-					return err
-				}
-
-				cfg.RegisterTranslator(p.Type, id, translator)
-
 			default:
 				return errors.New("invalid model type: " + id)
 			}

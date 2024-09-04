@@ -9,6 +9,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/tool"
+	"github.com/adrianliechti/llama/pkg/translator"
 
 	"gopkg.in/yaml.v3"
 )
@@ -25,10 +26,10 @@ type Config struct {
 	renderer    map[string]provider.Renderer
 	synthesizer map[string]provider.Synthesizer
 	transcriber map[string]provider.Transcriber
-	translator  map[string]provider.Translator
 
 	indexes    map[string]index.Provider
 	extractors map[string]extractor.Provider
+	translator map[string]translator.Provider
 
 	tools  map[string]tool.Tool
 	chains map[string]chain.Provider

@@ -53,7 +53,6 @@ const (
 	ModelTypeRenderer    ModelType = "renderer"
 	ModelTypeSynthesizer ModelType = "synthesizer"
 	ModelTypeTranscriber ModelType = "transcriber"
-	ModelTypeTranslator  ModelType = "translator"
 )
 
 type modelConfig struct {
