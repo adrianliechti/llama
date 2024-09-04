@@ -7,6 +7,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/partitioner"
 	"github.com/adrianliechti/llama/pkg/partitioner/azure"
 	"github.com/adrianliechti/llama/pkg/partitioner/code"
+	"github.com/adrianliechti/llama/pkg/partitioner/multi"
 	"github.com/adrianliechti/llama/pkg/partitioner/text"
 	"github.com/adrianliechti/llama/pkg/partitioner/tika"
 	"github.com/adrianliechti/llama/pkg/partitioner/unstructured"
@@ -49,6 +50,8 @@ type partitionerConfig struct {
 }
 
 func (cfg *Config) RegisterPartitioners(f *configFile) error {
+	var partitioners []partitioner.Provider
+
 	for id, p := range f.Partitioners {
 		partitioner, err := createPartitioner(p)
 
@@ -56,8 +59,12 @@ func (cfg *Config) RegisterPartitioners(f *configFile) error {
 			return err
 		}
 
+		partitioners = append(partitioners, partitioner)
+
 		cfg.RegisterPartitioner(p.Type, id, partitioner)
 	}
+
+	cfg.RegisterPartitioner("default", "default", multi.New(partitioners...))
 
 	return nil
 }

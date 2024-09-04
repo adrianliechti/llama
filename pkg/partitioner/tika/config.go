@@ -5,10 +5,12 @@ import (
 )
 
 var SupportedExtensions = []string{
-	".doc", ".docx",
-	".jpg", ".jpeg",
 	".pdf",
+
+	".jpg", ".jpeg",
 	".png",
+
+	".doc", ".docx",
 	".ppt", ".pptx",
 	".xls", ".xlsx",
 }

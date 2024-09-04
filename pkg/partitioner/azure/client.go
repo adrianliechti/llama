@@ -27,6 +27,9 @@ func New(url, token string, options ...Option) (*Client, error) {
 	c := &Config{
 		client: http.DefaultClient,
 
+		url:   url,
+		token: token,
+
 		chunkSize:    4000,
 		chunkOverlap: 500,
 	}
