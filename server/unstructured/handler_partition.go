@@ -1,4 +1,4 @@
-package api
+package unstructured
 
 import (
 	"net/http"
