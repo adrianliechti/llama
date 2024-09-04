@@ -3,11 +3,11 @@ package api
 import (
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/extractor"
+	"github.com/adrianliechti/llama/pkg/partitioner"
 )
 
 func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
-	e, err := h.Extractor("default")
+	p, err := h.Partitioner("default")
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -23,7 +23,7 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 
 	defer file.Close()
 
-	input := extractor.File{
+	input := partitioner.File{
 		Content: file,
 		Name:    header.Filename,
 	}
@@ -33,7 +33,7 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := e.Extract(r.Context(), input, nil)
+	data, err := p.Partition(r.Context(), input, nil)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -42,11 +42,11 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 
 	var result []Partition
 
-	for _, b := range data.Blocks {
+	for _, p := range data.Partitions {
 		partition := Partition{
-			ID: b.ID,
+			ID: p.ID,
 
-			Text: b.Content,
+			Text: p.Content,
 
 			Metadata: PartitionMetadata{
 				FileName: data.Name,

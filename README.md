@@ -389,12 +389,12 @@ indexes:
 ```
 
 
-### Extractors
+### Partitioners
 
 #### Text
 
 ```yaml
-extractors:
+partitioners:
   text:
     type: text
 ```
@@ -403,7 +403,7 @@ extractors:
 #### Code
 
 ```yaml
-extractors:
+partitioners:
   code:
     type: code
 ```
@@ -417,7 +417,7 @@ docker run -it --rm -p 9998:9998 apache/tika:3.0.0.0-BETA2-full
 ```
 
 ```yaml
-extractors:  
+partitioners:  
   tika:
     type: tika
     url: http://localhost:9998
@@ -436,7 +436,7 @@ docker run -it --rm -p 9085:8000 quay.io/unstructured-io/unstructured-api:0.0.75
 ```
 
 ```yaml
-extractors:
+partitioners:
   unstructured:
     type: unstructured
     url: http://localhost:9085
@@ -462,10 +462,10 @@ chains:
 
 #### Index Documents
 
-Using Extractor
+Using Partitioners
 
 ```
-POST http://localhost:8080/v1/index/{index-name}/{extractor}
+POST http://localhost:8080/v1/index/{index-name}/{partitioner}
 Content-Type: application/pdf
 Content-Disposition: attachment; filename="filename.pdf"
 ```

@@ -4,41 +4,41 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/extractor"
-	"github.com/adrianliechti/llama/pkg/extractor/azure"
-	"github.com/adrianliechti/llama/pkg/extractor/code"
-	"github.com/adrianliechti/llama/pkg/extractor/text"
-	"github.com/adrianliechti/llama/pkg/extractor/tika"
-	"github.com/adrianliechti/llama/pkg/extractor/unstructured"
+	"github.com/adrianliechti/llama/pkg/partitioner"
+	"github.com/adrianliechti/llama/pkg/partitioner/azure"
+	"github.com/adrianliechti/llama/pkg/partitioner/code"
+	"github.com/adrianliechti/llama/pkg/partitioner/text"
+	"github.com/adrianliechti/llama/pkg/partitioner/tika"
+	"github.com/adrianliechti/llama/pkg/partitioner/unstructured"
 
 	"github.com/adrianliechti/llama/pkg/otel"
 )
 
-func (cfg *Config) RegisterExtractor(name, alias string, p extractor.Provider) {
-	if cfg.extractors == nil {
-		cfg.extractors = make(map[string]extractor.Provider)
+func (cfg *Config) RegisterPartitioner(name, alias string, p partitioner.Provider) {
+	if cfg.partitioners == nil {
+		cfg.partitioners = make(map[string]partitioner.Provider)
 	}
 
-	extractor, ok := p.(otel.ObservableExtractor)
+	partitioner, ok := p.(otel.ObservablePartitioner)
 
 	if !ok {
-		extractor = otel.NewExtractor(name, p)
+		partitioner = otel.NewPartitioner(name, p)
 	}
 
-	cfg.extractors[alias] = extractor
+	cfg.partitioners[alias] = partitioner
 }
 
-func (cfg *Config) Extractor(id string) (extractor.Provider, error) {
-	if cfg.extractors != nil {
-		if e, ok := cfg.extractors[id]; ok {
-			return e, nil
+func (cfg *Config) Partitioner(id string) (partitioner.Provider, error) {
+	if cfg.partitioners != nil {
+		if p, ok := cfg.partitioners[id]; ok {
+			return p, nil
 		}
 	}
 
-	return nil, errors.New("extractor not found: " + id)
+	return nil, errors.New("partitioner not found: " + id)
 }
 
-type extractorConfig struct {
+type partitionerConfig struct {
 	Type string `yaml:"type"`
 
 	URL   string `yaml:"url"`
@@ -48,43 +48,43 @@ type extractorConfig struct {
 	ChunkOverlap *int `yaml:"chunkOverlap"`
 }
 
-func (cfg *Config) registerExtractors(f *configFile) error {
-	for id, e := range f.Extractors {
-		extractor, err := createExtractor(e)
+func (cfg *Config) RegisterPartitioners(f *configFile) error {
+	for id, p := range f.Partitioners {
+		partitioner, err := createPartitioner(p)
 
 		if err != nil {
 			return err
 		}
 
-		cfg.RegisterExtractor(e.Type, id, extractor)
+		cfg.RegisterPartitioner(p.Type, id, partitioner)
 	}
 
 	return nil
 }
 
-func createExtractor(cfg extractorConfig) (extractor.Provider, error) {
+func createPartitioner(cfg partitionerConfig) (partitioner.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
 	case "text":
-		return textExtractor(cfg)
+		return textPartitioner(cfg)
 
 	case "code":
-		return codeExtractor(cfg)
+		return codePartitioner(cfg)
 
 	case "azure":
-		return azureExtractor(cfg)
+		return azurePartitioner(cfg)
 
 	case "tika":
-		return tikaExtractor(cfg)
+		return tikaPartitioner(cfg)
 
 	case "unstructured":
-		return unstructuredExtractor(cfg)
+		return unstructuredPartitioner(cfg)
 
 	default:
-		return nil, errors.New("invalid extractor type: " + cfg.Type)
+		return nil, errors.New("invalid partitioner type: " + cfg.Type)
 	}
 }
 
-func textExtractor(cfg extractorConfig) (extractor.Provider, error) {
+func textPartitioner(cfg partitionerConfig) (partitioner.Provider, error) {
 	var options []text.Option
 
 	if cfg.ChunkSize != nil {
@@ -98,7 +98,7 @@ func textExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	return text.New(options...)
 }
 
-func codeExtractor(cfg extractorConfig) (extractor.Provider, error) {
+func codePartitioner(cfg partitionerConfig) (partitioner.Provider, error) {
 	var options []code.Option
 
 	if cfg.ChunkSize != nil {
@@ -112,13 +112,13 @@ func codeExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	return code.New(options...)
 }
 
-func azureExtractor(cfg extractorConfig) (extractor.Provider, error) {
+func azurePartitioner(cfg partitionerConfig) (partitioner.Provider, error) {
 	var options []azure.Option
 
 	return azure.New(cfg.URL, cfg.Token, options...)
 }
 
-func tikaExtractor(cfg extractorConfig) (extractor.Provider, error) {
+func tikaPartitioner(cfg partitionerConfig) (partitioner.Provider, error) {
 	var options []tika.Option
 
 	if cfg.ChunkSize != nil {
@@ -132,7 +132,7 @@ func tikaExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	return tika.New(cfg.URL, options...)
 }
 
-func unstructuredExtractor(cfg extractorConfig) (extractor.Provider, error) {
+func unstructuredPartitioner(cfg partitionerConfig) (partitioner.Provider, error) {
 	var options []unstructured.Option
 
 	if cfg.URL != "" {

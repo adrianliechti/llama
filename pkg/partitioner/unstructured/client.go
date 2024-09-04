@@ -14,10 +14,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/extractor"
+	"github.com/adrianliechti/llama/pkg/partitioner"
 )
 
-var _ extractor.Provider = &Client{}
+var _ partitioner.Provider = &Client{}
 
 type Client struct {
 	*Config
@@ -43,13 +43,13 @@ func New(options ...Option) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) Extract(ctx context.Context, input extractor.File, options *extractor.ExtractOptions) (*extractor.Document, error) {
+func (c *Client) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) (*partitioner.Document, error) {
 	if options == nil {
-		options = &extractor.ExtractOptions{}
+		options = &partitioner.PartitionOptions{}
 	}
 
 	if !isSupported(input) {
-		return nil, extractor.ErrUnsupported
+		return nil, partitioner.ErrUnsupported
 	}
 
 	url, _ := url.JoinPath(c.url, "/general/v0/general")
@@ -104,7 +104,7 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 		return nil, err
 	}
 
-	result := extractor.Document{
+	result := partitioner.Document{
 		Name: input.Name,
 	}
 
@@ -113,18 +113,18 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	}
 
 	for _, e := range elements {
-		block := extractor.Block{
+		p := partitioner.Partition{
 			ID:      e.ID,
 			Content: e.Text,
 		}
 
-		result.Blocks = append(result.Blocks, block)
+		result.Partitions = append(result.Partitions, p)
 	}
 
 	return &result, nil
 }
 
-func isSupported(input extractor.File) bool {
+func isSupported(input partitioner.File) bool {
 	ext := strings.ToLower(path.Ext(input.Name))
 	return slices.Contains(SupportedExtensions, ext)
 }

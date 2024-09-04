@@ -5,8 +5,8 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/authorizer"
 	"github.com/adrianliechti/llama/pkg/chain"
-	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/llama/pkg/partitioner"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/tool"
 	"github.com/adrianliechti/llama/pkg/translator"
@@ -27,9 +27,9 @@ type Config struct {
 	synthesizer map[string]provider.Synthesizer
 	transcriber map[string]provider.Transcriber
 
-	indexes    map[string]index.Provider
-	extractors map[string]extractor.Provider
-	translator map[string]translator.Provider
+	indexes      map[string]index.Provider
+	partitioners map[string]partitioner.Provider
+	translator   map[string]translator.Provider
 
 	tools  map[string]tool.Tool
 	chains map[string]chain.Provider
@@ -58,7 +58,7 @@ func Parse(path string) (*Config, error) {
 		return nil, err
 	}
 
-	if err := c.registerExtractors(file); err != nil {
+	if err := c.RegisterPartitioners(file); err != nil {
 		return nil, err
 	}
 
@@ -82,8 +82,9 @@ type configFile struct {
 
 	Providers []providerConfig `yaml:"providers"`
 
-	Indexes    map[string]indexConfig     `yaml:"indexes"`
-	Extractors map[string]extractorConfig `yaml:"extractors"`
+	Indexes      map[string]indexConfig       `yaml:"indexes"`
+	Extractors   map[string]partitionerConfig `yaml:"extractors"` // Deprecated
+	Partitioners map[string]partitionerConfig `yaml:"partitioners"`
 
 	Routers map[string]routerConfig `yaml:"routers"`
 
@@ -104,6 +105,10 @@ func parseFile(path string) (*configFile, error) {
 
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return nil, err
+	}
+
+	if len(config.Partitioners) == 0 && len(config.Extractors) > 0 {
+		config.Partitioners = config.Extractors
 	}
 
 	return &config, nil

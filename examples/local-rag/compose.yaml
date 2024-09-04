@@ -57,7 +57,7 @@ configs:
           namespace: docs
           embedding: nomic-embed-text-v1
 
-      extractors:
+      partitioners:
         text:
           type: text
           chunkSize: 4000

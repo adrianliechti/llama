@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/adrianliechti/llama/pkg/extractor"
+	"github.com/adrianliechti/llama/pkg/partitioner"
 	"github.com/adrianliechti/llama/pkg/text"
 )
 
-var _ extractor.Provider = &Client{}
+var _ partitioner.Provider = &Client{}
 
 type Client struct {
 	*Config
@@ -43,13 +43,13 @@ func New(url, token string, options ...Option) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) Extract(ctx context.Context, input extractor.File, options *extractor.ExtractOptions) (*extractor.Document, error) {
+func (c *Client) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) (*partitioner.Document, error) {
 	if options == nil {
-		options = &extractor.ExtractOptions{}
+		options = &partitioner.PartitionOptions{}
 	}
 
 	if !isSupported(input) {
-		return nil, extractor.ErrUnsupported
+		return nil, partitioner.ErrUnsupported
 	}
 
 	u, _ := url.Parse(strings.TrimRight(c.url, "/") + "/documentintelligence/documentModels/prebuilt-layout:analyze")
@@ -122,7 +122,7 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	}
 }
 
-func isSupported(input extractor.File) bool {
+func isSupported(input partitioner.File) bool {
 	ext := strings.ToLower(path.Ext(input.Name))
 	return slices.Contains(SupportedExtensions, ext)
 }
@@ -137,8 +137,8 @@ func convertError(resp *http.Response) error {
 	return errors.New(string(data))
 }
 
-func convertAnalyzeResult(response AnalyzeResult, chunkSize, chunkOverlap int) (*extractor.Document, error) {
-	result := extractor.Document{}
+func convertAnalyzeResult(response AnalyzeResult, chunkSize, chunkOverlap int) (*partitioner.Document, error) {
+	result := partitioner.Document{}
 
 	content := text.Normalize(response.Content)
 
@@ -149,12 +149,12 @@ func convertAnalyzeResult(response AnalyzeResult, chunkSize, chunkOverlap int) (
 	blocks := splitter.Split(content)
 
 	for _, b := range blocks {
-		block := extractor.Block{
+		p := partitioner.Partition{
 			//ID:      fmt.Sprintf("%s#%d", input.Name, i+1),
 			Content: b,
 		}
 
-		result.Blocks = append(result.Blocks, block)
+		result.Partitions = append(result.Partitions, p)
 	}
 
 	return &result, nil

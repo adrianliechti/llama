@@ -1,4 +1,4 @@
-package extractor
+package partitioner
 
 import (
 	"context"
@@ -7,14 +7,14 @@ import (
 )
 
 type Provider interface {
-	Extract(ctx context.Context, input File, options *ExtractOptions) (*Document, error)
+	Partition(ctx context.Context, input File, options *PartitionOptions) (*Document, error)
 }
 
 var (
 	ErrUnsupported = errors.New("unsupported type")
 )
 
-type ExtractOptions struct {
+type PartitionOptions struct {
 }
 
 type File struct {
@@ -27,10 +27,10 @@ type File struct {
 type Document struct {
 	Name string
 
-	Blocks []Block
+	Partitions []Partition
 }
 
-type Block struct {
+type Partition struct {
 	ID      string
 	Content string
 }

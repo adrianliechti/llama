@@ -8,11 +8,11 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/extractor"
+	"github.com/adrianliechti/llama/pkg/partitioner"
 	"github.com/adrianliechti/llama/pkg/text"
 )
 
-var _ extractor.Provider = &Splitter{}
+var _ partitioner.Provider = &Splitter{}
 
 type Splitter struct {
 	*Config
@@ -33,13 +33,13 @@ func New(options ...Option) (*Splitter, error) {
 	}, nil
 }
 
-func (s *Splitter) Extract(ctx context.Context, input extractor.File, options *extractor.ExtractOptions) (*extractor.Document, error) {
+func (s *Splitter) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) (*partitioner.Document, error) {
 	if options == nil {
-		options = &extractor.ExtractOptions{}
+		options = &partitioner.PartitionOptions{}
 	}
 
 	if !isSupported(input) {
-		return nil, extractor.ErrUnsupported
+		return nil, partitioner.ErrUnsupported
 	}
 
 	data, err := io.ReadAll(input.Content)
@@ -48,7 +48,7 @@ func (s *Splitter) Extract(ctx context.Context, input extractor.File, options *e
 		return nil, err
 	}
 
-	result := extractor.Document{
+	result := partitioner.Document{
 		Name: input.Name,
 	}
 
@@ -59,20 +59,18 @@ func (s *Splitter) Extract(ctx context.Context, input extractor.File, options *e
 	chunks := splitter.Split(string(data))
 
 	for i, chunk := range chunks {
-		block := []extractor.Block{
-			{
-				ID:      fmt.Sprintf("%s#%d", result.Name, i),
-				Content: chunk,
-			},
+		p := partitioner.Partition{
+			ID:      fmt.Sprintf("%s#%d", result.Name, i),
+			Content: chunk,
 		}
 
-		result.Blocks = append(result.Blocks, block...)
+		result.Partitions = append(result.Partitions, p)
 	}
 
 	return &result, nil
 }
 
-func isSupported(input extractor.File) bool {
+func isSupported(input partitioner.File) bool {
 	ext := strings.ToLower(path.Ext(input.Name))
 	return slices.Contains(SupportedExtensions, ext)
 }
