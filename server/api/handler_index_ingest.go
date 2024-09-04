@@ -70,7 +70,7 @@ func (s *Handler) handleIngestWithPartitioner(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	data, err := p.Partition(r.Context(), file, nil)
+	partitions, err := p.Partition(r.Context(), file, nil)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -79,7 +79,7 @@ func (s *Handler) handleIngestWithPartitioner(w http.ResponseWriter, r *http.Req
 
 	var documents []index.Document
 
-	for i, p := range data.Partitions {
+	for i, p := range partitions {
 		document := index.Document{
 			ID: fmt.Sprintf("%s#%d", file.Name, i),
 

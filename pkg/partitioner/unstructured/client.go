@@ -43,7 +43,7 @@ func New(options ...Option) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) (*partitioner.Document, error) {
+func (c *Client) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) ([]partitioner.Partition, error) {
 	if options == nil {
 		options = &partitioner.PartitionOptions{}
 	}
@@ -104,13 +104,7 @@ func (c *Client) Partition(ctx context.Context, input partitioner.File, options 
 		return nil, err
 	}
 
-	result := partitioner.Document{
-		Name: input.Name,
-	}
-
-	if len(elements) > 0 {
-		result.Name = elements[0].Metadata.FileName
-	}
+	var result []partitioner.Partition
 
 	for _, e := range elements {
 		p := partitioner.Partition{
@@ -118,10 +112,10 @@ func (c *Client) Partition(ctx context.Context, input partitioner.File, options 
 			Content: e.Text,
 		}
 
-		result.Partitions = append(result.Partitions, p)
+		result = append(result, p)
 	}
 
-	return &result, nil
+	return result, nil
 }
 
 func isSupported(input partitioner.File) bool {

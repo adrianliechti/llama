@@ -33,7 +33,7 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := p.Partition(r.Context(), input, nil)
+	partitions, err := p.Partition(r.Context(), input, nil)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -42,15 +42,11 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 
 	var result []Partition
 
-	for _, p := range data.Partitions {
+	for _, p := range partitions {
 		partition := Partition{
 			ID: p.ID,
 
 			Text: p.Content,
-
-			Metadata: PartitionMetadata{
-				FileName: data.Name,
-			},
 		}
 
 		result = append(result, partition)

@@ -32,7 +32,7 @@ func New(options ...Option) (*Splitter, error) {
 	}, nil
 }
 
-func (s *Splitter) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) (*partitioner.Document, error) {
+func (s *Splitter) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) ([]partitioner.Partition, error) {
 	if options == nil {
 		options = &partitioner.PartitionOptions{}
 	}
@@ -47,10 +47,6 @@ func (s *Splitter) Partition(ctx context.Context, input partitioner.File, option
 		return nil, err
 	}
 
-	result := partitioner.Document{
-		Name: input.Name,
-	}
-
 	splitter := text.NewSplitter()
 	splitter.ChunkSize = s.chunkSize
 	splitter.ChunkOverlap = s.chunkOverlap
@@ -61,16 +57,18 @@ func (s *Splitter) Partition(ctx context.Context, input partitioner.File, option
 
 	chunks := splitter.Split(string(data))
 
+	var result []partitioner.Partition
+
 	for i, chunk := range chunks {
 		p := partitioner.Partition{
-			ID:      fmt.Sprintf("%s#%d", result.Name, i),
+			ID:      fmt.Sprintf("%s#%d", input.Name, i),
 			Content: chunk,
 		}
 
-		result.Partitions = append(result.Partitions, p)
+		result = append(result, p)
 	}
 
-	return &result, nil
+	return result, nil
 }
 
 func isSupported(input partitioner.File) bool {

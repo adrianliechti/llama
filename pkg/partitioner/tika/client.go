@@ -43,7 +43,7 @@ func New(url string, options ...Option) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) (*partitioner.Document, error) {
+func (c *Client) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) ([]partitioner.Partition, error) {
 	if options == nil {
 		options = &partitioner.PartitionOptions{}
 	}
@@ -73,10 +73,6 @@ func (c *Client) Partition(ctx context.Context, input partitioner.File, options 
 		return nil, err
 	}
 
-	result := partitioner.Document{
-		Name: input.Name,
-	}
-
 	content := text.Normalize(response.Content)
 
 	splitter := text.NewSplitter()
@@ -85,16 +81,18 @@ func (c *Client) Partition(ctx context.Context, input partitioner.File, options 
 
 	blocks := splitter.Split(content)
 
+	var result []partitioner.Partition
+
 	for i, b := range blocks {
 		p := partitioner.Partition{
 			ID:      fmt.Sprintf("%s#%d", input.Name, i+1),
 			Content: b,
 		}
 
-		result.Partitions = append(result.Partitions, p)
+		result = append(result, p)
 	}
 
-	return &result, nil
+	return result, nil
 }
 
 func isSupported(input partitioner.File) bool {

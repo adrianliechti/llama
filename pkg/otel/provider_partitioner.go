@@ -39,7 +39,7 @@ func NewPartitioner(provider string, p partitioner.Provider) ObservablePartition
 func (p *observablePartitioner) otelSetup() {
 }
 
-func (p *observablePartitioner) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) (*partitioner.Document, error) {
+func (p *observablePartitioner) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) ([]partitioner.Partition, error) {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 

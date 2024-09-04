@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -43,7 +44,7 @@ func New(url, token string, options ...Option) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) (*partitioner.Document, error) {
+func (c *Client) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) ([]partitioner.Partition, error) {
 	if options == nil {
 		options = &partitioner.PartitionOptions{}
 	}
@@ -112,7 +113,7 @@ func (c *Client) Partition(ctx context.Context, input partitioner.File, options 
 			return nil, errors.New("operation " + string(operation.Status))
 		}
 
-		output, err := convertAnalyzeResult(operation.Result, c.chunkSize, c.chunkOverlap)
+		output, err := convertAnalyzeResult(input, operation.Result, c.chunkSize, c.chunkOverlap)
 
 		if err != nil {
 			return nil, err
@@ -137,9 +138,7 @@ func convertError(resp *http.Response) error {
 	return errors.New(string(data))
 }
 
-func convertAnalyzeResult(response AnalyzeResult, chunkSize, chunkOverlap int) (*partitioner.Document, error) {
-	result := partitioner.Document{}
-
+func convertAnalyzeResult(input partitioner.File, response AnalyzeResult, chunkSize, chunkOverlap int) ([]partitioner.Partition, error) {
 	content := text.Normalize(response.Content)
 
 	splitter := text.NewSplitter()
@@ -148,14 +147,16 @@ func convertAnalyzeResult(response AnalyzeResult, chunkSize, chunkOverlap int) (
 
 	blocks := splitter.Split(content)
 
-	for _, b := range blocks {
+	var result []partitioner.Partition
+
+	for i, b := range blocks {
 		p := partitioner.Partition{
-			//ID:      fmt.Sprintf("%s#%d", input.Name, i+1),
+			ID:      fmt.Sprintf("%s#%d", input.Name, i+1),
 			Content: b,
 		}
 
-		result.Partitions = append(result.Partitions, p)
+		result = append(result, p)
 	}
 
-	return &result, nil
+	return result, nil
 }

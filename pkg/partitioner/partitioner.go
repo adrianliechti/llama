@@ -7,7 +7,7 @@ import (
 )
 
 type Provider interface {
-	Partition(ctx context.Context, input File, options *PartitionOptions) (*Document, error)
+	Partition(ctx context.Context, input File, options *PartitionOptions) ([]Partition, error)
 }
 
 var (
@@ -22,12 +22,6 @@ type File struct {
 
 	Name    string
 	Content io.Reader
-}
-
-type Document struct {
-	Name string
-
-	Partitions []Partition
 }
 
 type Partition struct {

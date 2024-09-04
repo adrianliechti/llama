@@ -25,12 +25,12 @@ type Partition struct {
 	Type string `json:"type,omitempty"`
 	Text string `json:"text,omitempty"`
 
-	Metadata PartitionMetadata `json:"metadata,omitempty"`
+	//Metadata PartitionMetadata `json:"metadata,omitempty"`
 }
 
-type PartitionMetadata struct {
-	FileName string `json:"filename,omitempty"`
-	FileType string `json:"filetype,omitempty"`
+// type PartitionMetadata struct {
+// 	FileName string `json:"filename,omitempty"`
+// 	FileType string `json:"filetype,omitempty"`
 
-	Languages []string `json:"languages,omitempty"`
-}
+// 	Languages []string `json:"languages,omitempty"`
+// }
