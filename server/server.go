@@ -5,7 +5,6 @@ import (
 
 	"github.com/adrianliechti/llama/config"
 	"github.com/adrianliechti/llama/server/api"
-	"github.com/adrianliechti/llama/server/ollama"
 	"github.com/adrianliechti/llama/server/openai"
 
 	"github.com/go-chi/chi/v5"
@@ -21,7 +20,6 @@ type Server struct {
 
 	api    *api.Handler
 	openai *openai.Handler
-	ollama *ollama.Handler
 }
 
 func New(cfg *config.Config) (*Server, error) {
@@ -37,12 +35,6 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	ollama, err := ollama.New(cfg)
-
-	if err != nil {
-		return nil, err
-	}
-
 	mux := chi.NewMux()
 
 	s := &Server{
@@ -51,7 +43,6 @@ func New(cfg *config.Config) (*Server, error) {
 
 		api:    api,
 		openai: openai,
-		ollama: ollama,
 	}
 
 	mux.Use(middleware.Logger)
@@ -91,10 +82,6 @@ func New(cfg *config.Config) (*Server, error) {
 
 	mux.Route("/oai/v1", func(r chi.Router) {
 		s.openai.Attach(r)
-	})
-
-	mux.Route("/ollama", func(r chi.Router) {
-		s.ollama.Attach(r)
 	})
 
 	return s, nil
