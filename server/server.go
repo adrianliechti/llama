@@ -5,7 +5,6 @@ import (
 
 	"github.com/adrianliechti/llama/config"
 	"github.com/adrianliechti/llama/server/api"
-	"github.com/adrianliechti/llama/server/ollama"
 	"github.com/adrianliechti/llama/server/openai"
 	"github.com/adrianliechti/llama/server/unstructured"
 
@@ -22,7 +21,6 @@ type Server struct {
 
 	api          *api.Handler
 	openai       *openai.Handler
-	ollama       *ollama.Handler
 	unstructured *unstructured.Handler
 }
 
@@ -34,12 +32,6 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	openai, err := openai.New(cfg)
-
-	if err != nil {
-		return nil, err
-	}
-
-	ollama, err := ollama.New(cfg)
 
 	if err != nil {
 		return nil, err
@@ -59,7 +51,6 @@ func New(cfg *config.Config) (*Server, error) {
 
 		api:          api,
 		openai:       openai,
-		ollama:       ollama,
 		unstructured: unstructured,
 	}
 
@@ -100,10 +91,6 @@ func New(cfg *config.Config) (*Server, error) {
 
 	mux.Route("/oai/v1", func(r chi.Router) {
 		s.openai.Attach(r)
-	})
-
-	mux.Route("/ollama", func(r chi.Router) {
-		s.ollama.Attach(r)
 	})
 
 	return s, nil
