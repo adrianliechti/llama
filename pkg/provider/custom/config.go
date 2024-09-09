@@ -7,9 +7,3 @@ type Config struct {
 }
 
 type Option func(*Config)
-
-func WithModel(model string) Option {
-	return func(c *Config) {
-		c.model = model
-	}
-}

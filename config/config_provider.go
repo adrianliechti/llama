@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 
+	"golang.org/x/time/rate"
 	"gopkg.in/yaml.v3"
 )
 
@@ -24,6 +25,16 @@ func (cfg *Config) registerProviders(f *configFile) error {
 
 				Name:        m.Name,
 				Description: m.Description,
+			}
+
+			limit := m.Limit
+
+			if limit == nil {
+				limit = p.Limit
+			}
+
+			if limit != nil {
+				context.Limiter = rate.NewLimiter(rate.Limit(*limit), *limit)
 			}
 
 			switch context.Type {
@@ -86,6 +97,8 @@ type providerConfig struct {
 
 	URL   string `yaml:"url"`
 	Token string `yaml:"token"`
+
+	Limit *int `yaml:"limit"`
 
 	Models providerModelsConfig `yaml:"models"`
 }

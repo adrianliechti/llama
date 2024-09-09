@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/llama/pkg/partitioner"
 )
 
 func (s *Handler) handleIngest(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +45,7 @@ func (s *Handler) handleIngest(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Handler) handleIngestWithExtractor(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) handleIngestWithPartitioner(w http.ResponseWriter, r *http.Request) {
 	i, err := s.Index(r.PathValue("index"))
 
 	if err != nil {
@@ -53,14 +53,14 @@ func (s *Handler) handleIngestWithExtractor(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	e, err := s.Extractor(r.PathValue("extractor"))
+	p, err := s.Partitioner(r.PathValue("partitioner"))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	file := extractor.File{
+	file := partitioner.File{
 		Name:    detectFileName(r),
 		Content: r.Body,
 	}
@@ -70,7 +70,7 @@ func (s *Handler) handleIngestWithExtractor(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	data, err := e.Extract(r.Context(), file, nil)
+	partitions, err := p.Partition(r.Context(), file, nil)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -79,7 +79,7 @@ func (s *Handler) handleIngestWithExtractor(w http.ResponseWriter, r *http.Reque
 
 	var documents []index.Document
 
-	for i, p := range data.Blocks {
+	for i, p := range partitions {
 		document := index.Document{
 			ID: fmt.Sprintf("%s#%d", file.Name, i),
 

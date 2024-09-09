@@ -4,9 +4,10 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/anthropic"
-	"github.com/adrianliechti/llama/pkg/provider/azureai"
+	"github.com/adrianliechti/llama/pkg/provider/azure"
 	"github.com/adrianliechti/llama/pkg/provider/cohere"
 	"github.com/adrianliechti/llama/pkg/provider/custom"
 	"github.com/adrianliechti/llama/pkg/provider/groq"
@@ -17,9 +18,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/mistralrs"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
-	"github.com/adrianliechti/llama/pkg/provider/torchchat"
-
-	"github.com/adrianliechti/llama/pkg/otel"
 )
 
 func (cfg *Config) RegisterCompleter(name, model string, p provider.Completer) {
@@ -59,14 +57,14 @@ func createCompleter(cfg providerConfig, model modelContext) (provider.Completer
 	case "anthropic":
 		return anthropicCompleter(cfg, model)
 
-	case "azureai":
-		return azureaiCompleter(cfg, model)
+	case "azure":
+		return azureCompleter(cfg, model)
 
 	case "cohere":
 		return cohereCompleter(cfg, model)
 
 	case "github":
-		return azureaiCompleter(cfg, model)
+		return azureCompleter(cfg, model)
 
 	case "groq":
 		return groqCompleter(cfg, model)
@@ -92,9 +90,6 @@ func createCompleter(cfg providerConfig, model modelContext) (provider.Completer
 	case "openai":
 		return openaiCompleter(cfg, model)
 
-	case "torchchat":
-		return torchchatCompleter(cfg, model)
-
 	case "custom":
 		return customCompleter(cfg, model)
 
@@ -114,29 +109,21 @@ func anthropicCompleter(cfg providerConfig, model modelContext) (provider.Comple
 		options = append(options, anthropic.WithToken(cfg.Token))
 	}
 
-	if model.ID != "" {
-		options = append(options, anthropic.WithModel(model.ID))
-	}
-
-	return anthropic.NewCompleter(options...)
+	return anthropic.NewCompleter(model.ID, options...)
 }
 
-func azureaiCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
-	var options []azureai.Option
+func azureCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
+	var options []azure.Option
 
 	if cfg.URL != "" {
-		options = append(options, azureai.WithURL(cfg.URL))
+		options = append(options, azure.WithURL(cfg.URL))
 	}
 
 	if cfg.Token != "" {
-		options = append(options, azureai.WithToken(cfg.Token))
+		options = append(options, azure.WithToken(cfg.Token))
 	}
 
-	if model.ID != "" {
-		options = append(options, azureai.WithModel(model.ID))
-	}
-
-	return azureai.NewCompleter(options...)
+	return azure.NewCompleter(model.ID, options...)
 }
 
 func cohereCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
@@ -146,11 +133,7 @@ func cohereCompleter(cfg providerConfig, model modelContext) (provider.Completer
 		options = append(options, cohere.WithToken(cfg.Token))
 	}
 
-	if model.ID != "" {
-		options = append(options, cohere.WithModel(model.ID))
-	}
-
-	return cohere.NewCompleter(options...)
+	return cohere.NewCompleter(model.ID, options...)
 }
 
 func groqCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
@@ -160,11 +143,7 @@ func groqCompleter(cfg providerConfig, model modelContext) (provider.Completer, 
 		options = append(options, groq.WithToken(cfg.Token))
 	}
 
-	if model.ID != "" {
-		options = append(options, groq.WithModel(model.ID))
-	}
-
-	return groq.NewCompleter(options...)
+	return groq.NewCompleter(model.ID, options...)
 }
 
 func huggingfaceCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
@@ -186,11 +165,7 @@ func langchainCompleter(cfg providerConfig, model modelContext) (provider.Comple
 func llamaCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	var options []llama.Option
 
-	if model.ID != "" {
-		options = append(options, llama.WithModel(model.ID))
-	}
-
-	return llama.NewCompleter(cfg.URL, options...)
+	return llama.NewCompleter(model.ID, cfg.URL, options...)
 }
 
 func mistralCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
@@ -200,31 +175,19 @@ func mistralCompleter(cfg providerConfig, model modelContext) (provider.Complete
 		options = append(options, mistral.WithToken(cfg.Token))
 	}
 
-	if model.ID != "" {
-		options = append(options, mistral.WithModel(model.ID))
-	}
-
-	return mistral.NewCompleter(options...)
+	return mistral.NewCompleter(model.ID, options...)
 }
 
 func mistralrsCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	var options []mistralrs.Option
 
-	if model.ID != "" {
-		options = append(options, mistralrs.WithModel(model.ID))
-	}
-
-	return mistralrs.NewCompleter(cfg.URL, options...)
+	return mistralrs.NewCompleter(cfg.URL, model.ID, options...)
 }
 
 func ollamaCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	var options []ollama.Option
 
-	if model.ID != "" {
-		options = append(options, ollama.WithModel(model.ID))
-	}
-
-	return ollama.NewCompleter(cfg.URL, options...)
+	return ollama.NewCompleter(cfg.URL, model.ID, options...)
 }
 
 func openaiCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
@@ -238,21 +201,11 @@ func openaiCompleter(cfg providerConfig, model modelContext) (provider.Completer
 		options = append(options, openai.WithToken(cfg.Token))
 	}
 
-	if model.ID != "" {
-		options = append(options, openai.WithModel(model.ID))
+	if model.Limiter != nil {
+		options = append(options, openai.WithLimiter(model.Limiter))
 	}
 
-	return openai.NewCompleter(options...)
-}
-
-func torchchatCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
-	var options []torchchat.Option
-
-	if model.ID != "" {
-		options = append(options, torchchat.WithModel(model.ID))
-	}
-
-	return torchchat.NewCompleter(cfg.URL, options...)
+	return openai.NewCompleter(model.ID, options...)
 }
 
 func customCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {

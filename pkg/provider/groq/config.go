@@ -23,9 +23,3 @@ func WithToken(token string) Option {
 		c.options = append(c.options, openai.WithToken(token))
 	}
 }
-
-func WithModel(model string) Option {
-	return func(c *Config) {
-		c.options = append(c.options, openai.WithModel(model))
-	}
-}

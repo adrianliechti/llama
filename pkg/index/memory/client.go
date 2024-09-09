@@ -12,56 +12,48 @@ import (
 	"github.com/google/uuid"
 )
 
-var _ index.Provider = &Client{}
+var _ index.Provider = &Provider{}
 
-type Client struct {
+type Provider struct {
 	embedder index.Embedder
 
 	documents map[string]index.Document
 }
 
-type Option func(*Client)
-
-func New(options ...Option) (*Client, error) {
-	c := &Client{
+func New(options ...Option) (*Provider, error) {
+	p := &Provider{
 		documents: make(map[string]index.Document),
 	}
 
 	for _, option := range options {
-		option(c)
+		option(p)
 	}
 
-	if c.embedder == nil {
+	if p.embedder == nil {
 		return nil, errors.New("embedder is required")
 	}
 
-	return c, nil
+	return p, nil
 }
 
-func WithEmbedder(embedder index.Embedder) Option {
-	return func(c *Client) {
-		c.embedder = embedder
-	}
-}
+func (p *Provider) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+	result := make([]index.Document, 0, len(p.documents))
 
-func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
-	result := make([]index.Document, 0, len(c.documents))
-
-	for _, d := range c.documents {
+	for _, d := range p.documents {
 		result = append(result, d)
 	}
 
 	return result, nil
 }
 
-func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
+func (p *Provider) Index(ctx context.Context, documents ...index.Document) error {
 	for _, d := range documents {
 		if d.ID == "" {
 			d.ID = uuid.NewString()
 		}
 
-		if len(d.Embedding) == 0 && c.embedder != nil {
-			embedding, err := c.embedder.Embed(ctx, d.Content)
+		if len(d.Embedding) == 0 && p.embedder != nil {
+			embedding, err := p.embedder.Embed(ctx, d.Content)
 
 			if err != nil {
 				return err
@@ -74,30 +66,30 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 			continue
 		}
 
-		c.documents[d.ID] = d
+		p.documents[d.ID] = d
 	}
 
 	return nil
 }
 
-func (c *Client) Delete(ctx context.Context, ids ...string) error {
+func (p *Provider) Delete(ctx context.Context, ids ...string) error {
 	for _, id := range ids {
-		delete(c.documents, id)
+		delete(p.documents, id)
 	}
 
 	return nil
 }
 
-func (c *Client) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
+func (p *Provider) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
 	if options == nil {
 		options = &index.QueryOptions{}
 	}
 
-	if c.embedder == nil {
+	if p.embedder == nil {
 		return nil, errors.New("no embedder configured")
 	}
 
-	embedding, err := c.embedder.Embed(ctx, query)
+	embedding, err := p.embedder.Embed(ctx, query)
 
 	if err != nil {
 		return nil, err
@@ -106,7 +98,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	results := make([]index.Result, 0)
 
 DOCUMENTS:
-	for _, d := range c.documents {
+	for _, d := range p.documents {
 		score := cosineSimilarity(embedding.Data, d.Embedding)
 
 		r := index.Result{

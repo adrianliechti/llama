@@ -4,11 +4,10 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 	"github.com/adrianliechti/llama/pkg/provider/replicate/flux"
-
-	"github.com/adrianliechti/llama/pkg/otel"
 )
 
 func (cfg *Config) RegisterRenderer(name, model string, p provider.Renderer) {
@@ -61,11 +60,11 @@ func openaiRenderer(cfg providerConfig, model modelContext) (provider.Renderer, 
 		options = append(options, openai.WithToken(cfg.Token))
 	}
 
-	if model.ID != "" {
-		options = append(options, openai.WithModel(model.ID))
+	if model.Limiter != nil {
+		options = append(options, openai.WithLimiter(model.Limiter))
 	}
 
-	return openai.NewRenderer(options...)
+	return openai.NewRenderer(model.ID, options...)
 }
 
 func replicateRenderer(cfg providerConfig, model modelContext) (provider.Renderer, error) {
@@ -80,11 +79,7 @@ func replicateRenderer(cfg providerConfig, model modelContext) (provider.Rendere
 			options = append(options, flux.WithToken(cfg.Token))
 		}
 
-		if model.ID != "" {
-			options = append(options, flux.WithModel(model.ID))
-		}
-
-		return flux.NewRenderer(options...)
+		return flux.NewRenderer(model.ID, options...)
 	}
 
 	return nil, errors.New("model not supported: " + model.ID)

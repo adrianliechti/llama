@@ -15,9 +15,9 @@ type Embedder struct {
 	client *openai.Client
 }
 
-func NewEmbedder(options ...Option) (*Embedder, error) {
+func NewEmbedder(model string, options ...Option) (*Embedder, error) {
 	cfg := &Config{
-		model: string(openai.SmallEmbedding3),
+		model: model,
 	}
 
 	for _, option := range options {
@@ -30,13 +30,17 @@ func NewEmbedder(options ...Option) (*Embedder, error) {
 	}, nil
 }
 
-func (c *Embedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
-	req := openai.EmbeddingRequest{
-		Input: content,
-		Model: openai.EmbeddingModel(c.model),
+func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
+	if e.limiter != nil {
+		e.limiter.Wait(ctx)
 	}
 
-	result, err := c.client.CreateEmbeddings(ctx, req)
+	req := openai.EmbeddingRequest{
+		Input: content,
+		Model: openai.EmbeddingModel(e.model),
+	}
+
+	result, err := e.client.CreateEmbeddings(ctx, req)
 
 	if err != nil {
 		return nil, convertError(err)

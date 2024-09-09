@@ -46,12 +46,7 @@ type EmbeddingList struct {
 	Model string      `json:"model"`
 	Data  []Embedding `json:"data"`
 
-	// model string
-
-	// usage {
-	//   prompt_tokens int
-	//   total_tokens int
-	// }
+	Usage *Usage `json:"usage,omitempty"`
 }
 
 type MessageRole string
@@ -132,11 +127,7 @@ type ChatCompletion struct {
 
 	// system_fingerprint string
 
-	// usage {
-	//   completion_tokens int
-	//   prompt_tokens int
-	//   total_tokens int
-	// }
+	Usage *Usage `json:"usage,omitempty"`
 }
 
 // https://platform.openai.com/docs/api-reference/chat/object
@@ -312,6 +303,12 @@ type Image struct {
 	B64JSON string `json:"b64_json,omitempty"`
 
 	RevisedPrompt string `json:"revised_prompt,omitempty"`
+}
+
+type Usage struct {
+	PromptTokens     int `json:"prompt_tokens,omitempty"`
+	CompletionTokens int `json:"completion_tokens,omitempty"`
+	TotalTokens      int `json:"total_tokens,omitempty"`
 }
 
 type ErrorResponse struct {

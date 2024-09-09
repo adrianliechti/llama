@@ -18,23 +18,21 @@ import (
 var _ index.Provider = &Client{}
 
 type Client struct {
+	client *http.Client
+
 	url string
 
-	client   *http.Client
-	embedder index.Embedder
-
+	embedder  index.Embedder
 	namespace string
 }
 
-type Option func(*Client)
-
 func New(url string, namespace string, options ...Option) (*Client, error) {
 	c := &Client{
+		client: http.DefaultClient,
+
 		url: url,
 
 		namespace: namespace,
-
-		client: http.DefaultClient,
 	}
 
 	for _, option := range options {
@@ -45,19 +43,11 @@ func New(url string, namespace string, options ...Option) (*Client, error) {
 		return nil, errors.New("embedder is required")
 	}
 
+	if c.namespace == "" {
+		return nil, errors.New("namespace is required")
+	}
+
 	return c, nil
-}
-
-func WithClient(client *http.Client) Option {
-	return func(c *Client) {
-		c.client = client
-	}
-}
-
-func WithEmbedder(embedder index.Embedder) Option {
-	return func(c *Client) {
-		c.embedder = embedder
-	}
 }
 
 func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {

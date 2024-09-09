@@ -23,9 +23,9 @@ type Tool struct {
 
 func New(token string, options ...Option) (*Tool, error) {
 	t := &Tool{
-		token: token,
-
 		client: http.DefaultClient,
+
+		token: token,
 	}
 
 	for _, option := range options {

@@ -120,6 +120,14 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 				},
 			}
 
+			if completion.Usage != nil {
+				result.Usage = &Usage{
+					PromptTokens:     completion.Usage.InputTokens,
+					CompletionTokens: completion.Usage.OutputTokens,
+					TotalTokens:      completion.Usage.InputTokens + completion.Usage.OutputTokens,
+				}
+			}
+
 			var data bytes.Buffer
 
 			enc := json.NewEncoder(&data)
@@ -166,6 +174,14 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 					},
 				},
 			},
+		}
+
+		if completion.Usage != nil {
+			result.Usage = &Usage{
+				PromptTokens:     completion.Usage.InputTokens,
+				CompletionTokens: completion.Usage.OutputTokens,
+				TotalTokens:      completion.Usage.InputTokens + completion.Usage.OutputTokens,
+			}
 		}
 
 		writeJson(w, result)

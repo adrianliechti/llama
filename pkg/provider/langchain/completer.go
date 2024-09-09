@@ -29,9 +29,9 @@ func NewCompleter(url string, options ...Option) (*Completer, error) {
 	}
 
 	cfg := &Config{
-		url: url,
-
 		client: http.DefaultClient,
+
+		url: url,
 	}
 
 	for _, option := range options {

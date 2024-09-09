@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+	"golang.org/x/time/rate"
 )
 
 func (cfg *Config) RegisterModel(id string) {
@@ -62,6 +63,8 @@ type modelConfig struct {
 
 	Name        string `yaml:"name"`
 	Description string `yaml:"description"`
+
+	Limit *int `yaml:"limit"`
 }
 
 type modelContext struct {
@@ -71,6 +74,8 @@ type modelContext struct {
 
 	Name        string
 	Description string
+
+	Limiter *rate.Limiter
 }
 
 func DetectModelType(id string) ModelType {

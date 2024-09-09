@@ -41,6 +41,9 @@ func (h *Handler) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 		Model: req.Model,
 	}
 
+	inputTokens := 0
+	outputToken := 0
+
 	for i, input := range inputs {
 		embedding, err := embedder.Embed(r.Context(), input)
 
@@ -55,6 +58,18 @@ func (h *Handler) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 			Index:     i,
 			Embedding: embedding.Data,
 		})
+
+		if embedding.Usage != nil {
+			inputTokens += embedding.Usage.InputTokens
+			outputToken += embedding.Usage.OutputTokens
+		}
+	}
+
+	if inputTokens > 0 || outputToken > 0 {
+		result.Usage = &Usage{
+			PromptTokens: inputTokens,
+			TotalTokens:  inputTokens + outputToken,
+		}
 	}
 
 	writeJson(w, result)

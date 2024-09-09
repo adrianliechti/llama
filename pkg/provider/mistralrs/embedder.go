@@ -9,7 +9,7 @@ import (
 
 type Embedder = openai.Embedder
 
-func NewEmbedder(url string, options ...Option) (*Embedder, error) {
+func NewEmbedder(url, model string, options ...Option) (*Embedder, error) {
 	if url == "" {
 		return nil, errors.New("url is required")
 	}
@@ -27,5 +27,5 @@ func NewEmbedder(url string, options ...Option) (*Embedder, error) {
 		option(c)
 	}
 
-	return openai.NewEmbedder(c.options...)
+	return openai.NewEmbedder(model, c.options...)
 }

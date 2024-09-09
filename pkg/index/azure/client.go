@@ -25,8 +25,6 @@ type Client struct {
 	namespace string
 }
 
-type Option func(*Client)
-
 func New(url, namespace, token string, options ...Option) (*Client, error) {
 	c := &Client{
 		client: http.DefaultClient,
@@ -42,12 +40,6 @@ func New(url, namespace, token string, options ...Option) (*Client, error) {
 	}
 
 	return c, nil
-}
-
-func WithClient(client *http.Client) Option {
-	return func(c *Client) {
-		c.client = client
-	}
 }
 
 func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {

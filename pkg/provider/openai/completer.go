@@ -20,9 +20,9 @@ type Completer struct {
 	client *openai.Client
 }
 
-func NewCompleter(options ...Option) (*Completer, error) {
+func NewCompleter(model string, options ...Option) (*Completer, error) {
 	cfg := &Config{
-		model: openai.GPT4oMini,
+		model: model,
 	}
 
 	for _, option := range options {
@@ -38,6 +38,10 @@ func NewCompleter(options ...Option) (*Completer, error) {
 func (c *Completer) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
+	}
+
+	if c.limiter != nil {
+		c.limiter.Wait(ctx)
 	}
 
 	req, err := c.convertCompletionRequest(messages, options)

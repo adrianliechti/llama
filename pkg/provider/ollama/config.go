@@ -25,9 +25,3 @@ func WithURL(url string) Option {
 		c.url = url
 	}
 }
-
-func WithModel(model string) Option {
-	return func(c *Config) {
-		c.model = model
-	}
-}

@@ -6,6 +6,7 @@ import (
 	"github.com/adrianliechti/llama/config"
 	"github.com/adrianliechti/llama/server/api"
 	"github.com/adrianliechti/llama/server/openai"
+	"github.com/adrianliechti/llama/server/unstructured"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -18,8 +19,9 @@ type Server struct {
 	*config.Config
 	http.Handler
 
-	api    *api.Handler
-	openai *openai.Handler
+	api          *api.Handler
+	openai       *openai.Handler
+	unstructured *unstructured.Handler
 }
 
 func New(cfg *config.Config) (*Server, error) {
@@ -35,14 +37,21 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
+	unstructured, err := unstructured.New(cfg)
+
+	if err != nil {
+		return nil, err
+	}
+
 	mux := chi.NewMux()
 
 	s := &Server{
 		Config:  cfg,
 		Handler: mux,
 
-		api:    api,
-		openai: openai,
+		api:          api,
+		openai:       openai,
+		unstructured: unstructured,
 	}
 
 	mux.Use(middleware.Logger)
@@ -72,8 +81,8 @@ func New(cfg *config.Config) (*Server, error) {
 	mux.Use(s.handleAuth)
 
 	mux.Route("/v1", func(r chi.Router) {
-		s.api.Attach(r)
 		s.openai.Attach(r)
+		s.unstructured.Attach(r)
 	})
 
 	mux.Route("/api", func(r chi.Router) {

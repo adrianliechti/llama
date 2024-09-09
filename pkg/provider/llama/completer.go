@@ -9,7 +9,7 @@ import (
 
 type Completer = openai.Completer
 
-func NewCompleter(url string, options ...Option) (*Completer, error) {
+func NewCompleter(url, model string, options ...Option) (*Completer, error) {
 	if url == "" {
 		return nil, errors.New("url is required")
 	}
@@ -27,5 +27,5 @@ func NewCompleter(url string, options ...Option) (*Completer, error) {
 		option(c)
 	}
 
-	return openai.NewCompleter(c.options...)
+	return openai.NewCompleter(model, c.options...)
 }

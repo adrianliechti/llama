@@ -21,9 +21,9 @@ type Renderer struct {
 	client *openai.Client
 }
 
-func NewRenderer(options ...Option) (*Renderer, error) {
+func NewRenderer(model string, options ...Option) (*Renderer, error) {
 	cfg := &Config{
-		model: string(openai.CreateImageModelDallE3),
+		model: model,
 	}
 
 	for _, option := range options {
@@ -39,6 +39,10 @@ func NewRenderer(options ...Option) (*Renderer, error) {
 func (r *Renderer) Render(ctx context.Context, input string, options *provider.RenderOptions) (*provider.Image, error) {
 	if options == nil {
 		options = new(provider.RenderOptions)
+	}
+
+	if r.limiter != nil {
+		r.limiter.Wait(ctx)
 	}
 
 	req := openai.ImageRequest{

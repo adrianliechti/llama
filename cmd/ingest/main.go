@@ -17,7 +17,7 @@ func main() {
 	urlFlag := flag.String("url", "http://localhost:8080", "server url")
 	pathFlag := flag.String("path", "", "documents path")
 	indexFlag := flag.String("index", "docs", "index name")
-	extractorFlag := flag.String("extractor", "unstructured", "extractor name")
+	partitionerFlag := flag.String("partitioner", "unstructured", "partitioner name")
 
 	flag.Parse()
 
@@ -42,7 +42,7 @@ func main() {
 	var filetypes []string
 	var fileignores []string
 
-	switch strings.ToLower(*extractorFlag) {
+	switch strings.ToLower(*partitionerFlag) {
 	case "text":
 		filetypes = []string{
 			".txt", ".html", ".md",
@@ -66,7 +66,7 @@ func main() {
 			".doc", ".docx", ".ppt", ".pptx", ".pdf", ".odt", ".epub", ".csv", ".tsv", ".xlsx",
 		}
 	default:
-		panic("unknown extractor")
+		panic("unknown partitioner")
 	}
 
 	if fi.IsDir() {
@@ -101,7 +101,7 @@ func main() {
 
 			defer file.Close()
 
-			if err := ingestDocument(ctx, *urlFlag, *indexFlag, *extractorFlag, filename, file); err != nil {
+			if err := ingestDocument(ctx, *urlFlag, *indexFlag, *partitionerFlag, filename, file); err != nil {
 				slog.Error("failed to ingest file", "path", filepath, "error", err)
 				return nil
 			}
@@ -127,7 +127,7 @@ func main() {
 
 		defer file.Close()
 
-		if err := ingestDocument(ctx, *urlFlag, *indexFlag, *extractorFlag, filename, file); err != nil {
+		if err := ingestDocument(ctx, *urlFlag, *indexFlag, *partitionerFlag, filename, file); err != nil {
 			panic(err)
 		}
 
@@ -135,10 +135,10 @@ func main() {
 	}
 }
 
-func ingestDocument(ctx context.Context, baseURL, index, extractor, filename string, file io.Reader) error {
+func ingestDocument(ctx context.Context, baseURL, index, partitioner, filename string, file io.Reader) error {
 	client := http.DefaultClient
 
-	url := strings.TrimRight(baseURL, "/") + "/api/index/" + index + "/" + extractor
+	url := strings.TrimRight(baseURL, "/") + "/api/index/" + index + "/" + partitioner
 
 	req, _ := http.NewRequestWithContext(ctx, "POST", url, file)
 	req.Header.Set("Content-Type", "application/octet-stream")

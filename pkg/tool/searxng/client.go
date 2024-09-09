@@ -21,9 +21,9 @@ type Tool struct {
 
 func New(url string, options ...Option) (*Tool, error) {
 	t := &Tool{
-		url: url,
-
 		client: http.DefaultClient,
+
+		url: url,
 	}
 
 	for _, option := range options {

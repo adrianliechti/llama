@@ -26,12 +26,12 @@ func NewEmbedder(url string, options ...Option) (*Embedder, error) {
 	url = strings.TrimSuffix(url, "/v1")
 
 	cfg := &Config{
-		url: url,
-
-		token: "-",
-		model: "tei",
-
 		client: http.DefaultClient,
+
+		url:   url,
+		token: "-",
+
+		model: "tei",
 	}
 
 	for _, option := range options {
