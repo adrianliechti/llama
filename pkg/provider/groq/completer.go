@@ -6,7 +6,7 @@ import (
 
 type Completer = openai.Completer
 
-func NewCompleter(options ...Option) (*Completer, error) {
+func NewCompleter(model string, options ...Option) (*Completer, error) {
 	url := "https://api.groq.com/openai"
 
 	c := &Config{
@@ -19,5 +19,5 @@ func NewCompleter(options ...Option) (*Completer, error) {
 		option(c)
 	}
 
-	return openai.NewCompleter(c.options...)
+	return openai.NewCompleter(model, c.options...)
 }

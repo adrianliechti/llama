@@ -16,15 +16,20 @@ type Renderer struct {
 	*Config
 }
 
-func NewRenderer(options ...Option) (*Renderer, error) {
-	c := NewConfig(options...)
+func NewRenderer(model string, options ...Option) (*Renderer, error) {
+	cfg := &Config{
+		client: http.DefaultClient,
 
-	if c.model == "" {
-		return nil, errors.New("model is required")
+		url:   "https://api.replicate.com/",
+		model: model,
+	}
+
+	for _, option := range options {
+		option(cfg)
 	}
 
 	return &Renderer{
-		Config: c,
+		Config: cfg,
 	}, nil
 }
 

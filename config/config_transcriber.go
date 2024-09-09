@@ -4,12 +4,11 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/groq"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
-
-	"github.com/adrianliechti/llama/pkg/otel"
 )
 
 func (cfg *Config) RegisterTranscriber(name, model string, p provider.Transcriber) {
@@ -61,11 +60,7 @@ func groqTranscriber(cfg providerConfig, model modelContext) (provider.Transcrib
 		options = append(options, groq.WithToken(cfg.Token))
 	}
 
-	if model.ID != "" {
-		options = append(options, groq.WithModel(model.ID))
-	}
-
-	return groq.NewTranscriber(options...)
+	return groq.NewTranscriber(model.ID, options...)
 }
 
 func openaiTranscriber(cfg providerConfig, model modelContext) (provider.Transcriber, error) {
@@ -79,11 +74,11 @@ func openaiTranscriber(cfg providerConfig, model modelContext) (provider.Transcr
 		options = append(options, openai.WithToken(cfg.Token))
 	}
 
-	if model.ID != "" {
-		options = append(options, openai.WithModel(model.ID))
+	if model.Limiter != nil {
+		options = append(options, openai.WithLimiter(model.Limiter))
 	}
 
-	return openai.NewTranscriber(options...)
+	return openai.NewTranscriber(model.ID, options...)
 }
 
 func whisperTranscriber(cfg providerConfig, model modelContext) (provider.Transcriber, error) {

@@ -2,8 +2,6 @@ package openai
 
 import (
 	"context"
-	"errors"
-	"time"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 
@@ -17,9 +15,9 @@ type Embedder struct {
 	client *openai.Client
 }
 
-func NewEmbedder(options ...Option) (*Embedder, error) {
+func NewEmbedder(model string, options ...Option) (*Embedder, error) {
 	cfg := &Config{
-		model: string(openai.SmallEmbedding3),
+		model: model,
 	}
 
 	for _, option := range options {
@@ -32,33 +30,17 @@ func NewEmbedder(options ...Option) (*Embedder, error) {
 	}, nil
 }
 
-func (c *Embedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
+func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
+	if e.limiter != nil {
+		e.limiter.Wait(ctx)
+	}
+
 	req := openai.EmbeddingRequest{
 		Input: content,
-		Model: openai.EmbeddingModel(c.model),
+		Model: openai.EmbeddingModel(e.model),
 	}
 
-	var err error
-	var result openai.EmbeddingResponse
-
-	for i := 0; i < 20; i++ {
-		result, err = c.client.CreateEmbeddings(ctx, req)
-
-		if err != nil {
-			e := &openai.APIError{}
-
-			if errors.As(err, &e) {
-				if e.Code == 429 {
-					time.Sleep(2 * time.Second)
-					continue
-				}
-			}
-
-			return nil, convertError(err)
-		}
-
-		break
-	}
+	result, err := e.client.CreateEmbeddings(ctx, req)
 
 	if err != nil {
 		return nil, convertError(err)

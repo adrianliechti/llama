@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/azure"
 	"github.com/adrianliechti/llama/pkg/provider/cohere"
@@ -11,8 +12,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/llama"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
-
-	"github.com/adrianliechti/llama/pkg/otel"
 )
 
 func (cfg *Config) RegisterEmbedder(name, model string, p provider.Embedder) {
@@ -80,11 +79,7 @@ func azureEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, e
 		options = append(options, azure.WithToken(cfg.Token))
 	}
 
-	if model.ID != "" {
-		options = append(options, azure.WithModel(model.ID))
-	}
-
-	return azure.NewEmbedder(cfg.URL, options...)
+	return azure.NewEmbedder(model.ID, options...)
 }
 
 func cohereEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
@@ -94,11 +89,7 @@ func cohereEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, 
 		options = append(options, cohere.WithToken(cfg.Token))
 	}
 
-	if model.ID != "" {
-		options = append(options, cohere.WithModel(model.ID))
-	}
-
-	return cohere.NewEmbedder(options...)
+	return cohere.NewEmbedder(model.ID, options...)
 }
 
 func huggingfaceEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
@@ -114,21 +105,13 @@ func huggingfaceEmbedder(cfg providerConfig, model modelContext) (provider.Embed
 func llamaEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
 	var options []llama.Option
 
-	if model.ID != "" {
-		options = append(options, llama.WithModel(model.ID))
-	}
-
-	return llama.NewEmbedder(cfg.URL, options...)
+	return llama.NewEmbedder(model.ID, cfg.URL, options...)
 }
 
 func ollamaEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
 	var options []ollama.Option
 
-	if model.ID != "" {
-		options = append(options, ollama.WithModel(model.ID))
-	}
-
-	return ollama.NewEmbedder(cfg.URL, options...)
+	return ollama.NewEmbedder(cfg.URL, model.ID, options...)
 }
 
 func openaiEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
@@ -142,9 +125,9 @@ func openaiEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, 
 		options = append(options, openai.WithToken(cfg.Token))
 	}
 
-	if model.ID != "" {
-		options = append(options, openai.WithModel(model.ID))
+	if model.Limiter != nil {
+		options = append(options, openai.WithLimiter(model.Limiter))
 	}
 
-	return openai.NewEmbedder(options...)
+	return openai.NewEmbedder(model.ID, options...)
 }

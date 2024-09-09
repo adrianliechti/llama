@@ -16,9 +16,9 @@ type Transcriber struct {
 	client *openai.Client
 }
 
-func NewTranscriber(options ...Option) (*Transcriber, error) {
+func NewTranscriber(model string, options ...Option) (*Transcriber, error) {
 	cfg := &Config{
-		model: openai.Whisper1,
+		model: model,
 	}
 
 	for _, option := range options {
@@ -31,15 +31,19 @@ func NewTranscriber(options ...Option) (*Transcriber, error) {
 	}, nil
 }
 
-func (c *Transcriber) Transcribe(ctx context.Context, input provider.File, options *provider.TranscribeOptions) (*provider.Transcription, error) {
+func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, options *provider.TranscribeOptions) (*provider.Transcription, error) {
 	if options == nil {
 		options = new(provider.TranscribeOptions)
+	}
+
+	if t.limiter != nil {
+		t.limiter.Wait(ctx)
 	}
 
 	id := uuid.NewString()
 
 	req := openai.AudioRequest{
-		Model: c.model,
+		Model: t.model,
 
 		Language: options.Language,
 
@@ -47,7 +51,7 @@ func (c *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 		FilePath: input.Name,
 	}
 
-	transcription, err := c.client.CreateTranscription(ctx, req)
+	transcription, err := t.client.CreateTranscription(ctx, req)
 
 	if err != nil {
 		return nil, convertError(err)

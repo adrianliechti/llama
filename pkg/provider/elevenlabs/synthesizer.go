@@ -17,11 +17,12 @@ type Synthesizer struct {
 	*Config
 }
 
-func NewSynthesizer(options ...Option) (*Synthesizer, error) {
+func NewSynthesizer(model string, options ...Option) (*Synthesizer, error) {
 	cfg := &Config{
 		client: http.DefaultClient,
 
-		url: "https://api.elevenlabs.io",
+		url:   "https://api.elevenlabs.io",
+		model: model,
 	}
 
 	for _, option := range options {

@@ -6,7 +6,7 @@ import (
 
 type Transcriber = openai.Transcriber
 
-func NewTranscriber(options ...Option) (*Transcriber, error) {
+func NewTranscriber(model string, options ...Option) (*Transcriber, error) {
 	url := "https://api.groq.com/openai"
 
 	c := &Config{
@@ -19,5 +19,5 @@ func NewTranscriber(options ...Option) (*Transcriber, error) {
 		option(c)
 	}
 
-	return openai.NewTranscriber(c.options...)
+	return openai.NewTranscriber(model, c.options...)
 }

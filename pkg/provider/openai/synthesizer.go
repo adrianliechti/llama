@@ -16,9 +16,9 @@ type Synthesizer struct {
 	client *openai.Client
 }
 
-func NewSynthesizer(options ...Option) (*Synthesizer, error) {
+func NewSynthesizer(model string, options ...Option) (*Synthesizer, error) {
 	cfg := &Config{
-		model: string(openai.TTSModel1),
+		model: model,
 	}
 
 	for _, option := range options {
@@ -34,6 +34,10 @@ func NewSynthesizer(options ...Option) (*Synthesizer, error) {
 func (s *Synthesizer) Synthesize(ctx context.Context, content string, options *provider.SynthesizeOptions) (*provider.Synthesis, error) {
 	if options == nil {
 		options = new(provider.SynthesizeOptions)
+	}
+
+	if s.limiter != nil {
+		s.limiter.Wait(ctx)
 	}
 
 	req := openai.CreateSpeechRequest{

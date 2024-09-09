@@ -22,7 +22,7 @@ type Completer struct {
 	*Config
 }
 
-func NewCompleter(url string, options ...Option) (*Completer, error) {
+func NewCompleter(url, model string, options ...Option) (*Completer, error) {
 	if url == "" {
 		url = "http://localhost:11434"
 	}
@@ -30,7 +30,8 @@ func NewCompleter(url string, options ...Option) (*Completer, error) {
 	c := &Config{
 		client: http.DefaultClient,
 
-		url: url,
+		url:   url,
+		model: model,
 	}
 
 	for _, option := range options {

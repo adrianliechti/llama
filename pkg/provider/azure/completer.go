@@ -6,7 +6,7 @@ import (
 
 type Completer = openai.Completer
 
-func NewCompleter(options ...Option) (*Completer, error) {
+func NewCompleter(model string, options ...Option) (*Completer, error) {
 	c := &Config{
 		options: []openai.Option{
 			openai.WithURL("https://models.inference.ai.azure.com"),
@@ -17,5 +17,5 @@ func NewCompleter(options ...Option) (*Completer, error) {
 		option(c)
 	}
 
-	return openai.NewCompleter(c.options...)
+	return openai.NewCompleter(model, c.options...)
 }

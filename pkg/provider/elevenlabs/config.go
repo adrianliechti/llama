@@ -32,9 +32,3 @@ func WithToken(token string) Option {
 		c.token = token
 	}
 }
-
-func WithModel(model string) Option {
-	return func(c *Config) {
-		c.model = model
-	}
-}

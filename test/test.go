@@ -17,8 +17,8 @@ type TestContext struct {
 func NewContext() *TestContext {
 	url := "http://localhost:11434"
 
-	completer, _ := ollama.NewCompleter(url, ollama.WithModel("llama3.1:latest"))
-	embedder, _ := ollama.NewEmbedder(url, ollama.WithModel("nomic-embed-text:latest"))
+	completer, _ := ollama.NewCompleter(url, "llama3.1:latest")
+	embedder, _ := ollama.NewEmbedder(url, "nomic-embed-text:latest")
 
 	return &TestContext{
 		Context: context.Background(),

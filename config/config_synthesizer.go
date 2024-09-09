@@ -4,11 +4,10 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/elevenlabs"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
-
-	"github.com/adrianliechti/llama/pkg/otel"
 )
 
 func (cfg *Config) RegisterSynthesizer(name, model string, p provider.Synthesizer) {
@@ -61,11 +60,7 @@ func elevenlabsSynthesizer(cfg providerConfig, model modelContext) (provider.Syn
 		options = append(options, elevenlabs.WithToken(cfg.Token))
 	}
 
-	if model.ID != "" {
-		options = append(options, elevenlabs.WithModel(model.ID))
-	}
-
-	return elevenlabs.NewSynthesizer(options...)
+	return elevenlabs.NewSynthesizer(model.ID, options...)
 }
 
 func openaiSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesizer, error) {
@@ -79,9 +74,9 @@ func openaiSynthesizer(cfg providerConfig, model modelContext) (provider.Synthes
 		options = append(options, openai.WithToken(cfg.Token))
 	}
 
-	if model.ID != "" {
-		options = append(options, openai.WithModel(model.ID))
+	if model.Limiter != nil {
+		options = append(options, openai.WithLimiter(model.Limiter))
 	}
 
-	return openai.NewSynthesizer(options...)
+	return openai.NewSynthesizer(model.ID, options...)
 }

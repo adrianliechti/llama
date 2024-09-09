@@ -22,11 +22,12 @@ type Completer struct {
 	*Config
 }
 
-func NewCompleter(options ...Option) (*Completer, error) {
+func NewCompleter(model string, options ...Option) (*Completer, error) {
 	c := &Config{
 		client: http.DefaultClient,
 
-		url: "https://api.anthropic.com",
+		url:   "https://api.anthropic.com",
+		model: model,
 	}
 
 	for _, option := range options {

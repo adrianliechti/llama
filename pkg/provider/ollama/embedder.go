@@ -16,7 +16,7 @@ type Embedder struct {
 	*Config
 }
 
-func NewEmbedder(url string, options ...Option) (*Embedder, error) {
+func NewEmbedder(url, model string, options ...Option) (*Embedder, error) {
 	if url == "" {
 		url = "http://localhost:11434"
 	}
@@ -24,7 +24,8 @@ func NewEmbedder(url string, options ...Option) (*Embedder, error) {
 	c := &Config{
 		client: http.DefaultClient,
 
-		url: url,
+		url:   url,
+		model: model,
 	}
 
 	for _, option := range options {

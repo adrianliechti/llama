@@ -19,11 +19,12 @@ type Completer struct {
 	*Config
 }
 
-func NewCompleter(options ...Option) (*Completer, error) {
+func NewCompleter(model string, options ...Option) (*Completer, error) {
 	cfg := &Config{
 		client: http.DefaultClient,
 
-		url: "https://api.cohere.com",
+		url:   "https://api.cohere.com",
+		model: model,
 	}
 
 	for _, option := range options {
