@@ -2,7 +2,6 @@ package config
 
 import (
 	"errors"
-	"time"
 
 	"golang.org/x/time/rate"
 	"gopkg.in/yaml.v3"
@@ -35,7 +34,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 			}
 
 			if limit != nil {
-				context.Limiter = rate.NewLimiter(rate.Every(time.Minute), *limit)
+				context.Limiter = rate.NewLimiter(rate.Limit(*limit), *limit)
 			}
 
 			switch context.Type {
