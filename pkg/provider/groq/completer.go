@@ -7,17 +7,13 @@ import (
 type Completer = openai.Completer
 
 func NewCompleter(model string, options ...Option) (*Completer, error) {
-	url := "https://api.groq.com/openai"
+	url := "https://api.groq.com/openai/v1"
 
-	c := &Config{
-		options: []openai.Option{
-			openai.WithURL(url + "/v1"),
-		},
-	}
+	c := &Config{}
 
 	for _, option := range options {
 		option(c)
 	}
 
-	return openai.NewCompleter(model, c.options...)
+	return openai.NewCompleter(url, model, c.options...)
 }

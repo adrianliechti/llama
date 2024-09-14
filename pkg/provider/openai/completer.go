@@ -20,8 +20,9 @@ type Completer struct {
 	client *openai.Client
 }
 
-func NewCompleter(model string, options ...Option) (*Completer, error) {
+func NewCompleter(url, model string, options ...Option) (*Completer, error) {
 	cfg := &Config{
+		url:   url,
 		model: model,
 	}
 

@@ -66,10 +66,6 @@ func groqTranscriber(cfg providerConfig, model modelContext) (provider.Transcrib
 func openaiTranscriber(cfg providerConfig, model modelContext) (provider.Transcriber, error) {
 	var options []openai.Option
 
-	if cfg.URL != "" {
-		options = append(options, openai.WithURL(cfg.URL))
-	}
-
 	if cfg.Token != "" {
 		options = append(options, openai.WithToken(cfg.Token))
 	}
@@ -78,7 +74,7 @@ func openaiTranscriber(cfg providerConfig, model modelContext) (provider.Transcr
 		options = append(options, openai.WithLimiter(model.Limiter))
 	}
 
-	return openai.NewTranscriber(model.ID, options...)
+	return openai.NewTranscriber(cfg.URL, model.ID, options...)
 }
 
 func whisperTranscriber(cfg providerConfig, model modelContext) (provider.Transcriber, error) {

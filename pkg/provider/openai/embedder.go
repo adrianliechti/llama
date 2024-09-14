@@ -15,8 +15,9 @@ type Embedder struct {
 	client *openai.Client
 }
 
-func NewEmbedder(model string, options ...Option) (*Embedder, error) {
+func NewEmbedder(url, model string, options ...Option) (*Embedder, error) {
 	cfg := &Config{
+		url:   url,
 		model: model,
 	}
 

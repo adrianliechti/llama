@@ -20,12 +20,6 @@ type Config struct {
 
 type Option func(*Config)
 
-func WithURL(url string) Option {
-	return func(c *Config) {
-		c.url = url
-	}
-}
-
 func WithToken(token string) Option {
 	return func(c *Config) {
 		c.token = token

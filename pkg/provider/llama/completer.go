@@ -17,15 +17,11 @@ func NewCompleter(url, model string, options ...Option) (*Completer, error) {
 	url = strings.TrimRight(url, "/")
 	url = strings.TrimSuffix(url, "/v1")
 
-	c := &Config{
-		options: []openai.Option{
-			openai.WithURL(url + "/v1"),
-		},
-	}
+	c := &Config{}
 
 	for _, option := range options {
 		option(c)
 	}
 
-	return openai.NewCompleter(model, c.options...)
+	return openai.NewCompleter(url+"/v1", model, c.options...)
 }

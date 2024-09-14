@@ -115,15 +115,11 @@ func anthropicCompleter(cfg providerConfig, model modelContext) (provider.Comple
 func azureCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	var options []azure.Option
 
-	if cfg.URL != "" {
-		options = append(options, azure.WithURL(cfg.URL))
-	}
-
 	if cfg.Token != "" {
 		options = append(options, azure.WithToken(cfg.Token))
 	}
 
-	return azure.NewCompleter(model.ID, options...)
+	return azure.NewCompleter(cfg.URL, model.ID, options...)
 }
 
 func cohereCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
@@ -193,10 +189,6 @@ func ollamaCompleter(cfg providerConfig, model modelContext) (provider.Completer
 func openaiCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	var options []openai.Option
 
-	if cfg.URL != "" {
-		options = append(options, openai.WithURL(cfg.URL))
-	}
-
 	if cfg.Token != "" {
 		options = append(options, openai.WithToken(cfg.Token))
 	}
@@ -205,7 +197,7 @@ func openaiCompleter(cfg providerConfig, model modelContext) (provider.Completer
 		options = append(options, openai.WithLimiter(model.Limiter))
 	}
 
-	return openai.NewCompleter(model.ID, options...)
+	return openai.NewCompleter(cfg.URL, model.ID, options...)
 }
 
 func customCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {

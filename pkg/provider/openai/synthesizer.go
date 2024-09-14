@@ -16,8 +16,9 @@ type Synthesizer struct {
 	client *openai.Client
 }
 
-func NewSynthesizer(model string, options ...Option) (*Synthesizer, error) {
+func NewSynthesizer(url, model string, options ...Option) (*Synthesizer, error) {
 	cfg := &Config{
+		url:   url,
 		model: model,
 	}
 

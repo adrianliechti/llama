@@ -66,10 +66,6 @@ func elevenlabsSynthesizer(cfg providerConfig, model modelContext) (provider.Syn
 func openaiSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesizer, error) {
 	var options []openai.Option
 
-	if cfg.URL != "" {
-		options = append(options, openai.WithURL(cfg.URL))
-	}
-
 	if cfg.Token != "" {
 		options = append(options, openai.WithToken(cfg.Token))
 	}
@@ -78,5 +74,5 @@ func openaiSynthesizer(cfg providerConfig, model modelContext) (provider.Synthes
 		options = append(options, openai.WithLimiter(model.Limiter))
 	}
 
-	return openai.NewSynthesizer(model.ID, options...)
+	return openai.NewSynthesizer(cfg.URL, model.ID, options...)
 }

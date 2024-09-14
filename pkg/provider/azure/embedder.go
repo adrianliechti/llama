@@ -6,16 +6,16 @@ import (
 
 type Embedder = openai.Embedder
 
-func NewEmbedder(model string, options ...Option) (*Embedder, error) {
-	c := &Config{
-		options: []openai.Option{
-			openai.WithURL("https://models.inference.ai.azure.com"),
-		},
+func NewEmbedder(url, model string, options ...Option) (*Embedder, error) {
+	if url == "" {
+		url = "https://models.inference.ai.azure.com"
 	}
+
+	c := &Config{}
 
 	for _, option := range options {
 		option(c)
 	}
 
-	return openai.NewEmbedder(model, c.options...)
+	return openai.NewEmbedder(url, model, c.options...)
 }

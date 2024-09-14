@@ -16,8 +16,9 @@ type Transcriber struct {
 	client *openai.Client
 }
 
-func NewTranscriber(model string, options ...Option) (*Transcriber, error) {
+func NewTranscriber(url, model string, options ...Option) (*Transcriber, error) {
 	cfg := &Config{
+		url:   url,
 		model: model,
 	}
 

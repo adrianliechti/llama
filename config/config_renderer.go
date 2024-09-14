@@ -52,10 +52,6 @@ func createRenderer(cfg providerConfig, model modelContext) (provider.Renderer, 
 func openaiRenderer(cfg providerConfig, model modelContext) (provider.Renderer, error) {
 	var options []openai.Option
 
-	if cfg.URL != "" {
-		options = append(options, openai.WithURL(cfg.URL))
-	}
-
 	if cfg.Token != "" {
 		options = append(options, openai.WithToken(cfg.Token))
 	}
@@ -64,7 +60,7 @@ func openaiRenderer(cfg providerConfig, model modelContext) (provider.Renderer, 
 		options = append(options, openai.WithLimiter(model.Limiter))
 	}
 
-	return openai.NewRenderer(model.ID, options...)
+	return openai.NewRenderer(cfg.URL, model.ID, options...)
 }
 
 func replicateRenderer(cfg providerConfig, model modelContext) (provider.Renderer, error) {

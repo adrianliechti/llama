@@ -71,15 +71,11 @@ func createEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, 
 func azureEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
 	var options []azure.Option
 
-	if cfg.URL != "" {
-		options = append(options, azure.WithURL(cfg.URL))
-	}
-
 	if cfg.Token != "" {
 		options = append(options, azure.WithToken(cfg.Token))
 	}
 
-	return azure.NewEmbedder(model.ID, options...)
+	return azure.NewEmbedder(cfg.URL, model.ID, options...)
 }
 
 func cohereEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
@@ -117,10 +113,6 @@ func ollamaEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, 
 func openaiEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
 	var options []openai.Option
 
-	if cfg.URL != "" {
-		options = append(options, openai.WithURL(cfg.URL))
-	}
-
 	if cfg.Token != "" {
 		options = append(options, openai.WithToken(cfg.Token))
 	}
@@ -129,5 +121,5 @@ func openaiEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, 
 		options = append(options, openai.WithLimiter(model.Limiter))
 	}
 
-	return openai.NewEmbedder(model.ID, options...)
+	return openai.NewEmbedder(cfg.URL, model.ID, options...)
 }

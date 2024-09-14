@@ -12,12 +12,6 @@ type Config struct {
 
 type Option func(*Config)
 
-func WithURL(url string) Option {
-	return func(c *Config) {
-		c.options = append(c.options, openai.WithURL(url))
-	}
-}
-
 func WithClient(client *http.Client) Option {
 	return func(c *Config) {
 		c.options = append(c.options, openai.WithClient(client))

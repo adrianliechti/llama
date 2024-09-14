@@ -21,8 +21,9 @@ type Renderer struct {
 	client *openai.Client
 }
 
-func NewRenderer(model string, options ...Option) (*Renderer, error) {
+func NewRenderer(url, model string, options ...Option) (*Renderer, error) {
 	cfg := &Config{
+		url:   url,
 		model: model,
 	}
 
