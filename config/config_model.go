@@ -108,6 +108,7 @@ func DetectModelType(id string) ModelType {
 
 	embedders := []string{
 		"bge",
+		"clip",
 		"embed",
 		"gte",
 		"minilm",

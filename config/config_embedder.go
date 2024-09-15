@@ -9,6 +9,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/azure"
 	"github.com/adrianliechti/llama/pkg/provider/cohere"
 	"github.com/adrianliechti/llama/pkg/provider/huggingface"
+	"github.com/adrianliechti/llama/pkg/provider/jina"
 	"github.com/adrianliechti/llama/pkg/provider/llama"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
@@ -54,6 +55,9 @@ func createEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, 
 	case "huggingface":
 		return huggingfaceEmbedder(cfg, model)
 
+	case "jina":
+		return jinaEmbedder(cfg, model)
+
 	case "llama":
 		return llamaEmbedder(cfg, model)
 
@@ -96,6 +100,16 @@ func huggingfaceEmbedder(cfg providerConfig, model modelContext) (provider.Embed
 	}
 
 	return huggingface.NewEmbedder(cfg.URL, options...)
+}
+
+func jinaEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
+	var options []jina.Option
+
+	if cfg.Token != "" {
+		options = append(options, jina.WithToken(cfg.Token))
+	}
+
+	return jina.NewEmbedder(cfg.URL, options...)
 }
 
 func llamaEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
