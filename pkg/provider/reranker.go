@@ -1,14 +1,9 @@
-package reranker
+package provider
 
 import (
 	"context"
 )
 
-type Provider interface {
+type Reranker interface {
 	Rerank(ctx context.Context, query string, inputs []string) ([]Result, error)
-}
-
-type Result struct {
-	Content string
-	Score   float32
 }

@@ -22,13 +22,10 @@ func NewEmbedder(url string, options ...Option) (*Embedder, error) {
 		return nil, errors.New("invalid url")
 	}
 
-	url = strings.TrimRight(url, "/")
-	url = strings.TrimSuffix(url, "/v1")
-
 	cfg := &Config{
 		client: http.DefaultClient,
 
-		url:   url,
+		url:   strings.TrimRight(url, "/"),
 		token: "-",
 
 		model: "tei",
@@ -49,8 +46,11 @@ func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embeddi
 	}
 
 	req, _ := http.NewRequestWithContext(ctx, "POST", e.url, jsonReader(body))
-	req.Header.Set("Authorization", "Bearer "+e.token)
 	req.Header.Set("Content-Type", "application/json")
+
+	if e.token != "" {
+		req.Header.Set("Authorization", "Bearer "+e.token)
+	}
 
 	resp, err := e.client.Do(req)
 

@@ -28,13 +28,10 @@ func NewCompleter(url string, options ...Option) (*Completer, error) {
 		return nil, errors.New("invalid url")
 	}
 
-	url = strings.TrimRight(url, "/")
-	url = strings.TrimSuffix(url, "/v1")
-
 	cfg := &Config{
 		client: http.DefaultClient,
 
-		url:   url,
+		url:   strings.TrimRight(url, "/"),
 		token: "-",
 
 		model: "tgi",
@@ -65,8 +62,11 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 	if options.Stream == nil {
 		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
-		req.Header.Set("Authorization", "Bearer "+c.token)
 		req.Header.Set("Content-Type", "application/json")
+
+		if c.token != "" {
+			req.Header.Set("Authorization", "Bearer "+c.token)
+		}
 
 		resp, err := c.client.Do(req)
 
@@ -99,9 +99,12 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		defer close(options.Stream)
 
 		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
-		req.Header.Set("Authorization", "Bearer "+c.token)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/x-ndjson")
+
+		if c.token != "" {
+			req.Header.Set("Authorization", "Bearer "+c.token)
+		}
 
 		resp, err := c.client.Do(req)
 

@@ -8,10 +8,10 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/reranker"
+	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-var _ reranker.Provider = (*Reranker)(nil)
+var _ provider.Reranker = (*Reranker)(nil)
 
 type Reranker struct {
 	*Config
@@ -42,7 +42,7 @@ func NewReranker(url string, options ...Option) (*Reranker, error) {
 	}, nil
 }
 
-func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string) ([]reranker.Result, error) {
+func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string) ([]provider.Result, error) {
 	body := map[string]any{
 		"query": query,
 		"input": inputs,
@@ -79,10 +79,10 @@ func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string) ([
 		return nil, errors.New("no reranks found")
 	}
 
-	var result []reranker.Result
+	var result []provider.Result
 
 	for _, r := range data.Results {
-		result = append(result, reranker.Result{
+		result = append(result, provider.Result{
 			Content: r.Document.Text,
 			Score:   r.Score,
 		})
