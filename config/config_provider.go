@@ -56,6 +56,15 @@ func (cfg *Config) registerProviders(f *configFile) error {
 
 				cfg.RegisterEmbedder(p.Type, id, embedder)
 
+			case ModelTypeReranker:
+				reranker, err := createReranker(p, context)
+
+				if err != nil {
+					return err
+				}
+
+				cfg.RegisterReranker(p.Type, id, reranker)
+
 			case ModelTypeRenderer:
 				renderer, err := createRenderer(p, context)
 

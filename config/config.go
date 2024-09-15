@@ -23,6 +23,7 @@ type Config struct {
 
 	completer   map[string]provider.Completer
 	embedder    map[string]provider.Embedder
+	reranker    map[string]provider.Reranker
 	renderer    map[string]provider.Renderer
 	synthesizer map[string]provider.Synthesizer
 	transcriber map[string]provider.Transcriber
