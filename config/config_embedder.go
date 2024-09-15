@@ -99,7 +99,7 @@ func huggingfaceEmbedder(cfg providerConfig, model modelContext) (provider.Embed
 		options = append(options, huggingface.WithToken(cfg.Token))
 	}
 
-	return huggingface.NewEmbedder(cfg.URL, options...)
+	return huggingface.NewEmbedder(cfg.URL, model.ID, options...)
 }
 
 func jinaEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {

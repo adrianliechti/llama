@@ -17,7 +17,7 @@ type Reranker struct {
 	*Config
 }
 
-func NewReranker(url string, options ...Option) (*Reranker, error) {
+func NewReranker(url, model string, options ...Option) (*Reranker, error) {
 	if url == "" {
 		url = "https://api.jina.ai"
 	}

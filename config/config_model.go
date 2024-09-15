@@ -142,27 +142,9 @@ func DetectModelType(id string) ModelType {
 		"whisper",
 	}
 
-	for _, val := range completers {
-		if strings.Contains(strings.ToLower(id), strings.ToLower(val)) {
-			return ModelTypeCompleter
-		}
-	}
-
-	for _, val := range embedders {
-		if strings.Contains(strings.ToLower(id), strings.ToLower(val)) {
-			return ModelTypeEmbedder
-		}
-	}
-
 	for _, val := range rerankers {
 		if strings.Contains(strings.ToLower(id), strings.ToLower(val)) {
 			return ModelTypeReranker
-		}
-	}
-
-	for _, val := range renderers {
-		if strings.Contains(strings.ToLower(id), strings.ToLower(val)) {
-			return ModelTypeRenderer
 		}
 	}
 
@@ -175,6 +157,24 @@ func DetectModelType(id string) ModelType {
 	for _, val := range transcribers {
 		if strings.Contains(strings.ToLower(id), strings.ToLower(val)) {
 			return ModelTypeTranscriber
+		}
+	}
+
+	for _, val := range renderers {
+		if strings.Contains(strings.ToLower(id), strings.ToLower(val)) {
+			return ModelTypeRenderer
+		}
+	}
+
+	for _, val := range embedders {
+		if strings.Contains(strings.ToLower(id), strings.ToLower(val)) {
+			return ModelTypeEmbedder
+		}
+	}
+
+	for _, val := range completers {
+		if strings.Contains(strings.ToLower(id), strings.ToLower(val)) {
+			return ModelTypeCompleter
 		}
 	}
 

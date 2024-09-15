@@ -247,18 +247,14 @@ https://huggingface.co/
 ```yaml
 providers:
   - type: huggingface
-    url: https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1
     token: hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     
     models:
-      - mistral-7B-instruct
-  
-  - type: huggingface
-    url: https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2
-    token: hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    models:
-      - huggingface-minilm-l6-2
+      mistral-7B-instruct:
+        id: mistralai/Mistral-7B-Instruct-v0.1
+      
+      huggingface-minilm-l6-2:
+        id: sentence-transformers/all-MiniLM-L6-v2
 ```
 
 

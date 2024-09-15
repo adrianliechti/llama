@@ -17,15 +17,17 @@ type Embedder struct {
 	*Config
 }
 
-func NewEmbedder(url string, options ...Option) (*Embedder, error) {
+func NewEmbedder(url, model string, options ...Option) (*Embedder, error) {
 	if url == "" {
-		return nil, errors.New("invalid url")
+		url = "https://api-inference.huggingface.co/pipeline/feature-extraction/" + model
 	}
+
+	url = strings.TrimRight(url, "/")
 
 	cfg := &Config{
 		client: http.DefaultClient,
 
-		url:   strings.TrimRight(url, "/"),
+		url:   url,
 		token: "-",
 
 		model: "tei",

@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"unicode"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 
@@ -123,10 +124,16 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				role = provider.MessageRoleAssistant
 			}
 
+			content := choice.Delta.Content
+
+			if result.Message.Content == "" {
+				content = strings.TrimLeftFunc(content, unicode.IsSpace)
+			}
+
 			result.Reason = toCompletionResult(choice.FinishReason)
 
 			result.Message.Role = role
-			result.Message.Content += choice.Delta.Content
+			result.Message.Content += content
 			result.Message.ToolCalls = toToolCalls(choice.Delta.ToolCalls)
 
 			options.Stream <- provider.Completion{
@@ -135,7 +142,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 				Message: provider.Message{
 					Role:    role,
-					Content: choice.Delta.Content,
+					Content: content,
 
 					ToolCalls: toToolCalls(choice.Delta.ToolCalls),
 				},

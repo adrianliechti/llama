@@ -15,15 +15,17 @@ type Reranker struct {
 	*Config
 }
 
-func NewReranker(url string, options ...Option) (*Reranker, error) {
+func NewReranker(url, model string, options ...Option) (*Reranker, error) {
 	if url == "" {
-		return nil, errors.New("invalid url")
+		url = "https://api-inference.huggingface.co/models/" + model
 	}
+
+	url = strings.TrimRight(url, "/")
 
 	cfg := &Config{
 		client: http.DefaultClient,
 
-		url:   strings.TrimRight(url, "/"),
+		url:   url,
 		token: "-",
 
 		model: "tei",
@@ -42,6 +44,13 @@ func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string) ([
 	body := map[string]any{
 		"query": strings.TrimSpace(query),
 		"texts": inputs,
+	}
+
+	if strings.Contains(r.url, "api-inference.huggingface.co") {
+		body = map[string]any{
+			"source_sentence": query,
+			"sentences":       inputs,
+		}
 	}
 
 	req, _ := http.NewRequestWithContext(ctx, "POST", r.url, jsonReader(body))
@@ -63,5 +72,5 @@ func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string) ([
 		return nil, convertError(resp)
 	}
 
-	return nil, errors.New("unable to embed input")
+	return nil, errors.New("unable to rerank input")
 }

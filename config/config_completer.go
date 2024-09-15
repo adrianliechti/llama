@@ -149,7 +149,7 @@ func huggingfaceCompleter(cfg providerConfig, model modelContext) (provider.Comp
 		options = append(options, huggingface.WithToken(cfg.Token))
 	}
 
-	return huggingface.NewCompleter(cfg.URL, options...)
+	return huggingface.NewCompleter(cfg.URL, model.ID, options...)
 }
 
 func langchainCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {

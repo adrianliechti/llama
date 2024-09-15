@@ -56,7 +56,7 @@ func huggingfaceReranker(cfg providerConfig, model modelContext) (provider.Reran
 		options = append(options, huggingface.WithToken(cfg.Token))
 	}
 
-	return huggingface.NewReranker(cfg.URL, options...)
+	return huggingface.NewReranker(cfg.URL, model.ID, options...)
 }
 
 func jinaReranker(cfg providerConfig, model modelContext) (provider.Reranker, error) {
@@ -66,5 +66,5 @@ func jinaReranker(cfg providerConfig, model modelContext) (provider.Reranker, er
 		options = append(options, jina.WithToken(cfg.Token))
 	}
 
-	return jina.NewReranker(cfg.URL, options...)
+	return jina.NewReranker(cfg.URL, model.ID, options...)
 }
