@@ -16,26 +16,30 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chunkStrategy := ChunkingStrategy(r.FormValue("chunking_strategy"))
-
-	file, header, err := r.FormFile("files")
-
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err)
-		return
-	}
-
-	defer file.Close()
-
 	input := extractor.File{
-		Content: file,
-		Name:    header.Filename,
+		URL: r.FormValue("url"),
 	}
 
-	if input.Name == "" {
-		http.Error(w, "invalid content type", http.StatusBadRequest)
-		return
+	if input.URL == "" {
+		file, header, err := r.FormFile("files")
+
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+
+		if header.Filename == "" {
+			http.Error(w, "invalid content type", http.StatusBadRequest)
+			return
+		}
+
+		defer file.Close()
+
+		input.Name = header.Filename
+		input.Content = file
 	}
+
+	chunkStrategy := ChunkingStrategy(r.FormValue("chunking_strategy"))
 
 	document, err := e.Extract(r.Context(), input, nil)
 
