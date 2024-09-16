@@ -1,4 +1,4 @@
-package converter
+package extractor
 
 import (
 	"context"
@@ -7,25 +7,28 @@ import (
 )
 
 type Provider interface {
-	Convert(ctx context.Context, input File, options *ConvertOptions) (*Document, error)
+	Extract(ctx context.Context, input File, options *ExtractOptions) (*Document, error)
 }
 
 var (
 	ErrUnsupported = errors.New("unsupported type")
 )
 
-type ConvertOptions struct {
+type ExtractOptions struct {
 }
 
 type File struct {
 	ID string
 
-	Name    string
+	Name string
+
+	URL     string
 	Content io.Reader
 }
 
 type Document struct {
 	ID string
 
+	Name    string
 	Content string
 }

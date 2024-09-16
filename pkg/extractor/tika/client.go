@@ -11,11 +11,11 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/converter"
+	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/text"
 )
 
-var _ converter.Provider = &Client{}
+var _ extractor.Provider = &Client{}
 
 type Client struct {
 	client *http.Client
@@ -41,13 +41,13 @@ func New(url string, options ...Option) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) Convert(ctx context.Context, input converter.File, options *converter.ConvertOptions) (*converter.Document, error) {
+func (c *Client) Extract(ctx context.Context, input extractor.File, options *extractor.ExtractOptions) (*extractor.Document, error) {
 	if options == nil {
-		options = new(converter.ConvertOptions)
+		options = new(extractor.ExtractOptions)
 	}
 
 	if !isSupported(input) {
-		return nil, converter.ErrUnsupported
+		return nil, extractor.ErrUnsupported
 	}
 
 	url, _ := url.JoinPath(c.url, "/tika/text")
@@ -71,12 +71,12 @@ func (c *Client) Convert(ctx context.Context, input converter.File, options *con
 		return nil, err
 	}
 
-	return &converter.Document{
+	return &extractor.Document{
 		Content: text.Normalize(response.Content),
 	}, nil
 }
 
-func isSupported(input converter.File) bool {
+func isSupported(input extractor.File) bool {
 	ext := strings.ToLower(path.Ext(input.Name))
 	return slices.Contains(SupportedExtensions, ext)
 }

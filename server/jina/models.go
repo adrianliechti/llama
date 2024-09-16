@@ -1,5 +1,12 @@
 package jina
 
+type ReadRequest struct {
+	URL string `json:"url"`
+
+	PDF  string `json:"pdf"`
+	HTML string `json:"html"`
+}
+
 type RerankRequest struct {
 	Model string `json:"model"`
 

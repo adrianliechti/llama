@@ -385,7 +385,7 @@ indexes:
 ```
 
 
-### Converters
+### Extractor
 
 #### Tika
 
@@ -395,7 +395,7 @@ docker run -it --rm -p 9998:9998 apache/tika:3.0.0.0-BETA2-full
 ```
 
 ```yaml
-converters:  
+extractors:  
   tika:
     type: tika
     url: http://localhost:9998
@@ -414,7 +414,7 @@ docker run -it --rm -p 9085:8000 quay.io/unstructured-io/unstructured-api:0.0.75
 ```
 
 ```yaml
-converters:
+extractors:
   unstructured:
     type: unstructured
     url: http://localhost:9085
@@ -440,10 +440,10 @@ chains:
 
 #### Index Documents
 
-Using Converters
+Using Extractors
 
 ```
-POST http://localhost:8080/v1/index/{index-name}/{converter}
+POST http://localhost:8080/v1/index/{index-name}/{extractor}
 Content-Type: application/pdf
 Content-Disposition: attachment; filename="filename.pdf"
 ```

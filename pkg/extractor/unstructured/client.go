@@ -13,10 +13,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/converter"
+	"github.com/adrianliechti/llama/pkg/extractor"
 )
 
-var _ converter.Provider = &Client{}
+var _ extractor.Provider = &Client{}
 
 type Client struct {
 	client *http.Client
@@ -43,13 +43,13 @@ func New(url string, options ...Option) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) Convert(ctx context.Context, input converter.File, options *converter.ConvertOptions) (*converter.Document, error) {
+func (c *Client) Extract(ctx context.Context, input extractor.File, options *extractor.ExtractOptions) (*extractor.Document, error) {
 	if options == nil {
-		options = new(converter.ConvertOptions)
+		options = new(extractor.ExtractOptions)
 	}
 
 	if !isSupported(input) {
-		return nil, converter.ErrUnsupported
+		return nil, extractor.ErrUnsupported
 	}
 
 	url, _ := url.JoinPath(c.url, "/general/v0/general")
@@ -92,21 +92,26 @@ func (c *Client) Convert(ctx context.Context, input converter.File, options *con
 		return nil, err
 	}
 
-	// var result []partitioner.Partition
+	name := input.Name
 
-	// for _, e := range elements {
-	// 	p := partitioner.Partition{
-	// 		ID:      e.ID,
-	// 		Content: e.Text,
-	// 	}
+	var builder strings.Builder
 
-	// 	result = append(result, p)
-	// }
+	for _, e := range elements {
+		builder.WriteString(e.Text)
+		builder.WriteString("\n")
 
-	return &converter.Document{}, nil
+		if name == "" {
+			name = e.Metadata.FileName
+		}
+	}
+
+	return &extractor.Document{
+		Name:    name,
+		Content: builder.String(),
+	}, nil
 }
 
-func isSupported(input converter.File) bool {
+func isSupported(input extractor.File) bool {
 	ext := strings.ToLower(path.Ext(input.Name))
 	return slices.Contains(SupportedExtensions, ext)
 }

@@ -12,12 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/adrianliechti/llama/pkg/converter"
-
+	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/google/uuid"
 )
 
-var _ converter.Provider = &Client{}
+var _ extractor.Provider = &Client{}
 
 type Client struct {
 	client *http.Client
@@ -44,13 +43,13 @@ func New(url string, options ...Option) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) Convert(ctx context.Context, input converter.File, options *converter.ConvertOptions) (*converter.Document, error) {
+func (c *Client) Extract(ctx context.Context, input extractor.File, options *extractor.ExtractOptions) (*extractor.Document, error) {
 	if options == nil {
-		options = new(converter.ConvertOptions)
+		options = new(extractor.ExtractOptions)
 	}
 
 	if !isSupported(input) {
-		return nil, converter.ErrUnsupported
+		return nil, extractor.ErrUnsupported
 	}
 
 	u, _ := url.Parse(strings.TrimRight(c.url, "/") + "/documentintelligence/documentModels/prebuilt-layout:analyze")
@@ -113,7 +112,7 @@ func (c *Client) Convert(ctx context.Context, input converter.File, options *con
 			return nil, errors.New("operation " + string(operation.Status))
 		}
 
-		return &converter.Document{
+		return &extractor.Document{
 			ID: uuid.NewString(),
 
 			Content: strings.TrimSpace(operation.Result.Content),
@@ -121,7 +120,7 @@ func (c *Client) Convert(ctx context.Context, input converter.File, options *con
 	}
 }
 
-func isSupported(input converter.File) bool {
+func isSupported(input extractor.File) bool {
 	ext := strings.ToLower(path.Ext(input.Name))
 	return slices.Contains(SupportedExtensions, ext)
 }

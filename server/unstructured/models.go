@@ -15,3 +15,9 @@ type Partition struct {
 
 // 	Languages []string `json:"languages,omitempty"`
 // }
+
+type ChunkingStrategy string
+
+const (
+	ChunkingStrategyNone ChunkingStrategy = "none"
+)

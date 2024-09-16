@@ -5,7 +5,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/authorizer"
 	"github.com/adrianliechti/llama/pkg/chain"
-	"github.com/adrianliechti/llama/pkg/converter"
+	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/tool"
@@ -28,7 +28,7 @@ type Config struct {
 	synthesizer map[string]provider.Synthesizer
 	transcriber map[string]provider.Transcriber
 
-	converters map[string]converter.Provider
+	extractors map[string]extractor.Provider
 	translator map[string]translator.Provider
 
 	tools  map[string]tool.Tool
@@ -60,7 +60,7 @@ func Parse(path string) (*Config, error) {
 		return nil, err
 	}
 
-	if err := c.RegisterConverters(file); err != nil {
+	if err := c.RegisterExtractors(file); err != nil {
 		return nil, err
 	}
 
@@ -85,7 +85,7 @@ type configFile struct {
 	Providers []providerConfig `yaml:"providers"`
 
 	Indexes    map[string]indexConfig     `yaml:"indexes"`
-	Converters map[string]converterConfig `yaml:"converters"`
+	Extractors map[string]extractorConfig `yaml:"extractors"`
 
 	Routers map[string]routerConfig `yaml:"routers"`
 

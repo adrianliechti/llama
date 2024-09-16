@@ -1,57 +1,71 @@
 package unstructured
 
 import (
-	"errors"
+	"fmt"
 	"net/http"
+
+	"github.com/adrianliechti/llama/pkg/extractor"
+	"github.com/adrianliechti/llama/pkg/text"
 )
 
 func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
-	// p, err := h.Partitioner("default")
+	e, err := h.Extractor("default")
 
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusBadRequest)
-	// 	return
-	// }
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	// file, header, err := r.FormFile("files")
+	chunkStrategy := ChunkingStrategy(r.FormValue("chunking_strategy"))
 
-	// if err != nil {
-	// 	writeError(w, http.StatusBadRequest, err)
-	// 	return
-	// }
+	file, header, err := r.FormFile("files")
 
-	// defer file.Close()
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
 
-	// input := partitioner.File{
-	// 	Content: file,
-	// 	Name:    header.Filename,
-	// }
+	defer file.Close()
 
-	// if input.Name == "" {
-	// 	http.Error(w, "invalid content type", http.StatusBadRequest)
-	// 	return
-	// }
+	input := extractor.File{
+		Content: file,
+		Name:    header.Filename,
+	}
 
-	// partitions, err := p.Partition(r.Context(), input, nil)
+	if input.Name == "" {
+		http.Error(w, "invalid content type", http.StatusBadRequest)
+		return
+	}
 
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusBadRequest)
-	// 	return
-	// }
+	document, err := e.Extract(r.Context(), input, nil)
 
-	// var result []Partition
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	// for _, p := range partitions {
-	// 	partition := Partition{
-	// 		ID: p.ID,
+	result := []Partition{
+		{
+			ID:   input.Name,
+			Text: document.Content,
+		},
+	}
 
-	// 		Text: p.Content,
-	// 	}
+	if chunkStrategy != ChunkingStrategyNone {
+		splitter := text.NewSplitter()
+		chunks := splitter.Split(document.Content)
 
-	// 	result = append(result, partition)
-	// }
+		clear(result)
 
-	// writeJson(w, result)
+		for i, chunk := range chunks {
+			partition := Partition{
+				ID:   fmt.Sprintf("%s#%d", input.Name, i),
+				Text: chunk,
+			}
 
-	writeError(w, http.StatusBadRequest, errors.New("not implemented"))
+			result = append(result, partition)
+		}
+	}
+
+	writeJson(w, result)
 }
