@@ -25,8 +25,10 @@ type Client struct {
 
 	url string
 
+	class string
+
 	embedder index.Embedder
-	class    string
+	reranker index.Reranker
 }
 
 func New(url, namespace string, options ...Option) (*Client, error) {

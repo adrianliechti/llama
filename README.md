@@ -320,7 +320,7 @@ indexes:
     type: chroma
     url: http://localhost:9083
     namespace: docs
-    embedding: text-embedding-ada-002
+    embedder: text-embedding-ada-002
 ```
 
 
@@ -339,7 +339,7 @@ indexes:
     type: weaviate
     url: http://localhost:9084
     namespace: Document
-    embedding: text-embedding-ada-002
+    embedder: text-embedding-ada-002
 ```
 
 
@@ -355,7 +355,7 @@ indexes:
     type: qdrant
     url: http://localhost:6333
     namespace: docs
-    embedding: text-embedding-ada-002
+    embedder: text-embedding-ada-002
 ```
 
 
@@ -365,7 +365,7 @@ indexes:
 indexes:
   docs:
     type: memory   
-    embedding: text-embedding-ada-002
+    embedder: text-embedding-ada-002
 ```
 
 

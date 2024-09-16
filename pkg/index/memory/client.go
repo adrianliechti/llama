@@ -16,6 +16,7 @@ var _ index.Provider = &Provider{}
 
 type Provider struct {
 	embedder index.Embedder
+	reranker index.Reranker
 
 	documents map[string]index.Document
 }

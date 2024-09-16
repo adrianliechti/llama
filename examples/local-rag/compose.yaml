@@ -55,14 +55,12 @@ configs:
           type: qdrant
           url: http://qdrant:6333
           namespace: docs
-          embedding: nomic-embed-text-v1
+          embedder: nomic-embed-text-v1
 
       extractors:
         unstructured:
           type: unstructured
           url: http://unstructured:8000
-          chunkSize: 4000
-          chunkOverlap: 200
 
       chains:
         docs:
