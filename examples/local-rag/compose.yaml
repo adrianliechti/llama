@@ -57,17 +57,7 @@ configs:
           namespace: docs
           embedding: nomic-embed-text-v1
 
-      partitioners:
-        text:
-          type: text
-          chunkSize: 4000
-          chunkOverlap: 200
-
-        code:
-          type: code
-          chunkSize: 1500
-          chunkOverlap: 0
-          
+      converters:          
         unstructured:
           type: unstructured
           url: http://unstructured:8000

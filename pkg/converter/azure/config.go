@@ -32,15 +32,3 @@ func WithToken(token string) Option {
 		c.token = token
 	}
 }
-
-func WithChunkSize(size int) Option {
-	return func(c *Client) {
-		c.chunkSize = size
-	}
-}
-
-func WithChunkOverlap(overlap int) Option {
-	return func(c *Client) {
-		c.chunkOverlap = overlap
-	}
-}

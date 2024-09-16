@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -13,51 +12,45 @@ import (
 	"strings"
 	"time"
 
-	"github.com/adrianliechti/llama/pkg/partitioner"
-	"github.com/adrianliechti/llama/pkg/text"
+	"github.com/adrianliechti/llama/pkg/converter"
+
+	"github.com/google/uuid"
 )
 
-var _ partitioner.Provider = &Client{}
+var _ converter.Provider = &Client{}
 
 type Client struct {
 	client *http.Client
 
 	url   string
 	token string
-
-	chunkSize    int
-	chunkOverlap int
 }
 
-func New(url, token string, options ...Option) (*Client, error) {
+func New(url string, options ...Option) (*Client, error) {
+	if url == "" {
+		return nil, errors.New("invalid url")
+	}
+
 	c := &Client{
 		client: http.DefaultClient,
 
-		url:   url,
-		token: token,
-
-		chunkSize:    4000,
-		chunkOverlap: 500,
+		url: url,
 	}
 
 	for _, option := range options {
 		option(c)
 	}
 
-	if c.url == "" {
-		return nil, errors.New("invalid url")
-	}
-
 	return c, nil
 }
 
-func (c *Client) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) ([]partitioner.Partition, error) {
+func (c *Client) Convert(ctx context.Context, input converter.File, options *converter.ConvertOptions) (*converter.Document, error) {
 	if options == nil {
-		options = &partitioner.PartitionOptions{}
+		options = new(converter.ConvertOptions)
 	}
 
 	if !isSupported(input) {
-		return nil, partitioner.ErrUnsupported
+		return nil, converter.ErrUnsupported
 	}
 
 	u, _ := url.Parse(strings.TrimRight(c.url, "/") + "/documentintelligence/documentModels/prebuilt-layout:analyze")
@@ -120,17 +113,15 @@ func (c *Client) Partition(ctx context.Context, input partitioner.File, options 
 			return nil, errors.New("operation " + string(operation.Status))
 		}
 
-		output, err := convertAnalyzeResult(input, operation.Result, c.chunkSize, c.chunkOverlap)
+		return &converter.Document{
+			ID: uuid.NewString(),
 
-		if err != nil {
-			return nil, err
-		}
-
-		return output, nil
+			Content: strings.TrimSpace(operation.Result.Content),
+		}, nil
 	}
 }
 
-func isSupported(input partitioner.File) bool {
+func isSupported(input converter.File) bool {
 	ext := strings.ToLower(path.Ext(input.Name))
 	return slices.Contains(SupportedExtensions, ext)
 }
@@ -143,27 +134,4 @@ func convertError(resp *http.Response) error {
 	}
 
 	return errors.New(string(data))
-}
-
-func convertAnalyzeResult(input partitioner.File, response AnalyzeResult, chunkSize, chunkOverlap int) ([]partitioner.Partition, error) {
-	content := text.Normalize(response.Content)
-
-	splitter := text.NewSplitter()
-	splitter.ChunkSize = chunkSize
-	splitter.ChunkOverlap = chunkOverlap
-
-	blocks := splitter.Split(content)
-
-	var result []partitioner.Partition
-
-	for i, b := range blocks {
-		p := partitioner.Partition{
-			ID:      fmt.Sprintf("%s#%d", input.Name, i+1),
-			Content: b,
-		}
-
-		result = append(result, p)
-	}
-
-	return result, nil
 }

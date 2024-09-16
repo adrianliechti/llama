@@ -385,25 +385,7 @@ indexes:
 ```
 
 
-### Partitioners
-
-#### Text
-
-```yaml
-partitioners:
-  text:
-    type: text
-```
-
-
-#### Code
-
-```yaml
-partitioners:
-  code:
-    type: code
-```
-
+### Converters
 
 #### Tika
 
@@ -413,7 +395,7 @@ docker run -it --rm -p 9998:9998 apache/tika:3.0.0.0-BETA2-full
 ```
 
 ```yaml
-partitioners:  
+converters:  
   tika:
     type: tika
     url: http://localhost:9998
@@ -432,7 +414,7 @@ docker run -it --rm -p 9085:8000 quay.io/unstructured-io/unstructured-api:0.0.75
 ```
 
 ```yaml
-partitioners:
+converters:
   unstructured:
     type: unstructured
     url: http://localhost:9085
@@ -458,10 +440,10 @@ chains:
 
 #### Index Documents
 
-Using Partitioners
+Using Converters
 
 ```
-POST http://localhost:8080/v1/index/{index-name}/{partitioner}
+POST http://localhost:8080/v1/index/{index-name}/{converter}
 Content-Type: application/pdf
 Content-Disposition: attachment; filename="filename.pdf"
 ```

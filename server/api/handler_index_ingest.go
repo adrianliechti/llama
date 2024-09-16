@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/adrianliechti/llama/pkg/index"
-	"github.com/adrianliechti/llama/pkg/partitioner"
 )
 
 func (s *Handler) handleIngest(w http.ResponseWriter, r *http.Request) {
@@ -46,57 +45,59 @@ func (s *Handler) handleIngest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Handler) handleIngestWithPartitioner(w http.ResponseWriter, r *http.Request) {
-	i, err := s.Index(r.PathValue("index"))
+	writeError(w, http.StatusBadRequest, fmt.Errorf("not implemented"))
 
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	// i, err := s.Index(r.PathValue("index"))
 
-	p, err := s.Partitioner(r.PathValue("partitioner"))
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusBadRequest)
+	// 	return
+	// }
 
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	// p, err := s.Partitioner(r.PathValue("partitioner"))
 
-	file := partitioner.File{
-		Name:    detectFileName(r),
-		Content: r.Body,
-	}
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusBadRequest)
+	// 	return
+	// }
 
-	if file.Name == "" {
-		http.Error(w, "invalid content type", http.StatusBadRequest)
-		return
-	}
+	// file := partitioner.File{
+	// 	Name:    detectFileName(r),
+	// 	Content: r.Body,
+	// }
 
-	partitions, err := p.Partition(r.Context(), file, nil)
+	// if file.Name == "" {
+	// 	http.Error(w, "invalid content type", http.StatusBadRequest)
+	// 	return
+	// }
 
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	// partitions, err := p.Partition(r.Context(), file, nil)
 
-	var documents []index.Document
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusBadRequest)
+	// 	return
+	// }
 
-	for i, p := range partitions {
-		document := index.Document{
-			ID: fmt.Sprintf("%s#%d", file.Name, i),
+	// var documents []index.Document
 
-			Title:    file.Name,
-			Location: fmt.Sprintf("file.Name#%d", i),
+	// for i, p := range partitions {
+	// 	document := index.Document{
+	// 		ID: fmt.Sprintf("%s#%d", file.Name, i),
 
-			Content:  p.Content,
-			Metadata: map[string]string{},
-		}
+	// 		Title:    file.Name,
+	// 		Location: fmt.Sprintf("file.Name#%d", i),
 
-		documents = append(documents, document)
-	}
+	// 		Content:  p.Content,
+	// 		Metadata: map[string]string{},
+	// 	}
 
-	if err := i.Index(r.Context(), documents...); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	// 	documents = append(documents, document)
+	// }
 
-	w.WriteHeader(http.StatusNoContent)
+	// if err := i.Index(r.Context(), documents...); err != nil {
+	// 	http.Error(w, err.Error(), http.StatusBadRequest)
+	// 	return
+	// }
+
+	// w.WriteHeader(http.StatusNoContent)
 }

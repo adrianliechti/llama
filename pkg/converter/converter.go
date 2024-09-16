@@ -1,4 +1,4 @@
-package partitioner
+package converter
 
 import (
 	"context"
@@ -7,14 +7,14 @@ import (
 )
 
 type Provider interface {
-	Partition(ctx context.Context, input File, options *PartitionOptions) ([]Partition, error)
+	Convert(ctx context.Context, input File, options *ConvertOptions) (*Document, error)
 }
 
 var (
 	ErrUnsupported = errors.New("unsupported type")
 )
 
-type PartitionOptions struct {
+type ConvertOptions struct {
 }
 
 type File struct {
@@ -24,7 +24,8 @@ type File struct {
 	Content io.Reader
 }
 
-type Partition struct {
-	ID      string
+type Document struct {
+	ID string
+
 	Content string
 }

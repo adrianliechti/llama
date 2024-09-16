@@ -22,15 +22,3 @@ func WithClient(client *http.Client) Option {
 		c.client = client
 	}
 }
-
-func WithChunkSize(size int) Option {
-	return func(c *Client) {
-		c.chunkSize = size
-	}
-}
-
-func WithChunkOverlap(overlap int) Option {
-	return func(c *Client) {
-		c.chunkOverlap = overlap
-	}
-}

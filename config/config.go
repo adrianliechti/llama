@@ -5,8 +5,8 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/authorizer"
 	"github.com/adrianliechti/llama/pkg/chain"
+	"github.com/adrianliechti/llama/pkg/converter"
 	"github.com/adrianliechti/llama/pkg/index"
-	"github.com/adrianliechti/llama/pkg/partitioner"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/tool"
 	"github.com/adrianliechti/llama/pkg/translator"
@@ -23,17 +23,18 @@ type Config struct {
 
 	completer   map[string]provider.Completer
 	embedder    map[string]provider.Embedder
-	reranker    map[string]provider.Reranker
 	renderer    map[string]provider.Renderer
+	reranker    map[string]provider.Reranker
 	synthesizer map[string]provider.Synthesizer
 	transcriber map[string]provider.Transcriber
 
-	indexes      map[string]index.Provider
-	partitioners map[string]partitioner.Provider
-	translator   map[string]translator.Provider
+	converters map[string]converter.Provider
+	translator map[string]translator.Provider
 
 	tools  map[string]tool.Tool
 	chains map[string]chain.Provider
+
+	indexes map[string]index.Provider
 }
 
 func Parse(path string) (*Config, error) {
@@ -59,7 +60,7 @@ func Parse(path string) (*Config, error) {
 		return nil, err
 	}
 
-	if err := c.RegisterPartitioners(file); err != nil {
+	if err := c.RegisterConverters(file); err != nil {
 		return nil, err
 	}
 
@@ -83,9 +84,8 @@ type configFile struct {
 
 	Providers []providerConfig `yaml:"providers"`
 
-	Indexes      map[string]indexConfig       `yaml:"indexes"`
-	Extractors   map[string]partitionerConfig `yaml:"extractors"` // Deprecated
-	Partitioners map[string]partitionerConfig `yaml:"partitioners"`
+	Indexes    map[string]indexConfig     `yaml:"indexes"`
+	Converters map[string]converterConfig `yaml:"converters"`
 
 	Routers map[string]routerConfig `yaml:"routers"`
 
@@ -106,10 +106,6 @@ func parseFile(path string) (*configFile, error) {
 
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return nil, err
-	}
-
-	if len(config.Partitioners) == 0 && len(config.Extractors) > 0 {
-		config.Partitioners = config.Extractors
 	}
 
 	return &config, nil

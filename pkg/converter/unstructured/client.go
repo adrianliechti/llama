@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -14,31 +13,27 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/partitioner"
+	"github.com/adrianliechti/llama/pkg/converter"
 )
 
-var _ partitioner.Provider = &Client{}
+var _ converter.Provider = &Client{}
 
 type Client struct {
 	client *http.Client
 
 	url   string
 	token string
-
-	chunkSize     int
-	chunkOverlap  int
-	chunkStrategy string
 }
 
-func New(options ...Option) (*Client, error) {
+func New(url string, options ...Option) (*Client, error) {
+	if url == "" {
+		url = "https://api.unstructured.io/general/v0/general"
+	}
+
 	c := &Client{
 		client: http.DefaultClient,
 
-		url: "https://api.unstructured.io/general/v0/general",
-
-		chunkSize:     4000,
-		chunkOverlap:  500,
-		chunkStrategy: "by_title",
+		url: url,
 	}
 
 	for _, option := range options {
@@ -48,13 +43,13 @@ func New(options ...Option) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) ([]partitioner.Partition, error) {
+func (c *Client) Convert(ctx context.Context, input converter.File, options *converter.ConvertOptions) (*converter.Document, error) {
 	if options == nil {
-		options = &partitioner.PartitionOptions{}
+		options = new(converter.ConvertOptions)
 	}
 
 	if !isSupported(input) {
-		return nil, partitioner.ErrUnsupported
+		return nil, converter.ErrUnsupported
 	}
 
 	url, _ := url.JoinPath(c.url, "/general/v0/general")
@@ -63,18 +58,6 @@ func (c *Client) Partition(ctx context.Context, input partitioner.File, options 
 	w := multipart.NewWriter(&b)
 
 	w.WriteField("strategy", "auto")
-
-	if c.chunkStrategy != "" {
-		w.WriteField("chunking_strategy", c.chunkStrategy)
-	}
-
-	if c.chunkSize > 0 {
-		w.WriteField("max_characters", fmt.Sprintf("%d", c.chunkSize))
-	}
-
-	if c.chunkOverlap > 0 {
-		w.WriteField("overlap", fmt.Sprintf("%d", c.chunkOverlap))
-	}
 
 	file, err := w.CreateFormFile("files", input.Name)
 
@@ -109,21 +92,21 @@ func (c *Client) Partition(ctx context.Context, input partitioner.File, options 
 		return nil, err
 	}
 
-	var result []partitioner.Partition
+	// var result []partitioner.Partition
 
-	for _, e := range elements {
-		p := partitioner.Partition{
-			ID:      e.ID,
-			Content: e.Text,
-		}
+	// for _, e := range elements {
+	// 	p := partitioner.Partition{
+	// 		ID:      e.ID,
+	// 		Content: e.Text,
+	// 	}
 
-		result = append(result, p)
-	}
+	// 	result = append(result, p)
+	// }
 
-	return result, nil
+	return &converter.Document{}, nil
 }
 
-func isSupported(input partitioner.File) bool {
+func isSupported(input converter.File) bool {
 	ext := strings.ToLower(path.Ext(input.Name))
 	return slices.Contains(SupportedExtensions, ext)
 }

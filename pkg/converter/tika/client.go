@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -12,49 +11,43 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/partitioner"
+	"github.com/adrianliechti/llama/pkg/converter"
 	"github.com/adrianliechti/llama/pkg/text"
 )
 
-var _ partitioner.Provider = &Client{}
+var _ converter.Provider = &Client{}
 
 type Client struct {
 	client *http.Client
 
 	url string
-
-	chunkSize    int
-	chunkOverlap int
 }
 
 func New(url string, options ...Option) (*Client, error) {
+	if url == "" {
+		return nil, errors.New("invalid url")
+	}
+
 	c := &Client{
 		client: http.DefaultClient,
 
 		url: url,
-
-		chunkSize:    4000,
-		chunkOverlap: 200,
 	}
 
 	for _, option := range options {
 		option(c)
 	}
 
-	if c.url == "" {
-		return nil, errors.New("invalid url")
-	}
-
 	return c, nil
 }
 
-func (c *Client) Partition(ctx context.Context, input partitioner.File, options *partitioner.PartitionOptions) ([]partitioner.Partition, error) {
+func (c *Client) Convert(ctx context.Context, input converter.File, options *converter.ConvertOptions) (*converter.Document, error) {
 	if options == nil {
-		options = &partitioner.PartitionOptions{}
+		options = new(converter.ConvertOptions)
 	}
 
 	if !isSupported(input) {
-		return nil, partitioner.ErrUnsupported
+		return nil, converter.ErrUnsupported
 	}
 
 	url, _ := url.JoinPath(c.url, "/tika/text")
@@ -78,29 +71,12 @@ func (c *Client) Partition(ctx context.Context, input partitioner.File, options 
 		return nil, err
 	}
 
-	content := text.Normalize(response.Content)
-
-	splitter := text.NewSplitter()
-	splitter.ChunkSize = c.chunkSize
-	splitter.ChunkOverlap = c.chunkOverlap
-
-	blocks := splitter.Split(content)
-
-	var result []partitioner.Partition
-
-	for i, b := range blocks {
-		p := partitioner.Partition{
-			ID:      fmt.Sprintf("%s#%d", input.Name, i+1),
-			Content: b,
-		}
-
-		result = append(result, p)
-	}
-
-	return result, nil
+	return &converter.Document{
+		Content: text.Normalize(response.Content),
+	}, nil
 }
 
-func isSupported(input partitioner.File) bool {
+func isSupported(input converter.File) bool {
 	ext := strings.ToLower(path.Ext(input.Name))
 	return slices.Contains(SupportedExtensions, ext)
 }
