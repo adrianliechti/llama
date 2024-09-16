@@ -42,10 +42,20 @@ func NewReranker(url, model string, options ...Option) (*Reranker, error) {
 	}, nil
 }
 
-func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string) ([]provider.Result, error) {
+func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string, options *provider.RerankOptions) ([]provider.Result, error) {
+	if options == nil {
+		options = new(provider.RerankOptions)
+	}
+
 	body := map[string]any{
-		"query": query,
-		"input": inputs,
+		"model": r.model,
+
+		"query":     query,
+		"documents": inputs,
+	}
+
+	if options.Limit != nil {
+		body["top_n"] = *options.Limit
 	}
 
 	u, _ := url.JoinPath(r.url, "/v1/rerank")
@@ -83,7 +93,7 @@ func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string) ([
 
 	for _, r := range data.Results {
 		result = append(result, provider.Result{
-			Content: r.Document.Text,
+			Content: inputs[r.Index],
 			Score:   r.Score,
 		})
 	}
@@ -100,7 +110,7 @@ type Result struct {
 	Index int `json:"index"`
 
 	Document Document `json:"document"`
-	Score    float32  `json:"relevance_score"`
+	Score    float64  `json:"relevance_score"`
 }
 
 type Document struct {

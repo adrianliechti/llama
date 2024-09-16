@@ -40,7 +40,11 @@ func NewReranker(url, model string, options ...Option) (*Reranker, error) {
 	}, nil
 }
 
-func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string) ([]provider.Result, error) {
+func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string, options *provider.RerankOptions) ([]provider.Result, error) {
+	if options == nil {
+		options = new(provider.RerankOptions)
+	}
+
 	body := map[string]any{
 		"query": strings.TrimSpace(query),
 		"texts": inputs,

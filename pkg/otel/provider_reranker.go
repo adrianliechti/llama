@@ -42,11 +42,11 @@ func NewReranker(provider, model string, p provider.Reranker) ObservableReranker
 func (p *observableReranker) otelSetup() {
 }
 
-func (p *observableReranker) Rerank(ctx context.Context, query string, inputs []string) ([]provider.Result, error) {
+func (p *observableReranker) Rerank(ctx context.Context, query string, inputs []string, options *provider.RerankOptions) ([]provider.Result, error) {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 
-	result, err := p.reranker.Rerank(ctx, query, inputs)
+	result, err := p.reranker.Rerank(ctx, query, inputs, options)
 
 	meterRequest(ctx, p.library, p.provider, "rerank", p.model)
 

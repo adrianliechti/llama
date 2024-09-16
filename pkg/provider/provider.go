@@ -35,7 +35,7 @@ type Image struct {
 
 type Result struct {
 	Content string
-	Score   float32
+	Score   float64
 }
 
 type Usage struct {

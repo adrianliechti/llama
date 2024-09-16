@@ -5,6 +5,7 @@ import (
 
 	"github.com/adrianliechti/llama/config"
 	"github.com/adrianliechti/llama/server/api"
+	"github.com/adrianliechti/llama/server/jina"
 	"github.com/adrianliechti/llama/server/openai"
 	"github.com/adrianliechti/llama/server/unstructured"
 
@@ -21,6 +22,7 @@ type Server struct {
 
 	api          *api.Handler
 	openai       *openai.Handler
+	jina         *jina.Handler
 	unstructured *unstructured.Handler
 }
 
@@ -32,6 +34,12 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	openai, err := openai.New(cfg)
+
+	if err != nil {
+		return nil, err
+	}
+
+	jina, err := jina.New(cfg)
 
 	if err != nil {
 		return nil, err
@@ -51,6 +59,7 @@ func New(cfg *config.Config) (*Server, error) {
 
 		api:          api,
 		openai:       openai,
+		jina:         jina,
 		unstructured: unstructured,
 	}
 
@@ -82,6 +91,7 @@ func New(cfg *config.Config) (*Server, error) {
 
 	mux.Route("/v1", func(r chi.Router) {
 		s.openai.Attach(r)
+		s.jina.Attach(r)
 		s.unstructured.Attach(r)
 	})
 
