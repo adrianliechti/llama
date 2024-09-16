@@ -48,3 +48,9 @@ func WithToken(token string) Option {
 		c.token = token
 	}
 }
+
+func WithStrategy(strategy Strategy) Option {
+	return func(c *Client) {
+		c.strategy = strategy
+	}
+}

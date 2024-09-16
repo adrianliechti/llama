@@ -1,5 +1,12 @@
 package unstructured
 
+type Strategy string
+
+const (
+	StrategyAuto Strategy = "auto"
+	StrategyFast Strategy = "fast"
+)
+
 type Element struct {
 	ID string `json:"element_id"`
 

@@ -23,6 +23,8 @@ type Client struct {
 
 	url   string
 	token string
+
+	strategy Strategy
 }
 
 func New(url string, options ...Option) (*Client, error) {
@@ -34,6 +36,8 @@ func New(url string, options ...Option) (*Client, error) {
 		client: http.DefaultClient,
 
 		url: url,
+
+		strategy: "auto",
 	}
 
 	for _, option := range options {
@@ -57,7 +61,7 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 
-	w.WriteField("strategy", "auto")
+	w.WriteField("strategy", string(c.strategy))
 
 	file, err := w.CreateFormFile("files", input.Name)
 
