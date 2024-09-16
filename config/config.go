@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"os"
 
 	"github.com/adrianliechti/llama/pkg/authorizer"
@@ -104,7 +105,10 @@ func parseFile(path string) (*configFile, error) {
 
 	var config configFile
 
-	if err := yaml.Unmarshal(data, &config); err != nil {
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+
+	if err := decoder.Decode(&config); err != nil {
 		return nil, err
 	}
 
