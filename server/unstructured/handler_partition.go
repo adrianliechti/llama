@@ -3,9 +3,10 @@ package unstructured
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
-	"github.com/adrianliechti/llama/pkg/text"
+	"github.com/adrianliechti/llama/pkg/segmenter"
 )
 
 func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +41,8 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 	}
 
 	chunkStrategy := parseChunkingStrategy(r.FormValue("chunking_strategy"))
+	chunkLength := 500
+	chunkOverlap := 0
 
 	// if chunkStrategy == ChunkingStrategyUnknown {
 	// 	http.Error(w, "invalid chunking strategy", http.StatusBadRequest)
@@ -61,15 +64,34 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if chunkStrategy != ChunkingStrategyNone {
-		splitter := text.NewSplitter()
-		chunks := splitter.Split(document.Content)
+		s, err := h.Segmenter("")
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		input := segmenter.File{
+			Name:    input.Name,
+			Content: strings.NewReader(document.Content),
+		}
+
+		segments, err := s.Segment(r.Context(), input, &segmenter.SegmentOptions{
+			SegmentLength:  &chunkLength,
+			SegmentOverlap: &chunkOverlap,
+		})
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
 		result = []Partition{}
 
-		for i, chunk := range chunks {
+		for i, s := range segments {
 			partition := Partition{
 				ID:   fmt.Sprintf("%s#%d", input.Name, i),
-				Text: chunk,
+				Text: s.Content,
 			}
 
 			result = append(result, partition)
