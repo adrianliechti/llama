@@ -40,7 +40,7 @@ func (t *Tool) Description() string {
 	return "Search online if the requested information cannot be found in the language model or the information could be present in a time after the language model was trained."
 }
 
-func (*Tool) Parameters() jsonschema.Definition {
+func (*Tool) Parameters() any {
 	return jsonschema.Definition{
 		Type: jsonschema.DataTypeObject,
 
