@@ -8,6 +8,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/extractor/azure"
 	"github.com/adrianliechti/llama/pkg/extractor/jina"
 	"github.com/adrianliechti/llama/pkg/extractor/multi"
+	"github.com/adrianliechti/llama/pkg/extractor/text"
 	"github.com/adrianliechti/llama/pkg/extractor/tika"
 	"github.com/adrianliechti/llama/pkg/extractor/unstructured"
 
@@ -73,6 +74,9 @@ func createExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	case "jina":
 		return jinaExtractor(cfg)
 
+	case "text":
+		return textExtractor(cfg)
+
 	case "tika":
 		return tikaExtractor(cfg)
 
@@ -102,6 +106,10 @@ func jinaExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	}
 
 	return jina.New(cfg.URL, options...)
+}
+
+func textExtractor(cfg extractorConfig) (extractor.Provider, error) {
+	return text.New()
 }
 
 func tikaExtractor(cfg extractorConfig) (extractor.Provider, error) {
