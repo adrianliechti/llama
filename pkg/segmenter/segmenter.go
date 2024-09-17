@@ -1,4 +1,4 @@
-package extractor
+package segmenter
 
 import (
 	"context"
@@ -7,24 +7,22 @@ import (
 )
 
 type Provider interface {
-	Extract(ctx context.Context, input File, options *ExtractOptions) (*Document, error)
+	Segment(ctx context.Context, input File, options *SegmentOptions) ([]Segment, error)
 }
 
 var (
 	ErrUnsupported = errors.New("unsupported type")
 )
 
-type ExtractOptions struct {
+type SegmentOptions struct {
 }
 
 type File struct {
-	Name string
-
-	URL     string
+	Name    string
 	Content io.Reader
 }
 
-type Document struct {
+type Segment struct {
 	Name    string
 	Content string
 }

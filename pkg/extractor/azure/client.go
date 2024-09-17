@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
-	"github.com/google/uuid"
 )
 
 var _ extractor.Provider = &Client{}
@@ -113,8 +112,7 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 		}
 
 		return &extractor.Document{
-			ID: uuid.NewString(),
-
+			Name:    input.Name,
 			Content: strings.TrimSpace(operation.Result.Content),
 		}, nil
 	}
