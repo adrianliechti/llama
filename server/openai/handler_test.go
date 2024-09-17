@@ -48,7 +48,6 @@ func TestModels(t *testing.T) {
 		assert.NotEmpty(t, model.CreatedAt)
 		assert.Equal(t, "model", model.Object)
 	}
-
 }
 
 func TestEmbedding(t *testing.T) {

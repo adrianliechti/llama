@@ -339,12 +339,14 @@ func toToolCalls(calls []ToolCall) []provider.ToolCall {
 
 	for _, c := range calls {
 		if c.Type == ToolTypeFunction && c.Function != nil {
-			result = append(result, provider.ToolCall{
+			call := provider.ToolCall{
 				ID: c.ID,
 
 				Name:      c.Function.Name,
 				Arguments: c.Function.Arguments,
-			})
+			}
+
+			result = append(result, call)
 		}
 	}
 
@@ -389,9 +391,12 @@ func oaiFinishReason(val provider.CompletionReason) *FinishReason {
 func oaiToolCalls(calls []provider.ToolCall) []ToolCall {
 	result := make([]ToolCall, 0)
 
-	for _, c := range calls {
+	for i, c := range calls {
 		result = append(result, ToolCall{
-			ID:   c.ID,
+			Index: i,
+
+			ID: c.ID,
+
 			Type: ToolTypeFunction,
 
 			Function: &FunctionCall{

@@ -305,12 +305,18 @@ func toToolCalls(calls []openai.ToolCall) []provider.ToolCall {
 
 	for _, c := range calls {
 		if c.Type == openai.ToolTypeFunction {
-			result = append(result, provider.ToolCall{
+			call := provider.ToolCall{
 				ID: c.ID,
 
 				Name:      c.Function.Name,
 				Arguments: c.Function.Arguments,
-			})
+			}
+
+			if call.Arguments == "" {
+				call.Arguments = "{}"
+			}
+
+			result = append(result, call)
 		}
 	}
 
