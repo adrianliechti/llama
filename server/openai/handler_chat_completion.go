@@ -110,7 +110,7 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 						FinishReason: oaiFinishReason(completion.Reason),
 
 						Delta: &ChatCompletionMessage{
-							//Role:    fromMessageRole(completion.Role),
+							Role:    oaiMessageRole(completion.Message.Role),
 							Content: completion.Message.Content,
 
 							ToolCalls:  oaiToolCalls(completion.Message.ToolCalls),
