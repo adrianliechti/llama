@@ -19,5 +19,6 @@ type Partition struct {
 type ChunkingStrategy string
 
 const (
-	ChunkingStrategyNone ChunkingStrategy = "none"
+	ChunkingStrategyUnknown ChunkingStrategy = ""
+	ChunkingStrategyNone    ChunkingStrategy = "none"
 )

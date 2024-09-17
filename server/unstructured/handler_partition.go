@@ -39,7 +39,12 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 		input.Content = file
 	}
 
-	chunkStrategy := ChunkingStrategy(r.FormValue("chunking_strategy"))
+	chunkStrategy := parseChunkingStrategy(r.FormValue("chunking_strategy"))
+
+	// if chunkStrategy == ChunkingStrategyUnknown {
+	// 	http.Error(w, "invalid chunking strategy", http.StatusBadRequest)
+	// 	return
+	// }
 
 	document, err := e.Extract(r.Context(), input, nil)
 
@@ -59,7 +64,7 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 		splitter := text.NewSplitter()
 		chunks := splitter.Split(document.Content)
 
-		clear(result)
+		result = []Partition{}
 
 		for i, chunk := range chunks {
 			partition := Partition{
@@ -72,4 +77,13 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJson(w, result)
+}
+
+func parseChunkingStrategy(value string) ChunkingStrategy {
+	switch value {
+	case "none", "":
+		return ChunkingStrategyNone
+	}
+
+	return ChunkingStrategyUnknown
 }
