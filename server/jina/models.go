@@ -33,3 +33,13 @@ type RerankResult struct {
 type Document struct {
 	Text string `json:"text"`
 }
+
+type SegmentRequest struct {
+	Content string `json:"content"`
+
+	MaxChunkLength int `json:"max_chunk_length"`
+}
+
+type SegmentResponse struct {
+	Chunks []string `json:"chunks"`
+}
