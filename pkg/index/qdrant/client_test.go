@@ -18,7 +18,7 @@ func TestQdrant(t *testing.T) {
 		Started: true,
 
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "qdrant/qdrant:v1.10.1",
+			Image:        "qdrant/qdrant:v1.11.4",
 			ExposedPorts: []string{"6333/tcp"},
 			WaitingFor:   wait.ForLog("Qdrant HTTP listening on 6333"),
 		},

@@ -346,7 +346,7 @@ indexes:
 #### Qdrant
 
 ```shell
-$ docker run -p 6333:6333 qdrant/qdrant:v1.10.1
+$ docker run -p 6333:6333 qdrant/qdrant:v1.11.4
 ```
 
 ```yaml
