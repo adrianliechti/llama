@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/jsonschema"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/tool"
 )
@@ -40,17 +39,17 @@ func (t *Tool) Description() string {
 }
 
 func (*Tool) Parameters() any {
-	return jsonschema.Definition{
-		Type: jsonschema.DataTypeObject,
+	return map[string]any{
+		"type": "object",
 
-		Properties: map[string]jsonschema.Definition{
-			"prompt": {
-				Type:        jsonschema.DataTypeString,
-				Description: "The prompt to create the image based from. Must be in English - Translate to English if needed.",
+		"properties": map[string]any{
+			"prompt": map[string]any{
+				"type":        "string",
+				"description": "the prompt to create the image based from. must be in english - translate to english if needed.",
 			},
 		},
 
-		Required: []string{"prompt"},
+		"required": []string{"prompt"},
 	}
 }
 

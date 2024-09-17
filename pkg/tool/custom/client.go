@@ -6,7 +6,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/jsonschema"
 	"github.com/adrianliechti/llama/pkg/tool"
 
 	"google.golang.org/grpc"
@@ -77,13 +76,13 @@ func (c *Client) Parameters() any {
 	data, err := c.client.Info(context.Background(), &InfoRequest{})
 
 	if err != nil {
-		return jsonschema.Definition{}
+		return nil
 	}
 
-	var result jsonschema.Definition
+	var result map[string]any
 
 	if err := json.Unmarshal([]byte(data.Schema), &result); err != nil {
-		return jsonschema.Definition{}
+		return nil
 	}
 
 	return result

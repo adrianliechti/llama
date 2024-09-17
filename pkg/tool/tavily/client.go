@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/adrianliechti/llama/pkg/jsonschema"
 	"github.com/adrianliechti/llama/pkg/tool"
 )
 
@@ -48,17 +47,17 @@ func (t *Tool) Description() string {
 }
 
 func (*Tool) Parameters() any {
-	return jsonschema.Definition{
-		Type: jsonschema.DataTypeObject,
+	return map[string]any{
+		"type": "object",
 
-		Properties: map[string]jsonschema.Definition{
-			"query": {
-				Type:        jsonschema.DataTypeString,
-				Description: "the text to search online to get the necessary information",
+		"properties": map[string]any{
+			"query": map[string]any{
+				"type":        "string",
+				"description": "the text to search online to get the necessary information",
 			},
 		},
 
-		Required: []string{"query"},
+		"required": []string{"query"},
 	}
 }
 

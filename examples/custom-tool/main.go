@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/jsonschema"
 	"github.com/adrianliechti/llama/pkg/tool/custom"
 
 	"google.golang.org/grpc"
@@ -38,19 +37,20 @@ func (s *server) Info(context.Context, *custom.InfoRequest) (*custom.Definition,
 	name := "kubectl"
 	description := "invoke the Kubernetes CLI kubectl with the given arguments"
 
-	schema, _ := json.Marshal(jsonschema.Definition{
-		Type: "object",
+	schema, _ := json.Marshal(map[string]any{
+		"type": "object",
 
-		Properties: map[string]jsonschema.Definition{
-			"args": {
-				Type: "array",
-				Items: &jsonschema.Definition{
-					Type: "string",
+		"properties": map[string]any{
+			"args": map[string]any{
+				"type": "array",
+
+				"itmes": map[string]any{
+					"type": "string",
 				},
 			},
 		},
 
-		Required: []string{"args"},
+		"required": []string{"args"},
 	})
 
 	return &custom.Definition{
