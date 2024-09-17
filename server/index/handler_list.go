@@ -1,10 +1,10 @@
-package api
+package index
 
 import (
 	"net/http"
 )
 
-func (s *Handler) handleIndexList(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) handleList(w http.ResponseWriter, r *http.Request) {
 	i, err := s.Index(r.PathValue("index"))
 
 	if err != nil {

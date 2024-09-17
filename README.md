@@ -440,16 +440,6 @@ chains:
 
 #### Index Documents
 
-Using Extractors
-
-```
-POST http://localhost:8080/v1/index/{index-name}/{extractor}
-Content-Type: application/pdf
-Content-Disposition: attachment; filename="filename.pdf"
-```
-
-Using Documents
-
 ```
 POST http://localhost:8080/v1/index/{index-name}
 ```

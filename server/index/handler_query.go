@@ -1,4 +1,4 @@
-package api
+package index
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/to"
 )
 
-func (s *Handler) handleIndexQuery(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) handleQuery(w http.ResponseWriter, r *http.Request) {
 	i, err := s.Index(r.PathValue("index"))
 
 	if err != nil {

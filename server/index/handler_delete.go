@@ -1,11 +1,11 @@
-package api
+package index
 
 import (
 	"encoding/json"
 	"net/http"
 )
 
-func (s *Handler) handleIndexDeletion(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) handleDeletion(w http.ResponseWriter, r *http.Request) {
 	i, err := s.Index(r.PathValue("index"))
 
 	if err != nil {

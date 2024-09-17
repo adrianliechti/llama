@@ -1,4 +1,4 @@
-package api
+package index
 
 type Document struct {
 	ID string `json:"id,omitempty"`
