@@ -1,4 +1,4 @@
-package code
+package text
 
 import (
 	"context"
@@ -40,6 +40,14 @@ func (p *Provider) Segment(ctx context.Context, input segmenter.File, options *s
 	}
 
 	splitter := text.NewSplitter()
+
+	if options.SegmentLength != nil {
+		splitter.ChunkSize = *options.SegmentLength
+	}
+
+	if options.SegmentOverlap != nil {
+		splitter.ChunkOverlap = *options.SegmentOverlap
+	}
 
 	if sep := getSeperators(input); len(sep) > 0 {
 		splitter.Separators = sep

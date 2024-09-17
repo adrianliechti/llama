@@ -22,7 +22,7 @@ func (h *Handler) handleRead(w http.ResponseWriter, r *http.Request) {
 	format := r.Header.Get("X-Return-Format")
 	_ = format
 
-	extractor, err := h.Extractor("default")
+	e, err := h.Extractor("")
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -43,7 +43,7 @@ func (h *Handler) handleRead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	document, err := extractor.Extract(r.Context(), *input, options)
+	document, err := e.Extract(r.Context(), *input, options)
 
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)

@@ -9,7 +9,7 @@ import (
 )
 
 func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
-	e, err := h.Extractor("default")
+	e, err := h.Extractor("")
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

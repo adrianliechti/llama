@@ -15,6 +15,8 @@ var (
 )
 
 type SegmentOptions struct {
+	SegmentLength  *int
+	SegmentOverlap *int
 }
 
 type File struct {

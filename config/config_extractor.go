@@ -61,7 +61,7 @@ func (cfg *Config) RegisterExtractors(f *configFile) error {
 		cfg.RegisterExtractor(c.Type, id, extractor)
 	}
 
-	cfg.RegisterExtractor("default", "default", multi.New(extractors...))
+	cfg.RegisterExtractor("default", "", multi.New(extractors...))
 
 	return nil
 }

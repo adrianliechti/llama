@@ -3,8 +3,9 @@ package jina
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
-	"github.com/adrianliechti/llama/pkg/text"
+	"github.com/adrianliechti/llama/pkg/segmenter"
 )
 
 func (h *Handler) handleSegment(w http.ResponseWriter, r *http.Request) {
@@ -23,10 +24,32 @@ func (h *Handler) handleSegment(w http.ResponseWriter, r *http.Request) {
 		req.MaxChunkLength = 2000
 	}
 
-	splitter := text.NewSplitter()
-	splitter.ChunkSize = req.MaxChunkLength
+	s, err := h.Segmenter("")
 
-	chuks := splitter.Split(req.Content)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	input := segmenter.File{
+		Name:    "input.txt",
+		Content: strings.NewReader(req.Content),
+	}
+
+	segments, err := s.Segment(r.Context(), input, &segmenter.SegmentOptions{
+		SegmentLength: &req.MaxChunkLength,
+	})
+
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	var chuks []string
+
+	for _, s := range segments {
+		chuks = append(chuks, s.Content)
+	}
 
 	result := SegmentResponse{
 		Chunks: chuks,

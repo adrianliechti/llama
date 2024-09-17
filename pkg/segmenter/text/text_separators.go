@@ -1,4 +1,4 @@
-package code
+package text
 
 var (
 	languageCPP = []string{
