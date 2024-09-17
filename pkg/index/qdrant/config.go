@@ -19,3 +19,9 @@ func WithEmbedder(embedder index.Embedder) Option {
 		c.embedder = embedder
 	}
 }
+
+func WithReranker(reranker index.Reranker) Option {
+	return func(c *Client) {
+		c.reranker = reranker
+	}
+}

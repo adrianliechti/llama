@@ -73,7 +73,7 @@ func (c *Client) Description() string {
 	return data.Description
 }
 
-func (c *Client) Parameters() jsonschema.Definition {
+func (c *Client) Parameters() any {
 	data, err := c.client.Info(context.Background(), &InfoRequest{})
 
 	if err != nil {

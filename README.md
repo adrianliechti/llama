@@ -320,7 +320,7 @@ indexes:
     type: chroma
     url: http://localhost:9083
     namespace: docs
-    embedding: text-embedding-ada-002
+    embedder: text-embedding-ada-002
 ```
 
 
@@ -339,14 +339,14 @@ indexes:
     type: weaviate
     url: http://localhost:9084
     namespace: Document
-    embedding: text-embedding-ada-002
+    embedder: text-embedding-ada-002
 ```
 
 
 #### Qdrant
 
 ```shell
-$ docker run -p 6333:6333 qdrant/qdrant:v1.10.1
+$ docker run -p 6333:6333 qdrant/qdrant:v1.11.4
 ```
 
 ```yaml
@@ -355,7 +355,7 @@ indexes:
     type: qdrant
     url: http://localhost:6333
     namespace: docs
-    embedding: text-embedding-ada-002
+    embedder: text-embedding-ada-002
 ```
 
 
@@ -365,7 +365,7 @@ indexes:
 indexes:
   docs:
     type: memory   
-    embedding: text-embedding-ada-002
+    embedder: text-embedding-ada-002
 ```
 
 
@@ -385,25 +385,7 @@ indexes:
 ```
 
 
-### Partitioners
-
-#### Text
-
-```yaml
-partitioners:
-  text:
-    type: text
-```
-
-
-#### Code
-
-```yaml
-partitioners:
-  code:
-    type: code
-```
-
+### Extractor
 
 #### Tika
 
@@ -413,7 +395,7 @@ docker run -it --rm -p 9998:9998 apache/tika:3.0.0.0-BETA2-full
 ```
 
 ```yaml
-partitioners:  
+extractors:  
   tika:
     type: tika
     url: http://localhost:9998
@@ -432,7 +414,7 @@ docker run -it --rm -p 9085:8000 quay.io/unstructured-io/unstructured-api:0.0.75
 ```
 
 ```yaml
-partitioners:
+extractors:
   unstructured:
     type: unstructured
     url: http://localhost:9085
@@ -457,16 +439,6 @@ chains:
 
 
 #### Index Documents
-
-Using Partitioners
-
-```
-POST http://localhost:8080/v1/index/{index-name}/{partitioner}
-Content-Type: application/pdf
-Content-Disposition: attachment; filename="filename.pdf"
-```
-
-Using Documents
 
 ```
 POST http://localhost:8080/v1/index/{index-name}

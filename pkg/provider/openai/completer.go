@@ -103,6 +103,10 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				return nil, err
 			}
 
+			if completion.ID == "" {
+				continue
+			}
+
 			result.ID = completion.ID
 
 			if completion.Usage != nil {
@@ -191,10 +195,10 @@ func (c *Completer) convertCompletionRequest(messages []provider.Message, option
 			Type: openai.ToolTypeFunction,
 
 			Function: &openai.FunctionDefinition{
-				Name:       t.Name,
-				Parameters: t.Parameters,
-
+				Name:        t.Name,
 				Description: t.Description,
+
+				Parameters: t.Parameters,
 			},
 		}
 
@@ -304,13 +308,15 @@ func toToolCalls(calls []openai.ToolCall) []provider.ToolCall {
 	var result []provider.ToolCall
 
 	for _, c := range calls {
-		if c.Type == openai.ToolTypeFunction {
-			result = append(result, provider.ToolCall{
+		if c.Function.Name != "" || c.Function.Arguments != "" {
+			call := provider.ToolCall{
 				ID: c.ID,
 
 				Name:      c.Function.Name,
 				Arguments: c.Function.Arguments,
-			})
+			}
+
+			result = append(result, call)
 		}
 	}
 

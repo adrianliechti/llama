@@ -247,7 +247,7 @@ type ToolCall struct {
 
 	Type ToolType `json:"type"`
 
-	//Index *int `json:"index,omitempty"`
+	Index int `json:"index"`
 
 	Function *FunctionCall `json:"function,omitempty"`
 }
@@ -261,8 +261,8 @@ type Function struct {
 
 // https://platform.openai.com/docs/api-reference/chat/object
 type FunctionCall struct {
-	Name      string `json:"name,omitempty"`
-	Arguments string `json:"arguments,omitempty"`
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"`
 }
 
 // https://platform.openai.com/docs/api-reference/audio/createSpeech

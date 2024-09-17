@@ -11,3 +11,9 @@ func WithEmbedder(embedder index.Embedder) Option {
 		p.embedder = embedder
 	}
 }
+
+func WithReranker(reranker index.Reranker) Option {
+	return func(p *Provider) {
+		p.reranker = reranker
+	}
+}

@@ -27,6 +27,7 @@ func New(cfg *config.Config) (*Handler, error) {
 }
 
 func (h *Handler) Attach(r chi.Router) {
+	r.Post("/read", h.handleRead)
 	r.Post("/rerank", h.handleRerank)
 }
 

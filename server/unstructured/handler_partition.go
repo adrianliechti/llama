@@ -1,56 +1,89 @@
 package unstructured
 
 import (
+	"fmt"
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/partitioner"
+	"github.com/adrianliechti/llama/pkg/extractor"
+	"github.com/adrianliechti/llama/pkg/text"
 )
 
 func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
-	p, err := h.Partitioner("default")
+	e, err := h.Extractor("default")
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	file, header, err := r.FormFile("files")
-
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err)
-		return
+	input := extractor.File{
+		URL: r.FormValue("url"),
 	}
 
-	defer file.Close()
+	if input.URL == "" {
+		file, header, err := r.FormFile("files")
 
-	input := partitioner.File{
-		Content: file,
-		Name:    header.Filename,
-	}
-
-	if input.Name == "" {
-		http.Error(w, "invalid content type", http.StatusBadRequest)
-		return
-	}
-
-	partitions, err := p.Partition(r.Context(), input, nil)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	var result []Partition
-
-	for _, p := range partitions {
-		partition := Partition{
-			ID: p.ID,
-
-			Text: p.Content,
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
 		}
 
-		result = append(result, partition)
+		if header.Filename == "" {
+			http.Error(w, "invalid content type", http.StatusBadRequest)
+			return
+		}
+
+		defer file.Close()
+
+		input.Name = header.Filename
+		input.Content = file
+	}
+
+	chunkStrategy := parseChunkingStrategy(r.FormValue("chunking_strategy"))
+
+	// if chunkStrategy == ChunkingStrategyUnknown {
+	// 	http.Error(w, "invalid chunking strategy", http.StatusBadRequest)
+	// 	return
+	// }
+
+	document, err := e.Extract(r.Context(), input, nil)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	result := []Partition{
+		{
+			ID:   input.Name,
+			Text: document.Content,
+		},
+	}
+
+	if chunkStrategy != ChunkingStrategyNone {
+		splitter := text.NewSplitter()
+		chunks := splitter.Split(document.Content)
+
+		result = []Partition{}
+
+		for i, chunk := range chunks {
+			partition := Partition{
+				ID:   fmt.Sprintf("%s#%d", input.Name, i),
+				Text: chunk,
+			}
+
+			result = append(result, partition)
+		}
 	}
 
 	writeJson(w, result)
+}
+
+func parseChunkingStrategy(value string) ChunkingStrategy {
+	switch value {
+	case "none", "":
+		return ChunkingStrategyNone
+	}
+
+	return ChunkingStrategyUnknown
 }

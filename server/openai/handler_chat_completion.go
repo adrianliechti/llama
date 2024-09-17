@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/adrianliechti/llama/pkg/jsonschema"
 	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/google/uuid"
@@ -110,7 +109,7 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 						FinishReason: oaiFinishReason(completion.Reason),
 
 						Delta: &ChatCompletionMessage{
-							//Role:    fromMessageRole(completion.Role),
+							Role:    oaiMessageRole(completion.Message.Role),
 							Content: completion.Message.Content,
 
 							ToolCalls:  oaiToolCalls(completion.Message.ToolCalls),
@@ -309,22 +308,8 @@ func toTools(tools []Tool) ([]provider.Tool, error) {
 			function := provider.Tool{
 				Name:        t.ToolFunction.Name,
 				Description: t.ToolFunction.Description,
-			}
 
-			if t.ToolFunction.Parameters != nil {
-				input, err := json.Marshal(t.ToolFunction.Parameters)
-
-				if err != nil {
-					return nil, err
-				}
-
-				var params jsonschema.Definition
-
-				if err := json.Unmarshal(input, &params); err != nil {
-					return nil, err
-				}
-
-				function.Parameters = params
+				Parameters: t.ToolFunction.Parameters,
 			}
 
 			result = append(result, function)
@@ -339,12 +324,14 @@ func toToolCalls(calls []ToolCall) []provider.ToolCall {
 
 	for _, c := range calls {
 		if c.Type == ToolTypeFunction && c.Function != nil {
-			result = append(result, provider.ToolCall{
+			call := provider.ToolCall{
 				ID: c.ID,
 
 				Name:      c.Function.Name,
 				Arguments: c.Function.Arguments,
-			})
+			}
+
+			result = append(result, call)
 		}
 	}
 
@@ -389,9 +376,12 @@ func oaiFinishReason(val provider.CompletionReason) *FinishReason {
 func oaiToolCalls(calls []provider.ToolCall) []ToolCall {
 	result := make([]ToolCall, 0)
 
-	for _, c := range calls {
+	for i, c := range calls {
 		result = append(result, ToolCall{
-			ID:   c.ID,
+			Index: i,
+
+			ID: c.ID,
+
 			Type: ToolTypeFunction,
 
 			Function: &FunctionCall{

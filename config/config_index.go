@@ -47,11 +47,14 @@ type indexConfig struct {
 	Token string `yaml:"token"`
 
 	Namespace string `yaml:"namespace"`
-	Embedding string `yaml:"embedding"`
+
+	Embedder string `yaml:"embedder"`
+	Reranker string `yaml:"reranker"`
 }
 
 type indexContext struct {
 	Embedder index.Embedder
+	Reranker index.Reranker
 }
 
 func (cfg *Config) registerIndexes(f *configFile) error {
@@ -59,8 +62,14 @@ func (cfg *Config) registerIndexes(f *configFile) error {
 		var err error
 		context := indexContext{}
 
-		if i.Embedding != "" {
-			if context.Embedder, err = cfg.Embedder(i.Embedding); err != nil {
+		if i.Embedder != "" {
+			if context.Embedder, err = cfg.Embedder(i.Embedder); err != nil {
+				return err
+			}
+		}
+
+		if i.Reranker != "" {
+			if context.Reranker, err = cfg.Reranker(i.Reranker); err != nil {
 				return err
 			}
 		}
@@ -118,6 +127,10 @@ func chromaIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 		options = append(options, chroma.WithEmbedder(context.Embedder))
 	}
 
+	if context.Reranker != nil {
+		options = append(options, chroma.WithReranker(context.Reranker))
+	}
+
 	return chroma.New(cfg.URL, cfg.Namespace, options...)
 }
 
@@ -134,6 +147,10 @@ func memoryIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 		options = append(options, memory.WithEmbedder(context.Embedder))
 	}
 
+	if context.Reranker != nil {
+		options = append(options, memory.WithReranker(context.Reranker))
+	}
+
 	return memory.New(options...)
 }
 
@@ -144,6 +161,10 @@ func qdrantIndex(cfg indexConfig, context indexContext) (index.Provider, error) 
 		options = append(options, qdrant.WithEmbedder(context.Embedder))
 	}
 
+	if context.Reranker != nil {
+		options = append(options, qdrant.WithReranker(context.Reranker))
+	}
+
 	return qdrant.New(cfg.URL, cfg.Namespace, options...)
 }
 
@@ -152,6 +173,10 @@ func weaviateIndex(cfg indexConfig, context indexContext) (index.Provider, error
 
 	if context.Embedder != nil {
 		options = append(options, weaviate.WithEmbedder(context.Embedder))
+	}
+
+	if context.Reranker != nil {
+		options = append(options, weaviate.WithReranker(context.Reranker))
 	}
 
 	return weaviate.New(cfg.URL, cfg.Namespace, options...)

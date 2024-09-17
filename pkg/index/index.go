@@ -42,3 +42,4 @@ type Result struct {
 }
 
 type Embedder = provider.Embedder
+type Reranker = provider.Reranker

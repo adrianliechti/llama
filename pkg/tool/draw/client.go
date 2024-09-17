@@ -39,7 +39,7 @@ func (t *Tool) Description() string {
 	return "Draw images using stable diffusion based on a input prompt. Returns the image data as base64 encoded data"
 }
 
-func (*Tool) Parameters() jsonschema.Definition {
+func (*Tool) Parameters() any {
 	return jsonschema.Definition{
 		Type: jsonschema.DataTypeObject,
 

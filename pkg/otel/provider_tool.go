@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/jsonschema"
 	"github.com/adrianliechti/llama/pkg/tool"
 
 	"go.opentelemetry.io/otel"
@@ -48,7 +47,7 @@ func (p *observableTool) Description() string {
 	return p.tool.Description()
 }
 
-func (p *observableTool) Parameters() jsonschema.Definition {
+func (p *observableTool) Parameters() any {
 	return p.tool.Parameters()
 }
 
