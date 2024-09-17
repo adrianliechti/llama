@@ -2,8 +2,6 @@ package provider
 
 import (
 	"io"
-
-	"github.com/adrianliechti/llama/pkg/jsonschema"
 )
 
 type Provider = any
@@ -23,7 +21,7 @@ type Tool struct {
 	Name        string
 	Description string
 
-	Parameters jsonschema.Definition
+	Parameters any
 }
 
 type Image struct {

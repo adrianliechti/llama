@@ -195,10 +195,10 @@ func (c *Completer) convertCompletionRequest(messages []provider.Message, option
 			Type: openai.ToolTypeFunction,
 
 			Function: &openai.FunctionDefinition{
-				Name:       t.Name,
-				Parameters: t.Parameters,
-
+				Name:        t.Name,
 				Description: t.Description,
+
+				Parameters: t.Parameters,
 			},
 		}
 

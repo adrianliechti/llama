@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/adrianliechti/llama/pkg/jsonschema"
 	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/google/uuid"
@@ -309,22 +308,8 @@ func toTools(tools []Tool) ([]provider.Tool, error) {
 			function := provider.Tool{
 				Name:        t.ToolFunction.Name,
 				Description: t.ToolFunction.Description,
-			}
 
-			if t.ToolFunction.Parameters != nil {
-				input, err := json.Marshal(t.ToolFunction.Parameters)
-
-				if err != nil {
-					return nil, err
-				}
-
-				var params jsonschema.Definition
-
-				if err := json.Unmarshal(input, &params); err != nil {
-					return nil, err
-				}
-
-				function.Parameters = params
+				Parameters: t.ToolFunction.Parameters,
 			}
 
 			result = append(result, function)
