@@ -3,6 +3,8 @@ package config
 import (
 	"errors"
 
+	"github.com/adrianliechti/llama/pkg/provider"
+
 	"golang.org/x/time/rate"
 	"gopkg.in/yaml.v3"
 )
@@ -55,6 +57,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 				}
 
 				cfg.RegisterEmbedder(p.Type, id, embedder)
+				cfg.RegisterReranker(p.Type, id, provider.FromEmbedder(embedder))
 
 			case ModelTypeReranker:
 				reranker, err := createReranker(p, context)

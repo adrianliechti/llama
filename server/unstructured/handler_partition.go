@@ -3,6 +3,7 @@ package unstructured
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
@@ -41,13 +42,17 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 	}
 
 	chunkStrategy := parseChunkingStrategy(r.FormValue("chunking_strategy"))
-	chunkLength := 500
-	chunkOverlap := 0
 
-	// if chunkStrategy == ChunkingStrategyUnknown {
-	// 	http.Error(w, "invalid chunking strategy", http.StatusBadRequest)
-	// 	return
-	// }
+	chunkLength, _ := strconv.Atoi(r.FormValue("max_characters"))
+	chunkOverlap, _ := strconv.Atoi(r.FormValue("overlap"))
+
+	if chunkLength <= 0 {
+		chunkLength = 500
+	}
+
+	if chunkOverlap <= 0 {
+		chunkOverlap = 0
+	}
 
 	document, err := e.Extract(r.Context(), input, nil)
 

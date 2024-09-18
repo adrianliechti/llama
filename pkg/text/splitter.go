@@ -33,6 +33,7 @@ func NewSplitter() Splitter {
 }
 
 func (s *Splitter) Split(text string) []string {
+	text = Normalize(text)
 	separator := s.textSeparator(text)
 
 	result := make([]string, 0)
