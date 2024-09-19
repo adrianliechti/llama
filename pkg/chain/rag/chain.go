@@ -72,12 +72,6 @@ func WithIndex(index index.Provider) Option {
 	}
 }
 
-func WithLimit(limit int) Option {
-	return func(c *Chain) {
-		c.limit = &limit
-	}
-}
-
 func WithTemperature(temperature float32) Option {
 	return func(c *Chain) {
 		c.temperature = &temperature

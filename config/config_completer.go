@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/anthropic"
 	"github.com/adrianliechti/llama/pkg/provider/azure"
@@ -20,20 +19,14 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
-func (cfg *Config) RegisterCompleter(name, model string, p provider.Completer) {
+func (cfg *Config) RegisterCompleter(model string, p provider.Completer) {
 	cfg.RegisterModel(model)
 
 	if cfg.completer == nil {
 		cfg.completer = make(map[string]provider.Completer)
 	}
 
-	completer, ok := p.(otel.ObservableCompleter)
-
-	if !ok {
-		completer = otel.NewCompleter(name, model, p)
-	}
-
-	cfg.completer[model] = completer
+	cfg.completer[model] = p
 }
 
 func (cfg *Config) Completer(model string) (provider.Completer, error) {
@@ -101,15 +94,11 @@ func createCompleter(cfg providerConfig, model modelContext) (provider.Completer
 func anthropicCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
 	var options []anthropic.Option
 
-	if cfg.URL != "" {
-		options = append(options, anthropic.WithURL(cfg.URL))
-	}
-
 	if cfg.Token != "" {
 		options = append(options, anthropic.WithToken(cfg.Token))
 	}
 
-	return anthropic.NewCompleter(model.ID, options...)
+	return anthropic.NewCompleter(cfg.URL, model.ID, options...)
 }
 
 func azureCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
@@ -191,10 +180,6 @@ func openaiCompleter(cfg providerConfig, model modelContext) (provider.Completer
 
 	if cfg.Token != "" {
 		options = append(options, openai.WithToken(cfg.Token))
-	}
-
-	if model.Limiter != nil {
-		options = append(options, openai.WithLimiter(model.Limiter))
 	}
 
 	return openai.NewCompleter(cfg.URL, model.ID, options...)

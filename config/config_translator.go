@@ -7,8 +7,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/translator"
 	"github.com/adrianliechti/llama/pkg/translator/azure"
 	"github.com/adrianliechti/llama/pkg/translator/deepl"
-
-	"github.com/adrianliechti/llama/pkg/otel"
 )
 
 func (cfg *Config) RegisterTranslator(name, model string, p translator.Provider) {
@@ -16,13 +14,7 @@ func (cfg *Config) RegisterTranslator(name, model string, p translator.Provider)
 		cfg.translator = make(map[string]translator.Provider)
 	}
 
-	translator, ok := p.(otel.ObservableTranslator)
-
-	if !ok {
-		translator = otel.NewTranslator(name, model, p)
-	}
-
-	cfg.translator[model] = translator
+	cfg.translator[model] = p
 }
 
 func (cfg *Config) Translator(model string) (translator.Provider, error) {

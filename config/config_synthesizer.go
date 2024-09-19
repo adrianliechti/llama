@@ -4,26 +4,19 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/elevenlabs"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
-func (cfg *Config) RegisterSynthesizer(name, model string, p provider.Synthesizer) {
+func (cfg *Config) RegisterSynthesizer(model string, p provider.Synthesizer) {
 	cfg.RegisterModel(model)
 
 	if cfg.synthesizer == nil {
 		cfg.synthesizer = make(map[string]provider.Synthesizer)
 	}
 
-	synthesizer, ok := p.(otel.ObservableSynthesizer)
-
-	if !ok {
-		synthesizer = otel.NewSynthesizer(name, model, p)
-	}
-
-	cfg.synthesizer[model] = synthesizer
+	cfg.synthesizer[model] = p
 }
 
 func (cfg *Config) Synthesizer(model string) (provider.Synthesizer, error) {
@@ -52,15 +45,11 @@ func createSynthesizer(cfg providerConfig, model modelContext) (provider.Synthes
 func elevenlabsSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesizer, error) {
 	var options []elevenlabs.Option
 
-	if cfg.URL != "" {
-		options = append(options, elevenlabs.WithURL(cfg.URL))
-	}
-
 	if cfg.Token != "" {
 		options = append(options, elevenlabs.WithToken(cfg.Token))
 	}
 
-	return elevenlabs.NewSynthesizer(model.ID, options...)
+	return elevenlabs.NewSynthesizer(cfg.URL, model.ID, options...)
 }
 
 func openaiSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesizer, error) {
@@ -68,10 +57,6 @@ func openaiSynthesizer(cfg providerConfig, model modelContext) (provider.Synthes
 
 	if cfg.Token != "" {
 		options = append(options, openai.WithToken(cfg.Token))
-	}
-
-	if model.Limiter != nil {
-		options = append(options, openai.WithLimiter(model.Limiter))
 	}
 
 	return openai.NewSynthesizer(cfg.URL, model.ID, options...)

@@ -4,26 +4,19 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 	"github.com/adrianliechti/llama/pkg/provider/replicate/flux"
 )
 
-func (cfg *Config) RegisterRenderer(name, model string, p provider.Renderer) {
+func (cfg *Config) RegisterRenderer(model string, p provider.Renderer) {
 	cfg.RegisterModel(model)
 
 	if cfg.renderer == nil {
 		cfg.renderer = make(map[string]provider.Renderer)
 	}
 
-	renderer, ok := p.(otel.ObservableRenderer)
-
-	if !ok {
-		renderer = otel.NewRenderer(name, model, p)
-	}
-
-	cfg.renderer[model] = renderer
+	cfg.renderer[model] = p
 }
 
 func (cfg *Config) Renderer(model string) (provider.Renderer, error) {
@@ -56,10 +49,6 @@ func openaiRenderer(cfg providerConfig, model modelContext) (provider.Renderer, 
 		options = append(options, openai.WithToken(cfg.Token))
 	}
 
-	if model.Limiter != nil {
-		options = append(options, openai.WithLimiter(model.Limiter))
-	}
-
 	return openai.NewRenderer(cfg.URL, model.ID, options...)
 }
 
@@ -67,15 +56,11 @@ func replicateRenderer(cfg providerConfig, model modelContext) (provider.Rendere
 	if strings.HasPrefix(strings.ToLower(model.ID), "black-forest-labs/flux") {
 		var options []flux.Option
 
-		if cfg.URL != "" {
-			options = append(options, flux.WithURL(cfg.URL))
-		}
-
 		if cfg.Token != "" {
 			options = append(options, flux.WithToken(cfg.Token))
 		}
 
-		return flux.NewRenderer(model.ID, options...)
+		return flux.NewRenderer(cfg.URL, model.ID, options...)
 	}
 
 	return nil, errors.New("model not supported: " + model.ID)

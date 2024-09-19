@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-type ObservableRenderer interface {
+type Renderer interface {
 	Observable
 	provider.Renderer
 }
@@ -25,7 +25,7 @@ type observableRenderer struct {
 	renderer provider.Renderer
 }
 
-func NewRenderer(provider, model string, p provider.Renderer) ObservableRenderer {
+func NewRenderer(provider, model string, p provider.Renderer) Renderer {
 	library := strings.ToLower(provider)
 
 	return &observableRenderer{

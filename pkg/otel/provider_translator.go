@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-type ObservableTranslator interface {
+type Translator interface {
 	Observable
 	translator.Provider
 }
@@ -25,7 +25,7 @@ type observableTranslator struct {
 	translator translator.Provider
 }
 
-func NewTranslator(provider, model string, p translator.Provider) ObservableTranslator {
+func NewTranslator(provider, model string, p translator.Provider) Translator {
 	library := strings.ToLower(provider)
 
 	return &observableTranslator{

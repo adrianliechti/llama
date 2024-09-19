@@ -11,22 +11,17 @@ import (
 	"github.com/adrianliechti/llama/pkg/extractor/text"
 	"github.com/adrianliechti/llama/pkg/extractor/tika"
 	"github.com/adrianliechti/llama/pkg/extractor/unstructured"
-
+	"github.com/adrianliechti/llama/pkg/limiter"
 	"github.com/adrianliechti/llama/pkg/otel"
+	"golang.org/x/time/rate"
 )
 
-func (cfg *Config) RegisterExtractor(name, alias string, p extractor.Provider) {
+func (cfg *Config) RegisterExtractor(alias string, p extractor.Provider) {
 	if cfg.extractors == nil {
 		cfg.extractors = make(map[string]extractor.Provider)
 	}
 
-	extractor, ok := p.(otel.ObservableExtractor)
-
-	if !ok {
-		extractor = otel.NewExtractor(name, p)
-	}
-
-	cfg.extractors[alias] = extractor
+	cfg.extractors[alias] = p
 }
 
 func (cfg *Config) Extractor(id string) (extractor.Provider, error) {
@@ -44,29 +39,55 @@ type extractorConfig struct {
 
 	URL   string `yaml:"url"`
 	Token string `yaml:"token"`
+
+	Limit *int `yaml:"limit"`
+}
+
+type extractorContext struct {
+	Limiter *rate.Limiter
 }
 
 func (cfg *Config) RegisterExtractors(f *configFile) error {
 	var extractors []extractor.Provider
 
-	for id, c := range f.Extractors {
-		extractor, err := createExtractor(c)
+	for id, e := range f.Extractors {
+		context := extractorContext{}
+
+		limit := e.Limit
+
+		if limit == nil {
+			limit = e.Limit
+		}
+
+		if limit != nil {
+			context.Limiter = rate.NewLimiter(rate.Limit(*limit), *limit)
+		}
+
+		extractor, err := createExtractor(e, context)
 
 		if err != nil {
 			return err
 		}
 
+		if _, ok := extractor.(limiter.Extractor); !ok {
+			extractor = limiter.NewExtractor(context.Limiter, extractor)
+		}
+
+		if _, ok := extractor.(otel.Extractor); !ok {
+			extractor = otel.NewExtractor(id, extractor)
+		}
+
 		extractors = append(extractors, extractor)
 
-		cfg.RegisterExtractor(c.Type, id, extractor)
+		cfg.RegisterExtractor(id, extractor)
 	}
 
-	cfg.RegisterExtractor("default", "", multi.New(extractors...))
+	cfg.RegisterExtractor("", multi.New(extractors...))
 
 	return nil
 }
 
-func createExtractor(cfg extractorConfig) (extractor.Provider, error) {
+func createExtractor(cfg extractorConfig, context extractorContext) (extractor.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
 	case "azure":
 		return azureExtractor(cfg)

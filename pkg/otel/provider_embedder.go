@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-type ObservableEmbedder interface {
+type Embedder interface {
 	Observable
 	provider.Embedder
 }
@@ -25,7 +25,7 @@ type observableEmbedder struct {
 	embedder provider.Embedder
 }
 
-func NewEmbedder(provider, model string, p provider.Embedder) ObservableEmbedder {
+func NewEmbedder(provider, model string, p provider.Embedder) Embedder {
 	library := strings.ToLower(provider)
 
 	return &observableEmbedder{

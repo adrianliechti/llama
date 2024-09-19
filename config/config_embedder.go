@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/azure"
 	"github.com/adrianliechti/llama/pkg/provider/cohere"
@@ -15,20 +14,14 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
-func (cfg *Config) RegisterEmbedder(name, model string, p provider.Embedder) {
+func (cfg *Config) RegisterEmbedder(model string, p provider.Embedder) {
 	cfg.RegisterModel(model)
 
 	if cfg.embedder == nil {
 		cfg.embedder = make(map[string]provider.Embedder)
 	}
 
-	embedder, ok := p.(otel.ObservableEmbedder)
-
-	if !ok {
-		embedder = otel.NewEmbedder(name, model, p)
-	}
-
-	cfg.embedder[model] = embedder
+	cfg.embedder[model] = p
 }
 
 func (cfg *Config) Embedder(model string) (provider.Embedder, error) {
@@ -89,7 +82,7 @@ func cohereEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, 
 		options = append(options, cohere.WithToken(cfg.Token))
 	}
 
-	return cohere.NewEmbedder(model.ID, options...)
+	return cohere.NewEmbedder(cfg.URL, model.ID, options...)
 }
 
 func huggingfaceEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
@@ -129,10 +122,6 @@ func openaiEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, 
 
 	if cfg.Token != "" {
 		options = append(options, openai.WithToken(cfg.Token))
-	}
-
-	if model.Limiter != nil {
-		options = append(options, openai.WithLimiter(model.Limiter))
 	}
 
 	return openai.NewEmbedder(cfg.URL, model.ID, options...)

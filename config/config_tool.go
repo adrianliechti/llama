@@ -16,18 +16,12 @@ import (
 	"github.com/adrianliechti/llama/pkg/otel"
 )
 
-func (c *Config) RegisterTool(name, alias string, p tool.Tool) {
+func (c *Config) RegisterTool(alias string, p tool.Tool) {
 	if c.tools == nil {
 		c.tools = make(map[string]tool.Tool)
 	}
 
-	tool, ok := p.(otel.ObservableTool)
-
-	if !ok {
-		tool = otel.NewTool(name, p)
-	}
-
-	c.tools[alias] = tool
+	c.tools[alias] = p
 }
 
 func (cfg *Config) Tool(id string) (tool.Tool, error) {
@@ -71,7 +65,11 @@ func (cfg *Config) registerTools(f *configFile) error {
 			return err
 		}
 
-		cfg.RegisterTool(t.Type, id, tool)
+		if _, ok := tool.(otel.Tool); !ok {
+			tool = otel.NewTool(t.Type, tool)
+		}
+
+		cfg.RegisterTool(id, tool)
 	}
 
 	return nil

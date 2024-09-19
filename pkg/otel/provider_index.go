@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-type ObservableIndex interface {
+type Index interface {
 	Observable
 	index.Provider
 }
@@ -24,7 +24,7 @@ type observableIndex struct {
 	index index.Provider
 }
 
-func NewIndex(provider, index string, p index.Provider) ObservableIndex {
+func NewIndex(provider, index string, p index.Provider) Index {
 	library := strings.ToLower(provider)
 
 	return &observableIndex{

@@ -42,10 +42,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		options = new(provider.CompleteOptions)
 	}
 
-	if c.limiter != nil {
-		c.limiter.Wait(ctx)
-	}
-
 	req, err := c.convertCompletionRequest(messages, options)
 
 	if err != nil {

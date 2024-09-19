@@ -12,7 +12,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/index/memory"
 	"github.com/adrianliechti/llama/pkg/index/qdrant"
 	"github.com/adrianliechti/llama/pkg/index/weaviate"
-
 	"github.com/adrianliechti/llama/pkg/otel"
 )
 
@@ -21,13 +20,7 @@ func (cfg *Config) RegisterIndex(name, alias string, p index.Provider) {
 		cfg.indexes = make(map[string]index.Provider)
 	}
 
-	index, ok := p.(otel.ObservableIndex)
-
-	if !ok {
-		index = otel.NewIndex(name, alias, p)
-	}
-
-	cfg.indexes[alias] = index
+	cfg.indexes[alias] = p
 }
 
 func (cfg *Config) Index(id string) (index.Provider, error) {
@@ -78,6 +71,10 @@ func (cfg *Config) registerIndexes(f *configFile) error {
 
 		if err != nil {
 			return err
+		}
+
+		if _, ok := index.(otel.Index); !ok {
+			index = otel.NewIndex(i.Type, id, index)
 		}
 
 		cfg.RegisterIndex(i.Type, id, index)

@@ -37,10 +37,6 @@ func (s *Synthesizer) Synthesize(ctx context.Context, content string, options *p
 		options = new(provider.SynthesizeOptions)
 	}
 
-	if s.limiter != nil {
-		s.limiter.Wait(ctx)
-	}
-
 	req := openai.CreateSpeechRequest{
 		Input: content,
 

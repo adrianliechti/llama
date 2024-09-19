@@ -3,6 +3,8 @@ package config
 import (
 	"errors"
 
+	"github.com/adrianliechti/llama/pkg/limiter"
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 
 	"golang.org/x/time/rate"
@@ -47,7 +49,15 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterCompleter(p.Type, id, completer)
+				if _, ok := completer.(limiter.Completer); !ok {
+					completer = limiter.NewCompleter(context.Limiter, completer)
+				}
+
+				if _, ok := completer.(otel.Completer); !ok {
+					completer = otel.NewCompleter(p.Type, id, completer)
+				}
+
+				cfg.RegisterCompleter(id, completer)
 
 			case ModelTypeEmbedder:
 				embedder, err := createEmbedder(p, context)
@@ -56,8 +66,16 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterEmbedder(p.Type, id, embedder)
-				cfg.RegisterReranker(p.Type, id, provider.FromEmbedder(embedder))
+				if _, ok := embedder.(limiter.Embedder); !ok {
+					embedder = limiter.NewEmbedder(context.Limiter, embedder)
+				}
+
+				if _, ok := embedder.(otel.Embedder); !ok {
+					embedder = otel.NewEmbedder(p.Type, id, embedder)
+				}
+
+				cfg.RegisterEmbedder(id, embedder)
+				cfg.RegisterReranker(id, provider.FromEmbedder(embedder))
 
 			case ModelTypeReranker:
 				reranker, err := createReranker(p, context)
@@ -66,7 +84,15 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterReranker(p.Type, id, reranker)
+				if _, ok := reranker.(limiter.Reranker); !ok {
+					reranker = limiter.NewReranker(context.Limiter, reranker)
+				}
+
+				if _, ok := reranker.(otel.Reranker); !ok {
+					reranker = otel.NewReranker(p.Type, id, reranker)
+				}
+
+				cfg.RegisterReranker(id, reranker)
 
 			case ModelTypeRenderer:
 				renderer, err := createRenderer(p, context)
@@ -75,7 +101,15 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterRenderer(p.Type, id, renderer)
+				if _, ok := renderer.(limiter.Renderer); !ok {
+					renderer = limiter.NewRenderer(context.Limiter, renderer)
+				}
+
+				if _, ok := renderer.(otel.Renderer); !ok {
+					renderer = otel.NewRenderer(p.Type, id, renderer)
+				}
+
+				cfg.RegisterRenderer(id, renderer)
 
 			case ModelTypeSynthesizer:
 				synthesizer, err := createSynthesizer(p, context)
@@ -84,7 +118,15 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterSynthesizer(p.Type, id, synthesizer)
+				if _, ok := synthesizer.(limiter.Synthesizer); !ok {
+					synthesizer = limiter.NewSynthesizer(context.Limiter, synthesizer)
+				}
+
+				if _, ok := synthesizer.(otel.Synthesizer); !ok {
+					synthesizer = otel.NewSynthesizer(p.Type, id, synthesizer)
+				}
+
+				cfg.RegisterSynthesizer(id, synthesizer)
 
 			case ModelTypeTranscriber:
 				transcriber, err := createTranscriber(p, context)
@@ -93,7 +135,15 @@ func (cfg *Config) registerProviders(f *configFile) error {
 					return err
 				}
 
-				cfg.RegisterTranscriber(p.Type, id, transcriber)
+				if _, ok := transcriber.(limiter.Transcriber); !ok {
+					transcriber = limiter.NewTranscriber(context.Limiter, transcriber)
+				}
+
+				if _, ok := transcriber.(otel.Transcriber); !ok {
+					transcriber = otel.NewTranscriber(p.Type, id, transcriber)
+				}
+
+				cfg.RegisterTranscriber(id, transcriber)
 
 			default:
 				return errors.New("invalid model type: " + id)

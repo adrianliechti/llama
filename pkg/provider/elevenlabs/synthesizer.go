@@ -17,7 +17,7 @@ type Synthesizer struct {
 	*Config
 }
 
-func NewSynthesizer(model string, options ...Option) (*Synthesizer, error) {
+func NewSynthesizer(url, model string, options ...Option) (*Synthesizer, error) {
 	cfg := &Config{
 		client: http.DefaultClient,
 

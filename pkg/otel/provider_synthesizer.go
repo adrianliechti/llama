@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-type ObservableSynthesizer interface {
+type Synthesizer interface {
 	Observable
 	provider.Synthesizer
 }
@@ -25,7 +25,7 @@ type observableSynthesizer struct {
 	synthesizer provider.Synthesizer
 }
 
-func NewSynthesizer(provider, model string, p provider.Synthesizer) ObservableSynthesizer {
+func NewSynthesizer(provider, model string, p provider.Synthesizer) Synthesizer {
 	library := strings.ToLower(provider)
 
 	return &observableSynthesizer{

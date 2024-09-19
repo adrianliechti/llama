@@ -16,11 +16,15 @@ type Embedder struct {
 	*Config
 }
 
-func NewEmbedder(model string, options ...Option) (*Embedder, error) {
+func NewEmbedder(url, model string, options ...Option) (*Embedder, error) {
+	if url == "" {
+		url = "https://api.cohere.com"
+	}
+
 	cfg := &Config{
 		client: http.DefaultClient,
 
-		url:   "https://api.cohere.com",
+		url:   url,
 		model: model,
 	}
 

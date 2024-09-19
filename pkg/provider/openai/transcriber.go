@@ -37,10 +37,6 @@ func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 		options = new(provider.TranscribeOptions)
 	}
 
-	if t.limiter != nil {
-		t.limiter.Wait(ctx)
-	}
-
 	id := uuid.NewString()
 
 	req := openai.AudioRequest{

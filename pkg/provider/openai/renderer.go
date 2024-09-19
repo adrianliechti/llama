@@ -42,10 +42,6 @@ func (r *Renderer) Render(ctx context.Context, input string, options *provider.R
 		options = new(provider.RenderOptions)
 	}
 
-	if r.limiter != nil {
-		r.limiter.Wait(ctx)
-	}
-
 	req := openai.ImageRequest{
 		Prompt: input,
 		Model:  r.model,

@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-type ObservableTool interface {
+type Tool interface {
 	Observable
 	tool.Tool
 }
@@ -23,7 +23,7 @@ type observableTool struct {
 	tool tool.Tool
 }
 
-func NewTool(provider string, p tool.Tool) ObservableTool {
+func NewTool(provider string, p tool.Tool) Tool {
 	library := strings.ToLower(provider)
 
 	return &observableTool{

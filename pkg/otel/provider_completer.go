@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-type ObservableCompleter interface {
+type Completer interface {
 	Observable
 	provider.Completer
 }
@@ -25,7 +25,7 @@ type observableCompleter struct {
 	completer provider.Completer
 }
 
-func NewCompleter(provider, model string, p provider.Completer) ObservableCompleter {
+func NewCompleter(provider, model string, p provider.Completer) Completer {
 	library := strings.ToLower(provider)
 
 	return &observableCompleter{

@@ -16,11 +16,15 @@ type Renderer struct {
 	*Config
 }
 
-func NewRenderer(model string, options ...Option) (*Renderer, error) {
+func NewRenderer(url, model string, options ...Option) (*Renderer, error) {
+	if url == "" {
+		url = "https://api.replicate.com/"
+	}
+
 	cfg := &Config{
 		client: http.DefaultClient,
 
-		url:   "https://api.replicate.com/",
+		url:   url,
 		model: model,
 	}
 

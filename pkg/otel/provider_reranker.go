@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-type ObservableReranker interface {
+type Reranker interface {
 	Observable
 	provider.Reranker
 }
@@ -25,7 +25,7 @@ type observableReranker struct {
 	reranker provider.Reranker
 }
 
-func NewReranker(provider, model string, p provider.Reranker) ObservableReranker {
+func NewReranker(provider, model string, p provider.Reranker) Reranker {
 	library := strings.ToLower(provider)
 
 	return &observableReranker{

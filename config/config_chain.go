@@ -5,33 +5,29 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/llama/pkg/limiter"
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/prompt"
 	"github.com/adrianliechti/llama/pkg/provider"
+	"golang.org/x/time/rate"
 
 	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/chain/agent"
 	"github.com/adrianliechti/llama/pkg/chain/assistant"
 	"github.com/adrianliechti/llama/pkg/chain/rag"
 
-	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/to"
 	"github.com/adrianliechti/llama/pkg/tool"
 )
 
-func (cfg *Config) RegisterChain(name, model string, p chain.Provider) {
+func (cfg *Config) RegisterChain(model string, p chain.Provider) {
 	cfg.RegisterModel(model)
 
 	if cfg.chains == nil {
 		cfg.chains = make(map[string]chain.Provider)
 	}
 
-	chain, ok := p.(otel.ObservableChain)
-
-	if !ok {
-		chain = otel.NewCompleter(name, model, p)
-	}
-
-	cfg.chains[model] = chain
+	cfg.chains[model] = p
 }
 
 type chainConfig struct {
@@ -60,6 +56,8 @@ type chainContext struct {
 	Messages []provider.Message
 
 	Tools map[string]tool.Tool
+
+	Limiter *rate.Limiter
 }
 
 func (cfg *Config) registerChains(f *configFile) error {
@@ -69,6 +67,16 @@ func (cfg *Config) registerChains(f *configFile) error {
 		context := chainContext{
 			Tools:    make(map[string]tool.Tool),
 			Messages: make([]provider.Message, 0),
+		}
+
+		limit := c.Limit
+
+		if limit == nil {
+			limit = c.Limit
+		}
+
+		if limit != nil {
+			context.Limiter = rate.NewLimiter(rate.Limit(*limit), *limit)
 		}
 
 		if c.Index != "" {
@@ -117,7 +125,15 @@ func (cfg *Config) registerChains(f *configFile) error {
 			return err
 		}
 
-		cfg.RegisterChain(c.Type, id, chain)
+		if _, ok := chain.(limiter.Chain); !ok {
+			chain = limiter.NewChain(context.Limiter, chain)
+		}
+
+		if _, ok := chain.(otel.Chain); !ok {
+			chain = otel.NewChain(c.Type, id, chain)
+		}
+
+		cfg.RegisterChain(id, chain)
 	}
 
 	return nil
@@ -196,10 +212,6 @@ func ragChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 
 	if context.Index != nil {
 		options = append(options, rag.WithIndex(context.Index))
-	}
-
-	if cfg.Limit != nil {
-		options = append(options, rag.WithLimit(*cfg.Limit))
 	}
 
 	if cfg.Temperature != nil {

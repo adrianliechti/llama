@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/sashabaranov/go-openai"
-	"golang.org/x/time/rate"
 )
 
 type Config struct {
@@ -14,8 +13,7 @@ type Config struct {
 	token string
 	model string
 
-	client  *http.Client
-	limiter *rate.Limiter
+	client *http.Client
 }
 
 type Option func(*Config)
@@ -29,12 +27,6 @@ func WithToken(token string) Option {
 func WithClient(client *http.Client) Option {
 	return func(c *Config) {
 		c.client = client
-	}
-}
-
-func WithLimiter(limiter *rate.Limiter) Option {
-	return func(c *Config) {
-		c.limiter = limiter
 	}
 }
 

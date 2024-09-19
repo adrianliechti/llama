@@ -4,27 +4,20 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/groq"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
 )
 
-func (cfg *Config) RegisterTranscriber(name, model string, p provider.Transcriber) {
+func (cfg *Config) RegisterTranscriber(model string, p provider.Transcriber) {
 	cfg.RegisterModel(model)
 
 	if cfg.transcriber == nil {
 		cfg.transcriber = make(map[string]provider.Transcriber)
 	}
 
-	transcriber, ok := p.(otel.ObservableTranscriber)
-
-	if !ok {
-		transcriber = otel.NewTranscriber(name, model, p)
-	}
-
-	cfg.transcriber[model] = transcriber
+	cfg.transcriber[model] = p
 }
 
 func (cfg *Config) Transcriber(model string) (provider.Transcriber, error) {
@@ -60,7 +53,7 @@ func groqTranscriber(cfg providerConfig, model modelContext) (provider.Transcrib
 		options = append(options, groq.WithToken(cfg.Token))
 	}
 
-	return groq.NewTranscriber(model.ID, options...)
+	return groq.NewTranscriber(cfg.URL, model.ID, options...)
 }
 
 func openaiTranscriber(cfg providerConfig, model modelContext) (provider.Transcriber, error) {
@@ -70,15 +63,11 @@ func openaiTranscriber(cfg providerConfig, model modelContext) (provider.Transcr
 		options = append(options, openai.WithToken(cfg.Token))
 	}
 
-	if model.Limiter != nil {
-		options = append(options, openai.WithLimiter(model.Limiter))
-	}
-
 	return openai.NewTranscriber(cfg.URL, model.ID, options...)
 }
 
 func whisperTranscriber(cfg providerConfig, model modelContext) (provider.Transcriber, error) {
 	var options []whisper.Option
 
-	return whisper.NewTranscriber(cfg.URL, options...)
+	return whisper.NewTranscriber(cfg.URL, model.ID, options...)
 }

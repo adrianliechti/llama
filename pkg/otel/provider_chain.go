@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-type ObservableChain interface {
+type Chain interface {
 	Observable
 	chain.Provider
 }
@@ -26,7 +26,7 @@ type observableChain struct {
 	chain chain.Provider
 }
 
-func NewChain(provider, model string, p chain.Provider) ObservableChain {
+func NewChain(provider, model string, p chain.Provider) Chain {
 	library := strings.ToLower(provider)
 
 	return &observableChain{

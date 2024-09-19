@@ -22,7 +22,7 @@ type Transcriber struct {
 	*Config
 }
 
-func NewTranscriber(url string, options ...Option) (*Transcriber, error) {
+func NewTranscriber(url, model string, options ...Option) (*Transcriber, error) {
 	if url == "" {
 		return nil, errors.New("invalid url")
 	}

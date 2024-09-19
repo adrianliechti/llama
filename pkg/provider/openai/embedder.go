@@ -32,10 +32,6 @@ func NewEmbedder(url, model string, options ...Option) (*Embedder, error) {
 }
 
 func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
-	if e.limiter != nil {
-		e.limiter.Wait(ctx)
-	}
-
 	req := openai.EmbeddingRequest{
 		Input: content,
 		Model: openai.EmbeddingModel(e.model),

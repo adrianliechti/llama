@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-type ObservableExtractor interface {
+type Extractor interface {
 	Observable
 	extractor.Provider
 }
@@ -22,13 +22,13 @@ type observableExtractor struct {
 	extractor extractor.Provider
 }
 
-func NewExtractor(provider string, p extractor.Provider) ObservableExtractor {
+func NewExtractor(provider string, p extractor.Provider) Extractor {
 	library := strings.ToLower(provider)
 
 	return &observableExtractor{
 		extractor: p,
 
-		name:    strings.TrimSuffix(strings.ToLower(provider), "-partitioner") + "-partitioner",
+		name:    strings.TrimSuffix(strings.ToLower(provider), "-exctractor") + "-exctractor",
 		library: library,
 
 		provider: provider,

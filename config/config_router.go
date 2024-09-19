@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
-
 	"github.com/adrianliechti/llama/pkg/router/roundrobin"
 )
 
@@ -40,7 +39,7 @@ func (cfg *Config) registerRouters(f *configFile) error {
 		}
 
 		if completer, ok := router.(provider.Completer); ok {
-			cfg.RegisterCompleter(r.Type, id, completer)
+			cfg.RegisterCompleter(id, completer)
 		}
 	}
 

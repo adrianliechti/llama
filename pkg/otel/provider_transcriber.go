@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-type ObservableTranscriber interface {
+type Transcriber interface {
 	Observable
 	provider.Transcriber
 }
@@ -24,7 +24,7 @@ type observableTranscriber struct {
 	transcriber provider.Transcriber
 }
 
-func NewTranscriber(provider, model string, p provider.Transcriber) ObservableTranscriber {
+func NewTranscriber(provider, model string, p provider.Transcriber) Transcriber {
 	library := strings.ToLower(provider)
 
 	return &observableTranscriber{

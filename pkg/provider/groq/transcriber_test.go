@@ -23,7 +23,7 @@ func TestTranscriber(t *testing.T) {
 		t.Skip("GROQ_API_TOKEN required for this test")
 	}
 
-	p, err := groq.NewTranscriber(model, groq.WithToken(token))
+	p, err := groq.NewTranscriber("", model, groq.WithToken(token))
 	require.NoError(t, err)
 
 	resp, err := http.Get("https://github.com/ggerganov/whisper.cpp/raw/master/samples/jfk.wav")
