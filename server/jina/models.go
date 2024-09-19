@@ -43,3 +43,9 @@ type SegmentRequest struct {
 type SegmentResponse struct {
 	Chunks []string `json:"chunks"`
 }
+
+type SummarizeRequest struct {
+	Model string `json:"model"`
+
+	Content string `json:"content"`
+}

@@ -30,6 +30,7 @@ func (h *Handler) Attach(r chi.Router) {
 	r.Post("/read", h.handleRead)
 	r.Post("/rerank", h.handleRerank)
 	r.Post("/segment", h.handleSegment)
+	r.Post("/summarize", h.handleSummarize)
 }
 
 func writeJson(w http.ResponseWriter, v any) {
