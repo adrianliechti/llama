@@ -9,7 +9,7 @@ type Document struct {
 }
 
 type Result struct {
-	Score    *float32 `json:"score,omitempty"`
+	Score    *float64 `json:"score,omitempty"`
 	Document `json:",inline"`
 }
 

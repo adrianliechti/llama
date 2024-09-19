@@ -1,4 +1,4 @@
-package jina
+package api
 
 import (
 	"cmp"
@@ -25,7 +25,7 @@ func (h *Handler) handleRerank(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rankings, err := reranker.Rerank(r.Context(), req.Query, req.Documents, &provider.RerankOptions{
-		Limit: req.TopN,
+		Limit: req.Limit,
 	})
 
 	if err != nil {
@@ -44,19 +44,20 @@ func (h *Handler) handleRerank(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		result.Results = append(result.Results, RerankResult{
+		ranking := Result{
 			Index: index,
+			Score: r.Score,
 
 			Document: Document{
-				Text: r.Content,
+				Content: r.Content,
 			},
+		}
 
-			RelevanceScore: r.Score,
-		})
+		result.Results = append(result.Results, ranking)
 	}
 
-	slices.SortFunc(result.Results, func(i, j RerankResult) int {
-		return cmp.Compare(j.RelevanceScore, i.RelevanceScore)
+	slices.SortFunc(result.Results, func(i, j Result) int {
+		return cmp.Compare(j.Score, i.Score)
 	})
 
 	writeJson(w, result)

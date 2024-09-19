@@ -1,4 +1,4 @@
-package jina
+package api
 
 import (
 	"encoding/json"
@@ -16,14 +16,6 @@ func (h *Handler) handleSegment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.MaxChunkLength < 500 {
-		req.MaxChunkLength = 500
-	}
-
-	if req.MaxChunkLength > 2000 {
-		req.MaxChunkLength = 2000
-	}
-
 	s, err := h.Segmenter("")
 
 	if err != nil {
@@ -32,27 +24,30 @@ func (h *Handler) handleSegment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	input := segmenter.File{
-		Name:    "input.txt",
+		Name:    "file.txt",
 		Content: strings.NewReader(req.Content),
 	}
 
-	segments, err := s.Segment(r.Context(), input, &segmenter.SegmentOptions{
-		SegmentLength: &req.MaxChunkLength,
-	})
+	options := &segmenter.SegmentOptions{
+		SegmentLength:  req.SegmentLength,
+		SegmentOverlap: req.SegmentOverlap,
+	}
+
+	segments, err := s.Segment(r.Context(), input, options)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
 
-	var chuks []string
+	result := SegmentResponse{}
 
 	for _, s := range segments {
-		chuks = append(chuks, s.Content)
-	}
+		segment := Segment{
+			Text: s.Content,
+		}
 
-	result := SegmentResponse{
-		Chunks: chuks,
+		result.Segements = append(result.Segements, segment)
 	}
 
 	writeJson(w, result)

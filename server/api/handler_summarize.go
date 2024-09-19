@@ -1,4 +1,4 @@
-package jina
+package api
 
 import (
 	"encoding/json"
@@ -77,7 +77,7 @@ func (h *Handler) handleSummarize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result := Document{
-		Text: completion.Message.Content,
+		Content: completion.Message.Content,
 	}
 
 	writeJson(w, result)

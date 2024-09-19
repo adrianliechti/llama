@@ -1,4 +1,4 @@
-package jina
+package api
 
 import (
 	"encoding/json"
@@ -27,7 +27,7 @@ func New(cfg *config.Config) (*Handler, error) {
 }
 
 func (h *Handler) Attach(r chi.Router) {
-	r.Post("/read", h.handleRead)
+	r.Post("/extract", h.handleExtract)
 	r.Post("/rerank", h.handleRerank)
 	r.Post("/segment", h.handleSegment)
 	r.Post("/summarize", h.handleSummarize)

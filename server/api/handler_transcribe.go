@@ -1,4 +1,4 @@
-package jina
+package api
 
 import (
 	"net/http"
@@ -41,7 +41,7 @@ func (h *Handler) handleTranscribe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result := Document{
-		Text: transcription.Content,
+		Content: transcription.Content,
 	}
 
 	writeJson(w, result)

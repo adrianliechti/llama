@@ -43,7 +43,7 @@ func (s *Handler) handleQuery(w http.ResponseWriter, r *http.Request) {
 
 	for _, r := range result {
 		results = append(results, Result{
-			Score: to.Ptr(r.Score),
+			Score: to.Ptr(float64(r.Score)),
 
 			Document: Document{
 				ID: r.ID,
