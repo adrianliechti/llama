@@ -7,7 +7,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
 )
@@ -44,19 +43,16 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 		options = new(extractor.ExtractOptions)
 	}
 
-	if !isSupported(input) {
+	if input.URL == "" {
 		return nil, extractor.ErrUnsupported
 	}
 
-	// body := map[string]any{
-	// 	"url": input.URL,
-	// }
+	body := map[string]any{
+		"url": input.URL,
+	}
 
-	// req, _ := http.NewRequestWithContext(ctx, "POST", c.url, jsonReader(body))
-	// req.Header.Set("Content-Type", "application/json")
-
-	url, _ := url.JoinPath(c.url, "/"+input.URL)
-	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, _ := http.NewRequestWithContext(ctx, "POST", c.url, jsonReader(body))
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Return-Format", "markdown")
 
 	if c.token != "" {
@@ -84,14 +80,6 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	return &extractor.Document{
 		Content: string(data),
 	}, nil
-}
-
-func isSupported(input extractor.File) bool {
-	if input.URL == "" {
-		return false
-	}
-
-	return true
 }
 
 func convertError(resp *http.Response) error {

@@ -4,9 +4,11 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/tool"
 	"github.com/adrianliechti/llama/pkg/tool/bing"
+	"github.com/adrianliechti/llama/pkg/tool/crawler"
 	"github.com/adrianliechti/llama/pkg/tool/custom"
 	"github.com/adrianliechti/llama/pkg/tool/draw"
 	"github.com/adrianliechti/llama/pkg/tool/duckduckgo"
@@ -44,7 +46,8 @@ type toolConfig struct {
 }
 
 type toolContext struct {
-	Renderer provider.Renderer
+	Renderer  provider.Renderer
+	Extractor extractor.Provider
 }
 
 func (cfg *Config) registerTools(f *configFile) error {
@@ -57,6 +60,10 @@ func (cfg *Config) registerTools(f *configFile) error {
 			if r, err := cfg.Renderer(t.Model); err == nil {
 				context.Renderer = r
 			}
+		}
+
+		if e, err := cfg.Extractor(""); err == nil {
+			context.Extractor = e
 		}
 
 		tool, err := createTool(t, context)
@@ -78,32 +85,41 @@ func (cfg *Config) registerTools(f *configFile) error {
 func createTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	switch strings.ToLower(cfg.Type) {
 	case "bing":
-		return bingTool(cfg)
+		return bingTool(cfg, context)
+
+	case "crawler":
+		return crawlerTool(cfg, context)
 
 	case "draw":
 		return drawTool(cfg, context)
 
 	case "duckduckgo":
-		return duckduckgoTool(cfg)
+		return duckduckgoTool(cfg, context)
 
 	case "tavily":
-		return tavilyTool(cfg)
+		return tavilyTool(cfg, context)
 
 	case "searxng":
-		return searxngTool(cfg)
+		return searxngTool(cfg, context)
 
 	case "custom":
-		return customTool(cfg)
+		return customTool(cfg, context)
 
 	default:
 		return nil, errors.New("invalid tool type: " + cfg.Type)
 	}
 }
 
-func bingTool(cfg toolConfig) (tool.Tool, error) {
+func bingTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	var options []bing.Option
 
 	return bing.New(cfg.Token, options...)
+}
+
+func crawlerTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+	var options []crawler.Option
+
+	return crawler.New(context.Extractor, options...)
 }
 
 func drawTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
@@ -116,25 +132,25 @@ func drawTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	return draw.New(options...)
 }
 
-func duckduckgoTool(cfg toolConfig) (tool.Tool, error) {
+func duckduckgoTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	var options []duckduckgo.Option
 
 	return duckduckgo.New(options...)
 }
 
-func searxngTool(cfg toolConfig) (tool.Tool, error) {
+func searxngTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	var options []searxng.Option
 
 	return searxng.New(cfg.URL, options...)
 }
 
-func tavilyTool(cfg toolConfig) (tool.Tool, error) {
+func tavilyTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	var options []tavily.Option
 
 	return tavily.New(cfg.Token, options...)
 }
 
-func customTool(cfg toolConfig) (tool.Tool, error) {
+func customTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	var options []custom.Option
 
 	return custom.New(cfg.URL, options...)
