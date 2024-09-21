@@ -1,8 +1,10 @@
 package multi
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
 )
@@ -25,6 +27,16 @@ func (e *Extractor) Extract(ctx context.Context, input extractor.File, options *
 	}
 
 	for _, p := range e.providers {
+		if input.Content != nil {
+			data, err := io.ReadAll(input.Content)
+
+			if err != nil {
+				return nil, err
+			}
+
+			input.Content = bytes.NewReader(data)
+		}
+
 		result, err := p.Extract(ctx, input, options)
 
 		if err != nil {

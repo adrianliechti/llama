@@ -77,6 +77,10 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 }
 
 func isSupported(input extractor.File) bool {
+	if input.Content == nil {
+		return false
+	}
+
 	ext := strings.ToLower(path.Ext(input.Name))
 	return slices.Contains(SupportedExtensions, ext)
 }

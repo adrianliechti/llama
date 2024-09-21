@@ -87,11 +87,11 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 }
 
 func isSupported(input extractor.File) bool {
-	if input.URL != "" {
-		return true
+	if input.URL == "" {
+		return false
 	}
 
-	return false
+	return true
 }
 
 func convertError(resp *http.Response) error {

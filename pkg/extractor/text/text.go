@@ -25,6 +25,10 @@ func (e *Extractor) Extract(ctx context.Context, input extractor.File, options *
 		options = new(extractor.ExtractOptions)
 	}
 
+	if input.Content == nil {
+		return nil, extractor.ErrUnsupported
+	}
+
 	data, err := io.ReadAll(input.Content)
 
 	if err != nil {
