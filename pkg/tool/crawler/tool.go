@@ -3,7 +3,6 @@ package crawler
 import (
 	"context"
 	"errors"
-	"net/http"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/tool"
@@ -12,15 +11,11 @@ import (
 var _ tool.Tool = &Tool{}
 
 type Tool struct {
-	client *http.Client
-
 	extractor extractor.Provider
 }
 
 func New(extractor extractor.Provider, options ...Option) (*Tool, error) {
 	t := &Tool{
-		client: http.DefaultClient,
-
 		extractor: extractor,
 	}
 

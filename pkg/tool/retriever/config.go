@@ -1,3 +1,3 @@
-package crawler
+package retriever
 
 type Option func(*Tool)

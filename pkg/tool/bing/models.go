@@ -1,9 +1,10 @@
 package bing
 
 type Result struct {
-	Title    string
-	Content  string
-	Location string
+	URL string `json:"url"`
+
+	Title   string `json:"title"`
+	Content string `json:"content"`
 }
 
 type SearchResponse struct {

@@ -94,9 +94,10 @@ func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, err
 
 	for _, p := range data.WebPages.Value {
 		result := Result{
-			Title:    p.Name,
-			Content:  p.Snippet,
-			Location: p.URL,
+			URL: p.URL,
+
+			Title:   p.Name,
+			Content: p.Snippet,
 		}
 
 		results = append(results, result)

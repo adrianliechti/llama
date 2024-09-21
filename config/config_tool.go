@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
+	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/tool"
 	"github.com/adrianliechti/llama/pkg/tool/bing"
@@ -12,6 +13,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool/custom"
 	"github.com/adrianliechti/llama/pkg/tool/draw"
 	"github.com/adrianliechti/llama/pkg/tool/duckduckgo"
+	"github.com/adrianliechti/llama/pkg/tool/retriever"
 	"github.com/adrianliechti/llama/pkg/tool/searxng"
 	"github.com/adrianliechti/llama/pkg/tool/tavily"
 
@@ -43,9 +45,13 @@ type toolConfig struct {
 	Token string `yaml:"token"`
 
 	Model string `yaml:"model"`
+
+	Index     string `yaml:"index"`
+	Extractor string `yaml:"extractor"`
 }
 
 type toolContext struct {
+	Index     index.Provider
 	Renderer  provider.Renderer
 	Extractor extractor.Provider
 }
@@ -56,13 +62,15 @@ func (cfg *Config) registerTools(f *configFile) error {
 
 		context := toolContext{}
 
-		if t.Model != "" {
-			if r, err := cfg.Renderer(t.Model); err == nil {
-				context.Renderer = r
-			}
+		if i, err := cfg.Index(t.Index); err == nil {
+			context.Index = i
 		}
 
-		if e, err := cfg.Extractor(""); err == nil {
+		if r, err := cfg.Renderer(t.Model); err == nil {
+			context.Renderer = r
+		}
+
+		if e, err := cfg.Extractor(t.Extractor); err == nil {
 			context.Extractor = e
 		}
 
@@ -96,11 +104,14 @@ func createTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	case "duckduckgo":
 		return duckduckgoTool(cfg, context)
 
-	case "tavily":
-		return tavilyTool(cfg, context)
+	case "retriever":
+		return retrieverTool(cfg, context)
 
 	case "searxng":
 		return searxngTool(cfg, context)
+
+	case "tavily":
+		return tavilyTool(cfg, context)
 
 	case "custom":
 		return customTool(cfg, context)
@@ -136,6 +147,12 @@ func duckduckgoTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	var options []duckduckgo.Option
 
 	return duckduckgo.New(options...)
+}
+
+func retrieverTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+	var options []retriever.Option
+
+	return retriever.New(context.Index, options...)
 }
 
 func searxngTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
