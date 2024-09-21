@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/adrianliechti/llama/config"
 	"github.com/adrianliechti/llama/server/api"
@@ -91,6 +92,8 @@ func New(cfg *config.Config) (*Server, error) {
 
 	mux.Use(s.handleAuth)
 
+	mux.Handle("/files/*", http.FileServer(http.Dir("public")))
+
 	mux.Route("/v1", func(r chi.Router) {
 		s.api.Attach(r)
 		s.openai.Attach(r)
@@ -112,6 +115,11 @@ func (s *Server) ListenAndServe() error {
 func (s *Server) handleAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+
+		if strings.HasPrefix(r.URL.Path, "/files/") {
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
+		}
 
 		var authorized = len(s.Authorizers) == 0
 

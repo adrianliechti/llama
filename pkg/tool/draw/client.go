@@ -2,13 +2,16 @@ package draw
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/tool"
+	"github.com/google/uuid"
 )
 
 var _ tool.Tool = &Tool{}
@@ -35,7 +38,7 @@ func (t *Tool) Name() string {
 }
 
 func (t *Tool) Description() string {
-	return "Draw images using stable diffusion based on a input prompt. Returns the image data as base64 encoded data"
+	return "Draw an image using stable diffusion based on a input prompt. Returns a URL to the generated image. Render the URL as markdown ```![query](url)```"
 }
 
 func (*Tool) Parameters() any {
@@ -68,11 +71,25 @@ func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, err
 		return nil, err
 	}
 
-	data, err := io.ReadAll(image.Content)
+	name := uuid.New().String() + ".png"
+
+	f, err := os.Create(filepath.Join("public", "files", name))
 
 	if err != nil {
 		return nil, err
 	}
 
-	return base64.StdEncoding.EncodeToString(data), nil
+	if _, err := io.Copy(f, image.Content); err != nil {
+		return nil, err
+	}
+
+	url, err := url.JoinPath(os.Getenv("BASE_URL"), "files/"+name)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return Result{
+		URL: url,
+	}, nil
 }
