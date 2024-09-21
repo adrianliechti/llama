@@ -163,7 +163,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			choice := completion.Choices[0]
 
-			role := toMessageRole(choice.Message.Role)
+			role := toMessageRole(choice.Delta.Role)
 
 			if role != "" {
 				result.Message.Role = role
