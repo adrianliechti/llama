@@ -148,10 +148,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			}
 		}
 
-		if result.Usage.OutputTokens == 0 {
-			result.Usage = nil
-		}
-
 		return result, nil
 	}
 }
