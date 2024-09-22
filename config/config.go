@@ -9,6 +9,8 @@ import (
 	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/reranker"
+	"github.com/adrianliechti/llama/pkg/summarizer"
 	"github.com/adrianliechti/llama/pkg/tool"
 	"github.com/adrianliechti/llama/pkg/translator"
 
@@ -25,11 +27,12 @@ type Config struct {
 	completer   map[string]provider.Completer
 	embedder    map[string]provider.Embedder
 	renderer    map[string]provider.Renderer
-	reranker    map[string]provider.Reranker
 	synthesizer map[string]provider.Synthesizer
 	transcriber map[string]provider.Transcriber
 
+	reranker   map[string]reranker.Provider
 	extractors map[string]extractor.Provider
+	summarizer map[string]summarizer.Provider
 	translator map[string]translator.Provider
 
 	tools  map[string]tool.Tool

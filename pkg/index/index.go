@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/reranker"
 )
 
 type Provider interface {
@@ -42,4 +43,4 @@ type Result struct {
 }
 
 type Embedder = provider.Embedder
-type Reranker = provider.Reranker
+type Reranker = reranker.Provider

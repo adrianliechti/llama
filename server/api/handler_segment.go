@@ -16,7 +16,7 @@ func (h *Handler) handleSegment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s, err := h.Segmenter("")
+	p, err := h.Segmenter("")
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -33,7 +33,7 @@ func (h *Handler) handleSegment(w http.ResponseWriter, r *http.Request) {
 		SegmentOverlap: req.SegmentOverlap,
 	}
 
-	segments, err := s.Segment(r.Context(), input, options)
+	segments, err := p.Segment(r.Context(), input, options)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)

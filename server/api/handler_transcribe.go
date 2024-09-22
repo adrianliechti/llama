@@ -17,7 +17,7 @@ func (h *Handler) handleTranscribe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t, err := h.Transcriber(model)
+	p, err := h.Transcriber(model)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -33,7 +33,7 @@ func (h *Handler) handleTranscribe(w http.ResponseWriter, r *http.Request) {
 		Language: language,
 	}
 
-	transcription, err := t.Transcribe(r.Context(), input, options)
+	transcription, err := p.Transcribe(r.Context(), input, options)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)

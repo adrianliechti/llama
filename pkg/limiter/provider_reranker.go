@@ -3,21 +3,21 @@ package limiter
 import (
 	"context"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/reranker"
 	"golang.org/x/time/rate"
 )
 
 type Reranker interface {
 	Limiter
-	provider.Reranker
+	reranker.Provider
 }
 
 type limitedReranker struct {
 	limiter  *rate.Limiter
-	provider provider.Reranker
+	provider reranker.Provider
 }
 
-func NewReranker(l *rate.Limiter, p provider.Reranker) Reranker {
+func NewReranker(l *rate.Limiter, p reranker.Provider) Reranker {
 	return &limitedReranker{
 		limiter:  l,
 		provider: p,
@@ -27,7 +27,7 @@ func NewReranker(l *rate.Limiter, p provider.Reranker) Reranker {
 func (p *limitedReranker) limiterSetup() {
 }
 
-func (p *limitedReranker) Rerank(ctx context.Context, query string, inputs []string, options *provider.RerankOptions) ([]provider.Result, error) {
+func (p *limitedReranker) Rerank(ctx context.Context, query string, inputs []string, options *reranker.RerankOptions) ([]reranker.Result, error) {
 	if p.limiter != nil {
 		p.limiter.Wait(ctx)
 	}

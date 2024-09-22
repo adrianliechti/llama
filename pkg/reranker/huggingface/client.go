@@ -6,23 +6,28 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/reranker"
 )
 
-var _ provider.Reranker = (*Reranker)(nil)
+var _ reranker.Provider = (*Client)(nil)
 
-type Reranker struct {
-	*Config
+type Client struct {
+	url string
+
+	token string
+	model string
+
+	client *http.Client
 }
 
-func NewReranker(url, model string, options ...Option) (*Reranker, error) {
+func New(url, model string, options ...Option) (*Client, error) {
 	if url == "" {
 		url = "https://api-inference.huggingface.co/models/" + model
 	}
 
 	url = strings.TrimRight(url, "/")
 
-	cfg := &Config{
+	c := &Client{
 		client: http.DefaultClient,
 
 		url:   url,
@@ -32,17 +37,15 @@ func NewReranker(url, model string, options ...Option) (*Reranker, error) {
 	}
 
 	for _, option := range options {
-		option(cfg)
+		option(c)
 	}
 
-	return &Reranker{
-		Config: cfg,
-	}, nil
+	return c, nil
 }
 
-func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string, options *provider.RerankOptions) ([]provider.Result, error) {
+func (c *Client) Rerank(ctx context.Context, query string, inputs []string, options *reranker.RerankOptions) ([]reranker.Result, error) {
 	if options == nil {
-		options = new(provider.RerankOptions)
+		options = new(reranker.RerankOptions)
 	}
 
 	body := map[string]any{
@@ -50,21 +53,21 @@ func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string, op
 		"texts": inputs,
 	}
 
-	if strings.Contains(r.url, "api-inference.huggingface.co") {
+	if strings.Contains(c.url, "api-inference.huggingface.co") {
 		body = map[string]any{
 			"source_sentence": query,
 			"sentences":       inputs,
 		}
 	}
 
-	req, _ := http.NewRequestWithContext(ctx, "POST", r.url, jsonReader(body))
+	req, _ := http.NewRequestWithContext(ctx, "POST", c.url, jsonReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
-	if r.token != "" {
-		req.Header.Set("Authorization", "Bearer "+r.token)
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
 	}
 
-	resp, err := r.client.Do(req)
+	resp, err := c.client.Do(req)
 
 	if err != nil {
 		return nil, err

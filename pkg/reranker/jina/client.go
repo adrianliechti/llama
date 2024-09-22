@@ -8,16 +8,21 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/reranker"
 )
 
-var _ provider.Reranker = (*Reranker)(nil)
+var _ reranker.Provider = (*Client)(nil)
 
-type Reranker struct {
-	*Config
+type Client struct {
+	url string
+
+	token string
+	model string
+
+	client *http.Client
 }
 
-func NewReranker(url, model string, options ...Option) (*Reranker, error) {
+func New(url, model string, options ...Option) (*Client, error) {
 	if url == "" {
 		url = "https://api.jina.ai"
 	}
@@ -25,7 +30,7 @@ func NewReranker(url, model string, options ...Option) (*Reranker, error) {
 	url = strings.TrimRight(url, "/")
 	url = strings.TrimSuffix(url, "/v1")
 
-	cfg := &Config{
+	c := &Client{
 		client: http.DefaultClient,
 
 		url: url,
@@ -34,21 +39,19 @@ func NewReranker(url, model string, options ...Option) (*Reranker, error) {
 	}
 
 	for _, option := range options {
-		option(cfg)
+		option(c)
 	}
 
-	return &Reranker{
-		Config: cfg,
-	}, nil
+	return c, nil
 }
 
-func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string, options *provider.RerankOptions) ([]provider.Result, error) {
+func (c *Client) Rerank(ctx context.Context, query string, inputs []string, options *reranker.RerankOptions) ([]reranker.Result, error) {
 	if options == nil {
-		options = new(provider.RerankOptions)
+		options = new(reranker.RerankOptions)
 	}
 
 	body := map[string]any{
-		"model": r.model,
+		"model": c.model,
 
 		"query":     query,
 		"documents": inputs,
@@ -58,16 +61,16 @@ func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string, op
 		body["top_n"] = *options.Limit
 	}
 
-	u, _ := url.JoinPath(r.url, "/v1/rerank")
+	u, _ := url.JoinPath(c.url, "/v1/rerank")
 
 	req, _ := http.NewRequestWithContext(ctx, "POST", u, jsonReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
-	if r.token != "" {
-		req.Header.Set("Authorization", "Bearer "+r.token)
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
 	}
 
-	resp, err := r.client.Do(req)
+	resp, err := c.client.Do(req)
 
 	if err != nil {
 		return nil, err
@@ -89,10 +92,10 @@ func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string, op
 		return nil, errors.New("no reranks found")
 	}
 
-	var result []provider.Result
+	var result []reranker.Result
 
 	for _, r := range data.Results {
-		result = append(result, provider.Result{
+		result = append(result, reranker.Result{
 			Content: inputs[r.Index],
 			Score:   r.Score,
 		})

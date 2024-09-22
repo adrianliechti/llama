@@ -31,11 +31,6 @@ type Image struct {
 	Content io.ReadCloser
 }
 
-type Result struct {
-	Content string
-	Score   float64
-}
-
 type Usage struct {
 	InputTokens  int
 	OutputTokens int

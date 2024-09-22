@@ -26,7 +26,7 @@ func (h *Handler) handleExtract(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	e, err := h.Extractor(model)
+	p, err := h.Extractor(model)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -35,7 +35,7 @@ func (h *Handler) handleExtract(w http.ResponseWriter, r *http.Request) {
 
 	options := &extractor.ExtractOptions{}
 
-	document, err := e.Extract(r.Context(), input, options)
+	document, err := p.Extract(r.Context(), input, options)
 
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)

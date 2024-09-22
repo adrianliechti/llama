@@ -5,7 +5,8 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/limiter"
 	"github.com/adrianliechti/llama/pkg/otel"
-	"github.com/adrianliechti/llama/pkg/provider"
+	reranker "github.com/adrianliechti/llama/pkg/reranker/adapter"
+	summarizer "github.com/adrianliechti/llama/pkg/summarizer/adapter"
 
 	"golang.org/x/time/rate"
 	"gopkg.in/yaml.v3"
@@ -58,6 +59,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 				}
 
 				cfg.RegisterCompleter(id, completer)
+				cfg.RegisterSummarizer(id, summarizer.FromCompleter(completer))
 
 			case ModelTypeEmbedder:
 				embedder, err := createEmbedder(p, context)
@@ -75,24 +77,7 @@ func (cfg *Config) registerProviders(f *configFile) error {
 				}
 
 				cfg.RegisterEmbedder(id, embedder)
-				cfg.RegisterReranker(id, provider.FromEmbedder(embedder))
-
-			case ModelTypeReranker:
-				reranker, err := createReranker(p, context)
-
-				if err != nil {
-					return err
-				}
-
-				if _, ok := reranker.(limiter.Reranker); !ok {
-					reranker = limiter.NewReranker(context.Limiter, reranker)
-				}
-
-				if _, ok := reranker.(otel.Reranker); !ok {
-					reranker = otel.NewReranker(p.Type, id, reranker)
-				}
-
-				cfg.RegisterReranker(id, reranker)
+				cfg.RegisterReranker(id, reranker.FromEmbedder(embedder))
 
 			case ModelTypeRenderer:
 				renderer, err := createRenderer(p, context)

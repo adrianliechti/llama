@@ -1,40 +1,37 @@
-package provider
+package adapter
 
 import (
 	"context"
 	"math"
 	"sort"
+
+	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/reranker"
 )
 
-type Reranker interface {
-	Rerank(ctx context.Context, query string, inputs []string, options *RerankOptions) ([]Result, error)
+var _ reranker.Provider = (*Adapter)(nil)
+
+type Adapter struct {
+	embedder provider.Embedder
 }
 
-type RerankOptions struct {
-	Limit *int
-}
-
-func FromEmbedder(embedder Embedder) Reranker {
-	return &embedderReranker{
+func FromEmbedder(embedder provider.Embedder) *Adapter {
+	return &Adapter{
 		embedder: embedder,
 	}
 }
 
-type embedderReranker struct {
-	embedder Embedder
-}
-
-func (r *embedderReranker) Rerank(ctx context.Context, query string, inputs []string, options *RerankOptions) ([]Result, error) {
-	result, err := r.embedder.Embed(ctx, query)
+func (a *Adapter) Rerank(ctx context.Context, query string, inputs []string, options *reranker.RerankOptions) ([]reranker.Result, error) {
+	result, err := a.embedder.Embed(ctx, query)
 
 	if err != nil {
 		return nil, err
 	}
 
-	var results []Result
+	var results []reranker.Result
 
 	for _, input := range inputs {
-		embedding, err := r.embedder.Embed(ctx, input)
+		embedding, err := a.embedder.Embed(ctx, input)
 
 		if err != nil {
 			return nil, err
@@ -42,7 +39,7 @@ func (r *embedderReranker) Rerank(ctx context.Context, query string, inputs []st
 
 		score := cosineSimilarity(result.Data, embedding.Data)
 
-		result := Result{
+		result := reranker.Result{
 			Content: input,
 			Score:   float64(score),
 		}
