@@ -53,7 +53,7 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 
 	req, _ := http.NewRequestWithContext(ctx, "POST", c.url, jsonReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Return-Format", "markdown")
+	req.Header.Set("X-Return-Format", "text")
 
 	if c.token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.token)
