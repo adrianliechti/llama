@@ -40,7 +40,7 @@ func (h *Handler) handleSegment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := SegmentResponse{}
+	result := Document{}
 
 	for _, s := range segments {
 		segment := Segment{

@@ -7,6 +7,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/segmenter"
+	"github.com/adrianliechti/llama/pkg/text"
 	"github.com/adrianliechti/llama/pkg/to"
 )
 
@@ -32,13 +33,15 @@ func (h *Handler) handleSummarize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	text := text.Normalize(req.Content)
+
 	input := segmenter.File{
 		Name:    "input.txt",
-		Content: strings.NewReader(req.Content),
+		Content: strings.NewReader(text),
 	}
 
 	segments, err := s.Segment(r.Context(), input, &segmenter.SegmentOptions{
-		SegmentLength: to.Ptr(8000),
+		SegmentLength: to.Ptr(16000),
 	})
 
 	if err != nil {
@@ -52,7 +55,7 @@ func (h *Handler) handleSummarize(w http.ResponseWriter, r *http.Request) {
 		completion, err := c.Complete(r.Context(), []provider.Message{
 			{
 				Role:    provider.MessageRoleUser,
-				Content: "Make a summary of the following text:\n\n" + segment.Content,
+				Content: "Write a concise summary of the following: \n" + segment.Content,
 			},
 		}, nil)
 
@@ -67,7 +70,7 @@ func (h *Handler) handleSummarize(w http.ResponseWriter, r *http.Request) {
 	completion, err := c.Complete(r.Context(), []provider.Message{
 		{
 			Role:    provider.MessageRoleUser,
-			Content: "Make a summary of the following text:" + "\n\n" + strings.Join(parts, "\n\n"),
+			Content: "Distill the following parts into a consolidated summary: \n" + strings.Join(parts, "\n\n"),
 		},
 	}, nil)
 
@@ -78,6 +81,14 @@ func (h *Handler) handleSummarize(w http.ResponseWriter, r *http.Request) {
 
 	result := Document{
 		Content: completion.Message.Content,
+	}
+
+	for _, p := range parts {
+		segment := Segment{
+			Text: p,
+		}
+
+		result.Segements = append(result.Segements, segment)
 	}
 
 	writeJson(w, result)

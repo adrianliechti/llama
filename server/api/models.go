@@ -8,6 +8,8 @@ type Result struct {
 
 type Document struct {
 	Content string `json:"content,omitempty"`
+
+	Segements []Segment `json:"segements,omitempty"`
 }
 
 type RerankRequest struct {
@@ -30,10 +32,6 @@ type SegmentRequest struct {
 
 	SegmentLength  *int `json:"segment_length"`
 	SegmentOverlap *int `json:"segment_overlap"`
-}
-
-type SegmentResponse struct {
-	Segements []Segment `json:"segements"`
 }
 
 type Segment struct {

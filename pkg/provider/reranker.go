@@ -14,18 +14,18 @@ type RerankOptions struct {
 	Limit *int
 }
 
-type embedderWrapper struct {
-	embedder Embedder
-}
-
 func FromEmbedder(embedder Embedder) Reranker {
-	return embedderWrapper{
+	return &embedderReranker{
 		embedder: embedder,
 	}
 }
 
-func (e embedderWrapper) Rerank(ctx context.Context, query string, inputs []string, options *RerankOptions) ([]Result, error) {
-	result, err := e.embedder.Embed(ctx, query)
+type embedderReranker struct {
+	embedder Embedder
+}
+
+func (r *embedderReranker) Rerank(ctx context.Context, query string, inputs []string, options *RerankOptions) ([]Result, error) {
+	result, err := r.embedder.Embed(ctx, query)
 
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func (e embedderWrapper) Rerank(ctx context.Context, query string, inputs []stri
 	var results []Result
 
 	for _, input := range inputs {
-		embedding, err := e.embedder.Embed(ctx, input)
+		embedding, err := r.embedder.Embed(ctx, input)
 
 		if err != nil {
 			return nil, err
