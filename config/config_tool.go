@@ -15,6 +15,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool/duckduckgo"
 	"github.com/adrianliechti/llama/pkg/tool/retriever"
 	"github.com/adrianliechti/llama/pkg/tool/searxng"
+	"github.com/adrianliechti/llama/pkg/tool/speak"
 	"github.com/adrianliechti/llama/pkg/tool/tavily"
 
 	"github.com/adrianliechti/llama/pkg/otel"
@@ -52,8 +53,10 @@ type toolConfig struct {
 
 type toolContext struct {
 	Index     index.Provider
-	Renderer  provider.Renderer
 	Extractor extractor.Provider
+
+	Renderer    provider.Renderer
+	Synthesizer provider.Synthesizer
 }
 
 func (cfg *Config) registerTools(f *configFile) error {
@@ -66,12 +69,16 @@ func (cfg *Config) registerTools(f *configFile) error {
 			context.Index = i
 		}
 
+		if e, err := cfg.Extractor(t.Extractor); err == nil {
+			context.Extractor = e
+		}
+
 		if r, err := cfg.Renderer(t.Model); err == nil {
 			context.Renderer = r
 		}
 
-		if e, err := cfg.Extractor(t.Extractor); err == nil {
-			context.Extractor = e
+		if s, err := cfg.Synthesizer(t.Model); err == nil {
+			context.Synthesizer = s
 		}
 
 		tool, err := createTool(t, context)
@@ -109,6 +116,9 @@ func createTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 
 	case "searxng":
 		return searxngTool(cfg, context)
+
+	case "speak":
+		return speakTool(cfg, context)
 
 	case "tavily":
 		return tavilyTool(cfg, context)
@@ -159,6 +169,16 @@ func searxngTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	var options []searxng.Option
 
 	return searxng.New(cfg.URL, options...)
+}
+
+func speakTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+	var options []speak.Option
+
+	if context.Synthesizer != nil {
+		options = append(options, speak.WithSynthesizer(context.Synthesizer))
+	}
+
+	return speak.New(options...)
 }
 
 func tavilyTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
