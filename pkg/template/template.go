@@ -1,4 +1,4 @@
-package prompt
+package template
 
 import (
 	"bytes"
@@ -20,7 +20,14 @@ func MustTemplate(text string) *Template {
 }
 
 func NewTemplate(text string) (*Template, error) {
-	tmpl, err := template.New("prompt").Parse(text)
+	tmpl, err := template.
+		New("prompt").
+		Funcs(map[string]any{
+			"now":        now,
+			"date":       date,
+			"dateInZone": dateInZone,
+		}).
+		Parse(text)
 
 	if err != nil {
 		return nil, err

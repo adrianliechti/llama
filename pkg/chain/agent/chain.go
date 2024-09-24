@@ -8,6 +8,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/template"
 	"github.com/adrianliechti/llama/pkg/to"
 	"github.com/adrianliechti/llama/pkg/tool"
 )
@@ -16,6 +17,8 @@ var _ chain.Provider = &Chain{}
 
 type Chain struct {
 	completer provider.Completer
+
+	messages []provider.Message
 
 	tools map[string]tool.Tool
 
@@ -46,6 +49,12 @@ func WithCompleter(completer provider.Completer) Option {
 	}
 }
 
+func WithMessages(messages ...provider.Message) Option {
+	return func(c *Chain) {
+		c.messages = messages
+	}
+}
+
 func WithTools(tool ...tool.Tool) Option {
 	return func(c *Chain) {
 		for _, t := range tool {
@@ -67,6 +76,16 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	if options.Temperature == nil {
 		options.Temperature = c.temperature
+	}
+
+	if len(c.messages) > 0 {
+		values, err := template.ApplyMessages(c.messages, nil)
+
+		if err != nil {
+			return nil, err
+		}
+
+		messages = slices.Concat(values, messages)
 	}
 
 	tools := make(map[string]provider.Tool)
