@@ -35,6 +35,6 @@ type scrollResult struct {
 	Result struct {
 		Points []point `json:"points"`
 
-		NextPageOffset int `json:"next_page_offset"`
+		NextPageOffset string `json:"next_page_offset"`
 	} `json:"result"`
 }

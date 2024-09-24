@@ -57,16 +57,18 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		return nil, err
 	}
 
-	var offset = 0
+	var offset string
 
 	var points []point
 
 	for {
 		body := map[string]any{
-			"offset": offset,
-
 			"with_vector":  true,
 			"with_payload": true,
+		}
+
+		if offset != "" {
+			body["offset"] = offset
 		}
 
 		u, _ := url.JoinPath(c.url, "collections/"+c.namespace+"/points/scroll")
@@ -90,7 +92,7 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 
 		points = append(points, result.Result.Points...)
 
-		if offset <= 0 {
+		if result.Result.NextPageOffset == "" {
 			break
 		}
 
