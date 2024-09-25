@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"slices"
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
@@ -53,7 +54,7 @@ func openaiRenderer(cfg providerConfig, model modelContext) (provider.Renderer, 
 }
 
 func replicateRenderer(cfg providerConfig, model modelContext) (provider.Renderer, error) {
-	if strings.HasPrefix(strings.ToLower(model.ID), "black-forest-labs/flux") {
+	if slices.Contains(flux.SupportedModels, model.ID) {
 		var options []flux.Option
 
 		if cfg.Token != "" {

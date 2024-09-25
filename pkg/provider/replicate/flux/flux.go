@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"slices"
 	"time"
 
 	"github.com/adrianliechti/llama/pkg/provider"
@@ -19,6 +20,10 @@ type Renderer struct {
 func NewRenderer(url, model string, options ...Option) (*Renderer, error) {
 	if url == "" {
 		url = "https://api.replicate.com/"
+	}
+
+	if !slices.Contains(SupportedModels, model) {
+		return nil, errors.New("unsupported model")
 	}
 
 	cfg := &Config{
@@ -42,15 +47,19 @@ func (r *Renderer) Render(ctx context.Context, input string, options *provider.R
 		options = new(provider.RenderOptions)
 	}
 
-	body, err := convertPredictionRequest(r.Config, input, options)
+	body, err := r.convertPredictionRequest(input, options)
 
 	if err != nil {
 		return nil, err
 	}
 
-	url, _ := url.JoinPath(r.url, "/v1/models/"+r.model+"/predictions")
+	u, _ := url.JoinPath(r.url, "/v1/models/"+r.model+"/predictions")
 
-	req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
+	if body.Version != "" {
+		u, _ = url.JoinPath(r.url, "/v1/predictions")
+	}
+
+	req, _ := http.NewRequestWithContext(ctx, "POST", u, jsonReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+r.token)
 
@@ -101,7 +110,7 @@ func (r *Renderer) Render(ctx context.Context, input string, options *provider.R
 			return nil, errors.New("prediction " + string(prediction.Status))
 		}
 
-		output, err := convertPredictionResponse(r.Config, prediction)
+		output, err := r.convertPredictionResponse(prediction)
 
 		if err != nil {
 			return nil, err
@@ -111,24 +120,69 @@ func (r *Renderer) Render(ctx context.Context, input string, options *provider.R
 	}
 }
 
-func convertPredictionRequest(cfg *Config, input string, options *provider.RenderOptions) (*CreatePredictionRequest, error) {
+func (r *Renderer) convertPredictionRequest(prompt string, options *provider.RenderOptions) (*CreatePredictionRequest, error) {
 	if options == nil {
 		options = new(provider.RenderOptions)
 	}
 
-	return &CreatePredictionRequest{
-		Input: map[string]any{
-			"prompt": input,
+	var input map[string]any
 
-			"aspect_ratio": "1:1",
+	switch r.model {
+	case FluxSchnell:
+		// https://replicate.com/black-forest-labs/flux-schnell/api/schema#input-schema
+		input = map[string]any{
+			"prompt": prompt,
 
-			"safety_tolerance":       5,
+			"aspect_ratio":  "1:1",
+			"output_format": "png",
+
 			"disable_safety_checker": true,
-		},
+		}
+
+	case FluxDev:
+		// https://replicate.com/black-forest-labs/flux-dev/api/schema#input-schema
+		input = map[string]any{
+			"prompt": prompt,
+
+			"aspect_ratio":  "1:1",
+			"output_format": "png",
+
+			"disable_safety_checker": true,
+		}
+
+	case FluxPro:
+		// https://replicate.com/black-forest-labs/flux-pro/api/schema#input-schema
+		input = map[string]any{
+			"prompt": prompt,
+
+			"aspect_ratio":  "1:1",
+			"output_format": "png",
+
+			"safety_tolerance": 5,
+		}
+
+	case FluxDevRealism:
+		// https://replicate.com/xlabs-ai/flux-dev-realism/api/schema#input-schema
+		input = map[string]any{
+			"prompt": prompt,
+
+			"aspect_ratio":  "1:1",
+			"output_format": "png",
+		}
+	}
+
+	if len(input) == 0 {
+		return nil, errors.New("unsupported model")
+	}
+
+	return &CreatePredictionRequest{
+		Version: ModelVersion[r.model],
+
+		Input: input,
 	}, nil
 }
 
-func convertPredictionResponse(cfg *Config, prediction PredictionResponse) (*provider.Image, error) {
+func (r *Renderer) convertPredictionResponse(prediction PredictionResponse) (*provider.Image, error) {
 	var url string
 	var urls []string
 
@@ -144,9 +198,9 @@ func convertPredictionResponse(cfg *Config, prediction PredictionResponse) (*pro
 	}
 
 	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Set("Authorization", "Bearer "+cfg.token)
+	req.Header.Set("Authorization", "Bearer "+r.token)
 
-	resp, err := cfg.client.Do(req)
+	resp, err := r.client.Do(req)
 
 	if err != nil {
 		return nil, err
@@ -161,6 +215,8 @@ func convertPredictionResponse(cfg *Config, prediction PredictionResponse) (*pro
 }
 
 type CreatePredictionRequest struct {
+	Version string `json:"version,omitempty"`
+
 	Input any `json:"input"`
 }
 
