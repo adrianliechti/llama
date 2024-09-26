@@ -44,7 +44,7 @@ func (s *server) Info(context.Context, *custom.InfoRequest) (*custom.Definition,
 			"args": map[string]any{
 				"type": "array",
 
-				"itmes": map[string]any{
+				"items": map[string]any{
 					"type": "string",
 				},
 			},
@@ -70,7 +70,7 @@ func (s *server) Execute(ctx context.Context, r *custom.ExecuteRequest) (*custom
 	}
 
 	args := input.Args
-	args = append(args, "-o", "wide")
+	//args = append(args, "-o", "wide")
 
 	println("$ kubectl " + strings.Join(args, " "))
 
@@ -78,13 +78,20 @@ func (s *server) Execute(ctx context.Context, r *custom.ExecuteRequest) (*custom
 
 	output, err := cmd.CombinedOutput()
 
+	var stdout string
+	var stderr string
+
+	if len(output) > 0 {
+		stdout = string(output)
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute command: %w", err)
+		stderr = err.Error()
 	}
 
 	result := map[string]any{
-		"stdout": string(output),
-		"stderr": "",
+		"stdout": stdout,
+		"stderr": stderr,
 	}
 
 	content, _ := json.Marshal(result)

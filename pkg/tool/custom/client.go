@@ -37,9 +37,7 @@ func New(url string, options ...Option) (*Client, error) {
 		option(c)
 	}
 
-	url = strings.TrimPrefix(c.url, "grpc://")
-
-	conn, err := grpc.Dial(url,
+	client, err := grpc.NewClient(strings.TrimPrefix(c.url, "grpc://"),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 
@@ -47,13 +45,14 @@ func New(url string, options ...Option) (*Client, error) {
 		return nil, err
 	}
 
-	c.client = NewToolClient(conn)
+	c.client = NewToolClient(client)
 
 	return c, nil
 }
 
 func (c *Client) Name() string {
-	data, err := c.client.Info(context.Background(), &InfoRequest{})
+	ctx := context.Background()
+	data, err := c.client.Info(ctx, &InfoRequest{})
 
 	if err != nil {
 		return ""
@@ -63,7 +62,8 @@ func (c *Client) Name() string {
 }
 
 func (c *Client) Description() string {
-	data, err := c.client.Info(context.Background(), &InfoRequest{})
+	ctx := context.Background()
+	data, err := c.client.Info(ctx, &InfoRequest{})
 
 	if err != nil {
 		return ""
@@ -73,7 +73,8 @@ func (c *Client) Description() string {
 }
 
 func (c *Client) Parameters() any {
-	data, err := c.client.Info(context.Background(), &InfoRequest{})
+	ctx := context.Background()
+	data, err := c.client.Info(ctx, &InfoRequest{})
 
 	if err != nil {
 		return nil

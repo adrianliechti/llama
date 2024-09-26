@@ -35,7 +35,7 @@ func NewCompleter(url string, options ...Option) (*Completer, error) {
 		option(c)
 	}
 
-	conn, err := grpc.NewClient(strings.TrimPrefix(c.url, "grpc://"),
+	client, err := grpc.NewClient(strings.TrimPrefix(c.url, "grpc://"),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 
@@ -45,7 +45,7 @@ func NewCompleter(url string, options ...Option) (*Completer, error) {
 
 	return &Completer{
 		Config: c,
-		client: NewCompleterClient(conn),
+		client: NewCompleterClient(client),
 	}, nil
 }
 
