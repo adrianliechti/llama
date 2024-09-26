@@ -2,7 +2,6 @@ package server
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/adrianliechti/llama/config"
 	"github.com/adrianliechti/llama/server/api"
@@ -115,11 +114,6 @@ func (s *Server) ListenAndServe() error {
 func (s *Server) handleAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-
-		if strings.HasPrefix(r.URL.Path, "/files/") {
-			next.ServeHTTP(w, r.WithContext(ctx))
-			return
-		}
 
 		var authorized = len(s.Authorizers) == 0
 
