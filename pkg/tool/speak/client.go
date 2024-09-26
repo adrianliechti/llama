@@ -74,6 +74,8 @@ func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, err
 
 	name := uuid.New().String() + ".wav"
 
+	os.MkdirAll(filepath.Join("public", "files"), 0755)
+
 	f, err := os.Create(filepath.Join("public", "files", name))
 
 	if err != nil {
