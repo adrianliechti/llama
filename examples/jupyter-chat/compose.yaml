@@ -11,6 +11,20 @@ services:
       - source: platform
         target: /config.yaml
   
+  ollama:
+    image: ollama/ollama:0.3.12
+    pull_policy: always
+    volumes:
+      - ollama-data:/root/.ollama
+  
+  ollama-companion:
+    image: ghcr.io/adrianliechti/ollama-companion
+    pull_policy: always
+    restart: on-failure
+    environment:
+      - OLLAMA_HOST=ollama:11434
+      - OLLAMA_MODELS=llama3.2:1b
+  
   jupyter:
     image: quay.io/jupyter/datascience-notebook:2024-05-06
     command: start-notebook.sh --NotebookApp.token='' -ServerApp.root_dir=/home/jovyan/work  
@@ -35,11 +49,19 @@ configs:
     content: |
       providers:
         - type: ollama
-          url: http://host.docker.internal:11434
+          url: http://ollama:11434
+
+          # https://ollama.com/library
           models:
-            - mistral
+            llama:
+              id: llama3.2:1b
         
         - type: langchain
           url: http://jupyter:9999
           models:
-            - jupyter
+            jupyter:
+              id: jupyter
+              type: completer
+
+volumes:
+  ollama-data:
