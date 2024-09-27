@@ -30,19 +30,8 @@ services:
     command: start-notebook.sh --NotebookApp.token='' -ServerApp.root_dir=/home/jovyan/work  
     ports:
       - 8888:8888
-      - 9999:9999
     volumes:
       - ./work:/home/jovyan/work
-  
-  web:
-    image: ghcr.io/adrianliechti/llama-streamlit
-    pull_policy: always
-    ports:
-      - 8501:8501
-    environment:
-      - OPENAI_BASE_URL=http://platform:8080/v1
-    depends_on:
-      - platform
   
 configs:
   platform:
@@ -55,13 +44,6 @@ configs:
           models:
             llama:
               id: llama3.2:1b
-        
-        - type: langchain
-          url: http://jupyter:9999
-          models:
-            jupyter:
-              id: jupyter
-              type: completer
 
 volumes:
   ollama-data:
