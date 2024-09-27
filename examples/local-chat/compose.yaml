@@ -10,7 +10,23 @@ services:
     configs:
       - source: platform
         target: /config.yaml
+    depends_on:
+      - ollama
   
+  ollama:
+    image: ollama/ollama:0.3.12
+    pull_policy: always
+    volumes:
+      - ollama-data:/root/.ollama
+  
+  ollama-companion:
+    image: ghcr.io/adrianliechti/ollama-companion
+    pull_policy: always
+    restart: on-failure
+    environment:
+      - OLLAMA_HOST=ollama:11434
+      - OLLAMA_MODELS=llama3.2:1b
+
   web:
     image: ghcr.io/adrianliechti/llama-streamlit
     pull_policy: always
@@ -20,16 +36,18 @@ services:
       - OPENAI_BASE_URL=http://platform:8080/v1
     depends_on:
       - platform
-  
+
 configs:
   platform:
     content: |
       providers:
         - type: ollama
-          url: http://host.docker.internal:11434
-          models:
-            - gemma
-            - mistral
-            - llava
+          url: http://ollama:11434
 
-        
+          # https://ollama.com/library
+          models:
+            llama:
+              id: llama3.2:1b
+
+volumes:
+  ollama-data:
