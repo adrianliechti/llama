@@ -12,6 +12,7 @@ services:
         target: /config.yaml
     depends_on:
       - ollama
+      - ollama-companion
   
   ollama:
     image: ollama/ollama:0.3.12
@@ -25,7 +26,7 @@ services:
     restart: on-failure
     environment:
       - OLLAMA_HOST=ollama:11434
-      - OLLAMA_MODELS=llama3.2:1b
+      - OLLAMA_MODELS=llama3.2:1b,nomic-embed-text:v1.5
 
   web:
     image: ghcr.io/adrianliechti/llama-streamlit
@@ -48,6 +49,9 @@ configs:
           models:
             llama:
               id: llama3.2:1b
+            
+            nomic:
+              id: nomic-embed-text:v1.5
 
 volumes:
   ollama-data:

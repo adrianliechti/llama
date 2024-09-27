@@ -36,3 +36,14 @@ curl http://localhost:8080/v1/chat/completions \
     ]
   }'
 ```
+
+## Embedding API
+
+```shell
+curl http://localhost:8080/v1/embeddings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "nomic",
+    "input": "Your text string goes here"
+  }'
+```

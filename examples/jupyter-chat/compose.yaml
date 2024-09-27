@@ -10,6 +10,9 @@ services:
     configs:
       - source: platform
         target: /config.yaml
+    depends_on:
+      - ollama
+      - ollama-companion
   
   ollama:
     image: ollama/ollama:0.3.12

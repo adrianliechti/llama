@@ -70,33 +70,14 @@ func (s *server) Execute(ctx context.Context, r *custom.ExecuteRequest) (*custom
 	}
 
 	args := input.Args
-	//args = append(args, "-o", "wide")
 
 	println("$ kubectl " + strings.Join(args, " "))
 
 	cmd := exec.CommandContext(ctx, "kubectl", args...)
 
-	output, err := cmd.CombinedOutput()
-
-	var stdout string
-	var stderr string
-
-	if len(output) > 0 {
-		stdout = string(output)
-	}
-
-	if err != nil {
-		stderr = err.Error()
-	}
-
-	result := map[string]any{
-		"stdout": stdout,
-		"stderr": stderr,
-	}
-
-	content, _ := json.Marshal(result)
+	output, _ := cmd.CombinedOutput()
 
 	return &custom.Result{
-		Content: string(content),
+		Content: string(output),
 	}, nil
 }
