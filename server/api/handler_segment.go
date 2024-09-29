@@ -47,7 +47,7 @@ func (h *Handler) handleSegment(w http.ResponseWriter, r *http.Request) {
 			Text: s.Content,
 		}
 
-		result.Segements = append(result.Segements, segment)
+		result.Segments = append(result.Segments, segment)
 	}
 
 	writeJson(w, result)

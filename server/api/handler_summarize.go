@@ -36,7 +36,7 @@ func (h *Handler) handleSummarize(w http.ResponseWriter, r *http.Request) {
 			Text: s,
 		}
 
-		result.Segements = append(result.Segements, segment)
+		result.Segments = append(result.Segments, segment)
 	}
 
 	writeJson(w, result)

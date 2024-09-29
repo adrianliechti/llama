@@ -9,7 +9,7 @@ type Result struct {
 type Document struct {
 	Content string `json:"content,omitempty"`
 
-	Segements []Segment `json:"segements,omitempty"`
+	Segments []Segment `json:"segments,omitempty"`
 }
 
 type RerankRequest struct {
