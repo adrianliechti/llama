@@ -11,3 +11,15 @@ func WithClient(client *http.Client) Option {
 		t.client = client
 	}
 }
+
+func WithName(val string) Option {
+	return func(t *Tool) {
+		t.name = val
+	}
+}
+
+func WithDescription(val string) Option {
+	return func(t *Tool) {
+		t.description = val
+	}
+}

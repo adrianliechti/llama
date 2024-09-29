@@ -17,12 +17,18 @@ import (
 var _ tool.Tool = &Tool{}
 
 type Tool struct {
+	name        string
+	description string
+
 	client   *http.Client
 	renderer provider.Renderer
 }
 
 func New(options ...Option) (*Tool, error) {
 	t := &Tool{
+		name:        "draw",
+		description: "Draw an image using stable diffusion based on a input prompt. Returns a URL to the generated image. Render the URL as markdown ```![query](url)```",
+
 		client: http.DefaultClient,
 	}
 
@@ -34,11 +40,11 @@ func New(options ...Option) (*Tool, error) {
 }
 
 func (t *Tool) Name() string {
-	return "draw"
+	return t.name
 }
 
 func (t *Tool) Description() string {
-	return "Draw an image using stable diffusion based on a input prompt. Returns a URL to the generated image. Render the URL as markdown ```![query](url)```"
+	return t.description
 }
 
 func (*Tool) Parameters() any {

@@ -11,11 +11,17 @@ import (
 var _ tool.Tool = &Tool{}
 
 type Tool struct {
+	name        string
+	description string
+
 	extractor extractor.Provider
 }
 
 func New(extractor extractor.Provider, options ...Option) (*Tool, error) {
 	t := &Tool{
+		name:        "crawler",
+		description: "return the content of a website as markdown",
+
 		extractor: extractor,
 	}
 
@@ -31,11 +37,11 @@ func New(extractor extractor.Provider, options ...Option) (*Tool, error) {
 }
 
 func (t *Tool) Name() string {
-	return "crawler"
+	return t.name
 }
 
 func (t *Tool) Description() string {
-	return "return the content of a website as markdown"
+	return t.description
 }
 
 func (*Tool) Parameters() any {

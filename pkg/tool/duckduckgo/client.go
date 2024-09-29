@@ -16,11 +16,17 @@ import (
 var _ tool.Tool = &Tool{}
 
 type Tool struct {
+	name        string
+	description string
+
 	client *http.Client
 }
 
 func New(options ...Option) (*Tool, error) {
 	t := &Tool{
+		name:        "duckduckgo",
+		description: "Search online if the requested information cannot be found in the language model or the information could be present in a time after the language model was trained.",
+
 		client: http.DefaultClient,
 	}
 
@@ -32,11 +38,11 @@ func New(options ...Option) (*Tool, error) {
 }
 
 func (t *Tool) Name() string {
-	return "duckduckgo"
+	return t.name
 }
 
 func (t *Tool) Description() string {
-	return "Search online if the requested information cannot be found in the language model or the information could be present in a time after the language model was trained."
+	return t.description
 }
 
 func (*Tool) Parameters() any {

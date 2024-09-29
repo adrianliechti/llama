@@ -11,11 +11,17 @@ import (
 var _ tool.Tool = &Tool{}
 
 type Tool struct {
+	name        string
+	description string
+
 	index index.Provider
 }
 
 func New(index index.Provider, options ...Option) (*Tool, error) {
 	t := &Tool{
+		name:        "retriever",
+		description: "Query the knowledge base to find relevant documents to answer questions",
+
 		index: index,
 	}
 
@@ -31,11 +37,11 @@ func New(index index.Provider, options ...Option) (*Tool, error) {
 }
 
 func (t *Tool) Name() string {
-	return "retriever"
+	return t.name
 }
 
 func (t *Tool) Description() string {
-	return "Query the knowledge base to find relevant documents to answer questions"
+	return t.description
 }
 
 func (*Tool) Parameters() any {

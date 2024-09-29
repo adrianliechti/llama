@@ -17,12 +17,12 @@ var (
 )
 
 type Client struct {
-	url string
+	name        string
+	description string
 
+	url    string
 	client ToolClient
 }
-
-type Option func(*Client)
 
 func New(url string, options ...Option) (*Client, error) {
 	if url == "" || !strings.HasPrefix(url, "grpc://") {
@@ -51,6 +51,10 @@ func New(url string, options ...Option) (*Client, error) {
 }
 
 func (c *Client) Name() string {
+	if c.name != "" {
+		return c.name
+	}
+
 	ctx := context.Background()
 	data, err := c.client.Info(ctx, &InfoRequest{})
 
@@ -62,6 +66,10 @@ func (c *Client) Name() string {
 }
 
 func (c *Client) Description() string {
+	if c.description != "" {
+		return c.description
+	}
+
 	ctx := context.Background()
 	data, err := c.client.Info(ctx, &InfoRequest{})
 

@@ -18,12 +18,18 @@ import (
 var _ tool.Tool = &Tool{}
 
 type Tool struct {
+	name        string
+	description string
+
 	client      *http.Client
 	synthesizer provider.Synthesizer
 }
 
 func New(options ...Option) (*Tool, error) {
 	t := &Tool{
+		name:        "speak",
+		description: "Synthesize speech from text using a TTS (text-to-speech) model on a input prompt. Returns a URL to the generated audio file. Render the URL as markdown ```[Download Audio](url)```",
+
 		client: http.DefaultClient,
 	}
 
@@ -35,11 +41,11 @@ func New(options ...Option) (*Tool, error) {
 }
 
 func (t *Tool) Name() string {
-	return "speak"
+	return t.name
 }
 
 func (t *Tool) Description() string {
-	return "Synthesize speech from text using a TTS (text-to-speech) model on a input prompt. Returns a URL to the generated audio file. Render the URL as markdown ```[Download Audio](url)```"
+	return t.description
 }
 
 func (*Tool) Parameters() any {

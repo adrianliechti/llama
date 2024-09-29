@@ -42,6 +42,9 @@ func (cfg *Config) Tool(id string) (tool.Tool, error) {
 type toolConfig struct {
 	Type string `yaml:"type"`
 
+	Name        string `yaml:"name"`
+	Description string `yaml:"description"`
+
 	URL   string `yaml:"url"`
 	Token string `yaml:"token"`
 
@@ -64,6 +67,10 @@ func (cfg *Config) registerTools(f *configFile) error {
 		var err error
 
 		context := toolContext{}
+
+		if t.Name == "" {
+			t.Name = id
+		}
 
 		if i, err := cfg.Index(t.Index); err == nil {
 			context.Index = i
@@ -134,17 +141,41 @@ func createTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 func bingTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	var options []bing.Option
 
+	if cfg.Name != "" {
+		options = append(options, bing.WithName(cfg.Name))
+	}
+
+	if cfg.Description != "" {
+		options = append(options, bing.WithDescription(cfg.Description))
+	}
+
 	return bing.New(cfg.Token, options...)
 }
 
 func crawlerTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	var options []crawler.Option
 
+	if cfg.Name != "" {
+		options = append(options, crawler.WithName(cfg.Name))
+	}
+
+	if cfg.Description != "" {
+		options = append(options, crawler.WithDescription(cfg.Description))
+	}
+
 	return crawler.New(context.Extractor, options...)
 }
 
 func drawTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	var options []draw.Option
+
+	if cfg.Name != "" {
+		options = append(options, draw.WithName(cfg.Name))
+	}
+
+	if cfg.Description != "" {
+		options = append(options, draw.WithDescription(cfg.Description))
+	}
 
 	if context.Renderer != nil {
 		options = append(options, draw.WithRenderer(context.Renderer))
@@ -156,11 +187,27 @@ func drawTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 func duckduckgoTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	var options []duckduckgo.Option
 
+	if cfg.Name != "" {
+		options = append(options, duckduckgo.WithName(cfg.Name))
+	}
+
+	if cfg.Description != "" {
+		options = append(options, duckduckgo.WithDescription(cfg.Description))
+	}
+
 	return duckduckgo.New(options...)
 }
 
 func retrieverTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	var options []retriever.Option
+
+	if cfg.Name != "" {
+		options = append(options, retriever.WithName(cfg.Name))
+	}
+
+	if cfg.Description != "" {
+		options = append(options, retriever.WithDescription(cfg.Description))
+	}
 
 	return retriever.New(context.Index, options...)
 }
@@ -168,11 +215,27 @@ func retrieverTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 func searxngTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	var options []searxng.Option
 
+	if cfg.Name != "" {
+		options = append(options, searxng.WithName(cfg.Name))
+	}
+
+	if cfg.Description != "" {
+		options = append(options, searxng.WithDescription(cfg.Description))
+	}
+
 	return searxng.New(cfg.URL, options...)
 }
 
 func speakTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	var options []speak.Option
+
+	if cfg.Name != "" {
+		options = append(options, speak.WithName(cfg.Name))
+	}
+
+	if cfg.Description != "" {
+		options = append(options, speak.WithDescription(cfg.Description))
+	}
 
 	if context.Synthesizer != nil {
 		options = append(options, speak.WithSynthesizer(context.Synthesizer))
@@ -184,11 +247,27 @@ func speakTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 func tavilyTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	var options []tavily.Option
 
+	if cfg.Name != "" {
+		options = append(options, tavily.WithName(cfg.Name))
+	}
+
+	if cfg.Description != "" {
+		options = append(options, tavily.WithDescription(cfg.Description))
+	}
+
 	return tavily.New(cfg.Token, options...)
 }
 
 func customTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	var options []custom.Option
+
+	if cfg.Name != "" {
+		options = append(options, custom.WithName(cfg.Name))
+	}
+
+	if cfg.Description != "" {
+		options = append(options, custom.WithDescription(cfg.Description))
+	}
 
 	return custom.New(cfg.URL, options...)
 }
