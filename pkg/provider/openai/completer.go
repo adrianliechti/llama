@@ -10,6 +10,7 @@ import (
 	"unicode"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/to"
 
 	"github.com/sashabaranov/go-openai"
 )
@@ -88,6 +89,8 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			},
 		}
 
+		resultToolCalls := map[string]provider.ToolCall{}
+
 		for {
 			completion, err := stream.Recv()
 
@@ -134,7 +137,24 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			result.Message.Role = role
 			result.Message.Content += content
-			result.Message.ToolCalls = toToolCalls(choice.Delta.ToolCalls)
+
+			for _, c := range choice.Delta.ToolCalls {
+				if c.Type != openai.ToolTypeFunction {
+					continue
+				}
+
+				call, found := resultToolCalls[c.ID]
+
+				if !found {
+					call = provider.ToolCall{
+						ID:   c.ID,
+						Name: c.Function.Name,
+					}
+				}
+
+				call.Arguments += c.Function.Arguments
+				resultToolCalls[c.ID] = call
+			}
 
 			options.Stream <- provider.Completion{
 				ID:     result.ID,
@@ -147,6 +167,10 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 					ToolCalls: toToolCalls(choice.Delta.ToolCalls),
 				},
 			}
+		}
+
+		if len(resultToolCalls) > 0 {
+			result.Message.ToolCalls = to.Values(resultToolCalls)
 		}
 
 		return &result, nil

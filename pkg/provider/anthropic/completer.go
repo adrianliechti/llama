@@ -14,6 +14,7 @@ import (
 	"unicode"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/to"
 )
 
 var _ provider.Completer = (*Completer)(nil)
@@ -48,10 +49,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		options = new(provider.CompleteOptions)
 	}
 
-	if len(options.Tools) > 0 {
-		return nil, errors.New("tools are not yet supported")
-	}
-
 	url, _ := url.JoinPath(c.url, "/v1/messages")
 	body, err := convertChatRequest(c.model, messages, options)
 
@@ -83,20 +80,15 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			return nil, err
 		}
 
-		if response.Role != MessageRoleAssistant || len(response.Content) != 1 {
-			return nil, errors.New("invalid complete response")
-		}
-
-		role := provider.MessageRoleAssistant
-		content := response.Content[0].Text
-
 		return &provider.Completion{
 			ID:     response.ID,
-			Reason: provider.CompletionReasonStop,
+			Reason: toCompletionResult(response.StopReason),
 
 			Message: provider.Message{
-				Role:    role,
-				Content: content,
+				Role:    toMessageRole(response.Role),
+				Content: response.Content[0].Text,
+
+				ToolCalls: toToolCalls(response),
 			},
 
 			Usage: &provider.Usage{
@@ -126,6 +118,8 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 		reader := bufio.NewReader(resp.Body)
 
+		var currentContent Content
+
 		result := &provider.Completion{
 			Message: provider.Message{
 				Role: provider.MessageRoleAssistant,
@@ -133,6 +127,8 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			Usage: &provider.Usage{},
 		}
+
+		resultToolCalls := map[string]provider.ToolCall{}
 
 		for i := 0; ; i++ {
 			data, err := reader.ReadBytes('\n')
@@ -166,6 +162,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			if event.Message != nil {
 				result.ID = event.Message.ID
+				result.Message.Role = toMessageRole(event.Message.Role)
 
 				if event.Message.Usage.InputTokens > 0 {
 					result.Usage.InputTokens = event.Message.Usage.InputTokens
@@ -176,9 +173,8 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				}
 			}
 
-			if event.Type == EventTypeMessageStop {
-				result.Reason = provider.CompletionReasonStop
-				break
+			if event.ContentBlock != nil {
+				currentContent = *event.ContentBlock
 			}
 
 			if event.Usage.InputTokens > 0 {
@@ -189,31 +185,62 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				result.Usage.OutputTokens = event.Usage.OutputTokens
 			}
 
-			if event.Type != EventTypeContentBlockDelta || event.Delta == nil {
-				continue
-			}
+			if event.Delta != nil {
+				if reason := toCompletionResult(event.Delta.StopReason); reason != "" {
+					result.Reason = reason
+				}
 
-			var content = event.Delta.Text
+				var content = event.Delta.Text
 
-			if i == 0 {
-				content = strings.TrimLeftFunc(content, unicode.IsSpace)
-			}
+				if i == 0 {
+					content = strings.TrimLeftFunc(content, unicode.IsSpace)
+				}
 
-			result.Message.Content += content
+				result.Message.Content += content
 
-			options.Stream <- provider.Completion{
-				ID:     result.ID,
-				Reason: result.Reason,
+				var calls []provider.ToolCall
 
-				Message: provider.Message{
-					Role:    result.Message.Role,
-					Content: content,
-				},
+				if currentContent.Type == ContentTypeToolUse {
+					calls = append(calls, provider.ToolCall{
+						ID: currentContent.ID,
+
+						Name:      currentContent.Name,
+						Arguments: event.Delta.PartialJSON,
+					})
+
+					call, found := resultToolCalls[currentContent.ID]
+
+					if !found {
+						call = provider.ToolCall{
+							ID:   currentContent.ID,
+							Name: currentContent.Name,
+						}
+					}
+
+					call.Arguments += event.Delta.PartialJSON
+					resultToolCalls[currentContent.ID] = call
+				}
+
+				options.Stream <- provider.Completion{
+					ID:     result.ID,
+					Reason: result.Reason,
+
+					Message: provider.Message{
+						Role: result.Message.Role,
+
+						Content:   content,
+						ToolCalls: calls,
+					},
+				}
 			}
 		}
 
 		if result.Usage.OutputTokens == 0 {
 			result.Usage = nil
+		}
+
+		if len(resultToolCalls) > 0 {
+			result.Message.ToolCalls = to.Values(resultToolCalls)
 		}
 
 		return result, nil
@@ -231,7 +258,7 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 		Model:  model,
 		Stream: stream,
 
-		MaxTokens: 1024,
+		MaxTokens: 4096,
 	}
 
 	if options.Stop != nil {
@@ -246,6 +273,17 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 		req.Temperature = options.Temperature
 	}
 
+	for _, t := range options.Tools {
+		tool := Tool{
+			Name:        t.Name,
+			Description: t.Description,
+
+			InputSchema: t.Parameters,
+		}
+
+		req.Tools = append(req.Tools, tool)
+	}
+
 	for _, m := range messages {
 		switch m.Role {
 		case provider.MessageRoleSystem:
@@ -253,47 +291,89 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 
 		case provider.MessageRoleUser:
 			message := Message{
-				Role:    MessageRoleUser,
-				Content: m.Content,
+				Role: MessageRoleUser,
 			}
 
-			if len(m.Files) > 0 {
-				message.Content = ""
+			message.Contents = []Content{
+				{
+					Type: ContentTypeText,
+					Text: m.Content,
+				},
+			}
 
-				message.Contents = []Content{
-					{
-						Type: ContentTypeText,
-						Text: m.Content,
+			for _, f := range m.Files {
+				data, err := io.ReadAll(f.Content)
+
+				if err != nil {
+					return nil, err
+				}
+
+				message.Contents = append(message.Contents, Content{
+					Type: ContentTypeImage,
+
+					Source: &ContentSource{
+						Type: "base64",
+
+						MediaType: http.DetectContentType(data),
+						Data:      base64.StdEncoding.EncodeToString(data),
 					},
-				}
-
-				for _, f := range m.Files {
-					data, err := io.ReadAll(f.Content)
-
-					if err != nil {
-						return nil, err
-					}
-
-					message.Contents = append(message.Contents, Content{
-						Type: ContentTypeImage,
-
-						Source: &ContentSource{
-							Type: "base64",
-
-							MediaType: http.DetectContentType(data),
-							Data:      base64.StdEncoding.EncodeToString(data),
-						},
-					})
-				}
+				})
 			}
 
 			req.Messages = append(req.Messages, message)
 
 		case provider.MessageRoleAssistant:
-			req.Messages = append(req.Messages, Message{
-				Role:    MessageRoleAssistant,
-				Content: m.Content,
-			})
+			message := Message{
+				Role: MessageRoleAssistant,
+			}
+
+			if m.Content != "" {
+				message.Contents = append(message.Contents, Content{
+					Type: ContentTypeText,
+					Text: m.Content,
+				})
+			}
+
+			for _, t := range m.ToolCalls {
+				var input any
+
+				if err := json.Unmarshal([]byte(t.Arguments), &input); err != nil {
+					input = t.Arguments
+				}
+
+				message.Contents = append(message.Contents, Content{
+					Type: ContentTypeToolUse,
+
+					ID: t.ID,
+
+					Name:  t.Name,
+					Input: input,
+				})
+			}
+
+			req.Messages = append(req.Messages, message)
+
+		case provider.MessageRoleTool:
+			var content any
+
+			if err := json.Unmarshal([]byte(m.Content), &content); err != nil {
+				content = m.Content
+			}
+
+			message := Message{
+				Role: MessageRoleUser,
+
+				Contents: []Content{
+					{
+						Type: ContentTypeToolResult,
+
+						ToolUseID: m.Tool,
+						Content:   m.Content,
+					},
+				},
+			}
+
+			req.Messages = append(req.Messages, message)
 
 		default:
 			return nil, errors.New("unsupported message role")
@@ -310,17 +390,27 @@ var (
 	MessageRoleAssistant MessageRole = "assistant"
 )
 
+// https://docs.anthropic.com/en/api/messages
 type MessagesRequest struct {
 	Model string `json:"model"`
 
 	Stream bool   `json:"stream"`
 	System string `json:"system,omitempty"`
 
+	Tools    []Tool    `json:"tools,omitempty"`
 	Messages []Message `json:"messages"`
 
 	MaxTokens     int      `json:"max_tokens,omitempty"`
 	Temperature   *float32 `json:"temperature,omitempty"`
 	StopSequences []string `json:"stop_sequences,omitempty"`
+}
+
+type Tool struct {
+	Name string `json:"name"`
+
+	Description string `json:"description,omitempty"`
+
+	InputSchema any `json:"input_schema,omitempty"`
 }
 
 type Message struct {
@@ -389,14 +479,27 @@ type ContentType string
 var (
 	ContentTypeText      ContentType = "text"
 	ContentTypeTextDelta ContentType = "text_delta"
-	ContentTypeImage     ContentType = "image"
+
+	ContentTypeImage ContentType = "image"
+
+	ContentTypeToolUse    ContentType = "tool_use"
+	ContentTypeToolResult ContentType = "tool_result"
+
+	ContentTypeInputJSONDelta ContentType = "input_json_delta"
 )
 
 type Content struct {
 	Type ContentType `json:"type"`
 
-	Text   string         `json:"text,omitempty"`
-	Source *ContentSource `json:"source,omitempty"`
+	ID   string `json:"id,omitempty"`
+	Name string `json:"name,omitempty"`
+
+	ToolUseID string `json:"tool_use_id,omitempty"`
+
+	Text    string         `json:"text,omitempty"`
+	Input   any            `json:"input,omitempty"`
+	Content any            `json:"content,omitempty"`
+	Source  *ContentSource `json:"source,omitempty"`
 }
 
 type ContentSource struct {
@@ -418,6 +521,7 @@ var (
 	StopReasonEndTurn      StopReason = "end_turn"
 	StopReasonMaxTokens    StopReason = "max_tokens"
 	StopReasonStopSequence StopReason = "stop_sequence"
+	StopReasonToolUse      StopReason = "tool_use"
 )
 
 type Usage struct {
@@ -444,6 +548,8 @@ type MessageResponse struct {
 type MessageDelta struct {
 	Text string `json:"text,omitempty"`
 
+	PartialJSON string `json:"partial_json,omitempty"`
+
 	StopReason   StopReason `json:"stop_reason,omitempty"`
 	StopSequence []string   `json:"stop_sequence,omitempty"`
 }
@@ -468,7 +574,69 @@ type MessageEvent struct {
 	Index int `json:"index"`
 
 	Message *MessageResponse `json:"message,omitempty"`
-	Delta   *MessageDelta    `json:"delta,omitempty"`
+
+	Delta        *MessageDelta `json:"delta,omitempty"`
+	ContentBlock *Content      `json:"content_block,omitempty"`
 
 	Usage Usage `json:"usage"`
+}
+
+func toMessageRole(role MessageRole) provider.MessageRole {
+	switch role {
+	case MessageRoleAssistant:
+		return provider.MessageRoleAssistant
+
+	case MessageRoleUser:
+		return provider.MessageRoleUser
+
+	default:
+		return ""
+	}
+}
+
+func toToolCalls(message MessageResponse) []provider.ToolCall {
+	var result []provider.ToolCall
+
+	for _, content := range message.Content {
+		if content.Type != ContentTypeToolUse {
+			continue
+		}
+
+		var arguments string
+
+		if val, ok := content.Input.(string); ok {
+			arguments = val
+		} else {
+			data, _ := json.Marshal(content.Input)
+			arguments = string(data)
+		}
+
+		result = append(result, provider.ToolCall{
+			ID: content.ID,
+
+			Name:      content.Name,
+			Arguments: arguments,
+		})
+	}
+
+	return result
+}
+
+func toCompletionResult(val StopReason) provider.CompletionReason {
+	switch val {
+	case StopReasonEndTurn:
+		return provider.CompletionReasonStop
+
+	case StopReasonMaxTokens:
+		return provider.CompletionReasonLength
+
+	case StopReasonStopSequence:
+		return provider.CompletionReasonStop
+
+	case StopReasonToolUse:
+		return provider.CompletionReasonTool
+
+	default:
+		return ""
+	}
 }
