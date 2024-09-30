@@ -35,22 +35,28 @@ func main() {
 	}
 
 	c := client{
-		url:    url,
+		url:   url,
+		token: *tokenFlag,
+
 		client: http.DefaultClient,
 	}
 
 	ctx := context.Background()
 
-	_ = tokenFlag
+	if err := IndexDir(ctx, &c, *indexFlag, *dirFlag); err != nil {
+		panic(err)
+	}
+}
 
+func IndexDir(ctx context.Context, c *client, index, root string) error {
 	supported := []string{
 		".txt", ".md",
 	}
 
-	list, err := c.Documents(ctx, *indexFlag)
+	list, err := c.Documents(ctx, index)
 
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	revisions := map[string]bool{}
@@ -62,7 +68,14 @@ func main() {
 		}
 	}
 
-	filepath.WalkDir(*dirFlag, func(path string, e fs.DirEntry, err error) error {
+	var result error
+
+	filepath.WalkDir(root, func(path string, e fs.DirEntry, err error) error {
+		if err != nil {
+			result = errors.Join(result, err)
+			return nil
+		}
+
 		if e.IsDir() {
 			return nil
 		}
@@ -74,6 +87,7 @@ func main() {
 		data, err := os.ReadFile(path)
 
 		if err != nil {
+			result = errors.Join(result, err)
 			return err
 		}
 
@@ -81,7 +95,7 @@ func main() {
 		md5_text := hex.EncodeToString(md5_hash[:])
 
 		filename := filepath.Base(path)
-		filepath, _ := filepath.Rel(*dirFlag, path)
+		filepath, _ := filepath.Rel(root, path)
 
 		revision := strings.ToLower(filepath + "@" + md5_text)
 
@@ -94,6 +108,7 @@ func main() {
 		content, err := c.Extract(ctx, filename, bytes.NewReader(data), nil)
 
 		if err != nil {
+			result = errors.Join(result, err)
 			return err
 		}
 
@@ -104,6 +119,7 @@ func main() {
 		segments, err := c.Segment(ctx, content, nil)
 
 		if err != nil {
+			result = errors.Join(result, err)
 			return err
 		}
 
@@ -114,18 +130,20 @@ func main() {
 				Content: segment.Text,
 
 				Metadata: map[string]string{
-					"index":    fmt.Sprintf("%d", i),
-					"revision": revision,
-
 					"filename": filename,
 					"filepath": filepath,
+
+					"revision": revision,
+
+					"index": fmt.Sprintf("%d", i),
 				},
 			}
 
 			documents = append(documents, document)
 		}
 
-		if err := c.IndexDocuments(ctx, *indexFlag, documents, nil); err != nil {
+		if err := c.IndexDocuments(ctx, index, documents, nil); err != nil {
+			result = errors.Join(result, err)
 			return err
 		}
 
@@ -153,14 +171,17 @@ func main() {
 	}
 
 	if len(deletions) > 0 {
-		if err := c.DeleteDocuments(ctx, *indexFlag, deletions, nil); err != nil {
-			//return err
+		if err := c.DeleteDocuments(ctx, index, deletions, nil); err != nil {
+			result = errors.Join(result, err)
 		}
 	}
+
+	return result
 }
 
 type client struct {
 	url    *url.URL
+	token  string
 	client *http.Client
 }
 
@@ -235,6 +256,10 @@ func (c *client) Segment(ctx context.Context, content string, options *SegmentOp
 	req, _ := http.NewRequestWithContext(ctx, "POST", c.url.JoinPath("/v1/segment").String(), &body)
 	req.Header.Set("Content-Type", "application/json")
 
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+
 	resp, err := c.client.Do(req)
 
 	if err != nil {
@@ -277,6 +302,10 @@ type SegmentRequest struct {
 func (c *client) Documents(ctx context.Context, index string) ([]Document, error) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", c.url.JoinPath("/v1/index/"+index).String(), nil)
 
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+
 	resp, err := c.client.Do(req)
 
 	if err != nil {
@@ -312,6 +341,10 @@ func (c *client) IndexDocuments(ctx context.Context, index string, documents []D
 	req, _ := http.NewRequestWithContext(ctx, "POST", c.url.JoinPath("/v1/index/"+index).String(), &body)
 	req.Header.Set("Content-Type", "application/json")
 
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+
 	resp, err := c.client.Do(req)
 
 	if err != nil {
@@ -336,6 +369,10 @@ func (c *client) DeleteDocuments(ctx context.Context, index string, ids []string
 
 	req, _ := http.NewRequestWithContext(ctx, "DELETE", c.url.JoinPath("/v1/index/"+index).String(), &body)
 	req.Header.Set("Content-Type", "application/json")
+
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
 
 	resp, err := c.client.Do(req)
 
