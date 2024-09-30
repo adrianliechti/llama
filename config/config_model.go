@@ -52,6 +52,7 @@ const (
 	ModelTypeCompleter   ModelType = "completer"
 	ModelTypeEmbedder    ModelType = "embedder"
 	ModelTypeRenderer    ModelType = "renderer"
+	ModelTypeReranker    ModelType = "reranker"
 	ModelTypeSynthesizer ModelType = "synthesizer"
 	ModelTypeTranscriber ModelType = "transcriber"
 )
@@ -114,6 +115,10 @@ func DetectModelType(id string) ModelType {
 		"minilm",
 	}
 
+	rerankers := []string{
+		"reranker",
+	}
+
 	renderers := []string{
 		"dall-e",
 		"flux-dev",
@@ -158,6 +163,12 @@ func DetectModelType(id string) ModelType {
 	for _, val := range embedders {
 		if strings.Contains(strings.ToLower(id), strings.ToLower(val)) {
 			return ModelTypeEmbedder
+		}
+	}
+
+	for _, val := range rerankers {
+		if strings.Contains(strings.ToLower(id), strings.ToLower(val)) {
+			return ModelTypeReranker
 		}
 	}
 

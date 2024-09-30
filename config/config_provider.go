@@ -79,6 +79,23 @@ func (cfg *Config) registerProviders(f *configFile) error {
 				cfg.RegisterEmbedder(id, embedder)
 				cfg.RegisterReranker(id, reranker.FromEmbedder(embedder))
 
+			case ModelTypeReranker:
+				reranker, err := createReranker(p, context)
+
+				if err != nil {
+					return err
+				}
+
+				if _, ok := reranker.(limiter.Reranker); !ok {
+					reranker = limiter.NewReranker(context.Limiter, reranker)
+				}
+
+				if _, ok := reranker.(otel.Reranker); !ok {
+					reranker = otel.NewReranker(p.Type, id, reranker)
+				}
+
+				cfg.RegisterReranker(id, reranker)
+
 			case ModelTypeRenderer:
 				renderer, err := createRenderer(p, context)
 
