@@ -5,7 +5,8 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/limiter"
 	"github.com/adrianliechti/llama/pkg/otel"
-	reranker "github.com/adrianliechti/llama/pkg/reranker/adapter"
+
+	reranker "github.com/adrianliechti/llama/pkg/provider/adapter/reranker"
 	summarizer "github.com/adrianliechti/llama/pkg/summarizer/adapter"
 
 	"golang.org/x/time/rate"

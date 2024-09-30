@@ -17,16 +17,18 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool/searxng"
 	"github.com/adrianliechti/llama/pkg/tool/speak"
 	"github.com/adrianliechti/llama/pkg/tool/tavily"
+	"github.com/adrianliechti/llama/pkg/tool/translate"
+	"github.com/adrianliechti/llama/pkg/translator"
 
 	"github.com/adrianliechti/llama/pkg/otel"
 )
 
-func (c *Config) RegisterTool(alias string, p tool.Tool) {
+func (c *Config) RegisterTool(id string, p tool.Tool) {
 	if c.tools == nil {
 		c.tools = make(map[string]tool.Tool)
 	}
 
-	c.tools[alias] = p
+	c.tools[id] = p
 }
 
 func (cfg *Config) Tool(id string) (tool.Tool, error) {
@@ -48,15 +50,18 @@ type toolConfig struct {
 	URL   string `yaml:"url"`
 	Token string `yaml:"token"`
 
-	Model string `yaml:"model"`
+	Model    string `yaml:"model"`
+	Provider string `yaml:"provider"`
 
-	Index     string `yaml:"index"`
-	Extractor string `yaml:"extractor"`
+	Index      string `yaml:"index"`
+	Extractor  string `yaml:"extractor"`
+	Translator string `yaml:"translator"`
 }
 
 type toolContext struct {
-	Index     index.Provider
-	Extractor extractor.Provider
+	Index      index.Provider
+	Extractor  extractor.Provider
+	Translator translator.Provider
 
 	Renderer    provider.Renderer
 	Synthesizer provider.Synthesizer
@@ -68,24 +73,36 @@ func (cfg *Config) registerTools(f *configFile) error {
 
 		context := toolContext{}
 
-		if t.Name == "" {
-			t.Name = id
+		if p, err := cfg.Index(t.Index); err == nil {
+			context.Index = p
 		}
 
-		if i, err := cfg.Index(t.Index); err == nil {
-			context.Index = i
+		if p, err := cfg.Extractor(t.Extractor); err == nil {
+			context.Extractor = p
 		}
 
-		if e, err := cfg.Extractor(t.Extractor); err == nil {
-			context.Extractor = e
+		if p, err := cfg.Translator(t.Translator); err == nil {
+			context.Translator = p
 		}
 
-		if r, err := cfg.Renderer(t.Model); err == nil {
-			context.Renderer = r
+		if p, err := cfg.Index(t.Provider); err == nil {
+			context.Index = p
 		}
 
-		if s, err := cfg.Synthesizer(t.Model); err == nil {
-			context.Synthesizer = s
+		if p, err := cfg.Extractor(t.Provider); err == nil {
+			context.Extractor = p
+		}
+
+		if p, err := cfg.Translator(t.Provider); err == nil {
+			context.Translator = p
+		}
+
+		if p, err := cfg.Renderer(t.Model); err == nil {
+			context.Renderer = p
+		}
+
+		if p, err := cfg.Synthesizer(t.Model); err == nil {
+			context.Synthesizer = p
 		}
 
 		tool, err := createTool(t, context)
@@ -129,6 +146,9 @@ func createTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 
 	case "tavily":
 		return tavilyTool(cfg, context)
+
+	case "translate":
+		return translateTool(cfg, context)
 
 	case "custom":
 		return customTool(cfg, context)
@@ -256,6 +276,20 @@ func tavilyTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	}
 
 	return tavily.New(cfg.Token, options...)
+}
+
+func translateTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+	var options []translate.Option
+
+	if cfg.Name != "" {
+		options = append(options, translate.WithName(cfg.Name))
+	}
+
+	if cfg.Description != "" {
+		options = append(options, translate.WithDescription(cfg.Description))
+	}
+
+	return translate.New(context.Translator, options...)
 }
 
 func customTool(cfg toolConfig, context toolContext) (tool.Tool, error) {

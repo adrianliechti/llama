@@ -18,8 +18,6 @@ type Client struct {
 
 	url   string
 	token string
-
-	language string
 }
 
 func NewTranslator(url string, options ...Option) (*Client, error) {
@@ -31,8 +29,6 @@ func NewTranslator(url string, options ...Option) (*Client, error) {
 		client: http.DefaultClient,
 
 		url: url,
-
-		language: "en",
 	}
 
 	for _, option := range options {
@@ -48,7 +44,7 @@ func (c *Client) Translate(ctx context.Context, content string, options *transla
 	}
 
 	if options.Language == "" {
-		options.Language = c.language
+		options.Language = "en"
 	}
 
 	type bodyType struct {

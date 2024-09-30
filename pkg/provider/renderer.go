@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"io"
 )
 
 type Renderer interface {
@@ -9,4 +10,11 @@ type Renderer interface {
 }
 
 type RenderOptions struct {
+}
+
+type Image struct {
+	ID string
+
+	Name    string
+	Content io.ReadCloser
 }

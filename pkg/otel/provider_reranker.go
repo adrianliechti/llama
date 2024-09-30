@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/reranker"
+	"github.com/adrianliechti/llama/pkg/provider"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -12,7 +12,7 @@ import (
 
 type Reranker interface {
 	Observable
-	reranker.Provider
+	provider.Reranker
 }
 
 type observableReranker struct {
@@ -22,10 +22,10 @@ type observableReranker struct {
 	model    string
 	provider string
 
-	reranker reranker.Provider
+	reranker provider.Reranker
 }
 
-func NewReranker(provider, model string, p reranker.Provider) Reranker {
+func NewReranker(provider, model string, p provider.Reranker) Reranker {
 	library := strings.ToLower(provider)
 
 	return &observableReranker{
@@ -42,7 +42,7 @@ func NewReranker(provider, model string, p reranker.Provider) Reranker {
 func (p *observableReranker) otelSetup() {
 }
 
-func (p *observableReranker) Rerank(ctx context.Context, query string, inputs []string, options *reranker.RerankOptions) ([]reranker.Result, error) {
+func (p *observableReranker) Rerank(ctx context.Context, query string, inputs []string, options *provider.RerankOptions) ([]provider.Ranking, error) {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 

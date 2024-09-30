@@ -1,4 +1,4 @@
-package adapter
+package reranker
 
 import (
 	"context"
@@ -6,10 +6,9 @@ import (
 	"sort"
 
 	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/reranker"
 )
 
-var _ reranker.Provider = (*Adapter)(nil)
+var _ provider.Reranker = (*Adapter)(nil)
 
 type Adapter struct {
 	embedder provider.Embedder
@@ -21,14 +20,14 @@ func FromEmbedder(embedder provider.Embedder) *Adapter {
 	}
 }
 
-func (a *Adapter) Rerank(ctx context.Context, query string, inputs []string, options *reranker.RerankOptions) ([]reranker.Result, error) {
+func (a *Adapter) Rerank(ctx context.Context, query string, inputs []string, options *provider.RerankOptions) ([]provider.Ranking, error) {
 	result, err := a.embedder.Embed(ctx, query)
 
 	if err != nil {
 		return nil, err
 	}
 
-	var results []reranker.Result
+	var results []provider.Ranking
 
 	for _, input := range inputs {
 		embedding, err := a.embedder.Embed(ctx, input)
@@ -39,7 +38,7 @@ func (a *Adapter) Rerank(ctx context.Context, query string, inputs []string, opt
 
 		score := cosineSimilarity(result.Data, embedding.Data)
 
-		result := reranker.Result{
+		result := provider.Ranking{
 			Content: input,
 			Score:   float64(score),
 		}

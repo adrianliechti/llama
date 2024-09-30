@@ -102,7 +102,7 @@ func jinaEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, er
 		options = append(options, jina.WithToken(cfg.Token))
 	}
 
-	return jina.NewEmbedder(cfg.URL, options...)
+	return jina.NewEmbedder(cfg.URL, model.ID, options...)
 }
 
 func llamaEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
