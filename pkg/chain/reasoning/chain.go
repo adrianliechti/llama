@@ -119,7 +119,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	input = append(input, provider.Message{
 		Role:    provider.MessageRoleUser,
-		Content: "Please provide the final answer based on your reasoning above.",
+		Content: "Please provide the final answer based solely on your reasoning above. Do not use JSON formatting. Only provide the text response without any titles or preambles. Retain any formatting as instructed by the original prompt, such as exact formatting for free response or multiple choice.",
 	})
 
 	return c.completer.Complete(ctx, input, options)
