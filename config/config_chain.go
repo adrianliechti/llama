@@ -8,11 +8,13 @@ import (
 	"github.com/adrianliechti/llama/pkg/limiter"
 	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/template"
 	"golang.org/x/time/rate"
 
 	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/chain/agent"
 	"github.com/adrianliechti/llama/pkg/chain/assistant"
+	"github.com/adrianliechti/llama/pkg/chain/rag"
 	"github.com/adrianliechti/llama/pkg/chain/reasoning"
 
 	"github.com/adrianliechti/llama/pkg/to"
@@ -36,8 +38,10 @@ type chainConfig struct {
 
 	Model string `yaml:"model"`
 
-	Tools    []string  `yaml:"tools"`
+	Template string    `yaml:"template"`
 	Messages []message `yaml:"messages"`
+
+	Tools []string `yaml:"tools"`
 
 	Limit       *int     `yaml:"limit"`
 	Temperature *float32 `yaml:"temperature"`
@@ -49,8 +53,10 @@ type chainContext struct {
 	Embedder  provider.Embedder
 	Completer provider.Completer
 
-	Tools    map[string]tool.Tool
+	Template *template.Template
 	Messages []provider.Message
+
+	Tools map[string]tool.Tool
 
 	Limiter *rate.Limiter
 }
@@ -100,6 +106,12 @@ func (cfg *Config) registerChains(f *configFile) error {
 			context.Tools[t] = tool
 		}
 
+		if c.Template != "" {
+			if context.Template, err = parseTemplate(c.Template); err != nil {
+				return err
+			}
+		}
+
 		if c.Messages != nil {
 			if context.Messages, err = parseMessages(c.Messages); err != nil {
 				return err
@@ -133,6 +145,9 @@ func createChain(cfg chainConfig, context chainContext) (chain.Provider, error) 
 
 	case "assistant":
 		return assistantChain(cfg, context)
+
+	case "rag":
+		return ragChain(cfg, context)
 
 	case "reasoning":
 		return reasoningChain(cfg, context)
@@ -180,6 +195,32 @@ func assistantChain(cfg chainConfig, context chainContext) (chain.Provider, erro
 	}
 
 	return assistant.New(options...)
+}
+
+func ragChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
+	var options []rag.Option
+
+	if context.Completer != nil {
+		options = append(options, rag.WithCompleter(context.Completer))
+	}
+
+	if context.Template != nil {
+		options = append(options, rag.WithTemplate(context.Template))
+	}
+
+	if context.Messages != nil {
+		options = append(options, rag.WithMessages(context.Messages...))
+	}
+
+	if context.Index != nil {
+		options = append(options, rag.WithIndex(context.Index))
+	}
+
+	if cfg.Temperature != nil {
+		options = append(options, rag.WithTemperature(*cfg.Temperature))
+	}
+
+	return rag.New(options...)
 }
 
 func reasoningChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
