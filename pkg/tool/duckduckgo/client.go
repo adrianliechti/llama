@@ -93,24 +93,55 @@ func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, err
 
 	var results []Result
 
-	re := regexp.MustCompile(`<[^>]*>`)
+	regexLink := regexp.MustCompile(`href="([^"]+)"`)
+	regexSnippet := regexp.MustCompile(`<[^>]*>`)
+
 	scanner := bufio.NewScanner(resp.Body)
+
+	var resultURL string
+	var resultTitle string
+	var resultSnippet string
 
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if !strings.Contains(line, "result__snippet") {
+		if strings.Contains(line, "result__a") {
+			snippet := regexSnippet.ReplaceAllString(line, "")
+			snippet = text.Normalize(snippet)
+
+			resultTitle = snippet
+		}
+
+		if strings.Contains(line, "result__url") {
+			links := regexLink.FindStringSubmatch(line)
+
+			if len(links) >= 2 {
+				resultURL = links[1]
+			}
+		}
+
+		if strings.Contains(line, "result__snippet") {
+			snippet := regexSnippet.ReplaceAllString(line, "")
+			snippet = text.Normalize(snippet)
+
+			resultSnippet = snippet
+		}
+
+		if resultSnippet == "" {
 			continue
 		}
 
-		snippet := re.ReplaceAllString(line, "")
-		snippet = text.Normalize(snippet)
-
 		result := Result{
-			Content: snippet,
+			URL:     resultURL,
+			Title:   resultTitle,
+			Content: resultSnippet,
 		}
 
 		results = append(results, result)
+
+		resultURL = ""
+		resultTitle = ""
+		resultSnippet = ""
 	}
 
 	return results, nil
