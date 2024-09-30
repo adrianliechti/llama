@@ -122,6 +122,8 @@ func IndexDir(ctx context.Context, c *client, index, root string) error {
 			return nil
 		}
 
+		fmt.Printf("Indexing %s...\n", path)
+
 		content, err := c.Extract(ctx, filename, bytes.NewReader(data), nil)
 
 		if err != nil {
