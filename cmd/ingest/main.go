@@ -21,10 +21,11 @@ import (
 )
 
 func main() {
-	urlFlag := flag.String("url", "http://localhost:8080", "server url")
-	tokenFlag := flag.String("token", "", "server token")
+	urlFlag := flag.String("url", "http://localhost:8080", "platform url")
+	tokenFlag := flag.String("token", "", "platform token")
+
 	indexFlag := flag.String("index", "docs", "index name")
-	dirFlag := flag.String("dir", ".", "directory")
+	dirFlag := flag.String("dir", ".", "index directory")
 
 	flag.Parse()
 
@@ -50,7 +51,23 @@ func main() {
 
 func IndexDir(ctx context.Context, c *client, index, root string) error {
 	supported := []string{
-		".txt", ".md",
+		".csv",
+		".md",
+		".rst",
+		".tsv",
+		".txt",
+
+		".pdf",
+
+		// ".jpg", ".jpeg",
+		// ".png",
+		// ".bmp",
+		// ".tiff",
+		// ".heif",
+
+		".docx",
+		".pptx",
+		".xlsx",
 	}
 
 	list, err := c.Documents(ctx, index)
