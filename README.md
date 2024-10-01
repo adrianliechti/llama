@@ -227,7 +227,7 @@ https://github.com/ggerganov/whisper.cpp/tree/master/examples/server
 $ task whisper:server
 
 # WHISPER.CPP Server
-$ whisper-server --port 9083 --convert --model ./models/whisper-ggml-medium.bin
+$ whisper-server --port 9083 --convert --model ./models/whisper-large-v3-turbo.bin
 ```
 
 ```yaml
