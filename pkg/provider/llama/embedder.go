@@ -17,11 +17,17 @@ func NewEmbedder(url, model string, options ...Option) (*Embedder, error) {
 	url = strings.TrimRight(url, "/")
 	url = strings.TrimSuffix(url, "/v1")
 
-	c := &Config{}
+	cfg := &Config{}
 
 	for _, option := range options {
-		option(c)
+		option(cfg)
 	}
 
-	return openai.NewEmbedder(url+"/v1", model, c.options...)
+	opts := []openai.Option{}
+
+	if cfg.client != nil {
+		opts = append(opts, openai.WithClient(cfg.client))
+	}
+
+	return openai.NewEmbedder(url+"/v1", model, opts...)
 }
