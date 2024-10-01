@@ -38,7 +38,7 @@ services:
       - qdrant-data:/qdrant/storage
   
   unstructured:
-    image: quay.io/unstructured-io/unstructured-api:0.0.75
+    image: quay.io/unstructured-io/unstructured-api:0.0.80
     pull_policy: always
 
   web:

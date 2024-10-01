@@ -9,6 +9,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/segmenter"
 	"github.com/adrianliechti/llama/pkg/summarizer"
 	"github.com/adrianliechti/llama/pkg/tool"
 	"github.com/adrianliechti/llama/pkg/translator"
@@ -33,6 +34,7 @@ type Config struct {
 	indexes map[string]index.Provider
 
 	extractors map[string]extractor.Provider
+	segmenter  map[string]segmenter.Provider
 	summarizer map[string]summarizer.Provider
 	translator map[string]translator.Provider
 
@@ -64,6 +66,10 @@ func Parse(path string) (*Config, error) {
 	}
 
 	if err := c.RegisterExtractors(file); err != nil {
+		return nil, err
+	}
+
+	if err := c.RegisterSegmenters(file); err != nil {
 		return nil, err
 	}
 
