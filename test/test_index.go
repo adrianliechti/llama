@@ -45,6 +45,10 @@ func TestIndex(t *testing.T, c *TestContext, i index.Provider) {
 		{
 			ID:      "ec4cf20e-f24d-48d8-88c3-90c9fe7dd435",
 			Content: "N/A",
+
+			Metadata: map[string]string{
+				"date": "2021-09-01",
+			},
 		},
 	}
 

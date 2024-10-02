@@ -6,6 +6,54 @@ type Results struct {
 
 type Result map[string]any
 
+func (r Result) ID() string {
+	if val := r.String("Id"); val != "" {
+		return val
+	}
+
+	if val := r.String("id"); val != "" {
+		return val
+	}
+
+	return ""
+}
+
+func (r Result) Title() string {
+	if val := r.String("title"); val != "" {
+		return val
+	}
+
+	return ""
+}
+
+func (r Result) Content() string {
+	if val := r.String("content"); val != "" {
+		return val
+	}
+
+	return ""
+}
+
+func (r Result) Location() string {
+	if val := r.String("location"); val != "" {
+		return val
+	}
+
+	if val := r.String("source"); val != "" {
+		return val
+	}
+
+	return ""
+}
+
+func (r Result) Metadata() map[string]string {
+	if val := r.Map("metadata"); val != nil {
+		return val
+	}
+
+	return nil
+}
+
 func (r Result) String(name string) string {
 	val, ok := r[name]
 
@@ -59,52 +107,4 @@ func (r Result) Map(name string) map[string]string {
 	}
 
 	return result
-}
-
-func (r Result) ID() string {
-	if val := r.String("Id"); val != "" {
-		return val
-	}
-
-	if val := r.String("id"); val != "" {
-		return val
-	}
-
-	return ""
-}
-
-func (r Result) Title() string {
-	if val := r.String("title"); val != "" {
-		return val
-	}
-
-	return ""
-}
-
-func (r Result) Content() string {
-	if val := r.String("content"); val != "" {
-		return val
-	}
-
-	return ""
-}
-
-func (r Result) Location() string {
-	if val := r.String("location"); val != "" {
-		return val
-	}
-
-	if val := r.String("source"); val != "" {
-		return val
-	}
-
-	return ""
-}
-
-func (r Result) Metadata() map[string]string {
-	if val := r.Map("metadata"); val != nil {
-		return val
-	}
-
-	return nil
 }
