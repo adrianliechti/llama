@@ -17,20 +17,23 @@ type Embedder struct {
 	*Config
 }
 
-func NewEmbedder(url string, options ...Option) (*Embedder, error) {
+func NewEmbedder(url string, model string, options ...Option) (*Embedder, error) {
 	if url == "" {
 		url = "https://api.jina.ai"
+	}
+
+	if model == "" {
+		model = "jina-embeddings-v3"
 	}
 
 	url = strings.TrimRight(url, "/")
 	url = strings.TrimSuffix(url, "/v1")
 
 	cfg := &Config{
+		url:   url,
+		model: model,
+
 		client: http.DefaultClient,
-
-		url: url,
-
-		model: "jina-clip-v1",
 	}
 
 	for _, option := range options {

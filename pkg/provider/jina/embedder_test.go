@@ -40,7 +40,7 @@ func TestEmbedder(t *testing.T) {
 	url, err := server.Endpoint(ctx, "")
 	require.NoError(t, err)
 
-	e, err := jina.NewEmbedder("http://" + url)
+	e, err := jina.NewEmbedder("http://"+url, "")
 	require.NoError(t, err)
 
 	result, err := e.Embed(ctx, "Hello, World!")

@@ -12,6 +12,9 @@ includes:
   nomic:
     taskfile: ./Taskfile.nomic.yml
   
+  reranker:
+    taskfile: ./Taskfile.reranker.yml
+  
   whisper:
     taskfile: ./Taskfile.whisper.yml
   

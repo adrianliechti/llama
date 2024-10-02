@@ -24,13 +24,6 @@ type Tool struct {
 	Parameters any
 }
 
-type Image struct {
-	ID string
-
-	Name    string
-	Content io.ReadCloser
-}
-
 type Usage struct {
 	InputTokens  int
 	OutputTokens int

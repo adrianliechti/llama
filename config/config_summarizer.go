@@ -6,12 +6,12 @@ import (
 	"github.com/adrianliechti/llama/pkg/summarizer"
 )
 
-func (cfg *Config) RegisterSummarizer(alias string, p summarizer.Provider) {
+func (cfg *Config) RegisterSummarizer(id string, p summarizer.Provider) {
 	if cfg.summarizer == nil {
 		cfg.summarizer = make(map[string]summarizer.Provider)
 	}
 
-	cfg.summarizer[alias] = p
+	cfg.summarizer[id] = p
 }
 
 func (cfg *Config) Summarizer(id string) (summarizer.Provider, error) {
@@ -22,4 +22,8 @@ func (cfg *Config) Summarizer(id string) (summarizer.Provider, error) {
 	}
 
 	return nil, errors.New("summarizer not found: " + id)
+}
+
+func (cfg *Config) RegisterSummarizers(f *configFile) error {
+	return nil
 }

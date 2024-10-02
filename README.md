@@ -227,7 +227,7 @@ https://github.com/ggerganov/whisper.cpp/tree/master/examples/server
 $ task whisper:server
 
 # WHISPER.CPP Server
-$ whisper-server --port 9083 --convert --model ./models/whisper-ggml-medium.bin
+$ whisper-server --port 9083 --convert --model ./models/whisper-large-v3-turbo.bin
 ```
 
 ```yaml
@@ -410,7 +410,7 @@ https://unstructured.io
 
 ```shell
 # using Docker
-docker run -it --rm -p 9085:8000 quay.io/unstructured-io/unstructured-api:0.0.75 --port 8000 --host 0.0.0.0
+docker run -it --rm -p 9085:8000 quay.io/unstructured-io/unstructured-api:0.0.80 --port 8000 --host 0.0.0.0
 ```
 
 ```yaml

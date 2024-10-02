@@ -16,12 +16,12 @@ import (
 	"golang.org/x/time/rate"
 )
 
-func (cfg *Config) RegisterExtractor(alias string, p extractor.Provider) {
+func (cfg *Config) RegisterExtractor(id string, p extractor.Provider) {
 	if cfg.extractors == nil {
 		cfg.extractors = make(map[string]extractor.Provider)
 	}
 
-	cfg.extractors[alias] = p
+	cfg.extractors[id] = p
 }
 
 func (cfg *Config) Extractor(id string) (extractor.Provider, error) {

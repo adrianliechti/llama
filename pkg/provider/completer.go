@@ -46,20 +46,6 @@ type CompleteOptions struct {
 	Format CompletionFormat
 }
 
-func (o CompleteOptions) Clone() CompleteOptions {
-	return CompleteOptions{
-		Stream: o.Stream,
-
-		Stop:  o.Stop,
-		Tools: o.Tools,
-
-		MaxTokens:   o.MaxTokens,
-		Temperature: o.Temperature,
-
-		Format: o.Format,
-	}
-}
-
 type Completion struct {
 	ID string
 

@@ -2,18 +2,16 @@ package llama
 
 import (
 	"net/http"
-
-	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
 type Config struct {
-	options []openai.Option
+	client *http.Client
 }
 
 type Option func(*Config)
 
 func WithClient(client *http.Client) Option {
 	return func(c *Config) {
-		c.options = append(c.options, openai.WithClient(client))
+		c.client = client
 	}
 }

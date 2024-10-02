@@ -9,15 +9,15 @@ tasks:
       - whisper-server
         --port 9083
         --convert
-        --model ./models/whisper-medium.bin
+        --model ./models/whisper-large-v3-turbo.bin
 
   download-model:
     cmds:
       - mkdir -p models
-      - curl -s -L -o models/whisper-medium.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin?download=true
+      - curl -s -L -o models/whisper-large-v3-turbo.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin?download=true
 
     status:
-      - test -f models/whisper-medium.bin
+      - test -f models/whisper-large-v3-turbo.bin
   
   test:
     cmds:

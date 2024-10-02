@@ -22,7 +22,7 @@ func TestExtract(t *testing.T) {
 		Started: true,
 
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "quay.io/unstructured-io/unstructured-api:0.0.75",
+			Image:        "quay.io/unstructured-io/unstructured-api:0.0.80",
 			ExposedPorts: []string{"8000/tcp"},
 			WaitingFor:   wait.ForLog("Application startup complete"),
 		},

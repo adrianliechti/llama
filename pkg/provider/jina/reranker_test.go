@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/adrianliechti/llama/pkg/reranker/jina"
+	"github.com/adrianliechti/llama/pkg/provider/jina"
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -40,7 +40,7 @@ func TestReranker(t *testing.T) {
 	url, err := server.Endpoint(ctx, "")
 	require.NoError(t, err)
 
-	r, err := jina.New("http://"+url, "jina-reranker-v2-base-multilingual")
+	r, err := jina.NewReranker("http://"+url, "")
 	require.NoError(t, err)
 
 	result, err := r.Rerank(ctx, "Hello, World!", []string{"World", "Sun", "Moon"}, nil)

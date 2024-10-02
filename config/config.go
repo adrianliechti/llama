@@ -9,7 +9,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/reranker"
+	"github.com/adrianliechti/llama/pkg/segmenter"
 	"github.com/adrianliechti/llama/pkg/summarizer"
 	"github.com/adrianliechti/llama/pkg/tool"
 	"github.com/adrianliechti/llama/pkg/translator"
@@ -27,18 +27,19 @@ type Config struct {
 	completer   map[string]provider.Completer
 	embedder    map[string]provider.Embedder
 	renderer    map[string]provider.Renderer
+	reranker    map[string]provider.Reranker
 	synthesizer map[string]provider.Synthesizer
 	transcriber map[string]provider.Transcriber
 
-	reranker   map[string]reranker.Provider
+	indexes map[string]index.Provider
+
 	extractors map[string]extractor.Provider
+	segmenter  map[string]segmenter.Provider
 	summarizer map[string]summarizer.Provider
 	translator map[string]translator.Provider
 
 	tools  map[string]tool.Tool
 	chains map[string]chain.Provider
-
-	indexes map[string]index.Provider
 }
 
 func Parse(path string) (*Config, error) {
@@ -68,6 +69,18 @@ func Parse(path string) (*Config, error) {
 		return nil, err
 	}
 
+	if err := c.RegisterSegmenters(file); err != nil {
+		return nil, err
+	}
+
+	if err := c.RegisterSummarizers(file); err != nil {
+		return nil, err
+	}
+
+	if err := c.RegisterTranslators(file); err != nil {
+		return nil, err
+	}
+
 	if err := c.registerTools(file); err != nil {
 		return nil, err
 	}
@@ -88,13 +101,15 @@ type configFile struct {
 
 	Providers []providerConfig `yaml:"providers"`
 
-	Indexes    map[string]indexConfig     `yaml:"indexes"`
-	Extractors map[string]extractorConfig `yaml:"extractors"`
+	Indexes map[string]indexConfig `yaml:"indexes"`
 
-	Routers map[string]routerConfig `yaml:"routers"`
+	Extractors  map[string]extractorConfig  `yaml:"extractors"`
+	Translators map[string]translatorConfig `yaml:"translators"`
 
 	Tools  map[string]toolConfig  `yaml:"tools"`
 	Chains map[string]chainConfig `yaml:"chains"`
+
+	Routers map[string]routerConfig `yaml:"routers"`
 }
 
 func parseFile(path string) (*configFile, error) {

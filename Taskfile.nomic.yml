@@ -19,7 +19,7 @@ tasks:
   download-model:
     cmds:
       - mkdir -p models
-      - curl -s -L -o models/nomic-embed-text-v1.5.gguf  https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.f16.gguf?download=true
+      - curl -s -L -o models/nomic-embed-text-v1.5.gguf https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.f16.gguf?download=true
 
     status:
       - test -f models/nomic-embed-text-v1.5.gguf

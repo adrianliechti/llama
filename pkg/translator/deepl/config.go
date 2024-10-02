@@ -17,9 +17,3 @@ func WithToken(token string) Option {
 		c.token = token
 	}
 }
-
-func WithLanguage(language string) Option {
-	return func(c *Client) {
-		c.language = language
-	}
-}

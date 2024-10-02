@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/adrianliechti/llama/pkg/reranker"
+	"github.com/adrianliechti/llama/pkg/provider"
 )
 
 func (h *Handler) handleRerank(w http.ResponseWriter, r *http.Request) {
@@ -24,7 +24,7 @@ func (h *Handler) handleRerank(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rankings, err := p.Rerank(r.Context(), req.Query, req.Documents, &reranker.RerankOptions{
+	rankings, err := p.Rerank(r.Context(), req.Query, req.Documents, &provider.RerankOptions{
 		Limit: req.Limit,
 	})
 
