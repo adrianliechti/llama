@@ -41,8 +41,9 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 		input.Content = file
 	}
 
-	chunkStrategy := parseChunkingStrategy(r.FormValue("chunking_strategy"))
+	outputFormat := r.FormValue("output_format")
 
+	chunkStrategy := parseChunkingStrategy(r.FormValue("chunking_strategy"))
 	chunkLength, _ := strconv.Atoi(r.FormValue("max_characters"))
 	chunkOverlap, _ := strconv.Atoi(r.FormValue("overlap"))
 
@@ -102,6 +103,8 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 			result = append(result, partition)
 		}
 	}
+
+	_ = outputFormat
 
 	writeJson(w, result)
 }

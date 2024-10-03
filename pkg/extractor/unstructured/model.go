@@ -3,8 +3,9 @@ package unstructured
 type Strategy string
 
 const (
-	StrategyAuto Strategy = "auto"
-	StrategyFast Strategy = "fast"
+	StrategyAuto  Strategy = "auto"
+	StrategyFast  Strategy = "fast"
+	StrategyHiRes Strategy = "hi_res"
 )
 
 type Element struct {

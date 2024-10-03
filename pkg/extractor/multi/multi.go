@@ -26,14 +26,14 @@ func (e *Extractor) Extract(ctx context.Context, input extractor.File, options *
 		options = new(extractor.ExtractOptions)
 	}
 
+	data, err := io.ReadAll(input.Content)
+
+	if err != nil {
+		return nil, err
+	}
+
 	for _, p := range e.providers {
 		if input.Content != nil {
-			data, err := io.ReadAll(input.Content)
-
-			if err != nil {
-				return nil, err
-			}
-
 			input.Content = bytes.NewReader(data)
 		}
 

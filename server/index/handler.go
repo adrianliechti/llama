@@ -28,11 +28,12 @@ func New(cfg *config.Config) (*Handler, error) {
 
 func (h *Handler) Attach(r chi.Router) {
 	r.Get("/{index}", h.handleList)
-	r.Post("/{index}/query", h.handleQuery)
-
-	r.Post("/{index}", h.handleIngest)
 	r.Delete("/{index}", h.handleDeletion)
 
+	r.Post("/{index}", h.handleIndex)
+	r.Post("/{index}/query", h.handleQuery)
+
+	r.Post("/{index}/unstructured", h.handleUnstructured)
 }
 
 func writeJson(w http.ResponseWriter, v any) {

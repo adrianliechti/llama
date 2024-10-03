@@ -37,7 +37,7 @@ func New(url string, options ...Option) (*Client, error) {
 
 		url: url,
 
-		strategy: "auto",
+		strategy: StrategyFast,
 	}
 
 	for _, option := range options {
@@ -62,6 +62,7 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	w := multipart.NewWriter(&b)
 
 	w.WriteField("strategy", string(c.strategy))
+	w.WriteField("include_page_breaks", "true")
 
 	file, err := w.CreateFormFile("files", input.Name)
 

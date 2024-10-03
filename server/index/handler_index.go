@@ -7,7 +7,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/index"
 )
 
-func (s *Handler) handleIngest(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) handleIndex(w http.ResponseWriter, r *http.Request) {
 	i, err := s.Index(r.PathValue("index"))
 
 	if err != nil {
