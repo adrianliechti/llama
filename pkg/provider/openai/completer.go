@@ -89,7 +89,8 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			},
 		}
 
-		resultToolCalls := map[string]provider.ToolCall{}
+		toolcalls := map[string]provider.ToolCall{}
+		toolcallID := ""
 
 		for {
 			completion, err := stream.Recv()
@@ -139,11 +140,11 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			result.Message.Content += content
 
 			for _, c := range choice.Delta.ToolCalls {
-				if c.Type != openai.ToolTypeFunction {
-					continue
+				if c.ID != "" {
+					toolcallID = c.ID
 				}
 
-				call, found := resultToolCalls[c.ID]
+				call, found := toolcalls[toolcallID]
 
 				if !found {
 					call = provider.ToolCall{
@@ -153,7 +154,8 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				}
 
 				call.Arguments += c.Function.Arguments
-				resultToolCalls[c.ID] = call
+
+				toolcalls[toolcallID] = call
 			}
 
 			options.Stream <- provider.Completion{
@@ -169,8 +171,8 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			}
 		}
 
-		if len(resultToolCalls) > 0 {
-			result.Message.ToolCalls = to.Values(resultToolCalls)
+		if len(toolcalls) > 0 {
+			result.Message.ToolCalls = to.Values(toolcalls)
 		}
 
 		return &result, nil
