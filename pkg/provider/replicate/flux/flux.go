@@ -159,6 +159,21 @@ func (r *Renderer) convertPredictionRequest(prompt string, options *provider.Ren
 			"output_format": "png",
 
 			"safety_tolerance": 5,
+
+			"prompt_upsampling": true,
+		}
+
+	case FluxPro11:
+		// https://replicate.com/black-forest-labs/flux-1.1-pro/api/schema#input-schema
+		input = map[string]any{
+			"prompt": prompt,
+
+			"aspect_ratio":  "1:1",
+			"output_format": "png",
+
+			"safety_tolerance": 5,
+
+			"prompt_upsampling": true,
 		}
 
 	case FluxDevRealism:

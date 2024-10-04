@@ -5,9 +5,11 @@ import (
 )
 
 const (
-	FluxPro     string = "black-forest-labs/flux-pro"
-	FluxDev     string = "black-forest-labs/flux-dev"
 	FluxSchnell string = "black-forest-labs/flux-schnell"
+	FluxDev     string = "black-forest-labs/flux-dev"
+	FluxPro     string = "black-forest-labs/flux-pro"
+
+	FluxPro11 string = "black-forest-labs/flux-1.1-pro"
 
 	FluxDevRealism string = "xlabs-ai/flux-dev-realism"
 )
@@ -17,6 +19,8 @@ var (
 		FluxPro,
 		FluxDev,
 		FluxSchnell,
+
+		FluxPro11,
 
 		FluxDevRealism,
 	}
