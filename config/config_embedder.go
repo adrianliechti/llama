@@ -7,6 +7,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/azure"
 	"github.com/adrianliechti/llama/pkg/provider/cohere"
+	"github.com/adrianliechti/llama/pkg/provider/google"
 	"github.com/adrianliechti/llama/pkg/provider/huggingface"
 	"github.com/adrianliechti/llama/pkg/provider/jina"
 	"github.com/adrianliechti/llama/pkg/provider/llama"
@@ -44,6 +45,9 @@ func createEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, 
 
 	case "github":
 		return azureEmbedder(cfg, model)
+
+	case "google":
+		return googleEmbedder(cfg, model)
 
 	case "huggingface":
 		return huggingfaceEmbedder(cfg, model)
@@ -83,6 +87,16 @@ func cohereEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, 
 	}
 
 	return cohere.NewEmbedder(cfg.URL, model.ID, options...)
+}
+
+func googleEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
+	var options []google.Option
+
+	if cfg.Token != "" {
+		options = append(options, google.WithToken(cfg.Token))
+	}
+
+	return google.NewEmbedder(cfg.URL, model.ID, options...)
 }
 
 func huggingfaceEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {

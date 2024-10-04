@@ -28,7 +28,7 @@ func NewCompleter(url, model string, options ...Option) (*Completer, error) {
 		url = "https://api.anthropic.com"
 	}
 
-	c := &Config{
+	cfg := &Config{
 		client: http.DefaultClient,
 
 		url:   url,
@@ -36,11 +36,11 @@ func NewCompleter(url, model string, options ...Option) (*Completer, error) {
 	}
 
 	for _, option := range options {
-		option(c)
+		option(cfg)
 	}
 
 	return &Completer{
-		Config: c,
+		Config: cfg,
 	}, nil
 }
 

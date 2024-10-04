@@ -9,6 +9,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/azure"
 	"github.com/adrianliechti/llama/pkg/provider/cohere"
 	"github.com/adrianliechti/llama/pkg/provider/custom"
+	"github.com/adrianliechti/llama/pkg/provider/google"
 	"github.com/adrianliechti/llama/pkg/provider/groq"
 	"github.com/adrianliechti/llama/pkg/provider/huggingface"
 	"github.com/adrianliechti/llama/pkg/provider/langchain"
@@ -58,6 +59,9 @@ func createCompleter(cfg providerConfig, model modelContext) (provider.Completer
 
 	case "github":
 		return azureCompleter(cfg, model)
+
+	case "google":
+		return googleCompleter(cfg, model)
 
 	case "groq":
 		return groqCompleter(cfg, model)
@@ -119,6 +123,16 @@ func cohereCompleter(cfg providerConfig, model modelContext) (provider.Completer
 	}
 
 	return cohere.NewCompleter(model.ID, options...)
+}
+
+func googleCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
+	var options []google.Option
+
+	if cfg.Token != "" {
+		options = append(options, google.WithToken(cfg.Token))
+	}
+
+	return google.NewCompleter(model.ID, options...)
 }
 
 func groqCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
