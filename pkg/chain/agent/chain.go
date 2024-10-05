@@ -174,7 +174,9 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 			return nil, err
 		}
 
-		<-done
+		if options.Stream != nil {
+			<-done
+		}
 
 		for _, c := range completion.Message.ToolCalls {
 			calls[c.ID] = &provider.ToolCall{

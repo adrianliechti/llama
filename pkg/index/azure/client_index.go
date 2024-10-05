@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/google/uuid"
 )
 
 func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
@@ -15,10 +16,16 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 	items := []map[string]any{}
 
 	for _, d := range documents {
+		id := d.ID
+
+		if id == "" {
+			id = uuid.New().String()
+		}
+
 		item := map[string]any{
 			"@search.action": "upload",
 
-			"id": d.ID,
+			"id": id,
 
 			"title":    d.Title,
 			"content":  d.Content,
