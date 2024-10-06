@@ -36,6 +36,8 @@ func (c *Config) Options() []option.RequestOption {
 		c.url = "https://api.openai.com/v1/"
 	}
 
+	c.url = strings.TrimRight(c.url, "/") + "/"
+
 	if strings.Contains(c.url, "openai.azure.com") {
 		options := make([]option.RequestOption, 0)
 
