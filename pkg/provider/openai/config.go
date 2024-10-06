@@ -2,7 +2,9 @@ package openai
 
 import (
 	"net/http"
+	"strings"
 
+	"github.com/openai/openai-go/azure"
 	"github.com/openai/openai-go/option"
 )
 
@@ -30,12 +32,24 @@ func WithClient(client *http.Client) Option {
 }
 
 func (c *Config) Options() []option.RequestOption {
-	options := make([]option.RequestOption, 0)
+	if c.url == "" {
+		c.url = "https://api.openai.com/v1/"
+	}
 
-	options = append(options, option.WithEnvironmentProduction())
+	if strings.Contains(c.url, "openai.azure.com") {
+		options := make([]option.RequestOption, 0)
 
-	if c.url != "" {
-		options = append(options, option.WithBaseURL(c.url))
+		options = append(options, azure.WithEndpoint(c.url, "2024-06-01"))
+
+		if c.token != "" {
+			options = append(options, azure.WithAPIKey(c.token))
+		}
+
+		return options
+	}
+
+	options := []option.RequestOption{
+		option.WithBaseURL(c.url),
 	}
 
 	if c.token != "" {
