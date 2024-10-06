@@ -125,8 +125,6 @@ type ChatCompletion struct {
 
 	Choices []ChatCompletionChoice `json:"choices"`
 
-	// system_fingerprint string
-
 	Usage *Usage `json:"usage,omitempty"`
 }
 
