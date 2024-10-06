@@ -41,7 +41,7 @@ func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 
 	transcription, err := t.transcriptions.New(ctx, openai.AudioTranscriptionNewParams{
 		Model: openai.F(t.model),
-		File:  openai.F(input.Content),
+		File:  openai.FileParam(input.Content, input.Name, ""),
 	})
 
 	if err != nil {

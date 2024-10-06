@@ -26,7 +26,7 @@ func main() {
 
 	chatmodel := "gpt-4o"
 	audiomodel := "whisper-1"
-	speakmodel := "tts-1-hd"
+	speakmodel := "tts-1"
 
 	url := os.Getenv("OPENAI_API_BASE")
 
@@ -43,7 +43,7 @@ func main() {
 	client := openai.NewClient(options...)
 
 	messages := []openai.ChatCompletionMessageParamUnion{
-		openai.SystemMessage("Your knowledge cutoff is 2023-10. You are a helpful, witty, and friendly AI. Act like a human, but remember that you aren't a human and that you can't do human things in the real world. Your voice and personality should be warm and engaging, with a lively and playful tone. If interacting in a non-English language, start by using the standard accent or dialect familiar to the user. Talk quickly. You should always call a function if you can. Answer as briefly and concisely as possible."),
+		openai.SystemMessage("Your knowledge cutoff is 2023-10. You are a helpful, witty, and friendly AI. Act like a human, but remember that you aren't a human and that you can't do human things in the real world. Your voice and personality should be warm and engaging, with a lively and playful tone. If interacting in a non-English language, start by using the standard accent or dialect familiar to the user. Talk quickly. You should always call a function if you can. Answer as briefly and concisely as possible. Keep it short."),
 	}
 
 	for ctx.Err() == nil {
@@ -58,7 +58,7 @@ func main() {
 
 		transcription, err := client.Audio.Transcriptions.New(ctx, openai.AudioTranscriptionNewParams{
 			Model: openai.F(audiomodel),
-			File:  openai.F[io.Reader](bytes.NewReader(data)),
+			File:  openai.FileParam(bytes.NewReader(data), "file.wav", "audio/wav"),
 		})
 
 		if err != nil {
@@ -79,28 +79,31 @@ func main() {
 			Messages: openai.F(messages),
 		})
 
-		completion := openai.ChatCompletionAccumulator{}
+		print("📣 ")
+
+		var text string
 
 		for stream.Next() {
 			chunk := stream.Current()
-			completion.AddChunk(chunk)
 
 			if len(chunk.Choices) > 0 {
-				print(chunk.Choices[0].Delta.Content)
+				content := chunk.Choices[0].Delta.Content
+				text += content
+
+				print(content)
 			}
 		}
+
+		println()
 
 		if err := stream.Err(); err != nil {
 			println("error:", err.Error())
 			continue
 		}
 
-		message := completion.Choices[0].Message
-		messages = append(messages, message)
+		messages = append(messages, openai.AssistantMessage(text))
 
-		println("📣 " + message.Content)
-
-		sayText(ctx, client, speakmodel, message.Content)
+		sayText(ctx, client, speakmodel, text)
 	}
 }
 
@@ -137,13 +140,86 @@ func sayText(ctx context.Context, client *openai.Client, model, input string) er
 
 	file.Close()
 
+	if err := playFile(ctx, path); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func playFile(ctx context.Context, path string) error {
+	if _, err := exec.LookPath("play"); err == nil {
+		return playFileSOX(ctx, path)
+	}
+
+	if _, err := exec.LookPath("ffplay"); err == nil {
+		return playFileFFMPEG(ctx, path)
+	}
+
+	return errors.New("neither FFmpeg nor SoX are installed")
+}
+
+func playFileSOX(ctx context.Context, path string) error {
+	cmd := exec.CommandContext(ctx, "play", path)
+
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func playFileFFMPEG(ctx context.Context, path string) error {
 	cmd := exec.CommandContext(ctx, "ffplay", "-autoexit", "-nodisp", path)
-	cmd.Run()
+
+	if err := cmd.Run(); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 func recordChunk(ctx context.Context) ([]byte, error) {
+	if _, err := exec.LookPath("sox"); err == nil {
+		return recordChunkSOX(ctx)
+	}
+
+	if _, err := exec.LookPath("ffmpeg"); err == nil {
+		return recordChunkFFMPEG(ctx)
+	}
+
+	return nil, errors.New("neither FFmpeg nor SoX are installed")
+}
+
+func recordChunkSOX(ctx context.Context) ([]byte, error) {
+	path := filepath.Join(os.TempDir(), uuid.New().String()+".wav")
+	defer os.Remove(path)
+
+	args := []string{
+		"-d",
+		path,
+		"silence",
+		"1", "0.0", "1%",
+		"1", "1.5", "1%",
+	}
+
+	cmd := exec.CommandContext(ctx, "sox", args...)
+
+	if err := cmd.Run(); err != nil {
+		return nil, err
+	}
+
+	data, err := os.ReadFile(path)
+
+	if err != nil {
+		fmt.Println("error reading file:", err)
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func recordChunkFFMPEG(ctx context.Context) ([]byte, error) {
 	var args []string
 
 	path := filepath.Join(os.TempDir(), uuid.New().String()+".wav")
@@ -154,21 +230,21 @@ func recordChunk(ctx context.Context) ([]byte, error) {
 		args = []string{
 			"-f", "avfoundation",
 			"-i", ":0",
-			"-af", "silencedetect=noise=-30dB:d=2",
+			"-af", "silencedetect=noise=-30dB:d=1",
 			path,
 		}
 	case "windows":
 		args = []string{
 			"-f", "dshow",
 			"-i", "audio=default",
-			"-af", "silencedetect=noise=-30dB:d=2",
+			"-af", "silencedetect=noise=-30dB:d=1",
 			path,
 		}
 	case "linux":
 		args = []string{
 			"-f", "alsa",
 			"-i", "default",
-			"-af", "silencedetect=noise=-30dB:d=2",
+			"-af", "silencedetect=noise=-30dB:d=1",
 			path,
 		}
 	}
@@ -206,7 +282,13 @@ func recordChunk(ctx context.Context) ([]byte, error) {
 		}
 	}
 
-	if err := cmd.Process.Kill(); err != nil {
+	err = cmd.Process.Signal(os.Interrupt)
+
+	if err != nil {
+		err = cmd.Process.Kill()
+	}
+
+	if err != nil {
 		fmt.Println("Error killing FFmpeg process:", err)
 		return nil, err
 	}
