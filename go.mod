@@ -10,7 +10,6 @@ require (
 	github.com/go-chi/cors v1.2.1
 	github.com/google/uuid v1.6.0
 	github.com/openai/openai-go v0.1.0-alpha.25
-	github.com/sashabaranov/go-openai v1.31.0
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.33.0
 	go.opentelemetry.io/contrib/bridges/otelslog v0.5.0

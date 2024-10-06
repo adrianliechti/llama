@@ -38,8 +38,9 @@ func (s *Synthesizer) Synthesize(ctx context.Context, content string, options *p
 	}
 
 	result, err := s.speech.New(ctx, openai.AudioSpeechNewParams{
-		Model:          openai.F(s.model),
-		Input:          openai.F(content),
+		Model: openai.F(s.model),
+		Input: openai.F(content),
+
 		Voice:          openai.F(openai.AudioSpeechNewParamsVoiceAlloy),
 		ResponseFormat: openai.F(openai.AudioSpeechNewParamsResponseFormatWAV),
 	})
