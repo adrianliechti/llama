@@ -13,7 +13,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/adrianliechti/llama/config"
 
@@ -131,16 +130,12 @@ func chat(ctx context.Context, client *openai.Client, model string) {
 
 LOOP:
 	for {
-		// output.WriteString(">>> ")
-		// input, err := reader.ReadString('\n')
+		output.WriteString(">>> ")
+		input, err := reader.ReadString('\n')
 
-		// if err != nil {
-		// 	panic(err)
-		// }
-
-		time.Sleep(2 * time.Second)
-		_ = reader
-		input := "Hello, how are you?"
+		if err != nil {
+			panic(err)
+		}
 
 		input = strings.TrimSpace(input)
 
