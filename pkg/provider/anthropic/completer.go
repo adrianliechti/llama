@@ -410,7 +410,7 @@ type Tool struct {
 
 	Description string `json:"description,omitempty"`
 
-	InputSchema any `json:"input_schema,omitempty"`
+	InputSchema map[string]any `json:"input_schema,omitempty"`
 }
 
 type Message struct {

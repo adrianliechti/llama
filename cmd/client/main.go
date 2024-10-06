@@ -323,6 +323,8 @@ LOOP:
 
 		if ext, _ := mime.ExtensionsByType(http.DetectContentType(data)); len(ext) > 0 {
 			name += ext[0]
+		} else {
+			name += ".wav"
 		}
 
 		os.WriteFile(name, data, 0600)

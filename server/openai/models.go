@@ -256,7 +256,7 @@ type Function struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 
-	Parameters any `json:"parameters"`
+	Parameters map[string]any `json:"parameters"`
 }
 
 // https://platform.openai.com/docs/api-reference/chat/object

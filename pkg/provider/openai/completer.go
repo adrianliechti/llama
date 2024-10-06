@@ -3,23 +3,21 @@ package openai
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"io"
 	"net/http"
 	"strings"
-	"unicode"
 
 	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/to"
 
-	"github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/shared"
 )
 
 var _ provider.Completer = (*Completer)(nil)
 
 type Completer struct {
 	*Config
-	client *openai.Client
+	completions *openai.ChatCompletionService
 }
 
 func NewCompleter(url, model string, options ...Option) (*Completer, error) {
@@ -33,8 +31,8 @@ func NewCompleter(url, model string, options ...Option) (*Completer, error) {
 	}
 
 	return &Completer{
-		Config: cfg,
-		client: cfg.newClient(),
+		Config:      cfg,
+		completions: openai.NewChatCompletionService(cfg.Options()...),
 	}, nil
 }
 
@@ -50,7 +48,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 	}
 
 	if options.Stream == nil {
-		completion, err := c.client.CreateChatCompletion(ctx, *req)
+		completion, err := c.completions.New(ctx, *req)
 
 		if err != nil {
 			return nil, convertError(err)
@@ -63,186 +61,114 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			Reason: toCompletionResult(choice.FinishReason),
 
 			Message: provider.Message{
-				Role:    toMessageRole(choice.Message.Role),
+				Role:    provider.MessageRoleAssistant,
 				Content: choice.Message.Content,
 
 				ToolCalls: toToolCalls(choice.Message.ToolCalls),
 			},
 
 			Usage: &provider.Usage{
-				InputTokens:  completion.Usage.PromptTokens,
-				OutputTokens: completion.Usage.CompletionTokens,
+				InputTokens:  int(completion.Usage.PromptTokens),
+				OutputTokens: int(completion.Usage.CompletionTokens),
 			},
 		}, nil
 	} else {
 		defer close(options.Stream)
 
-		stream, err := c.client.CreateChatCompletionStream(ctx, *req)
+		stream := c.completions.NewStreaming(ctx, *req)
 
-		if err != nil {
-			return nil, err
+		completion := openai.ChatCompletionAccumulator{}
+
+		for stream.Next() {
+			chunk := stream.Current()
+			completion.AddChunk(chunk)
+
+			if len(chunk.Choices) > 0 {
+				content := chunk.Choices[0].Delta.Content
+
+				options.Stream <- provider.Completion{
+					ID: completion.ID,
+
+					Message: provider.Message{
+						Role:    provider.MessageRoleAssistant,
+						Content: content,
+					},
+				}
+			}
 		}
 
-		result := provider.Completion{
+		if err := stream.Err(); err != nil {
+			return nil, convertError(err)
+		}
+
+		choice := completion.Choices[0]
+
+		return &provider.Completion{
+			ID:     completion.ID,
+			Reason: toCompletionResult(choice.FinishReason),
+
 			Message: provider.Message{
-				Role: provider.MessageRoleAssistant,
+				Role:    provider.MessageRoleAssistant,
+				Content: choice.Message.Content,
+
+				ToolCalls: toToolCalls(choice.Message.ToolCalls),
 			},
-		}
 
-		toolcalls := map[string]provider.ToolCall{}
-		toolcallID := ""
-
-		for {
-			completion, err := stream.Recv()
-
-			if err != nil {
-				if errors.Is(err, io.EOF) {
-					break
-				}
-
-				return nil, err
-			}
-
-			if completion.ID == "" {
-				continue
-			}
-
-			result.ID = completion.ID
-
-			if completion.Usage != nil {
-				result.Usage = &provider.Usage{
-					InputTokens:  completion.Usage.PromptTokens,
-					OutputTokens: completion.Usage.CompletionTokens,
-				}
-			}
-
-			if len(completion.Choices) == 0 {
-				continue
-			}
-
-			choice := completion.Choices[0]
-
-			role := toMessageRole(choice.Delta.Role)
-
-			if role == "" {
-				role = provider.MessageRoleAssistant
-			}
-
-			content := choice.Delta.Content
-
-			if result.Message.Content == "" {
-				content = strings.TrimLeftFunc(content, unicode.IsSpace)
-			}
-
-			result.Reason = toCompletionResult(choice.FinishReason)
-
-			result.Message.Role = role
-			result.Message.Content += content
-
-			for _, c := range choice.Delta.ToolCalls {
-				if c.ID != "" {
-					toolcallID = c.ID
-				}
-
-				call, found := toolcalls[toolcallID]
-
-				if !found {
-					call = provider.ToolCall{
-						ID:   c.ID,
-						Name: c.Function.Name,
-					}
-				}
-
-				call.Arguments += c.Function.Arguments
-
-				toolcalls[toolcallID] = call
-			}
-
-			options.Stream <- provider.Completion{
-				ID:     result.ID,
-				Reason: result.Reason,
-
-				Message: provider.Message{
-					Role:    role,
-					Content: content,
-
-					ToolCalls: toToolCalls(choice.Delta.ToolCalls),
-				},
-			}
-		}
-
-		if len(toolcalls) > 0 {
-			result.Message.ToolCalls = to.Values(toolcalls)
-		}
-
-		return &result, nil
+			Usage: &provider.Usage{
+				InputTokens:  int(completion.Usage.PromptTokens),
+				OutputTokens: int(completion.Usage.CompletionTokens),
+			},
+		}, nil
 	}
 }
 
-func (c *Completer) convertCompletionRequest(messages []provider.Message, options *provider.CompleteOptions) (*openai.ChatCompletionRequest, error) {
+func (c *Completer) convertCompletionRequest(messages []provider.Message, options *provider.CompleteOptions) (*openai.ChatCompletionNewParams, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
 	}
 
-	req := &openai.ChatCompletionRequest{
-		Model: c.model,
+	req := &openai.ChatCompletionNewParams{
+		Model: openai.F(c.model),
 	}
 
-	if options.Stream != nil {
-		req.StreamOptions = &openai.StreamOptions{
-			IncludeUsage: true,
-		}
+	if options.Stream != nil && !strings.Contains(c.url, "openai.azure.com") {
+		req.StreamOptions = openai.F(openai.ChatCompletionStreamOptionsParam{
+			IncludeUsage: openai.F(true),
+		})
 	}
 
 	if options.Format == provider.CompletionFormatJSON {
-		req.ResponseFormat = &openai.ChatCompletionResponseFormat{
-			Type: openai.ChatCompletionResponseFormatTypeJSONObject,
-		}
+		req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](shared.ResponseFormatJSONObjectParam{
+			Type: openai.F(openai.ResponseFormatJSONObjectTypeJSONObject),
+		})
 	}
 
 	if options.Stop != nil {
-		req.Stop = options.Stop
+		stops := openai.ChatCompletionNewParamsStopArray(options.Stop)
+		req.Stop = openai.F[openai.ChatCompletionNewParamsStopUnion](stops)
 	}
 
 	if options.MaxTokens != nil {
-		req.MaxTokens = *options.MaxTokens
+		req.MaxTokens = openai.F(int64(*options.MaxTokens))
 	}
 
 	if options.Temperature != nil {
-		req.Temperature = *options.Temperature
+		req.Temperature = openai.F(float64(*options.Temperature))
 	}
 
-	for _, t := range options.Tools {
-		tool := openai.Tool{
-			Type: openai.ToolTypeFunction,
-
-			Function: &openai.FunctionDefinition{
-				Name:        t.Name,
-				Description: t.Description,
-
-				Parameters: t.Parameters,
-			},
-		}
-
-		req.Tools = append(req.Tools, tool)
-	}
+	var reqMessages []openai.ChatCompletionMessageParamUnion
 
 	for _, m := range messages {
-		message := openai.ChatCompletionMessage{
-			Role:    convertMessageRole(m.Role),
-			Content: m.Content,
+		switch m.Role {
+		case provider.MessageRoleSystem:
+			message := openai.SystemMessage(m.Content)
+			reqMessages = append(reqMessages, message)
 
-			ToolCallID: m.Tool,
-		}
+		case provider.MessageRoleUser:
+			parts := []openai.ChatCompletionContentPartUnionParam{}
 
-		if len(m.Files) > 0 {
-			message.Content = ""
-
-			message.MultiContent = []openai.ChatMessagePart{
-				{
-					Type: openai.ChatMessagePartTypeText,
-					Text: m.Content,
-				},
+			if m.Content != "" {
+				parts = append(parts, openai.TextPart(m.Content))
 			}
 
 			for _, f := range m.Files {
@@ -255,78 +181,74 @@ func (c *Completer) convertCompletionRequest(messages []provider.Message, option
 				mime := http.DetectContentType(data)
 				content := base64.StdEncoding.EncodeToString(data)
 
-				message.MultiContent = append(message.MultiContent, openai.ChatMessagePart{
-					Type: openai.ChatMessagePartTypeImageURL,
-					ImageURL: &openai.ChatMessageImageURL{
-						URL: "data:" + mime + ";base64," + content,
-					},
-				})
-			}
-		}
+				url := "data:" + mime + ";base64," + content
 
-		for _, t := range m.ToolCalls {
-			call := openai.ToolCall{
-				ID:   t.ID,
-				Type: openai.ToolTypeFunction,
-
-				Function: openai.FunctionCall{
-					Name:      t.Name,
-					Arguments: t.Arguments,
-				},
+				parts = append(parts, openai.ImagePart(url))
 			}
 
-			message.ToolCalls = append(message.ToolCalls, call)
-		}
+			message := openai.UserMessageParts(parts...)
+			reqMessages = append(reqMessages, message)
 
-		req.Messages = append(req.Messages, message)
+		case provider.MessageRoleAssistant:
+			message := openai.AssistantMessage(m.Content)
+
+			var toolcalls []openai.ChatCompletionMessageToolCallParam
+
+			for _, t := range m.ToolCalls {
+				toolcall := openai.ChatCompletionMessageToolCallParam{
+					ID:   openai.F(t.ID),
+					Type: openai.F(openai.ChatCompletionMessageToolCallTypeFunction),
+
+					Function: openai.F(openai.ChatCompletionMessageToolCallFunctionParam{
+						Name:      openai.F(t.Name),
+						Arguments: openai.F(t.Arguments),
+					}),
+				}
+
+				toolcalls = append(toolcalls, toolcall)
+			}
+
+			if len(toolcalls) > 0 {
+				message.ToolCalls = openai.F(toolcalls)
+			}
+
+			reqMessages = append(reqMessages, message)
+
+		case provider.MessageRoleTool:
+			message := openai.ToolMessage(m.Tool, m.Content)
+			reqMessages = append(reqMessages, message)
+		}
 	}
 
-	if strings.Contains(c.url, "openai.azure.com") {
-		req.StreamOptions = nil
+	if len(reqMessages) > 0 {
+		req.Messages = openai.F(reqMessages)
+	}
+
+	var tools []openai.ChatCompletionToolParam
+
+	for _, t := range options.Tools {
+		tool := openai.ChatCompletionToolParam{
+			Type: openai.F(openai.ChatCompletionToolTypeFunction),
+
+			Function: openai.F(shared.FunctionDefinitionParam{
+				Name:        openai.F(t.Name),
+				Description: openai.F(t.Description),
+				Parameters:  openai.F(shared.FunctionParameters(t.Parameters)),
+				//Strict:      openai.F(true),
+			}),
+		}
+
+		tools = append(tools, tool)
+	}
+
+	if len(tools) > 0 {
+		req.Tools = openai.F(tools)
 	}
 
 	return req, nil
 }
 
-func convertMessageRole(r provider.MessageRole) string {
-	switch r {
-	case provider.MessageRoleSystem:
-		return openai.ChatMessageRoleSystem
-
-	case provider.MessageRoleUser:
-		return openai.ChatMessageRoleUser
-
-	case provider.MessageRoleAssistant:
-		return openai.ChatMessageRoleAssistant
-
-	case provider.MessageRoleTool:
-		return openai.ChatMessageRoleTool
-
-	default:
-		return ""
-	}
-}
-
-func toMessageRole(role string) provider.MessageRole {
-	switch role {
-	case openai.ChatMessageRoleSystem:
-		return provider.MessageRoleSystem
-
-	case openai.ChatMessageRoleUser:
-		return provider.MessageRoleUser
-
-	case openai.ChatMessageRoleAssistant:
-		return provider.MessageRoleAssistant
-
-	case openai.ChatMessageRoleTool:
-		return provider.MessageRoleTool
-
-	default:
-		return ""
-	}
-}
-
-func toToolCalls(calls []openai.ToolCall) []provider.ToolCall {
+func toToolCalls(calls []openai.ChatCompletionMessageToolCall) []provider.ToolCall {
 	var result []provider.ToolCall
 
 	for _, c := range calls {
@@ -345,16 +267,19 @@ func toToolCalls(calls []openai.ToolCall) []provider.ToolCall {
 	return result
 }
 
-func toCompletionResult(val openai.FinishReason) provider.CompletionReason {
+func toCompletionResult(val openai.ChatCompletionChoicesFinishReason) provider.CompletionReason {
 	switch val {
-	case openai.FinishReasonStop:
+	case openai.ChatCompletionChoicesFinishReasonStop:
 		return provider.CompletionReasonStop
 
-	case openai.FinishReasonLength:
+	case openai.ChatCompletionChoicesFinishReasonLength:
 		return provider.CompletionReasonLength
 
-	case openai.FinishReasonToolCalls:
+	case openai.ChatCompletionChoicesFinishReasonToolCalls:
 		return provider.CompletionReasonTool
+
+	case openai.ChatCompletionChoicesFinishReasonContentFilter:
+		return provider.CompletionReasonFilter
 
 	default:
 		return ""

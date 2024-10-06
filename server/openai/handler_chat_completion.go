@@ -368,6 +368,9 @@ func oaiFinishReason(val provider.CompletionReason) *FinishReason {
 	case provider.CompletionReasonTool:
 		return &FinishReasonToolCalls
 
+	case provider.CompletionReasonFilter:
+		return &FinishReasonContentFilter
+
 	default:
 		return nil
 	}

@@ -44,7 +44,7 @@ func (t *Tool) Description() string {
 	return t.description
 }
 
-func (*Tool) Parameters() any {
+func (*Tool) Parameters() map[string]any {
 	return map[string]any{
 		"type": "object",
 

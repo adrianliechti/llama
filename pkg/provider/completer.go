@@ -68,4 +68,5 @@ const (
 	CompletionReasonStop   CompletionReason = "stop"
 	CompletionReasonLength CompletionReason = "length"
 	CompletionReasonTool   CompletionReason = "tool"
+	CompletionReasonFilter CompletionReason = "filter"
 )

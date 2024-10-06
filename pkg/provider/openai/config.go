@@ -2,9 +2,8 @@ package openai
 
 import (
 	"net/http"
-	"strings"
 
-	"github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go/option"
 )
 
 type Config struct {
@@ -30,21 +29,18 @@ func WithClient(client *http.Client) Option {
 	}
 }
 
-func (c *Config) newClient() *openai.Client {
-	config := openai.DefaultConfig(c.token)
+func (c *Config) Options() []option.RequestOption {
+	options := make([]option.RequestOption, 0)
+
+	options = append(options, option.WithEnvironmentProduction())
 
 	if c.url != "" {
-		config.BaseURL = c.url
+		options = append(options, option.WithBaseURL(c.url))
 	}
 
-	if strings.Contains(c.url, "openai.azure.com") {
-		config = openai.DefaultAzureConfig(c.token, c.url)
-		config.APIVersion = "2024-02-01"
+	if c.token != "" {
+		options = append(options, option.WithAPIKey(c.token))
 	}
 
-	if c.client != nil {
-		config.HTTPClient = c.client
-	}
-
-	return openai.NewClientWithConfig(config)
+	return options
 }
