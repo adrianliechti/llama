@@ -139,8 +139,8 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 			w.(http.Flusher).Flush()
 		}
 
-		fmt.Fprintf(w, "data: [DONE]\n\n")
-		w.(http.Flusher).Flush()
+		// fmt.Fprintf(w, "data: [DONE]\n\n")
+		// w.(http.Flusher).Flush()
 
 		if err := <-done; err != nil {
 			writeError(w, http.StatusBadRequest, err)

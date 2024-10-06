@@ -113,6 +113,8 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 			Tools:       to.Values(inputTools),
 		}
 
+		done := make(chan any)
+
 		if options.Stream != nil {
 			stream := make(chan provider.Completion)
 
@@ -122,6 +124,8 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 				for completion := range stream {
 					options.Stream <- completion
 				}
+
+				done <- true
 			}()
 		}
 
@@ -129,6 +133,10 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 		if err != nil {
 			return nil, err
+		}
+
+		if options.Stream != nil {
+			<-done
 		}
 
 		input = append(input, completion.Message)

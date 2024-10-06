@@ -13,6 +13,8 @@ import (
 	"unicode"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/to"
+
 	"github.com/google/uuid"
 )
 
@@ -80,16 +82,15 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 		candidate := response.Candidates[0]
 
-		content := candidate.Content.Parts[0].Text
-		content = strings.TrimRight(content, "\n ")
-
 		return &provider.Completion{
 			ID:     uuid.New().String(),
 			Reason: toCompletionResult(candidate.FinishReason),
 
 			Message: provider.Message{
 				Role:    provider.MessageRoleAssistant,
-				Content: content,
+				Content: toContent(candidate.Content),
+
+				ToolCalls: toToolCalls(candidate.Content),
 			},
 		}, nil
 	} else {
@@ -129,6 +130,8 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			//Usage: &provider.Usage{},
 		}
 
+		resultToolCalls := map[string]provider.ToolCall{}
+
 		for i := 0; ; i++ {
 			data, err := reader.ReadBytes('\n')
 
@@ -142,9 +145,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			data = bytes.TrimSpace(data)
 
-			println(string(data))
-
-			if bytes.HasPrefix(data, []byte("event:")) {
+			if !bytes.HasPrefix(data, []byte("data:")) {
 				continue
 			}
 
@@ -163,7 +164,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			candidate := event.Candidates[0]
 
-			content := candidate.Content.Parts[0].Text
+			content := toContent(candidate.Content)
 
 			if i == 0 {
 				content = strings.TrimLeftFunc(content, unicode.IsSpace)
@@ -171,19 +172,27 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			result.Message.Content += content
 
-			options.Stream <- provider.Completion{
-				ID: result.ID,
-				//Reason: result.Reason,
+			if len(content) > 0 {
+				options.Stream <- provider.Completion{
+					ID: result.ID,
 
-				Message: provider.Message{
-					Role: result.Message.Role,
+					Message: provider.Message{
+						Role:    provider.MessageRoleAssistant,
+						Content: content,
+					},
+				}
+			}
 
-					Content: content,
-				},
+			for _, c := range toToolCalls(candidate.Content) {
+				resultToolCalls[c.Name] = c
 			}
 		}
 
-		result.Message.Content = strings.TrimRight(result.Message.Content, "\n ")
+		result.Message.Content = strings.TrimRightFunc(result.Message.Content, unicode.IsSpace)
+
+		if len(resultToolCalls) > 0 {
+			result.Message.ToolCalls = to.Values(resultToolCalls)
+		}
 
 		return result, nil
 	}
@@ -200,33 +209,82 @@ func convertGenerateRequest(messages []provider.Message, options *provider.Compl
 		switch m.Role {
 
 		case provider.MessageRoleUser:
-			content := Content{
-				Role: ContentRoleUser,
-			}
-
-			content.Parts = []ContentPart{
+			parts := []ContentPart{
 				{
 					Text: m.Content,
 				},
 			}
 
-			req.Contents = append(req.Contents, content)
+			req.Contents = append(req.Contents, Content{
+				Role:  ContentRoleUser,
+				Parts: parts,
+			})
 
 		case provider.MessageRoleAssistant:
-			content := Content{
-				Role: ContentRoleUser,
+			var parts []ContentPart
+
+			if m.Content != "" {
+				parts = append(parts, ContentPart{
+					Text: m.Content,
+				})
 			}
 
-			content.Parts = []ContentPart{
+			for _, c := range m.ToolCalls {
+				parts = append(parts, ContentPart{
+					FunctionCall: &FunctionCall{
+						Name: c.Name,
+						Args: json.RawMessage([]byte(c.Arguments)),
+					},
+				})
+			}
+
+			req.Contents = append(req.Contents, Content{
+				Role:  ContentRoleModel,
+				Parts: parts,
+			})
+
+		case provider.MessageRoleTool:
+			parts := []ContentPart{
 				{
-					Text: m.Content,
+					FunctionResponse: &FunctionResponse{
+						Name: m.Tool,
+
+						Response: Response{
+							Name:    m.Tool,
+							Content: json.RawMessage([]byte(m.Content)),
+						},
+					},
 				},
 			}
 
-			req.Contents = append(req.Contents, content)
+			req.Contents = append(req.Contents, Content{
+				Role:  ContentRoleUser,
+				Parts: parts,
+			})
 
 		default:
 			return nil, errors.New("unsupported message role")
+		}
+	}
+
+	var functions []FunctionDeclaration
+
+	for _, t := range options.Tools {
+		function := FunctionDeclaration{
+			Name:        t.Name,
+			Description: t.Description,
+
+			Parameters: t.Parameters,
+		}
+
+		functions = append(functions, function)
+	}
+
+	if len(functions) > 0 {
+		req.Tools = []Tool{
+			{
+				FunctionDeclarations: functions,
+			},
 		}
 	}
 
@@ -243,6 +301,8 @@ var (
 // https://ai.google.dev/gemini-api/docs/text-generation?lang=rest#chat
 type GenerateRequest struct {
 	Contents []Content `json:"contents"`
+
+	Tools []Tool `json:"tools,omitempty"`
 }
 
 type Content struct {
@@ -252,7 +312,38 @@ type Content struct {
 }
 
 type ContentPart struct {
-	Text string `json:"text"`
+	Text string `json:"text,omitempty"`
+
+	FunctionCall     *FunctionCall     `json:"functionCall,omitempty"`
+	FunctionResponse *FunctionResponse `json:"functionResponse,omitempty"`
+}
+
+type FunctionCall struct {
+	Name string          `json:"name"`
+	Args json.RawMessage `json:"args"`
+}
+
+type FunctionResponse struct {
+	Name string `json:"name"`
+
+	Response Response `json:"response,omitempty"`
+}
+
+type Response struct {
+	Name string `json:"name"`
+
+	Content json.RawMessage `json:"content"`
+}
+
+type Tool struct {
+	FunctionDeclarations []FunctionDeclaration `json:"function_declarations,omitempty"`
+}
+
+type FunctionDeclaration struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+
+	Parameters map[string]any `json:"parameters"`
 }
 
 type GenerateResponse struct {
@@ -277,6 +368,41 @@ type UsageMetadata struct {
 	PromptTokenCount     int `json:"promptTokenCount"`
 	CandidatesTokenCount int `json:"candidatesTokenCount"`
 	TotalTokenCount      int `json:"totalTokenCount"`
+}
+
+func toContent(content Content) string {
+	for _, p := range content.Parts {
+		if p.Text == "" {
+			continue
+		}
+
+		return p.Text
+	}
+
+	return ""
+}
+
+func toToolCalls(content Content) []provider.ToolCall {
+	var result []provider.ToolCall
+
+	for _, p := range content.Parts {
+		if p.FunctionCall == nil {
+			continue
+		}
+
+		arguments, _ := p.FunctionCall.Args.MarshalJSON()
+
+		call := provider.ToolCall{
+			ID: uuid.NewString(),
+
+			Name:      p.FunctionCall.Name,
+			Arguments: string(arguments),
+		}
+
+		result = append(result, call)
+	}
+
+	return result
 }
 
 func toCompletionResult(val FinishReason) provider.CompletionReason {

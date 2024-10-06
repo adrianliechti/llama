@@ -64,11 +64,11 @@ func (*Tool) Parameters() map[string]any {
 					"it",
 				},
 
-				"default": "en",
+				//"default": "en",
 			},
 		},
 
-		"required": []string{"query", "lang"},
+		"required": []string{"text", "lang"},
 	}
 }
 

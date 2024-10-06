@@ -143,8 +143,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			data = bytes.TrimSpace(data)
 
-			println(string(data))
-
 			if !bytes.HasPrefix(data, []byte("data:")) {
 				continue
 			}
