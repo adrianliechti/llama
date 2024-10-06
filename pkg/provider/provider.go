@@ -21,7 +21,7 @@ type Tool struct {
 	Name        string
 	Description string
 
-	Parameters any
+	Parameters map[string]any
 }
 
 type Usage struct {

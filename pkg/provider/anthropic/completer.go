@@ -85,7 +85,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			Reason: toCompletionResult(response.StopReason),
 
 			Message: provider.Message{
-				Role:    toMessageRole(response.Role),
+				Role:    provider.MessageRoleAssistant,
 				Content: response.Content[0].Text,
 
 				ToolCalls: toToolCalls(response),
@@ -143,7 +143,9 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			data = bytes.TrimSpace(data)
 
-			if bytes.HasPrefix(data, []byte("event:")) {
+			println(string(data))
+
+			if !bytes.HasPrefix(data, []byte("data:")) {
 				continue
 			}
 
@@ -162,7 +164,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			if event.Message != nil {
 				result.ID = event.Message.ID
-				result.Message.Role = toMessageRole(event.Message.Role)
 
 				if event.Message.Usage.InputTokens > 0 {
 					result.Usage.InputTokens = event.Message.Usage.InputTokens
@@ -198,16 +199,18 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 				result.Message.Content += content
 
-				var calls []provider.ToolCall
+				if len(content) > 0 {
+					options.Stream <- provider.Completion{
+						ID: result.ID,
+
+						Message: provider.Message{
+							Role:    provider.MessageRoleAssistant,
+							Content: content,
+						},
+					}
+				}
 
 				if currentContent.Type == ContentTypeToolUse {
-					calls = append(calls, provider.ToolCall{
-						ID: currentContent.ID,
-
-						Name:      currentContent.Name,
-						Arguments: event.Delta.PartialJSON,
-					})
-
 					call, found := resultToolCalls[currentContent.ID]
 
 					if !found {
@@ -219,18 +222,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 					call.Arguments += event.Delta.PartialJSON
 					resultToolCalls[currentContent.ID] = call
-				}
-
-				options.Stream <- provider.Completion{
-					ID:     result.ID,
-					Reason: result.Reason,
-
-					Message: provider.Message{
-						Role: result.Message.Role,
-
-						Content:   content,
-						ToolCalls: calls,
-					},
 				}
 			}
 		}
@@ -410,7 +401,7 @@ type Tool struct {
 
 	Description string `json:"description,omitempty"`
 
-	InputSchema any `json:"input_schema,omitempty"`
+	InputSchema map[string]any `json:"input_schema,omitempty"`
 }
 
 type Message struct {
@@ -579,19 +570,6 @@ type MessageEvent struct {
 	ContentBlock *Content      `json:"content_block,omitempty"`
 
 	Usage Usage `json:"usage"`
-}
-
-func toMessageRole(role MessageRole) provider.MessageRole {
-	switch role {
-	case MessageRoleAssistant:
-		return provider.MessageRoleAssistant
-
-	case MessageRoleUser:
-		return provider.MessageRoleUser
-
-	default:
-		return ""
-	}
 }
 
 func toToolCalls(message MessageResponse) []provider.ToolCall {

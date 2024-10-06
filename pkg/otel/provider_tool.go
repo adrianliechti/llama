@@ -47,7 +47,7 @@ func (p *observableTool) Description() string {
 	return p.tool.Description()
 }
 
-func (p *observableTool) Parameters() any {
+func (p *observableTool) Parameters() map[string]any {
 	return p.tool.Parameters()
 }
 

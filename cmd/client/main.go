@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/base64"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -18,7 +17,10 @@ import (
 	"github.com/adrianliechti/llama/config"
 
 	"github.com/google/uuid"
-	"github.com/sashabaranov/go-openai"
+
+	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/option"
+	"github.com/openai/openai-go/shared"
 )
 
 func main() {
@@ -30,10 +32,20 @@ func main() {
 
 	ctx := context.Background()
 
-	cfg := openai.DefaultConfig(*tokenFlag)
-	cfg.BaseURL = *urlFlag
+	options := []option.RequestOption{}
 
-	client := openai.NewClientWithConfig(cfg)
+	if *urlFlag != "" {
+		url := *urlFlag
+		url = strings.TrimRight(url, "/") + "/"
+
+		options = append(options, option.WithBaseURL(url))
+	}
+
+	if *tokenFlag != "" {
+		options = append(options, option.WithAPIKey(*tokenFlag))
+	}
+
+	client := openai.NewClient(options...)
 	model := *modelFlag
 
 	if model == "" {
@@ -68,17 +80,24 @@ func selectModel(ctx context.Context, client *openai.Client) (string, error) {
 	reader := bufio.NewReader(os.Stdin)
 	output := os.Stdout
 
-	list, err := client.ListModels(ctx)
+	page := client.Models.ListAutoPaging(ctx)
 
-	if err != nil {
-		panic(err)
+	var models []openai.Model
+
+	for page.Next() {
+		model := page.Current()
+		models = append(models, model)
 	}
 
-	sort.SliceStable(list.Models, func(i, j int) bool {
-		return list.Models[i].ID < list.Models[j].ID
+	if err := page.Err(); err != nil {
+		return "", err
+	}
+
+	sort.SliceStable(models, func(i, j int) bool {
+		return models[i].ID < models[j].ID
 	})
 
-	for i, m := range list.Models {
+	for i, m := range models {
 		output.WriteString(fmt.Sprintf("%2d) ", i+1))
 		output.WriteString(m.ID)
 		output.WriteString("\n")
@@ -99,7 +118,7 @@ func selectModel(ctx context.Context, client *openai.Client) (string, error) {
 
 	output.WriteString("\n")
 
-	model := list.Models[idx-1].ID
+	model := models[idx-1].ID
 	return model, nil
 }
 
@@ -107,7 +126,7 @@ func chat(ctx context.Context, client *openai.Client, model string) {
 	reader := bufio.NewReader(os.Stdin)
 	output := os.Stdout
 
-	var messages []openai.ChatCompletionMessage
+	var messages []openai.ChatCompletionMessageParamUnion
 
 LOOP:
 	for {
@@ -126,63 +145,36 @@ LOOP:
 				messages = nil
 				continue LOOP
 
-			case "/repeat":
-				if len(messages) == 0 {
-					continue LOOP
-				}
-
-				input = messages[len(messages)-1].Content
-				messages = messages[:len(messages)-1]
-
 			default:
 				output.WriteString("Unknown command\n")
 				continue LOOP
 			}
 		}
 
-		messages = append(messages, openai.ChatCompletionMessage{
-			Role:    openai.ChatMessageRoleUser,
-			Content: input,
+		messages = append(messages, openai.UserMessage(input))
+
+		stream := client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
+			Model:    openai.F(model),
+			Messages: openai.F(messages),
 		})
 
-		req := openai.ChatCompletionRequest{
-			Model:    model,
-			Messages: messages,
+		completion := openai.ChatCompletionAccumulator{}
+
+		for stream.Next() {
+			chunk := stream.Current()
+			completion.AddChunk(chunk)
+
+			if len(chunk.Choices) > 0 {
+				output.WriteString(chunk.Choices[0].Delta.Content)
+			}
 		}
 
-		stream, err := client.CreateChatCompletionStream(ctx, req)
-
-		if err != nil {
+		if err := stream.Err(); err != nil {
 			output.WriteString(err.Error() + "\n")
 			continue LOOP
 		}
 
-		defer stream.Close()
-
-		var buffer strings.Builder
-
-		for {
-			resp, err := stream.Recv()
-
-			if errors.Is(err, io.EOF) {
-				break
-			}
-
-			if err != nil {
-				output.WriteString(err.Error() + "\n")
-				continue LOOP
-			}
-
-			content := resp.Choices[0].Delta.Content
-
-			buffer.WriteString(content)
-			output.WriteString(content)
-		}
-
-		messages = append(messages, openai.ChatCompletionMessage{
-			Role:    openai.ChatMessageRoleAssistant,
-			Content: strings.TrimSpace(buffer.String()),
-		})
+		messages = append(messages, completion.Choices[0].Message)
 
 		output.WriteString("\n")
 		output.WriteString("\n")
@@ -204,24 +196,24 @@ LOOP:
 
 		input = strings.TrimSpace(input)
 
-		req := openai.EmbeddingRequest{
-			Input: input,
-			Model: openai.EmbeddingModel(model),
-		}
-
-		resp, err := client.CreateEmbeddings(ctx, req)
+		result, err := client.Embeddings.New(ctx, openai.EmbeddingNewParams{
+			Model:          openai.F(model),
+			Input:          openai.F[openai.EmbeddingNewParamsInputUnion](shared.UnionString(input)),
+			EncodingFormat: openai.F(openai.EmbeddingNewParamsEncodingFormatFloat),
+		})
 
 		if err != nil {
 			output.WriteString(err.Error() + "\n")
 			continue LOOP
 		}
 
-		embeddings := resp.Data[0].Embedding
+		embedding := result.Data[0].Embedding
 
-		for i, e := range embeddings {
+		for i, e := range embedding {
 			if i > 0 {
 				output.WriteString(", ")
 			}
+
 			output.WriteString(fmt.Sprintf("%f", e))
 		}
 
@@ -245,22 +237,20 @@ LOOP:
 
 		input = strings.TrimSpace(input)
 
-		req := openai.ImageRequest{
-			Prompt: input,
-			Model:  model,
-			//Size:           openai.CreateImageSize1024x1024,
-			ResponseFormat: openai.CreateImageResponseFormatB64JSON,
-			N:              1,
-		}
+		image, err := client.Images.Generate(ctx, openai.ImageGenerateParams{
+			Model:  openai.F(model),
+			Prompt: openai.F(input),
 
-		resp, err := client.CreateImage(ctx, req)
+			N:              openai.F(int64(1)),
+			ResponseFormat: openai.F(openai.ImageGenerateParamsResponseFormatB64JSON),
+		})
 
 		if err != nil {
 			output.WriteString(err.Error() + "\n")
 			continue LOOP
 		}
 
-		data, err := base64.StdEncoding.DecodeString(resp.Data[0].B64JSON)
+		data, err := base64.StdEncoding.DecodeString(image.Data[0].B64JSON)
 
 		if err != nil {
 			output.WriteString(err.Error() + "\n")
@@ -296,23 +286,22 @@ LOOP:
 
 		input = strings.TrimSpace(input)
 
-		req := openai.CreateSpeechRequest{
-			Input: input,
-			Model: openai.SpeechModel(model),
+		result, err := client.Audio.Speech.New(ctx, openai.AudioSpeechNewParams{
+			Model: openai.F(model),
+			Input: openai.F(input),
 
-			ResponseFormat: openai.SpeechResponseFormatWav,
-		}
-
-		resp, err := client.CreateSpeech(ctx, req)
+			Voice:          openai.F(openai.AudioSpeechNewParamsVoiceAlloy),
+			ResponseFormat: openai.F(openai.AudioSpeechNewParamsResponseFormatWAV),
+		})
 
 		if err != nil {
 			output.WriteString(err.Error() + "\n")
 			continue LOOP
 		}
 
-		data, err := io.ReadAll(resp)
+		defer result.Body.Close()
 
-		resp.Close()
+		data, err := io.ReadAll(result.Body)
 
 		if err != nil {
 			output.WriteString(err.Error() + "\n")
@@ -323,6 +312,8 @@ LOOP:
 
 		if ext, _ := mime.ExtensionsByType(http.DetectContentType(data)); len(ext) > 0 {
 			name += ext[0]
+		} else {
+			name += ".wav"
 		}
 
 		os.WriteFile(name, data, 0600)

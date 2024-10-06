@@ -4,7 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go/azure"
+	"github.com/openai/openai-go/option"
 )
 
 type Config struct {
@@ -30,21 +31,32 @@ func WithClient(client *http.Client) Option {
 	}
 }
 
-func (c *Config) newClient() *openai.Client {
-	config := openai.DefaultConfig(c.token)
-
-	if c.url != "" {
-		config.BaseURL = c.url
+func (c *Config) Options() []option.RequestOption {
+	if c.url == "" {
+		c.url = "https://api.openai.com/v1/"
 	}
+
+	c.url = strings.TrimRight(c.url, "/") + "/"
 
 	if strings.Contains(c.url, "openai.azure.com") {
-		config = openai.DefaultAzureConfig(c.token, c.url)
-		config.APIVersion = "2024-02-01"
+		options := make([]option.RequestOption, 0)
+
+		options = append(options, azure.WithEndpoint(c.url, "2024-06-01"))
+
+		if c.token != "" {
+			options = append(options, azure.WithAPIKey(c.token))
+		}
+
+		return options
 	}
 
-	if c.client != nil {
-		config.HTTPClient = c.client
+	options := []option.RequestOption{
+		option.WithBaseURL(c.url),
 	}
 
-	return openai.NewClientWithConfig(config)
+	if c.token != "" {
+		options = append(options, option.WithAPIKey(c.token))
+	}
+
+	return options
 }

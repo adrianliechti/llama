@@ -6,14 +6,14 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/google/uuid"
-	"github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
 )
 
 var _ provider.Transcriber = (*Transcriber)(nil)
 
 type Transcriber struct {
 	*Config
-	client *openai.Client
+	transcriptions *openai.AudioTranscriptionService
 }
 
 func NewTranscriber(url, model string, options ...Option) (*Transcriber, error) {
@@ -27,8 +27,8 @@ func NewTranscriber(url, model string, options ...Option) (*Transcriber, error) 
 	}
 
 	return &Transcriber{
-		Config: cfg,
-		client: cfg.newClient(),
+		Config:         cfg,
+		transcriptions: openai.NewAudioTranscriptionService(cfg.Options()...),
 	}, nil
 }
 
@@ -39,16 +39,10 @@ func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 
 	id := uuid.NewString()
 
-	req := openai.AudioRequest{
-		Model: t.model,
-
-		Language: options.Language,
-
-		Reader:   input.Content,
-		FilePath: input.Name,
-	}
-
-	transcription, err := t.client.CreateTranscription(ctx, req)
+	transcription, err := t.transcriptions.New(ctx, openai.AudioTranscriptionNewParams{
+		Model: openai.F(t.model),
+		File:  openai.F(input.Content),
+	})
 
 	if err != nil {
 		return nil, convertError(err)

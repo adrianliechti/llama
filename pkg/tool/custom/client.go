@@ -80,7 +80,7 @@ func (c *Client) Description() string {
 	return data.Description
 }
 
-func (c *Client) Parameters() any {
+func (c *Client) Parameters() map[string]any {
 	ctx := context.Background()
 	data, err := c.client.Info(ctx, &InfoRequest{})
 

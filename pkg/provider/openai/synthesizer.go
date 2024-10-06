@@ -6,14 +6,14 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/google/uuid"
-	"github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
 )
 
 var _ provider.Synthesizer = (*Synthesizer)(nil)
 
 type Synthesizer struct {
 	*Config
-	client *openai.Client
+	speech *openai.AudioSpeechService
 }
 
 func NewSynthesizer(url, model string, options ...Option) (*Synthesizer, error) {
@@ -28,7 +28,7 @@ func NewSynthesizer(url, model string, options ...Option) (*Synthesizer, error) 
 
 	return &Synthesizer{
 		Config: cfg,
-		client: cfg.newClient(),
+		speech: openai.NewAudioSpeechService(cfg.Options()...),
 	}, nil
 }
 
@@ -37,27 +37,24 @@ func (s *Synthesizer) Synthesize(ctx context.Context, content string, options *p
 		options = new(provider.SynthesizeOptions)
 	}
 
-	req := openai.CreateSpeechRequest{
-		Input: content,
+	result, err := s.speech.New(ctx, openai.AudioSpeechNewParams{
+		Model: openai.F(s.model),
+		Input: openai.F(content),
 
-		Model: openai.SpeechModel(s.model),
-		Voice: openai.VoiceAlloy,
-
-		ResponseFormat: openai.SpeechResponseFormatWav,
-	}
-
-	result, err := s.client.CreateSpeech(ctx, req)
+		Voice:          openai.F(openai.AudioSpeechNewParamsVoiceAlloy),
+		ResponseFormat: openai.F(openai.AudioSpeechNewParamsResponseFormatWAV),
+	})
 
 	if err != nil {
 		return nil, convertError(err)
 	}
 
-	id := uuid.New().String()
+	id := uuid.NewString()
 
 	return &provider.Synthesis{
 		ID: id,
 
 		Name:    id + ".wav",
-		Content: result,
+		Content: result.Body,
 	}, nil
 }

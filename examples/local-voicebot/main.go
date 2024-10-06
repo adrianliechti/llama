@@ -16,7 +16,8 @@ import (
 	"syscall"
 
 	"github.com/google/uuid"
-	"github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/option"
 )
 
 func main() {
@@ -28,22 +29,21 @@ func main() {
 	speakmodel := "tts-1-hd"
 
 	url := os.Getenv("OPENAI_API_BASE")
-	token := os.Getenv("OPENAI_API_KEY")
 
-	config := openai.DefaultConfig(token)
-	config.BaseURL = "http://localhost:8080/v1"
-
-	if url != "" {
-		config.BaseURL = url
+	if url == "" {
+		url = "http://localhost:8080/v1"
 	}
 
-	client := openai.NewClientWithConfig(config)
+	url = strings.TrimRight(url, "/") + "/"
 
-	messages := []openai.ChatCompletionMessage{
-		{
-			Role:    openai.ChatMessageRoleSystem,
-			Content: "Your knowledge cutoff is 2023-10. You are a helpful, witty, and friendly AI. Act like a human, but remember that you aren't a human and that you can't do human things in the real world. Your voice and personality should be warm and engaging, with a lively and playful tone. If interacting in a non-English language, start by using the standard accent or dialect familiar to the user. Talk quickly. You should always call a function if you can. Answer as briefly and concisely as possible.",
-		},
+	options := []option.RequestOption{
+		option.WithBaseURL(url),
+	}
+
+	client := openai.NewClient(options...)
+
+	messages := []openai.ChatCompletionMessageParamUnion{
+		openai.SystemMessage("Your knowledge cutoff is 2023-10. You are a helpful, witty, and friendly AI. Act like a human, but remember that you aren't a human and that you can't do human things in the real world. Your voice and personality should be warm and engaging, with a lively and playful tone. If interacting in a non-English language, start by using the standard accent or dialect familiar to the user. Talk quickly. You should always call a function if you can. Answer as briefly and concisely as possible."),
 	}
 
 	for ctx.Err() == nil {
@@ -56,11 +56,9 @@ func main() {
 			continue
 		}
 
-		response, err := client.CreateTranscription(ctx, openai.AudioRequest{
-			Model: audiomodel,
-
-			FilePath: "chunk.wav",
-			Reader:   bytes.NewReader(data),
+		transcription, err := client.Audio.Transcriptions.New(ctx, openai.AudioTranscriptionNewParams{
+			Model: openai.F(audiomodel),
+			File:  openai.F[io.Reader](bytes.NewReader(data)),
 		})
 
 		if err != nil {
@@ -68,28 +66,36 @@ func main() {
 			continue
 		}
 
-		fmt.Println("💬 " + response.Text)
+		fmt.Println("💬 " + transcription.Text)
 
-		if strings.TrimSpace(response.Text) == "" {
+		if strings.TrimSpace(transcription.Text) == "" {
 			continue
 		}
 
-		messages = append(messages, openai.ChatCompletionMessage{
-			Role:    openai.ChatMessageRoleUser,
-			Content: response.Text,
+		messages = append(messages, openai.UserMessage(transcription.Text))
+
+		stream := client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
+			Model:    openai.F(chatmodel),
+			Messages: openai.F(messages),
 		})
 
-		result, err := client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-			Model:    chatmodel,
-			Messages: messages,
-		})
+		completion := openai.ChatCompletionAccumulator{}
 
-		if err != nil {
+		for stream.Next() {
+			chunk := stream.Current()
+			completion.AddChunk(chunk)
+
+			if len(chunk.Choices) > 0 {
+				print(chunk.Choices[0].Delta.Content)
+			}
+		}
+
+		if err := stream.Err(); err != nil {
 			println("error:", err.Error())
 			continue
 		}
 
-		message := result.Choices[0].Message
+		message := completion.Choices[0].Message
 		messages = append(messages, message)
 
 		println("📣 " + message.Content)
@@ -98,15 +104,20 @@ func main() {
 	}
 }
 
-func sayText(ctx context.Context, client *openai.Client, model, text string) error {
-	data, err := client.CreateSpeech(ctx, openai.CreateSpeechRequest{
-		Model: openai.SpeechModel(model),
-		Input: text,
+func sayText(ctx context.Context, client *openai.Client, model, input string) error {
+	result, err := client.Audio.Speech.New(ctx, openai.AudioSpeechNewParams{
+		Model: openai.F(model),
+		Input: openai.F(input),
+
+		Voice:          openai.F(openai.AudioSpeechNewParamsVoiceAlloy),
+		ResponseFormat: openai.F(openai.AudioSpeechNewParamsResponseFormatWAV),
 	})
 
 	if err != nil {
 		return err
 	}
+
+	defer result.Body.Close()
 
 	path := filepath.Join(os.TempDir(), uuid.New().String()+".mp3")
 	defer os.Remove(path)
@@ -117,10 +128,14 @@ func sayText(ctx context.Context, client *openai.Client, model, text string) err
 		return err
 	}
 
-	io.Copy(file, data)
-
 	defer file.Close()
 	defer os.Remove(path)
+
+	if _, err := io.Copy(file, result.Body); err != nil {
+		return err
+	}
+
+	file.Close()
 
 	cmd := exec.CommandContext(ctx, "ffplay", "-autoexit", "-nodisp", path)
 	cmd.Run()

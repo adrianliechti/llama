@@ -133,12 +133,14 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 			enc.SetEscapeHTML(false)
 			enc.Encode(result)
 
-			fmt.Fprintf(w, "data: %s\n\n", data.String())
+			event := strings.TrimSpace(data.String())
+
+			fmt.Fprintf(w, "data: %s\n\n", event)
 			w.(http.Flusher).Flush()
 		}
 
-		// fmt.Fprintf(w, "data: [DONE]\n\n")
-		// w.(http.Flusher).Flush()
+		fmt.Fprintf(w, "data: [DONE]\n\n")
+		w.(http.Flusher).Flush()
 
 		if err := <-done; err != nil {
 			writeError(w, http.StatusBadRequest, err)
@@ -367,6 +369,9 @@ func oaiFinishReason(val provider.CompletionReason) *FinishReason {
 
 	case provider.CompletionReasonTool:
 		return &FinishReasonToolCalls
+
+	case provider.CompletionReasonFilter:
+		return &FinishReasonContentFilter
 
 	default:
 		return nil

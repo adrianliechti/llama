@@ -170,24 +170,6 @@ func convertMessageRole(role provider.MessageRole) MessageRole {
 	return ""
 }
 
-func toMessageRole(role MessageRole) provider.MessageRole {
-	switch role {
-	case MessageRoleSystem:
-		return provider.MessageRoleSystem
-
-	case MessageRoleUser:
-		return provider.MessageRoleUser
-
-	case MessageRoleAssistant:
-		return provider.MessageRoleAssistant
-
-	case MessageRoleTool:
-		return provider.MessageRoleTool
-	}
-
-	return ""
-}
-
 func toCompletionReason(reason FinishReason) provider.CompletionReason {
 	switch reason {
 	case FinishReasonComplete:

@@ -79,7 +79,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			Reason: toCompletionReason(choice.FinishReason),
 
 			Message: provider.Message{
-				Role:    toMessageRole(choice.Message.Role),
+				Role:    provider.MessageRoleAssistant,
 				Content: choice.Message.Content,
 			},
 
@@ -163,21 +163,14 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			choice := completion.Choices[0]
 
-			role := toMessageRole(choice.Delta.Role)
-
-			if role != "" {
-				result.Message.Role = role
-			}
-
 			result.Reason = toCompletionReason(choice.FinishReason)
 			result.Message.Content += choice.Delta.Content
 
 			options.Stream <- provider.Completion{
-				ID:     result.ID,
-				Reason: result.Reason,
+				ID: result.ID,
 
 				Message: provider.Message{
-					Role:    result.Message.Role,
+					Role:    provider.MessageRole(MessageRoleAssistant),
 					Content: choice.Delta.Content,
 				},
 			}
@@ -279,25 +272,6 @@ func convertMessageRole(role provider.MessageRole) MessageRole {
 
 	case provider.MessageRoleTool:
 		return MessageRoleTool
-
-	default:
-		return ""
-	}
-}
-
-func toMessageRole(role MessageRole) provider.MessageRole {
-	switch role {
-	case MessageRoleSystem:
-		return provider.MessageRoleSystem
-
-	case MessageRoleUser:
-		return provider.MessageRoleUser
-
-	case MessageRoleAssistant:
-		return provider.MessageRoleAssistant
-
-	case MessageRoleTool:
-		return provider.MessageRoleTool
 
 	default:
 		return ""

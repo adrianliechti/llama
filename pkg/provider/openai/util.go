@@ -3,14 +3,15 @@ package openai
 import (
 	"errors"
 
-	"github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
 )
 
 func convertError(err error) error {
-	var oaierr *openai.APIError
+	var apierr *openai.Error
 
-	if errors.As(err, &oaierr) {
-		return errors.New(oaierr.Message)
+	if errors.As(err, &apierr) {
+		println(string(apierr.DumpRequest(true)))  // Prints the serialized HTTP request
+		println(string(apierr.DumpResponse(true))) // Prints the serialized HTTP response
 	}
 
 	return err
