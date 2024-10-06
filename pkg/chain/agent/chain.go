@@ -90,10 +90,10 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	input := slices.Clone(messages)
 
-	tools := make(map[string]provider.Tool)
+	inputTools := make(map[string]provider.Tool)
 
 	for _, t := range c.tools {
-		tools[t.Name()] = provider.Tool{
+		inputTools[t.Name()] = provider.Tool{
 			Name:        t.Name(),
 			Description: t.Description(),
 
@@ -102,141 +102,72 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 	}
 
 	for _, t := range options.Tools {
-		tools[t.Name] = t
+		inputTools[t.Name] = t
 	}
 
 	var result *provider.Completion
 
 	for {
-		inputOptions := &provider.CompleteOptions{
+		completionOptions := &provider.CompleteOptions{
 			Temperature: options.Temperature,
-			Tools:       to.Values(tools),
+			Tools:       to.Values(inputTools),
 		}
-
-		calls := make(map[string]*provider.ToolCall)
-
-		done := make(chan any)
 
 		if options.Stream != nil {
 			stream := make(chan provider.Completion)
 
-			inputOptions.Stream = stream
-
-			var toolID string
-			var toolName string
+			completionOptions.Stream = stream
 
 			go func() {
-				for m := range stream {
-					if m.Reason != "" || m.Message.Content != "" {
-						toolID = ""
-						toolName = ""
-					}
-
-					var tool bool
-
-					for _, t := range m.Message.ToolCalls {
-						tool = true
-
-						if t.ID != "" {
-							toolID = t.ID
-						}
-
-						if t.Name != "" {
-							toolName = t.Name
-						}
-
-						call, found := calls[toolID]
-
-						if !found {
-							call = &provider.ToolCall{
-								ID:   toolID,
-								Name: toolName,
-							}
-
-							calls[toolID] = call
-						}
-
-						call.Arguments = call.Arguments + t.Arguments
-					}
-
-					if !tool {
-						options.Stream <- m
-					}
+				for completion := range stream {
+					options.Stream <- completion
 				}
-
-				done <- true
 			}()
 		}
 
-		completion, err := c.completer.Complete(ctx, input, inputOptions)
+		completion, err := c.completer.Complete(ctx, input, completionOptions)
 
 		if err != nil {
 			return nil, err
 		}
 
-		if options.Stream != nil {
-			<-done
-		}
-
-		for _, c := range completion.Message.ToolCalls {
-			calls[c.ID] = &provider.ToolCall{
-				ID: c.ID,
-
-				Name:      c.Name,
-				Arguments: c.Arguments,
-			}
-		}
-
-		completion.Message.ToolCalls = nil
-
-		for _, c := range calls {
-			completion.Message.ToolCalls = append(completion.Message.ToolCalls, *c)
-		}
+		input = append(input, completion.Message)
 
 		var loop bool
 
-		if len(completion.Message.ToolCalls) > 0 {
-			input = append(input, provider.Message{
-				Role: provider.MessageRoleAssistant,
+		for _, t := range completion.Message.ToolCalls {
+			tool, found := c.tools[t.Name]
 
-				Content:   completion.Message.Content,
-				ToolCalls: completion.Message.ToolCalls,
+			if !found {
+				continue
+			}
+
+			var params map[string]any
+
+			if err := json.Unmarshal([]byte(t.Arguments), &params); err != nil {
+				return nil, err
+			}
+
+			result, err := tool.Execute(ctx, params)
+
+			if err != nil {
+				return nil, err
+			}
+
+			data, err := json.Marshal(result)
+
+			if err != nil {
+				return nil, err
+			}
+
+			input = append(input, provider.Message{
+				Role: provider.MessageRoleTool,
+
+				Tool:    t.ID,
+				Content: string(data),
 			})
 
-			for _, t := range completion.Message.ToolCalls {
-				tool, found := c.tools[t.Name]
-
-				if !found {
-					continue
-				}
-
-				var params map[string]any
-
-				if err := json.Unmarshal([]byte(t.Arguments), &params); err != nil {
-					return nil, err
-				}
-
-				result, err := tool.Execute(ctx, params)
-
-				if err != nil {
-					return nil, err
-				}
-
-				data, err := json.Marshal(result)
-
-				if err != nil {
-					return nil, err
-				}
-
-				input = append(input, provider.Message{
-					Role: provider.MessageRoleTool,
-
-					Tool:    t.ID,
-					Content: string(data),
-				})
-
-				loop = true
-			}
+			loop = true
 		}
 
 		if !loop {
