@@ -88,7 +88,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			Reason: toCompletionResult(candidate.FinishReason),
 
 			Message: provider.Message{
-				Role:    toMessageRole(candidate.Content.Role),
+				Role:    provider.MessageRoleAssistant,
 				Content: content,
 			},
 		}, nil
@@ -277,19 +277,6 @@ type UsageMetadata struct {
 	PromptTokenCount     int `json:"promptTokenCount"`
 	CandidatesTokenCount int `json:"candidatesTokenCount"`
 	TotalTokenCount      int `json:"totalTokenCount"`
-}
-
-func toMessageRole(role ContentRole) provider.MessageRole {
-	switch role {
-	case ContentRoleModel:
-		return provider.MessageRoleAssistant
-
-	case ContentRoleUser:
-		return provider.MessageRoleUser
-
-	default:
-		return ""
-	}
 }
 
 func toCompletionResult(val FinishReason) provider.CompletionReason {
