@@ -1,14 +1,66 @@
 
 # LLM Platform
 
-Open Source LLM Platform to build and deploy applications at scale
+<img src="docs/icon.png" width="150"/>
 
-![Logo](docs/icon.png)
+The LLM Platform or Inference Hub is an open-source product designed to simplify the development and deployment of large language model (LLM) applications at scale. It provides a unified framework that allows developers to integrate and manage multiple LLM vendors, models, and related services through a standardized but highly flexible approach.
+
+## Key Features
+
+### Multi-Provider Support
+
+The platform integrates with a wide range of LLM providers, including but not limited to
+
+- OpenAI Platform and Azure OpenAI Service to access models such as GPT, DALL-E and Whisper
+- Anthropic, Cohere, ElevenLabs, Google, Groq, Jina, Mistral and Replicate for various specialised models.
+- Local deployments such as Ollama, LLAMA.CPP, WHISPER.CPP and Mistral.RS for running models locally.
+- Community models via Hugging Face
+- Custom models via gRPC plugins
+
+### Flexible Configuration
+
+Developers can define providers, models, credentials, vector databases, tools, document extractors or advanced chains using YAML configuration files. This approach streamlines the integration process and makes it easier to manage multiple services and models.
+
+### Routing and Load Balancing
+
+The platform includes routing capabilities such as a round-robin load balancer to efficiently distribute requests across multiple models or providers. This increases scalability and ensures high availability.
+
+### Vector Databases and Indexes
+
+Supports integration with various vector databases and indexing services for efficient data retrieval and storage.
+
+Supported systems include
+- SaaS offerings such as Azure Search
+- Self-hosting solutions such as ChromaDB, Qdrant, Weaviate, Postgres or Elasticsearch
+- Custom retrievers via gRPC plugins
+- In-memory and temporary indexes
+
+### Observability
+
+The platform is fully traceable using OpenTelemetry, which provides comprehensive observability and monitoring of the entire system and its components. This increases transparency and reliability, enabling proactive maintenance and smoother operation of LLM applications at scale.
 
 
 ## Architecture
 
 ![Architecture](docs/architecture.png)
+
+The architecture is designed to be modular and extensible, allowing developers to plug in different providers and services as needed. It consists of a number of key components:
+
+- Providers: Interface to various AI / LLM services.
+- Indexes: Handle data storage and retrieval
+- Extractors: Process and extract data from documents or web pages
+- Segmenters: Semantically split text into chunks for RAG
+- Summarisers: Compress large texts or prompts
+- Translate: Translate prompt input or output or entire documents
+- Routers & Rate Limiters: Manage how requests are distributed across models
+- Tools: Pre-built or custom tools for translating, retrieving documents or searching the web using function calls.
+
+## Use Cases:
+
+- Unified enterprise chat using multiple sources and specialised agents
+- Scalable LLM applications: Ideal for building applications that need to scale horizontally and handle high volumes of requests
+- Multi-model deployment: Useful for applications that require access to different models from different vendors
+- Custom workflows: Enables the creation of custom NLP workflows by combining different services and models
 
 
 ## Integrations & Configuration
@@ -72,14 +124,13 @@ providers:
   - type: anthropic
     token: sk-ant-apixx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # https://docs.anthropic.com/en/docs/models-overview
+    #
+    # {alias}:
+    #   - id: {anthropic api model name}
     models:
-      # https://docs.anthropic.com/en/docs/models-overview
-      #
-      # {alias}:
-      #   - id: {anthropic api model name}
-
-      claude-3-opus:
-        id: claude-3-opus-20240229
+      claude-3.5-sonnet:
+        id: claude-3-5-sonnet-20240620
 ```
 
 
@@ -91,6 +142,9 @@ providers:
     token: ${COHERE_API_KEY}
 
     # https://docs.cohere.com/docs/models
+    #
+    # {alias}:
+    #   - id: {cohere api model name}
     models:
       cohere-command-r-plus:
         id: command-r-plus
@@ -108,6 +162,9 @@ providers:
     token: ${GROQ_API_KEY}
 
     # https://console.groq.com/docs/models
+    #
+    # {alias}:
+    #   - id: {groq api model name}
     models:
       groq-llama-3-8b:
         id: llama3-8b-8192
@@ -125,6 +182,9 @@ providers:
     token: ${MISTRAL_API_KEY}
 
     # https://docs.mistral.ai/getting-started/models/
+    #
+    # {alias}:
+    #   - id: {mistral api model name}
     models:
       mistral-large:
         id: mistral-large-latest
@@ -139,6 +199,9 @@ https://replicate.com/
 providers:
   - type: replicate
     token: ${REPLICATE_API_KEY}
+    #
+    # {alias}:
+    #   - id: {cohere api model name}
     models:
       replicate-flux-pro:
         id: black-forest-labs/flux-pro
@@ -159,12 +222,11 @@ providers:
   - type: ollama
     url: http://localhost:11434
 
+    # https://ollama.com/library
+    #
+    # {alias}:
+    #   - id: {ollama model name with optional version}
     models:
-      # https://ollama.com/library
-      #
-      # {alias}:
-      #   - id: {ollama model name with optional version}
-
       mistral-7b-instruct:
         id: mistral:latest
 ```
@@ -180,12 +242,6 @@ $ task llama:server
 
 # LLAMA.CPP Server
 $ llama-server --port 9081 --log-disable --model ./models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
-
-# LLAMA.CPP Server (Multimodal Model)
-$ llama-server --port 9081 --log-disable --model ./models/llava-v1.5-7b-Q4_K.gguf --mmproj ./models/llava-v1.5-7b-mmproj-Q4_0.gguf
-
-# using Docker (might be slow)
-$ docker run -it --rm -p 9081:9081 -v ./models/:/models/ ghcr.io/ggerganov/llama.cpp:server --host 0.0.0.0 --port 9081 --model /models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
 ```
 
 ```yaml
@@ -320,7 +376,7 @@ indexes:
     type: chroma
     url: http://localhost:9083
     namespace: docs
-    embedder: text-embedding-ada-002
+    embedder: text-embedding-3-large
 ```
 
 
@@ -339,7 +395,7 @@ indexes:
     type: weaviate
     url: http://localhost:9084
     namespace: Document
-    embedder: text-embedding-ada-002
+    embedder: text-embedding-3-large
 ```
 
 
@@ -355,7 +411,7 @@ indexes:
     type: qdrant
     url: http://localhost:6333
     namespace: docs
-    embedder: text-embedding-ada-002
+    embedder: text-embedding-3-large
 ```
 
 
@@ -365,7 +421,7 @@ indexes:
 indexes:
   docs:
     type: memory   
-    embedder: text-embedding-ada-002
+    embedder: text-embedding-3-large
 ```
 
 
@@ -409,6 +465,9 @@ extractors:
 https://unstructured.io
 
 ```shell
+# using taskfile.dev
+task unstructured:server
+
 # using Docker
 docker run -it --rm -p 9085:8000 quay.io/unstructured-io/unstructured-api:0.0.80 --port 8000 --host 0.0.0.0
 ```
