@@ -89,8 +89,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			},
 		}, nil
 	} else {
-		defer close(options.Stream)
-
 		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
 		req.Header.Set("Authorization", "Bearer "+c.token)
 		req.Header.Set("Content-Type", "application/json")
@@ -166,13 +164,19 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			result.Reason = toCompletionReason(choice.FinishReason)
 			result.Message.Content += choice.Delta.Content
 
-			options.Stream <- provider.Completion{
-				ID: result.ID,
+			if len(choice.Delta.Content) > 0 {
+				completion := provider.Completion{
+					ID: result.ID,
 
-				Message: provider.Message{
-					Role:    provider.MessageRole(MessageRoleAssistant),
-					Content: choice.Delta.Content,
-				},
+					Message: provider.Message{
+						Role:    provider.MessageRole(MessageRoleAssistant),
+						Content: choice.Delta.Content,
+					},
+				}
+
+				if err := options.Stream(ctx, completion); err != nil {
+					return nil, err
+				}
 			}
 		}
 

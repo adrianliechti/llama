@@ -330,20 +330,6 @@ providers:
 ```
 
 
-#### LangChain / LangServe
-
-https://python.langchain.com/docs/langserve
-
-```yaml
-providers:
-  - type: langchain
-    url: http://your-langchain-server:8000
-
-    models:
-      - langchain
-```
-
-
 ### Routers
 
 #### Round-robin Load Balancer

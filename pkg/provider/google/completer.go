@@ -94,8 +94,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			},
 		}, nil
 	} else {
-		defer close(options.Stream)
-
 		url, _ := url.JoinPath(c.url, "/v1beta/models/"+c.model+":streamGenerateContent")
 		url += "?alt=sse"
 
@@ -173,13 +171,17 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			result.Message.Content += content
 
 			if len(content) > 0 {
-				options.Stream <- provider.Completion{
+				completion := provider.Completion{
 					ID: result.ID,
 
 					Message: provider.Message{
 						Role:    provider.MessageRoleAssistant,
 						Content: content,
 					},
+				}
+
+				if err := options.Stream(ctx, completion); err != nil {
+					return nil, err
 				}
 			}
 

@@ -54,10 +54,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		options = &provider.CompleteOptions{}
 	}
 
-	if options.Stream != nil {
-		defer close(options.Stream)
-	}
-
 	req := &CompletionRequest{
 		Model: c.model,
 
@@ -105,7 +101,9 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		}
 
 		if options.Stream != nil {
-			options.Stream <- completion
+			if err := options.Stream(ctx, completion); err != nil {
+				return nil, err
+			}
 		}
 
 		result = &completion

@@ -12,7 +12,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/google"
 	"github.com/adrianliechti/llama/pkg/provider/groq"
 	"github.com/adrianliechti/llama/pkg/provider/huggingface"
-	"github.com/adrianliechti/llama/pkg/provider/langchain"
 	"github.com/adrianliechti/llama/pkg/provider/llama"
 	"github.com/adrianliechti/llama/pkg/provider/mistral"
 	"github.com/adrianliechti/llama/pkg/provider/mistralrs"
@@ -68,9 +67,6 @@ func createCompleter(cfg providerConfig, model modelContext) (provider.Completer
 
 	case "huggingface":
 		return huggingfaceCompleter(cfg, model)
-
-	case "langchain":
-		return langchainCompleter(cfg, model)
 
 	case "llama":
 		return llamaCompleter(cfg, model)
@@ -153,12 +149,6 @@ func huggingfaceCompleter(cfg providerConfig, model modelContext) (provider.Comp
 	}
 
 	return huggingface.NewCompleter(cfg.URL, model.ID, options...)
-}
-
-func langchainCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
-	var options []langchain.Option
-
-	return langchain.NewCompleter(cfg.URL, options...)
 }
 
 func llamaCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {

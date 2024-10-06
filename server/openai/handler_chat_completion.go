@@ -2,6 +2,7 @@ package openai
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -73,29 +74,7 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 	if req.Stream {
 		w.Header().Set("Content-Type", "text/event-stream")
 
-		done := make(chan error)
-		stream := make(chan provider.Completion)
-
-		go func() {
-			options.Stream = stream
-
-			completion, err := completer.Complete(r.Context(), messages, options)
-
-			select {
-			case <-stream:
-				break
-			default:
-				if completion != nil {
-					stream <- *completion
-				}
-
-				close(stream)
-			}
-
-			done <- err
-		}()
-
-		for completion := range stream {
+		options.Stream = func(ctx context.Context, completion provider.Completion) error {
 			result := ChatCompletion{
 				Object: "chat.completion.chunk",
 
@@ -135,16 +114,22 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 
 			event := strings.TrimSpace(data.String())
 
-			fmt.Fprintf(w, "data: %s\n\n", event)
+			if _, err := fmt.Fprintf(w, "data: %s\n\n", event); err != nil {
+				return err
+			}
+
 			w.(http.Flusher).Flush()
+
+			return nil
 		}
 
-		// fmt.Fprintf(w, "data: [DONE]\n\n")
-		// w.(http.Flusher).Flush()
-
-		if err := <-done; err != nil {
+		if _, err := completer.Complete(r.Context(), messages, options); err != nil {
 			writeError(w, http.StatusBadRequest, err)
+			return
 		}
+
+		fmt.Fprintf(w, "data: [DONE]\n\n")
+		w.(http.Flusher).Flush()
 
 	} else {
 		completion, err := completer.Complete(r.Context(), messages, options)

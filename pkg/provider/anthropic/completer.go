@@ -97,8 +97,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			},
 		}, nil
 	} else {
-		defer close(options.Stream)
-
 		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
 		req.Header.Set("x-api-key", c.token)
 		req.Header.Set("anthropic-version", "2023-06-01")
@@ -198,13 +196,17 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				result.Message.Content += content
 
 				if len(content) > 0 {
-					options.Stream <- provider.Completion{
+					completion := provider.Completion{
 						ID: result.ID,
 
 						Message: provider.Message{
 							Role:    provider.MessageRoleAssistant,
 							Content: content,
 						},
+					}
+
+					if err := options.Stream(ctx, completion); err != nil {
+						return nil, err
 					}
 				}
 

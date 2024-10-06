@@ -73,8 +73,6 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			},
 		}, nil
 	} else {
-		defer close(options.Stream)
-
 		stream := c.completions.NewStreaming(ctx, *req)
 
 		completion := openai.ChatCompletionAccumulator{}
@@ -84,15 +82,17 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			completion.AddChunk(chunk)
 
 			if len(chunk.Choices) > 0 {
-				content := chunk.Choices[0].Delta.Content
-
-				options.Stream <- provider.Completion{
+				completion := provider.Completion{
 					ID: completion.ID,
 
 					Message: provider.Message{
 						Role:    provider.MessageRoleAssistant,
-						Content: content,
+						Content: chunk.Choices[0].Delta.Content,
 					},
+				}
+
+				if err := options.Stream(ctx, completion); err != nil {
+					return nil, err
 				}
 			}
 		}

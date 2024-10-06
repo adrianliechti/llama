@@ -34,8 +34,10 @@ type ToolCall struct {
 	Arguments string
 }
 
+type StreamHandler = func(ctx context.Context, completion Completion) error
+
 type CompleteOptions struct {
-	Stream chan<- Completion
+	Stream StreamHandler
 
 	Stop  []string
 	Tools []Tool

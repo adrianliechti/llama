@@ -111,32 +111,14 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		completionOptions := &provider.CompleteOptions{
 			Temperature: options.Temperature,
 			Tools:       to.Values(inputTools),
-		}
 
-		done := make(chan any)
-
-		if options.Stream != nil {
-			stream := make(chan provider.Completion)
-
-			completionOptions.Stream = stream
-
-			go func() {
-				for completion := range stream {
-					options.Stream <- completion
-				}
-
-				done <- true
-			}()
+			Stream: options.Stream,
 		}
 
 		completion, err := c.completer.Complete(ctx, input, completionOptions)
 
 		if err != nil {
 			return nil, err
-		}
-
-		if options.Stream != nil {
-			<-done
 		}
 
 		input = append(input, completion.Message)
@@ -182,10 +164,6 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 			result = completion
 			break
 		}
-	}
-
-	if options.Stream != nil {
-		close(options.Stream)
 	}
 
 	if result == nil {
