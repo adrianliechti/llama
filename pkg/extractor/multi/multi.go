@@ -26,18 +26,28 @@ func (e *Extractor) Extract(ctx context.Context, input extractor.File, options *
 		options = new(extractor.ExtractOptions)
 	}
 
-	data, err := io.ReadAll(input.Content)
+	var content []byte
 
-	if err != nil {
-		return nil, err
+	if input.Content != nil {
+		data, err := io.ReadAll(input.Content)
+
+		if err != nil {
+			return nil, err
+		}
+
+		content = data
 	}
 
 	for _, p := range e.providers {
-		if input.Content != nil {
-			input.Content = bytes.NewReader(data)
+		file := extractor.File{
+			URL: input.URL,
 		}
 
-		result, err := p.Extract(ctx, input, options)
+		if content != nil {
+			file.Content = bytes.NewReader(content)
+		}
+
+		result, err := p.Extract(ctx, file, options)
 
 		if err != nil {
 			if errors.Is(err, extractor.ErrUnsupported) {
