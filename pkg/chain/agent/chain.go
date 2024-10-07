@@ -18,9 +18,8 @@ var _ chain.Provider = &Chain{}
 type Chain struct {
 	completer provider.Completer
 
+	tools    []tool.Tool
 	messages []provider.Message
-
-	tools map[string]tool.Tool
 
 	temperature *float32
 }
@@ -28,9 +27,7 @@ type Chain struct {
 type Option func(*Chain)
 
 func New(options ...Option) (*Chain, error) {
-	c := &Chain{
-		tools: make(map[string]tool.Tool),
-	}
+	c := &Chain{}
 
 	for _, option := range options {
 		option(c)
@@ -57,9 +54,7 @@ func WithMessages(messages ...provider.Message) Option {
 
 func WithTools(tool ...tool.Tool) Option {
 	return func(c *Chain) {
-		for _, t := range tool {
-			c.tools[t.Name()] = t
-		}
+		c.tools = tool
 	}
 }
 
@@ -74,10 +69,6 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		options = new(provider.CompleteOptions)
 	}
 
-	if options.Temperature == nil {
-		options.Temperature = c.temperature
-	}
-
 	if len(c.messages) > 0 {
 		values, err := template.ApplyMessages(c.messages, nil)
 
@@ -90,15 +81,19 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	input := slices.Clone(messages)
 
+	agentTools := make(map[string]tool.Tool)
 	inputTools := make(map[string]provider.Tool)
 
 	for _, t := range c.tools {
-		inputTools[t.Name()] = provider.Tool{
+		tool := provider.Tool{
 			Name:        t.Name(),
 			Description: t.Description(),
 
 			Parameters: t.Parameters(),
 		}
+
+		agentTools[tool.Name] = t
+		inputTools[tool.Name] = tool
 	}
 
 	for _, t := range options.Tools {
@@ -108,14 +103,18 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 	var result *provider.Completion
 
 	for {
-		completionOptions := &provider.CompleteOptions{
+		inputOptions := &provider.CompleteOptions{
 			Temperature: options.Temperature,
 			Tools:       to.Values(inputTools),
 
 			Stream: options.Stream,
 		}
 
-		completion, err := c.completer.Complete(ctx, input, completionOptions)
+		if inputOptions.Temperature == nil {
+			inputOptions.Temperature = c.temperature
+		}
+
+		completion, err := c.completer.Complete(ctx, input, inputOptions)
 
 		if err != nil {
 			return nil, err
@@ -126,7 +125,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		var loop bool
 
 		for _, t := range completion.Message.ToolCalls {
-			tool, found := c.tools[t.Name]
+			tool, found := agentTools[t.Name]
 
 			if !found {
 				continue
