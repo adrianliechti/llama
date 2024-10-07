@@ -2,6 +2,7 @@ package openai
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 
@@ -42,6 +43,8 @@ func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 	transcription, err := t.transcriptions.New(ctx, openai.AudioTranscriptionNewParams{
 		Model: openai.F(t.model),
 		File:  openai.FileParam(input.Content, input.Name, ""),
+
+		ResponseFormat: openai.F(openai.AudioResponseFormatVerboseJSON),
 	})
 
 	if err != nil {
@@ -52,6 +55,16 @@ func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 		ID: id,
 
 		Content: transcription.Text,
+	}
+
+	var metadata struct {
+		Language string  `json:"language"`
+		Duration float64 `json:"duration"`
+	}
+
+	if err := json.Unmarshal([]byte(transcription.JSON.RawJSON()), &metadata); err == nil {
+		result.Language = metadata.Language
+		result.Duration = metadata.Duration
 	}
 
 	return &result, nil
