@@ -1,0 +1,85 @@
+services:
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:v0.3.32
+    pull_policy: always
+    environment:
+      # General
+      - PORT=3000
+
+      - WEBUI_AUTH=false
+      - WEBUI_NAME=${WEBUI_NAME}
+      - WEBUI_URL=${WEBUI_URL}
+
+      - DEFAULT_MODELS=${CHAT_MODEL}
+
+      - ENABLE_SIGNUP=false
+      - ENABLE_LOGIN_FORM=false
+      
+      - SHOW_ADMIN_DETAILS=false
+      
+      - ENABLE_ADMIN_EXPORT=false
+      - ENABLE_ADMIN_CHAT_ACCESS=false
+      - ENABLE_COMMUNITY_SHARING=false
+      - ENABLE_MESSAGE_RATING=false
+
+      # SSO
+      # - WEBUI_AUTH_TRUSTED_EMAIL_HEADER=X-Forwarded-Email
+      # - WEBUI_AUTH_TRUSTED_NAME_HEADER=X-Forwarded-User
+      
+      # Ollama
+      - ENABLE_OLLAMA_API=false
+
+      # OpenAI
+      - ENABLE_OPENAI_API=true
+      - OPENAI_API_BASE_URL=${OPENAI_API_BASE}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+
+      # Tasks
+      - TASK_MODEL_EXTERNAL=${TASK_MODEL}
+
+      # RAG
+      - ENABLE_SEARCH_QUERY=true
+      
+      - ENABLE_RAG_WEB_SEARCH=true
+      - ENABLE_RAG_HYBRID_SEARCH=true
+
+      - RAG_WEB_SEARCH_ENGINE=duckduckgo
+
+      - RAG_EMBEDDING_ENGINE=openai
+      - RAG_EMBEDDING_MODEL=${EMBEDDING_MODEL}
+
+      - RAG_OPENAI_API_BASE_URL=${OPENAI_API_BASE}
+      - RAG_OPENAI_API_KEY=${OPENAI_API_KEY}
+
+      - ENABLE_RAG_WEB_LOADER_SSL_VERIFICATION=false
+
+      # Speech to Text
+      - AUDIO_STT_ENGINE=openai
+      - AUDIO_STT_MODEL=${STT_MODEL}
+      
+      - AUDIO_STT_OPENAI_API_BASE_URL=${OPENAI_API_BASE}
+      - AUDIO_STT_OPENAI_API_KEY=${OPENAI_API_KEY}
+
+      # Text to Speech
+      - AUDIO_TTS_ENGINE=openai
+      - AUDIO_TTS_MODEL=${TTS_MODEL}
+      - AUDIO_TTS_VOICE=${TTS_VOICE}
+
+      - AUDIO_TTS_OPENAI_API_BASE_URL=${OPENAI_API_BASE}
+      - AUDIO_TTS_OPENAI_API_KEY=${OPENAI_API_KEY}
+
+      # Image Generation
+      - ENABLE_IMAGE_GENERATION=true
+
+      - IMAGE_GENERATION_ENGINE=openai
+      - IMAGE_GENERATION_MODEL=${IMAGE_MODEL}
+
+      - IMAGES_OPENAI_API_BASE_URL=${OPENAI_API_BASE}
+      - IMAGES_OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports:
+      - 3000:3000
+    volumes:
+      - openwebui-data:/app/backend/data
+
+volumes:
+  openwebui-data:
