@@ -10,6 +10,8 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -114,9 +116,13 @@ func (c *Client) Execute(ctx context.Context, parameters map[string]any) (any, e
 
 	var result map[string]any
 
-	if err := json.Unmarshal([]byte(data.Content), &result); err != nil {
-		return nil, err
+	if err := json.Unmarshal([]byte(data.Content), &result); err == nil {
+		return result, nil
 	}
 
-	return result, nil
+	if err := yaml.Unmarshal([]byte(data.Content), &result); err == nil {
+		return result, nil
+	}
+
+	return data.Content, nil
 }
