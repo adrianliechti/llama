@@ -20,8 +20,6 @@ type Chain struct {
 
 	tools    []tool.Tool
 	messages []provider.Message
-
-	temperature *float32
 }
 
 type Option func(*Chain)
@@ -55,12 +53,6 @@ func WithMessages(messages ...provider.Message) Option {
 func WithTools(tool ...tool.Tool) Option {
 	return func(c *Chain) {
 		c.tools = tool
-	}
-}
-
-func WithTemperature(temperature float32) Option {
-	return func(c *Chain) {
-		c.temperature = &temperature
 	}
 }
 
@@ -104,14 +96,14 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	for {
 		inputOptions := &provider.CompleteOptions{
-			Temperature: options.Temperature,
-			Tools:       to.Values(inputTools),
-
 			Stream: options.Stream,
-		}
 
-		if inputOptions.Temperature == nil {
-			inputOptions.Temperature = c.temperature
+			Tools: to.Values(inputTools),
+
+			MaxTokens:   options.MaxTokens,
+			Temperature: options.Temperature,
+
+			Format: options.Format,
 		}
 
 		completion, err := c.completer.Complete(ctx, input, inputOptions)

@@ -79,6 +79,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 	})
 
 	inputOptions := &provider.CompleteOptions{
+		MaxTokens:   options.MaxTokens,
 		Temperature: options.Temperature,
 
 		Format: provider.CompletionFormatJSON,

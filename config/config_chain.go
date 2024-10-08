@@ -172,10 +172,6 @@ func agentChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 		options = append(options, agent.WithMessages(context.Messages...))
 	}
 
-	if cfg.Temperature != nil {
-		options = append(options, agent.WithTemperature(*cfg.Temperature))
-	}
-
 	return agent.New(options...)
 }
 
