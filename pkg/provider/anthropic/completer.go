@@ -120,7 +120,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 	}
 }
 
-func (c *Completer) convertMessageRequest(messages []provider.Message, options *provider.CompleteOptions) (*anthropic.MessageNewParams, error) {
+func (c *Completer) convertMessageRequest(input []provider.Message, options *provider.CompleteOptions) (*anthropic.MessageNewParams, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
 	}
@@ -128,10 +128,12 @@ func (c *Completer) convertMessageRequest(messages []provider.Message, options *
 	req := &anthropic.MessageNewParams{
 		Model:     anthropic.F(c.model),
 		MaxTokens: anthropic.F(int64(4096)),
-
-		Tools:    anthropic.F([]anthropic.ToolParam{}),
-		Messages: anthropic.F([]anthropic.MessageParam{}),
 	}
+
+	var system []anthropic.TextBlockParam
+
+	var tools []anthropic.ToolParam
+	var messages []anthropic.MessageParam
 
 	if options.Stop != nil {
 		req.StopSequences = anthropic.F(options.Stop)
@@ -145,10 +147,10 @@ func (c *Completer) convertMessageRequest(messages []provider.Message, options *
 		req.Temperature = anthropic.F(float64(*options.Temperature))
 	}
 
-	for _, m := range messages {
+	for _, m := range input {
 		switch m.Role {
 		case provider.MessageRoleSystem:
-			req.System.Value = append(req.System.Value, anthropic.NewTextBlock(m.Content))
+			system = append(system, anthropic.NewTextBlock(m.Content))
 
 		case provider.MessageRoleUser:
 			blocks := []anthropic.MessageParamContentUnion{}
@@ -171,7 +173,7 @@ func (c *Completer) convertMessageRequest(messages []provider.Message, options *
 			}
 
 			message := anthropic.NewUserMessage(blocks...)
-			req.Messages.Value = append(req.Messages.Value, message)
+			messages = append(messages, message)
 
 		case provider.MessageRoleAssistant:
 			blocks := []anthropic.MessageParamContentUnion{}
@@ -191,11 +193,11 @@ func (c *Completer) convertMessageRequest(messages []provider.Message, options *
 			}
 
 			message := anthropic.NewAssistantMessage(blocks...)
-			req.Messages.Value = append(req.Messages.Value, message)
+			messages = append(messages, message)
 
 		case provider.MessageRoleTool:
 			message := anthropic.NewUserMessage(anthropic.NewToolResultBlock(m.Tool, m.Content, false))
-			req.Messages.Value = append(req.Messages.Value, message)
+			messages = append(messages, message)
 		}
 	}
 
@@ -206,7 +208,19 @@ func (c *Completer) convertMessageRequest(messages []provider.Message, options *
 			InputSchema: anthropic.F[interface{}](t.Parameters),
 		}
 
-		req.Tools.Value = append(req.Tools.Value, tool)
+		tools = append(tools, tool)
+	}
+
+	if len(system) > 0 {
+		req.System = anthropic.F(system)
+	}
+
+	if len(tools) > 0 {
+		req.Tools = anthropic.F(tools)
+	}
+
+	if len(messages) > 0 {
+		req.Messages = anthropic.F(messages)
 	}
 
 	return req, nil
