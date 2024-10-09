@@ -19,15 +19,15 @@ type Config struct {
 
 type Option func(*Config)
 
-func WithToken(token string) Option {
-	return func(c *Config) {
-		c.token = token
-	}
-}
-
 func WithClient(client *http.Client) Option {
 	return func(c *Config) {
 		c.client = client
+	}
+}
+
+func WithToken(token string) Option {
+	return func(c *Config) {
+		c.token = token
 	}
 }
 
@@ -41,7 +41,7 @@ func (c *Config) Options() []option.RequestOption {
 	if strings.Contains(c.url, "openai.azure.com") {
 		options := make([]option.RequestOption, 0)
 
-		options = append(options, azure.WithEndpoint(c.url, "2024-06-01"))
+		options = append(options, azure.WithEndpoint(c.url, "2024-09-01-preview"))
 
 		if c.token != "" {
 			options = append(options, azure.WithAPIKey(c.token))

@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 
@@ -125,7 +124,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 	}
 }
 
-func (c *Completer) convertCompletionRequest(messages []provider.Message, options *provider.CompleteOptions) (*openai.ChatCompletionNewParams, error) {
+func (c *Completer) convertCompletionRequest(input []provider.Message, options *provider.CompleteOptions) (*openai.ChatCompletionNewParams, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
 	}
@@ -134,11 +133,8 @@ func (c *Completer) convertCompletionRequest(messages []provider.Message, option
 		Model: openai.F(c.model),
 	}
 
-	if options.Stream != nil && !strings.Contains(c.url, "openai.azure.com") {
-		req.StreamOptions = openai.F(openai.ChatCompletionStreamOptionsParam{
-			IncludeUsage: openai.F(true),
-		})
-	}
+	var tools []openai.ChatCompletionToolParam
+	var messages []openai.ChatCompletionMessageParamUnion
 
 	if options.Format == provider.CompletionFormatJSON {
 		req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](shared.ResponseFormatJSONObjectParam{
@@ -159,13 +155,11 @@ func (c *Completer) convertCompletionRequest(messages []provider.Message, option
 		req.Temperature = openai.F(float64(*options.Temperature))
 	}
 
-	var reqMessages []openai.ChatCompletionMessageParamUnion
-
-	for _, m := range messages {
+	for _, m := range input {
 		switch m.Role {
 		case provider.MessageRoleSystem:
 			message := openai.SystemMessage(m.Content)
-			reqMessages = append(reqMessages, message)
+			messages = append(messages, message)
 
 		case provider.MessageRoleUser:
 			parts := []openai.ChatCompletionContentPartUnionParam{}
@@ -185,12 +179,11 @@ func (c *Completer) convertCompletionRequest(messages []provider.Message, option
 				content := base64.StdEncoding.EncodeToString(data)
 
 				url := "data:" + mime + ";base64," + content
-
 				parts = append(parts, openai.ImagePart(url))
 			}
 
 			message := openai.UserMessageParts(parts...)
-			reqMessages = append(reqMessages, message)
+			messages = append(messages, message)
 
 		case provider.MessageRoleAssistant:
 			message := openai.AssistantMessage(m.Content)
@@ -215,19 +208,13 @@ func (c *Completer) convertCompletionRequest(messages []provider.Message, option
 				message.ToolCalls = openai.F(toolcalls)
 			}
 
-			reqMessages = append(reqMessages, message)
+			messages = append(messages, message)
 
 		case provider.MessageRoleTool:
 			message := openai.ToolMessage(m.Tool, m.Content)
-			reqMessages = append(reqMessages, message)
+			messages = append(messages, message)
 		}
 	}
-
-	if len(reqMessages) > 0 {
-		req.Messages = openai.F(reqMessages)
-	}
-
-	var tools []openai.ChatCompletionToolParam
 
 	for _, t := range options.Tools {
 		tool := openai.ChatCompletionToolParam{
@@ -246,6 +233,10 @@ func (c *Completer) convertCompletionRequest(messages []provider.Message, option
 
 	if len(tools) > 0 {
 		req.Tools = openai.F(tools)
+	}
+
+	if len(messages) > 0 {
+		req.Messages = openai.F(messages)
 	}
 
 	return req, nil

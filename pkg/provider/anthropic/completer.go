@@ -1,36 +1,26 @@
 package anthropic
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
-	"net/url"
-	"strings"
-	"unicode"
 
 	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/to"
+
+	"github.com/anthropics/anthropic-sdk-go"
 )
 
 var _ provider.Completer = (*Completer)(nil)
 
 type Completer struct {
 	*Config
+	messages *anthropic.MessageService
 }
 
 func NewCompleter(url, model string, options ...Option) (*Completer, error) {
-	if url == "" {
-		url = "https://api.anthropic.com"
-	}
-
 	cfg := &Config{
-		client: http.DefaultClient,
-
 		url:   url,
 		model: model,
 	}
@@ -40,7 +30,8 @@ func NewCompleter(url, model string, options ...Option) (*Completer, error) {
 	}
 
 	return &Completer{
-		Config: cfg,
+		Config:   cfg,
+		messages: anthropic.NewMessageService(cfg.Options()...),
 	}, nil
 }
 
@@ -49,159 +40,53 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		options = new(provider.CompleteOptions)
 	}
 
-	url, _ := url.JoinPath(c.url, "/v1/messages")
-	body, err := convertChatRequest(c.model, messages, options)
+	req, err := c.convertMessageRequest(messages, options)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if options.Stream == nil {
-		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
-		req.Header.Set("x-api-key", c.token)
-		req.Header.Set("anthropic-version", "2023-06-01")
-		req.Header.Set("content-type", "application/json")
-
-		resp, err := c.client.Do(req)
+		message, err := c.messages.New(ctx, *req)
 
 		if err != nil {
-			return nil, err
-		}
-
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return nil, convertError(resp)
-		}
-
-		var response MessageResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			return nil, err
+			return nil, convertError(err)
 		}
 
 		return &provider.Completion{
-			ID:     response.ID,
-			Reason: toCompletionResult(response.StopReason),
+			ID:     message.ID,
+			Reason: toCompletionResult(message.StopReason),
 
 			Message: provider.Message{
 				Role:    provider.MessageRoleAssistant,
-				Content: response.Content[0].Text,
+				Content: toContent(message.Content),
 
-				ToolCalls: toToolCalls(response),
+				ToolCalls: toToolCalls(message.Content),
 			},
 
 			Usage: &provider.Usage{
-				InputTokens:  response.Usage.InputTokens,
-				OutputTokens: response.Usage.OutputTokens,
+				InputTokens:  int(message.Usage.InputTokens),
+				OutputTokens: int(message.Usage.OutputTokens),
 			},
 		}, nil
 	} else {
-		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
-		req.Header.Set("x-api-key", c.token)
-		req.Header.Set("anthropic-version", "2023-06-01")
-		req.Header.Set("content-type", "application/json")
+		stream := c.messages.NewStreaming(ctx, *req)
 
-		resp, err := c.client.Do(req)
+		message := anthropic.Message{}
 
-		if err != nil {
-			return nil, err
-		}
+		for stream.Next() {
+			event := stream.Current()
+			message.Accumulate(event)
 
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return nil, convertError(resp)
-		}
-
-		reader := bufio.NewReader(resp.Body)
-
-		var currentContent Content
-
-		result := &provider.Completion{
-			Message: provider.Message{
-				Role: provider.MessageRoleAssistant,
-			},
-
-			Usage: &provider.Usage{},
-		}
-
-		resultToolCalls := map[string]provider.ToolCall{}
-
-		for i := 0; ; i++ {
-			data, err := reader.ReadBytes('\n')
-
-			if err != nil {
-				if errors.Is(err, io.EOF) {
-					break
-				}
-
-				return nil, err
-			}
-
-			data = bytes.TrimSpace(data)
-
-			if !bytes.HasPrefix(data, []byte("data:")) {
-				continue
-			}
-
-			data = bytes.TrimPrefix(data, []byte("data:"))
-			data = bytes.TrimSpace(data)
-
-			if len(data) == 0 {
-				continue
-			}
-
-			var event MessageEvent
-
-			if err := json.Unmarshal([]byte(data), &event); err != nil {
-				return nil, err
-			}
-
-			if event.Message != nil {
-				result.ID = event.Message.ID
-
-				if event.Message.Usage.InputTokens > 0 {
-					result.Usage.InputTokens = event.Message.Usage.InputTokens
-				}
-
-				if event.Message.Usage.OutputTokens > 0 {
-					result.Usage.OutputTokens = event.Message.Usage.OutputTokens
-				}
-			}
-
-			if event.ContentBlock != nil {
-				currentContent = *event.ContentBlock
-			}
-
-			if event.Usage.InputTokens > 0 {
-				result.Usage.InputTokens = event.Usage.InputTokens
-			}
-
-			if event.Usage.OutputTokens > 0 {
-				result.Usage.OutputTokens = event.Usage.OutputTokens
-			}
-
-			if event.Delta != nil {
-				if reason := toCompletionResult(event.Delta.StopReason); reason != "" {
-					result.Reason = reason
-				}
-
-				var content = event.Delta.Text
-
-				if i == 0 {
-					content = strings.TrimLeftFunc(content, unicode.IsSpace)
-				}
-
-				result.Message.Content += content
-
-				if len(content) > 0 {
+			switch delta := event.Delta.(type) {
+			case anthropic.ContentBlockDeltaEventDelta:
+				if delta.Text != "" {
 					completion := provider.Completion{
-						ID: result.ID,
+						ID: message.ID,
 
 						Message: provider.Message{
 							Role:    provider.MessageRoleAssistant,
-							Content: content,
+							Content: delta.Text,
 						},
 					}
 
@@ -209,87 +94,69 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 						return nil, err
 					}
 				}
-
-				if currentContent.Type == ContentTypeToolUse {
-					call, found := resultToolCalls[currentContent.ID]
-
-					if !found {
-						call = provider.ToolCall{
-							ID:   currentContent.ID,
-							Name: currentContent.Name,
-						}
-					}
-
-					call.Arguments += event.Delta.PartialJSON
-					resultToolCalls[currentContent.ID] = call
-				}
 			}
 		}
 
-		if result.Usage.OutputTokens == 0 {
-			result.Usage = nil
+		if err := stream.Err(); err != nil {
+			return nil, convertError(err)
 		}
 
-		if len(resultToolCalls) > 0 {
-			result.Message.ToolCalls = to.Values(resultToolCalls)
-		}
+		return &provider.Completion{
+			ID:     message.ID,
+			Reason: toCompletionResult(message.StopReason),
 
-		return result, nil
+			Message: provider.Message{
+				Role:    provider.MessageRoleAssistant,
+				Content: toContent(message.Content),
+
+				ToolCalls: toToolCalls(message.Content),
+			},
+
+			Usage: &provider.Usage{
+				InputTokens:  int(message.Usage.InputTokens),
+				OutputTokens: int(message.Usage.OutputTokens),
+			},
+		}, nil
 	}
 }
 
-func convertChatRequest(model string, messages []provider.Message, options *provider.CompleteOptions) (*MessagesRequest, error) {
+func (c *Completer) convertMessageRequest(input []provider.Message, options *provider.CompleteOptions) (*anthropic.MessageNewParams, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
 	}
 
-	stream := options.Stream != nil
-
-	req := &MessagesRequest{
-		Model:  model,
-		Stream: stream,
-
-		MaxTokens: 4096,
+	req := &anthropic.MessageNewParams{
+		Model:     anthropic.F(c.model),
+		MaxTokens: anthropic.F(int64(4096)),
 	}
 
+	var system []anthropic.TextBlockParam
+
+	var tools []anthropic.ToolParam
+	var messages []anthropic.MessageParam
+
 	if options.Stop != nil {
-		req.StopSequences = options.Stop
+		req.StopSequences = anthropic.F(options.Stop)
 	}
 
 	if options.MaxTokens != nil {
-		req.MaxTokens = *options.MaxTokens
+		req.MaxTokens = anthropic.F(int64(*options.MaxTokens))
 	}
 
 	if options.Temperature != nil {
-		req.Temperature = options.Temperature
+		req.Temperature = anthropic.F(float64(*options.Temperature))
 	}
 
-	for _, t := range options.Tools {
-		tool := Tool{
-			Name:        t.Name,
-			Description: t.Description,
-
-			InputSchema: t.Parameters,
-		}
-
-		req.Tools = append(req.Tools, tool)
-	}
-
-	for _, m := range messages {
+	for _, m := range input {
 		switch m.Role {
 		case provider.MessageRoleSystem:
-			req.System = m.Content
+			system = append(system, anthropic.NewTextBlock(m.Content))
 
 		case provider.MessageRoleUser:
-			message := Message{
-				Role: MessageRoleUser,
-			}
+			blocks := []anthropic.MessageParamContentUnion{}
 
-			message.Contents = []Content{
-				{
-					Type: ContentTypeText,
-					Text: m.Content,
-				},
+			if m.Content != "" {
+				blocks = append(blocks, anthropic.NewTextBlock(m.Content))
 			}
 
 			for _, f := range m.Files {
@@ -299,30 +166,20 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 					return nil, err
 				}
 
-				message.Contents = append(message.Contents, Content{
-					Type: ContentTypeImage,
+				mime := http.DetectContentType(data)
+				content := base64.StdEncoding.EncodeToString(data)
 
-					Source: &ContentSource{
-						Type: "base64",
-
-						MediaType: http.DetectContentType(data),
-						Data:      base64.StdEncoding.EncodeToString(data),
-					},
-				})
+				blocks = append(blocks, anthropic.NewImageBlockBase64(mime, content))
 			}
 
-			req.Messages = append(req.Messages, message)
+			message := anthropic.NewUserMessage(blocks...)
+			messages = append(messages, message)
 
 		case provider.MessageRoleAssistant:
-			message := Message{
-				Role: MessageRoleAssistant,
-			}
+			blocks := []anthropic.MessageParamContentUnion{}
 
 			if m.Content != "" {
-				message.Contents = append(message.Contents, Content{
-					Type: ContentTypeText,
-					Text: m.Content,
-				})
+				blocks = append(blocks, anthropic.NewTextBlock(m.Content))
 			}
 
 			for _, t := range m.ToolCalls {
@@ -332,286 +189,90 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 					input = t.Arguments
 				}
 
-				message.Contents = append(message.Contents, Content{
-					Type: ContentTypeToolUse,
-
-					ID: t.ID,
-
-					Name:  t.Name,
-					Input: input,
-				})
+				blocks = append(blocks, anthropic.NewToolUseBlockParam(t.ID, t.Name, input))
 			}
 
-			req.Messages = append(req.Messages, message)
+			message := anthropic.NewAssistantMessage(blocks...)
+			messages = append(messages, message)
 
 		case provider.MessageRoleTool:
-			var content any
-
-			if err := json.Unmarshal([]byte(m.Content), &content); err != nil {
-				content = m.Content
-			}
-
-			message := Message{
-				Role: MessageRoleUser,
-
-				Contents: []Content{
-					{
-						Type: ContentTypeToolResult,
-
-						ToolUseID: m.Tool,
-						Content:   m.Content,
-					},
-				},
-			}
-
-			req.Messages = append(req.Messages, message)
-
-		default:
-			return nil, errors.New("unsupported message role")
+			message := anthropic.NewUserMessage(anthropic.NewToolResultBlock(m.Tool, m.Content, false))
+			messages = append(messages, message)
 		}
+	}
+
+	for _, t := range options.Tools {
+		tool := anthropic.ToolParam{
+			Name:        anthropic.F(t.Name),
+			Description: anthropic.F(t.Description),
+			InputSchema: anthropic.F[interface{}](t.Parameters),
+		}
+
+		tools = append(tools, tool)
+	}
+
+	if len(system) > 0 {
+		req.System = anthropic.F(system)
+	}
+
+	if len(tools) > 0 {
+		req.Tools = anthropic.F(tools)
+	}
+
+	if len(messages) > 0 {
+		req.Messages = anthropic.F(messages)
 	}
 
 	return req, nil
 }
 
-type MessageRole string
-
-var (
-	MessageRoleUser      MessageRole = "user"
-	MessageRoleAssistant MessageRole = "assistant"
-)
-
-// https://docs.anthropic.com/en/api/messages
-type MessagesRequest struct {
-	Model string `json:"model"`
-
-	Stream bool   `json:"stream"`
-	System string `json:"system,omitempty"`
-
-	Tools    []Tool    `json:"tools,omitempty"`
-	Messages []Message `json:"messages"`
-
-	MaxTokens     int      `json:"max_tokens,omitempty"`
-	Temperature   *float32 `json:"temperature,omitempty"`
-	StopSequences []string `json:"stop_sequences,omitempty"`
-}
-
-type Tool struct {
-	Name string `json:"name"`
-
-	Description string `json:"description,omitempty"`
-
-	InputSchema map[string]any `json:"input_schema,omitempty"`
-}
-
-type Message struct {
-	Role MessageRole `json:"role"`
-
-	Content  string    `json:"content"`
-	Contents []Content `json:"contents,omitempty"`
-}
-
-func (m *Message) MarshalJSON() ([]byte, error) {
-	if m.Content != "" && m.Contents != nil {
-		return nil, errors.New("cannot have both content and contents")
-	}
-
-	if len(m.Contents) > 0 {
-		msg := struct {
-			Role MessageRole `json:"role"`
-
-			Content  string    `json:"-"`
-			Contents []Content `json:"content,omitempty"`
-		}(*m)
-
-		return json.Marshal(msg)
-	}
-
-	msg := struct {
-		Role MessageRole `json:"role"`
-
-		Content  string    `json:"content"`
-		Contents []Content `json:"-"`
-	}(*m)
-
-	return json.Marshal(msg)
-}
-
-func (m *Message) UnmarshalJSON(data []byte) error {
-	m1 := struct {
-		Role MessageRole `json:"role"`
-
-		Content  string `json:"content"`
-		Contents []Content
-	}{}
-
-	if err := json.Unmarshal(data, &m1); err == nil {
-		*m = Message(m1)
-		return nil
-	}
-
-	m2 := struct {
-		Role MessageRole `json:"role"`
-
-		Content  string
-		Contents []Content `json:"content"`
-	}{}
-
-	if err := json.Unmarshal(data, &m2); err == nil {
-		*m = Message(m2)
-		return err
-	}
-
-	return nil
-}
-
-type ContentType string
-
-var (
-	ContentTypeText      ContentType = "text"
-	ContentTypeTextDelta ContentType = "text_delta"
-
-	ContentTypeImage ContentType = "image"
-
-	ContentTypeToolUse    ContentType = "tool_use"
-	ContentTypeToolResult ContentType = "tool_result"
-
-	ContentTypeInputJSONDelta ContentType = "input_json_delta"
-)
-
-type Content struct {
-	Type ContentType `json:"type"`
-
-	ID   string `json:"id,omitempty"`
-	Name string `json:"name,omitempty"`
-
-	ToolUseID string `json:"tool_use_id,omitempty"`
-
-	Text    string         `json:"text,omitempty"`
-	Input   any            `json:"input,omitempty"`
-	Content any            `json:"content,omitempty"`
-	Source  *ContentSource `json:"source,omitempty"`
-}
-
-type ContentSource struct {
-	Type string `json:"type"`
-
-	MediaType string `json:"media_type"`
-	Data      string `json:"data"`
-}
-
-type ResponseType string
-
-var (
-	ResponseTypeMessage ResponseType = "message"
-)
-
-type StopReason string
-
-var (
-	StopReasonEndTurn      StopReason = "end_turn"
-	StopReasonMaxTokens    StopReason = "max_tokens"
-	StopReasonStopSequence StopReason = "stop_sequence"
-	StopReasonToolUse      StopReason = "tool_use"
-)
-
-type Usage struct {
-	InputTokens  int `json:"input_tokens"`
-	OutputTokens int `json:"output_tokens"`
-}
-
-type MessageResponse struct {
-	ID string `json:"id"`
-
-	Type  ResponseType `json:"type"`
-	Model string       `json:"model"`
-
-	Role MessageRole `json:"role"`
-
-	Content []Content `json:"content"`
-
-	StopReason   StopReason `json:"stop_reason,omitempty"`
-	StopSequence []string   `json:"stop_sequence,omitempty"`
-
-	Usage Usage `json:"usage"`
-}
-
-type MessageDelta struct {
-	Text string `json:"text,omitempty"`
-
-	PartialJSON string `json:"partial_json,omitempty"`
-
-	StopReason   StopReason `json:"stop_reason,omitempty"`
-	StopSequence []string   `json:"stop_sequence,omitempty"`
-}
-
-type EventType string
-
-var (
-	EventTypePing EventType = "ping"
-
-	EventTypeMessageStart EventType = "message_start"
-	EventTypeMessageDelta EventType = "message_delta"
-	EventTypeMessageStop  EventType = "message_stop"
-
-	EventTypeContentBlockStart EventType = "content_block_start"
-	EventTypeContentBlockDelta EventType = "content_block_delta"
-	EventTypeContentBlockStop  EventType = "content_block_stop"
-)
-
-type MessageEvent struct {
-	Type EventType `json:"type"`
-
-	Index int `json:"index"`
-
-	Message *MessageResponse `json:"message,omitempty"`
-
-	Delta        *MessageDelta `json:"delta,omitempty"`
-	ContentBlock *Content      `json:"content_block,omitempty"`
-
-	Usage Usage `json:"usage"`
-}
-
-func toToolCalls(message MessageResponse) []provider.ToolCall {
-	var result []provider.ToolCall
-
-	for _, content := range message.Content {
-		if content.Type != ContentTypeToolUse {
+func toContent(blocks []anthropic.ContentBlock) string {
+	for _, b := range blocks {
+		if b.Type != anthropic.ContentBlockTypeText {
 			continue
 		}
 
-		var arguments string
+		return b.Text
+	}
 
-		if val, ok := content.Input.(string); ok {
-			arguments = val
-		} else {
-			data, _ := json.Marshal(content.Input)
-			arguments = string(data)
+	return ""
+}
+
+func toToolCalls(blocks []anthropic.ContentBlock) []provider.ToolCall {
+	var result []provider.ToolCall
+
+	for _, b := range blocks {
+		if b.Type != anthropic.ContentBlockTypeToolUse {
+			continue
 		}
 
-		result = append(result, provider.ToolCall{
-			ID: content.ID,
+		input, _ := b.Input.MarshalJSON()
 
-			Name:      content.Name,
-			Arguments: arguments,
-		})
+		call := provider.ToolCall{
+			ID: b.ID,
+
+			Name:      b.Name,
+			Arguments: string(input),
+		}
+
+		result = append(result, call)
 	}
 
 	return result
 }
 
-func toCompletionResult(val StopReason) provider.CompletionReason {
+func toCompletionResult(val anthropic.MessageStopReason) provider.CompletionReason {
 	switch val {
-	case StopReasonEndTurn:
+	case anthropic.MessageStopReasonEndTurn:
 		return provider.CompletionReasonStop
 
-	case StopReasonMaxTokens:
+	case anthropic.MessageStopReasonMaxTokens:
 		return provider.CompletionReasonLength
 
-	case StopReasonStopSequence:
+	case anthropic.MessageStopReasonStopSequence:
 		return provider.CompletionReasonStop
 
-	case StopReasonToolUse:
+	case anthropic.MessageStopReasonToolUse:
 		return provider.CompletionReasonTool
 
 	default:
