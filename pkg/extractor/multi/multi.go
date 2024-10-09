@@ -41,6 +41,8 @@ func (e *Extractor) Extract(ctx context.Context, input extractor.File, options *
 	for _, p := range e.providers {
 		file := extractor.File{
 			URL: input.URL,
+
+			Name: input.Name,
 		}
 
 		if content != nil {
