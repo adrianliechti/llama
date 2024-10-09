@@ -129,6 +129,9 @@ func (c *Completer) convertCompletionRequest(messages []provider.Message, option
 
 	req := &openai.ChatCompletionNewParams{
 		Model: openai.F(c.model),
+
+		Tools:    openai.F([]openai.ChatCompletionToolParam{}),
+		Messages: openai.F([]openai.ChatCompletionMessageParamUnion{}),
 	}
 
 	if options.Stream != nil && !strings.Contains(c.url, "openai.azure.com") {
@@ -156,13 +159,11 @@ func (c *Completer) convertCompletionRequest(messages []provider.Message, option
 		req.Temperature = openai.F(float64(*options.Temperature))
 	}
 
-	var reqMessages []openai.ChatCompletionMessageParamUnion
-
 	for _, m := range messages {
 		switch m.Role {
 		case provider.MessageRoleSystem:
 			message := openai.SystemMessage(m.Content)
-			reqMessages = append(reqMessages, message)
+			req.Messages.Value = append(req.Messages.Value, message)
 
 		case provider.MessageRoleUser:
 			parts := []openai.ChatCompletionContentPartUnionParam{}
@@ -187,7 +188,7 @@ func (c *Completer) convertCompletionRequest(messages []provider.Message, option
 			}
 
 			message := openai.UserMessageParts(parts...)
-			reqMessages = append(reqMessages, message)
+			req.Messages.Value = append(req.Messages.Value, message)
 
 		case provider.MessageRoleAssistant:
 			message := openai.AssistantMessage(m.Content)
@@ -212,19 +213,13 @@ func (c *Completer) convertCompletionRequest(messages []provider.Message, option
 				message.ToolCalls = openai.F(toolcalls)
 			}
 
-			reqMessages = append(reqMessages, message)
+			req.Messages.Value = append(req.Messages.Value, message)
 
 		case provider.MessageRoleTool:
 			message := openai.ToolMessage(m.Tool, m.Content)
-			reqMessages = append(reqMessages, message)
+			req.Messages.Value = append(req.Messages.Value, message)
 		}
 	}
-
-	if len(reqMessages) > 0 {
-		req.Messages = openai.F(reqMessages)
-	}
-
-	var tools []openai.ChatCompletionToolParam
 
 	for _, t := range options.Tools {
 		tool := openai.ChatCompletionToolParam{
@@ -238,11 +233,7 @@ func (c *Completer) convertCompletionRequest(messages []provider.Message, option
 			}),
 		}
 
-		tools = append(tools, tool)
-	}
-
-	if len(tools) > 0 {
-		req.Tools = openai.F(tools)
+		req.Tools.Value = append(req.Tools.Value, tool)
 	}
 
 	return req, nil

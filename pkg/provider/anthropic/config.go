@@ -2,6 +2,9 @@ package anthropic
 
 import (
 	"net/http"
+	"strings"
+
+	"github.com/anthropics/anthropic-sdk-go/option"
 )
 
 type Config struct {
@@ -21,14 +24,26 @@ func WithClient(client *http.Client) Option {
 	}
 }
 
-func WithURL(url string) Option {
-	return func(c *Config) {
-		c.url = url
-	}
-}
-
 func WithToken(token string) Option {
 	return func(c *Config) {
 		c.token = token
 	}
+}
+
+func (c *Config) Options() []option.RequestOption {
+	if c.url == "" {
+		c.url = "https://api.anthropic.com/"
+	}
+
+	c.url = strings.TrimRight(c.url, "/") + "/"
+
+	options := []option.RequestOption{
+		option.WithBaseURL(c.url),
+	}
+
+	if c.token != "" {
+		options = append(options, option.WithAPIKey(c.token))
+	}
+
+	return options
 }

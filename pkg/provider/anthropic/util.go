@@ -1,29 +1,18 @@
 package anthropic
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
-	"io"
-	"net/http"
+
+	"github.com/anthropics/anthropic-sdk-go"
 )
 
-func convertError(resp *http.Response) error {
-	data, _ := io.ReadAll(resp.Body)
+func convertError(err error) error {
+	var apierr *anthropic.Error
 
-	if len(data) == 0 {
-		return errors.New(http.StatusText(resp.StatusCode))
+	if errors.As(err, &apierr) {
+		//println(string(apierr.DumpRequest(true)))  // Prints the serialized HTTP request
+		//println(string(apierr.DumpResponse(true))) // Prints the serialized HTTP response
 	}
 
-	return errors.New(string(data))
-}
-
-func jsonReader(v any) io.Reader {
-	b := new(bytes.Buffer)
-
-	enc := json.NewEncoder(b)
-	enc.SetEscapeHTML(false)
-
-	enc.Encode(v)
-	return b
+	return err
 }
