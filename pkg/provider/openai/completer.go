@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 
@@ -136,12 +135,6 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 
 	var tools []openai.ChatCompletionToolParam
 	var messages []openai.ChatCompletionMessageParamUnion
-
-	if options.Stream != nil && !strings.Contains(c.url, "openai.azure.com") {
-		req.StreamOptions = openai.F(openai.ChatCompletionStreamOptionsParam{
-			IncludeUsage: openai.F(true),
-		})
-	}
 
 	if options.Format == provider.CompletionFormatJSON {
 		req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](shared.ResponseFormatJSONObjectParam{

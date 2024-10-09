@@ -41,7 +41,7 @@ func (c *Config) Options() []option.RequestOption {
 	if strings.Contains(c.url, "openai.azure.com") {
 		options := make([]option.RequestOption, 0)
 
-		options = append(options, azure.WithEndpoint(c.url, "2024-06-01"))
+		options = append(options, azure.WithEndpoint(c.url, "2024-09-01-preview"))
 
 		if c.token != "" {
 			options = append(options, azure.WithAPIKey(c.token))
