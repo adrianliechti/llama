@@ -82,8 +82,11 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			completion.AddChunk(chunk)
 
 			if len(chunk.Choices) > 0 {
+				reason := openai.ChatCompletionChoicesFinishReason(chunk.Choices[0].FinishReason)
+
 				completion := provider.Completion{
-					ID: completion.ID,
+					ID:     completion.ID,
+					Reason: toCompletionResult(reason),
 
 					Message: provider.Message{
 						Role:    provider.MessageRoleAssistant,
