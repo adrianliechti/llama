@@ -1,8 +1,6 @@
 module github.com/adrianliechti/llama
 
-go 1.22.0
-
-toolchain go1.23.1
+go 1.23
 
 require (
 	github.com/anthropics/anthropic-sdk-go v0.2.0-alpha.1
@@ -10,7 +8,7 @@ require (
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-chi/cors v1.2.1
 	github.com/google/uuid v1.6.0
-	github.com/openai/openai-go v0.1.0-alpha.25
+	github.com/openai/openai-go v0.1.0-alpha.26
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.33.0
 	go.opentelemetry.io/contrib/bridges/otelslog v0.5.0
@@ -24,15 +22,15 @@ require (
 	go.opentelemetry.io/otel/sdk v1.30.0
 	go.opentelemetry.io/otel/sdk/log v0.6.0
 	go.opentelemetry.io/otel/sdk/metric v1.30.0
-	golang.org/x/time v0.6.0
+	golang.org/x/time v0.7.0
 	google.golang.org/grpc v1.67.1
-	google.golang.org/protobuf v1.34.2
+	google.golang.org/protobuf v1.35.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	dario.cat/mergo v1.0.1 // indirect
-	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
+	github.com/AdaLogics/go-fuzz-headers v0.0.0-20240806141605-e8a1dd7889d6 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.14.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.10.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
@@ -41,7 +39,7 @@ require (
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
-	github.com/creack/pty v1.1.20 // indirect
+	github.com/creack/pty v1.1.23 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/docker v27.3.1+incompatible // indirect
@@ -72,21 +70,21 @@ require (
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/tidwall/gjson v1.14.4 // indirect
+	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
-	github.com/tklauser/numcpus v0.8.0 // indirect
+	github.com/tklauser/numcpus v0.9.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.30.0 // indirect
 	go.opentelemetry.io/otel/trace v1.30.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
-	golang.org/x/crypto v0.27.0 // indirect
-	golang.org/x/net v0.29.0 // indirect
+	golang.org/x/crypto v0.28.0 // indirect
+	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
-	golang.org/x/sys v0.25.0 // indirect
-	golang.org/x/text v0.18.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240930140551-af27646dc61f // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240930140551-af27646dc61f // indirect
+	golang.org/x/sys v0.26.0 // indirect
+	golang.org/x/text v0.19.0 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20241007155032-5fefd90f89a9 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20241007155032-5fefd90f89a9 // indirect
 )
