@@ -94,18 +94,22 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	var result *provider.Completion
 
+	inputOptions := &provider.CompleteOptions{
+		Stream: options.Stream,
+
+		Tools: to.Values(inputTools),
+
+		MaxTokens:   options.MaxTokens,
+		Temperature: options.Temperature,
+
+		Format: options.Format,
+	}
+
+	if len(options.Tools) > 0 {
+		inputOptions.Stream = nil
+	}
+
 	for {
-		inputOptions := &provider.CompleteOptions{
-			Stream: options.Stream,
-
-			Tools: to.Values(inputTools),
-
-			MaxTokens:   options.MaxTokens,
-			Temperature: options.Temperature,
-
-			Format: options.Format,
-		}
-
 		completion, err := c.completer.Complete(ctx, input, inputOptions)
 
 		if err != nil {
@@ -159,6 +163,12 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	if result == nil {
 		return nil, errors.New("unable to handle request")
+	}
+
+	if inputOptions.Stream == nil && options.Stream != nil {
+		if err := options.Stream(ctx, *result); err != nil {
+			return nil, err
+		}
 	}
 
 	return result, nil

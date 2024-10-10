@@ -81,14 +81,20 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 				return nil, err
 			}
 
-			completion := provider.Completion{
-				ID: message.ID,
-
-				Message: provider.Message{},
-			}
-
 			switch event := event.AsUnion().(type) {
+			case anthropic.MessageStartEvent:
+				break
+
 			case anthropic.ContentBlockStartEvent:
+				completion := provider.Completion{
+					ID: message.ID,
+
+					Message: provider.Message{
+						Role:    provider.MessageRoleAssistant,
+						Content: event.ContentBlock.Text,
+					},
+				}
+
 				if event.ContentBlock.Name != "" {
 					completion.Message.ToolCalls = []provider.ToolCall{
 						{
@@ -98,9 +104,15 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 					}
 				}
 
+				if err := options.Stream(ctx, completion); err != nil {
+					return nil, err
+				}
+
 			case anthropic.ContentBlockDeltaEvent:
-				if event.Delta.Text != "" {
-					completion.Message.Content = event.Delta.Text
+				completion := provider.Completion{
+					Message: provider.Message{
+						Content: event.Delta.Text,
+					},
 				}
 
 				if event.Delta.PartialJSON != "" {
@@ -110,10 +122,31 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 						},
 					}
 				}
-			}
 
-			if err := options.Stream(ctx, completion); err != nil {
-				return nil, err
+				if err := options.Stream(ctx, completion); err != nil {
+					return nil, err
+				}
+
+			case anthropic.ContentBlockStopEvent:
+				break
+
+			case anthropic.MessageStopEvent:
+				completion := provider.Completion{
+					ID: message.ID,
+
+					Reason: toCompletionResult(message.StopReason),
+
+					Message: provider.Message{},
+
+					Usage: &provider.Usage{
+						InputTokens:  int(message.Usage.InputTokens),
+						OutputTokens: int(message.Usage.OutputTokens),
+					},
+				}
+
+				if err := options.Stream(ctx, completion); err != nil {
+					return nil, err
+				}
 			}
 		}
 

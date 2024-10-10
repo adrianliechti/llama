@@ -73,7 +73,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 	}
 
 	if inputOptions.Stream == nil && options.Stream != nil {
-		if err = options.Stream(ctx, *result); err != nil {
+		if err := options.Stream(ctx, *result); err != nil {
 			return nil, err
 		}
 	}
