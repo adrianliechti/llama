@@ -227,10 +227,11 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 			Type: openai.F(openai.ChatCompletionToolTypeFunction),
 
 			Function: openai.F(shared.FunctionDefinitionParam{
-				Name:        openai.F(t.Name),
+				Name:   openai.F(t.Name),
+				Strict: openai.F(true),
+
 				Description: openai.F(t.Description),
 				Parameters:  openai.F(shared.FunctionParameters(t.Parameters)),
-				//Strict:      openai.F(true),
 			}),
 		}
 
