@@ -33,9 +33,7 @@ func (h *Handler) handleExtract(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	options := &extractor.ExtractOptions{}
-
-	document, err := p.Extract(r.Context(), input, options)
+	document, err := p.Extract(r.Context(), input, nil)
 
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)

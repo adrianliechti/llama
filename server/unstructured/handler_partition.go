@@ -23,7 +23,11 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if input.URL == "" {
-		file, header, err := r.FormFile("files")
+		file, header, err := r.FormFile("file")
+
+		if err != nil {
+			file, header, err = r.FormFile("files")
+		}
 
 		if err != nil {
 			writeError(w, http.StatusBadRequest, err)
