@@ -80,22 +80,24 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			chunk := stream.Current()
 			completion.AddChunk(chunk)
 
-			if len(chunk.Choices) > 0 {
-				reason := openai.ChatCompletionChoicesFinishReason(chunk.Choices[0].FinishReason)
+			if len(chunk.Choices) == 0 {
+				continue
+			}
 
-				completion := provider.Completion{
-					ID:     completion.ID,
-					Reason: toCompletionResult(reason),
+			completion := provider.Completion{
+				ID:     completion.ID,
+				Reason: toDeltaCompletionResult(chunk.Choices[0].FinishReason),
 
-					Message: provider.Message{
-						Role:    provider.MessageRoleAssistant,
-						Content: chunk.Choices[0].Delta.Content,
-					},
-				}
+				Message: provider.Message{
+					Role:    provider.MessageRoleAssistant,
+					Content: chunk.Choices[0].Delta.Content,
 
-				if err := options.Stream(ctx, completion); err != nil {
-					return nil, err
-				}
+					ToolCalls: toDeltaToolCalls(chunk.Choices[0].Delta.ToolCalls),
+				},
+			}
+
+			if err := options.Stream(ctx, completion); err != nil {
+				return nil, err
 			}
 		}
 
@@ -217,6 +219,10 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 	}
 
 	for _, t := range options.Tools {
+		if t.Name == "" {
+			continue
+		}
+
 		tool := openai.ChatCompletionToolParam{
 			Type: openai.F(openai.ChatCompletionToolTypeFunction),
 
@@ -242,6 +248,23 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 	return req, nil
 }
 
+func toDeltaToolCalls(calls []openai.ChatCompletionChunkChoicesDeltaToolCall) []provider.ToolCall {
+	var result []provider.ToolCall
+
+	for _, c := range calls {
+		call := provider.ToolCall{
+			ID: c.ID,
+
+			Name:      c.Function.Name,
+			Arguments: c.Function.Arguments,
+		}
+
+		result = append(result, call)
+	}
+
+	return result
+}
+
 func toToolCalls(calls []openai.ChatCompletionMessageToolCall) []provider.ToolCall {
 	var result []provider.ToolCall
 
@@ -259,6 +282,25 @@ func toToolCalls(calls []openai.ChatCompletionMessageToolCall) []provider.ToolCa
 	}
 
 	return result
+}
+
+func toDeltaCompletionResult(val openai.ChatCompletionChunkChoicesFinishReason) provider.CompletionReason {
+	switch val {
+	case openai.ChatCompletionChunkChoicesFinishReasonStop:
+		return provider.CompletionReasonStop
+
+	case openai.ChatCompletionChunkChoicesFinishReasonLength:
+		return provider.CompletionReasonLength
+
+	case openai.ChatCompletionChunkChoicesFinishReasonToolCalls:
+		return provider.CompletionReasonTool
+
+	case openai.ChatCompletionChunkChoicesFinishReasonContentFilter:
+		return provider.CompletionReasonFilter
+
+	default:
+		return ""
+	}
 }
 
 func toCompletionResult(val openai.ChatCompletionChoicesFinishReason) provider.CompletionReason {

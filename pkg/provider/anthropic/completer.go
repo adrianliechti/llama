@@ -76,24 +76,44 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 		for stream.Next() {
 			event := stream.Current()
-			message.Accumulate(event)
 
-			switch delta := event.Delta.(type) {
-			case anthropic.ContentBlockDeltaEventDelta:
-				if delta.Text != "" {
-					completion := provider.Completion{
-						ID: message.ID,
+			if err := message.Accumulate(event); err != nil {
+				return nil, err
+			}
 
-						Message: provider.Message{
-							Role:    provider.MessageRoleAssistant,
-							Content: delta.Text,
+			completion := provider.Completion{
+				ID: message.ID,
+
+				Message: provider.Message{},
+			}
+
+			switch event := event.AsUnion().(type) {
+			case anthropic.ContentBlockStartEvent:
+				if event.ContentBlock.Name != "" {
+					completion.Message.ToolCalls = []provider.ToolCall{
+						{
+							ID:   event.ContentBlock.ID,
+							Name: event.ContentBlock.Name,
 						},
 					}
+				}
 
-					if err := options.Stream(ctx, completion); err != nil {
-						return nil, err
+			case anthropic.ContentBlockDeltaEvent:
+				if event.Delta.Text != "" {
+					completion.Message.Content = event.Delta.Text
+				}
+
+				if event.Delta.PartialJSON != "" {
+					completion.Message.ToolCalls = []provider.ToolCall{
+						{
+							Arguments: event.Delta.PartialJSON,
+						},
 					}
 				}
+			}
+
+			if err := options.Stream(ctx, completion); err != nil {
+				return nil, err
 			}
 		}
 
@@ -202,6 +222,10 @@ func (c *Completer) convertMessageRequest(input []provider.Message, options *pro
 	}
 
 	for _, t := range options.Tools {
+		if t.Name == "" {
+			continue
+		}
+
 		tool := anthropic.ToolParam{
 			Name:        anthropic.F(t.Name),
 			Description: anthropic.F(t.Description),
