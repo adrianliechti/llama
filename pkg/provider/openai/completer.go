@@ -270,16 +270,14 @@ func toToolCalls(calls []openai.ChatCompletionMessageToolCall) []provider.ToolCa
 	var result []provider.ToolCall
 
 	for _, c := range calls {
-		if c.Function.Name != "" || c.Function.Arguments != "" {
-			call := provider.ToolCall{
-				ID: c.ID,
+		call := provider.ToolCall{
+			ID: c.ID,
 
-				Name:      c.Function.Name,
-				Arguments: c.Function.Arguments,
-			}
-
-			result = append(result, call)
+			Name:      c.Function.Name,
+			Arguments: c.Function.Arguments,
 		}
+
+		result = append(result, call)
 	}
 
 	return result

@@ -64,7 +64,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 	}
 
 	if len(c.messages) > 0 {
-		values, err := template.ApplyMessages(c.messages, nil)
+		values, err := template.Messages(c.messages, nil)
 
 		if err != nil {
 			return nil, err
