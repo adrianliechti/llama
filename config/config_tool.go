@@ -13,6 +13,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool/custom"
 	"github.com/adrianliechti/llama/pkg/tool/draw"
 	"github.com/adrianliechti/llama/pkg/tool/duckduckgo"
+	"github.com/adrianliechti/llama/pkg/tool/memory"
 	"github.com/adrianliechti/llama/pkg/tool/retriever"
 	"github.com/adrianliechti/llama/pkg/tool/searxng"
 	"github.com/adrianliechti/llama/pkg/tool/speak"
@@ -135,6 +136,9 @@ func createTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	case "duckduckgo":
 		return duckduckgoTool(cfg, context)
 
+	case "memory":
+		return memoryTool(cfg, context)
+
 	case "retriever":
 		return retrieverTool(cfg, context)
 
@@ -216,6 +220,12 @@ func duckduckgoTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	}
 
 	return duckduckgo.New(options...)
+}
+
+func memoryTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+	var options []memory.Option
+
+	return memory.New(options...)
 }
 
 func retrieverTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
