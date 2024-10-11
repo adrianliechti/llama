@@ -6,7 +6,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-func ApplyMessage(message provider.Message, data any) (provider.Message, error) {
+func Message(message provider.Message, data any) (provider.Message, error) {
 	t, err := NewTemplate(message.Content)
 
 	if err != nil {
@@ -24,11 +24,11 @@ func ApplyMessage(message provider.Message, data any) (provider.Message, error) 
 	return message, nil
 }
 
-func ApplyMessages(messages []provider.Message, data any) ([]provider.Message, error) {
+func Messages(messages []provider.Message, data any) ([]provider.Message, error) {
 	result := slices.Clone(messages)
 
 	for i, m := range result {
-		message, err := ApplyMessage(m, data)
+		message, err := Message(m, data)
 
 		if err != nil {
 			return nil, err
