@@ -40,8 +40,8 @@ func (*Tool) Parameters() map[string]any {
 		"type": "object",
 
 		"properties": map[string]any{
-			"query": map[string]any{
-				"claim":       "string",
+			"claim": map[string]any{
+				"type":        "string",
 				"description": "the information to persist across conversations",
 			},
 		},
@@ -61,5 +61,9 @@ func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, err
 
 	println(claim)
 
-	return "ok", nil
+	result := map[string]any{
+		"status": "ok",
+	}
+
+	return result, nil
 }
