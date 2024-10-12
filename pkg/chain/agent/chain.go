@@ -95,8 +95,6 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 	var result *provider.Completion
 
 	inputOptions := &provider.CompleteOptions{
-		Stream: options.Stream,
-
 		Tools: to.Values(inputTools),
 
 		MaxTokens:   options.MaxTokens,
@@ -105,8 +103,46 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		Format: options.Format,
 	}
 
-	if len(options.Tools) > 0 {
-		inputOptions.Stream = nil
+	var lastToolCallID string
+	var lastToolCallName string
+
+	streamToolCalls := map[string]provider.ToolCall{}
+
+	stream := func(ctx context.Context, completion provider.Completion) error {
+		for _, t := range completion.Message.ToolCalls {
+			if t.ID != "" {
+				lastToolCallID = t.ID
+			}
+
+			if t.Name != "" {
+				lastToolCallName = t.Name
+			}
+
+			if lastToolCallName == "" {
+				continue
+			}
+
+			if _, found := agentTools[lastToolCallName]; !found {
+				call := streamToolCalls[lastToolCallID]
+				call.ID = lastToolCallID
+				call.Name = lastToolCallName
+				call.Arguments += t.Arguments
+
+				streamToolCalls[lastToolCallID] = call
+			}
+		}
+
+		if completion.Message.Content != "" || completion.Reason != "" {
+			completion.Message.ToolCalls = to.Values(streamToolCalls)
+
+			return options.Stream(ctx, completion)
+		}
+
+		return nil
+	}
+
+	if options.Stream != nil {
+		inputOptions.Stream = stream
 	}
 
 	for {
@@ -163,12 +199,6 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	if result == nil {
 		return nil, errors.New("unable to handle request")
-	}
-
-	if inputOptions.Stream == nil && options.Stream != nil {
-		if err := options.Stream(ctx, *result); err != nil {
-			return nil, err
-		}
 	}
 
 	return result, nil
