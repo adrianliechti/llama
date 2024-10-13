@@ -9,24 +9,24 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
-func (cfg *Config) RegisterSynthesizer(model string, p provider.Synthesizer) {
-	cfg.RegisterModel(model)
+func (cfg *Config) RegisterSynthesizer(id string, p provider.Synthesizer) {
+	cfg.RegisterModel(id)
 
 	if cfg.synthesizer == nil {
 		cfg.synthesizer = make(map[string]provider.Synthesizer)
 	}
 
-	cfg.synthesizer[model] = p
+	cfg.synthesizer[id] = p
 }
 
-func (cfg *Config) Synthesizer(model string) (provider.Synthesizer, error) {
+func (cfg *Config) Synthesizer(id string) (provider.Synthesizer, error) {
 	if cfg.synthesizer != nil {
-		if s, ok := cfg.synthesizer[model]; ok {
+		if s, ok := cfg.synthesizer[id]; ok {
 			return s, nil
 		}
 	}
 
-	return nil, errors.New("synthesizer not found: " + model)
+	return nil, errors.New("synthesizer not found: " + id)
 }
 
 func createSynthesizer(cfg providerConfig, model modelContext) (provider.Synthesizer, error) {

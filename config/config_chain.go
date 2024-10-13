@@ -21,14 +21,14 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool"
 )
 
-func (cfg *Config) RegisterChain(model string, p chain.Provider) {
-	cfg.RegisterModel(model)
+func (cfg *Config) RegisterChain(id string, p chain.Provider) {
+	cfg.RegisterModel(id)
 
 	if cfg.chains == nil {
 		cfg.chains = make(map[string]chain.Provider)
 	}
 
-	cfg.chains[model] = p
+	cfg.chains[id] = p
 }
 
 type chainConfig struct {

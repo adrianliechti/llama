@@ -10,24 +10,24 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/replicate/flux"
 )
 
-func (cfg *Config) RegisterRenderer(model string, p provider.Renderer) {
-	cfg.RegisterModel(model)
+func (cfg *Config) RegisterRenderer(id string, p provider.Renderer) {
+	cfg.RegisterModel(id)
 
 	if cfg.renderer == nil {
 		cfg.renderer = make(map[string]provider.Renderer)
 	}
 
-	cfg.renderer[model] = p
+	cfg.renderer[id] = p
 }
 
-func (cfg *Config) Renderer(model string) (provider.Renderer, error) {
+func (cfg *Config) Renderer(id string) (provider.Renderer, error) {
 	if cfg.renderer != nil {
-		if t, ok := cfg.renderer[model]; ok {
+		if t, ok := cfg.renderer[id]; ok {
 			return t, nil
 		}
 	}
 
-	return nil, errors.New("renderer not found: " + model)
+	return nil, errors.New("renderer not found: " + id)
 }
 
 func createRenderer(cfg providerConfig, model modelContext) (provider.Renderer, error) {

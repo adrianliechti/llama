@@ -19,30 +19,30 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
-func (cfg *Config) RegisterCompleter(model string, p provider.Completer) {
-	cfg.RegisterModel(model)
+func (cfg *Config) RegisterCompleter(id string, p provider.Completer) {
+	cfg.RegisterModel(id)
 
 	if cfg.completer == nil {
 		cfg.completer = make(map[string]provider.Completer)
 	}
 
-	cfg.completer[model] = p
+	cfg.completer[id] = p
 }
 
-func (cfg *Config) Completer(model string) (provider.Completer, error) {
+func (cfg *Config) Completer(id string) (provider.Completer, error) {
 	if cfg.completer != nil {
-		if c, ok := cfg.completer[model]; ok {
+		if c, ok := cfg.completer[id]; ok {
 			return c, nil
 		}
 	}
 
 	if cfg.chains != nil {
-		if c, ok := cfg.chains[model]; ok {
+		if c, ok := cfg.chains[id]; ok {
 			return c, nil
 		}
 	}
 
-	return nil, errors.New("completer not found: " + model)
+	return nil, errors.New("completer not found: " + id)
 }
 
 func createCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {

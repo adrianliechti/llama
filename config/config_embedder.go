@@ -15,24 +15,24 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
-func (cfg *Config) RegisterEmbedder(model string, p provider.Embedder) {
-	cfg.RegisterModel(model)
+func (cfg *Config) RegisterEmbedder(id string, p provider.Embedder) {
+	cfg.RegisterModel(id)
 
 	if cfg.embedder == nil {
 		cfg.embedder = make(map[string]provider.Embedder)
 	}
 
-	cfg.embedder[model] = p
+	cfg.embedder[id] = p
 }
 
-func (cfg *Config) Embedder(model string) (provider.Embedder, error) {
+func (cfg *Config) Embedder(id string) (provider.Embedder, error) {
 	if cfg.embedder != nil {
-		if e, ok := cfg.embedder[model]; ok {
+		if e, ok := cfg.embedder[id]; ok {
 			return e, nil
 		}
 	}
 
-	return nil, errors.New("embedder not found: " + model)
+	return nil, errors.New("embedder not found: " + id)
 }
 
 func createEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {

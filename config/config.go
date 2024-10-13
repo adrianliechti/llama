@@ -104,6 +104,7 @@ type configFile struct {
 	Indexes map[string]indexConfig `yaml:"indexes"`
 
 	Extractors  map[string]extractorConfig  `yaml:"extractors"`
+	Segmenters  map[string]segmenterConfig  `yaml:"segmenters"`
 	Translators map[string]translatorConfig `yaml:"translators"`
 
 	Tools  map[string]toolConfig  `yaml:"tools"`

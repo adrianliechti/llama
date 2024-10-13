@@ -15,12 +15,12 @@ import (
 	"github.com/adrianliechti/llama/pkg/otel"
 )
 
-func (cfg *Config) RegisterIndex(name, alias string, p index.Provider) {
+func (cfg *Config) RegisterIndex(id string, p index.Provider) {
 	if cfg.indexes == nil {
 		cfg.indexes = make(map[string]index.Provider)
 	}
 
-	cfg.indexes[alias] = p
+	cfg.indexes[id] = p
 }
 
 func (cfg *Config) Index(id string) (index.Provider, error) {
@@ -77,7 +77,7 @@ func (cfg *Config) registerIndexes(f *configFile) error {
 			index = otel.NewIndex(i.Type, id, index)
 		}
 
-		cfg.RegisterIndex(i.Type, id, index)
+		cfg.RegisterIndex(id, index)
 	}
 
 	return nil

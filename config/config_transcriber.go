@@ -10,24 +10,24 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/whisper"
 )
 
-func (cfg *Config) RegisterTranscriber(model string, p provider.Transcriber) {
-	cfg.RegisterModel(model)
+func (cfg *Config) RegisterTranscriber(id string, p provider.Transcriber) {
+	cfg.RegisterModel(id)
 
 	if cfg.transcriber == nil {
 		cfg.transcriber = make(map[string]provider.Transcriber)
 	}
 
-	cfg.transcriber[model] = p
+	cfg.transcriber[id] = p
 }
 
-func (cfg *Config) Transcriber(model string) (provider.Transcriber, error) {
+func (cfg *Config) Transcriber(id string) (provider.Transcriber, error) {
 	if cfg.transcriber != nil {
-		if t, ok := cfg.transcriber[model]; ok {
+		if t, ok := cfg.transcriber[id]; ok {
 			return t, nil
 		}
 	}
 
-	return nil, errors.New("transcriber not found: " + model)
+	return nil, errors.New("transcriber not found: " + id)
 }
 
 func createTranscriber(cfg providerConfig, model modelContext) (provider.Transcriber, error) {

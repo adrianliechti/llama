@@ -9,24 +9,24 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/jina"
 )
 
-func (cfg *Config) RegisterReranker(model string, p provider.Reranker) {
-	cfg.RegisterModel(model)
+func (cfg *Config) RegisterReranker(id string, p provider.Reranker) {
+	cfg.RegisterModel(id)
 
 	if cfg.reranker == nil {
 		cfg.reranker = make(map[string]provider.Reranker)
 	}
 
-	cfg.reranker[model] = p
+	cfg.reranker[id] = p
 }
 
-func (cfg *Config) Reranker(model string) (provider.Reranker, error) {
+func (cfg *Config) Reranker(id string) (provider.Reranker, error) {
 	if cfg.reranker != nil {
-		if e, ok := cfg.reranker[model]; ok {
+		if e, ok := cfg.reranker[id]; ok {
 			return e, nil
 		}
 	}
 
-	return nil, errors.New("reranker not found: " + model)
+	return nil, errors.New("reranker not found: " + id)
 }
 
 func createReranker(cfg providerConfig, model modelContext) (provider.Reranker, error) {
