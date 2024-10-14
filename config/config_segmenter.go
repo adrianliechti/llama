@@ -10,12 +10,17 @@ import (
 	"github.com/adrianliechti/llama/pkg/segmenter/jina"
 	"github.com/adrianliechti/llama/pkg/segmenter/text"
 	"github.com/adrianliechti/llama/pkg/segmenter/unstructured"
+
 	"golang.org/x/time/rate"
 )
 
 func (cfg *Config) RegisterSegmenter(id string, p segmenter.Provider) {
 	if cfg.segmenter == nil {
 		cfg.segmenter = make(map[string]segmenter.Provider)
+	}
+
+	if _, ok := cfg.segmenter[""]; !ok {
+		cfg.segmenter[""] = p
 	}
 
 	cfg.segmenter[id] = p
@@ -29,11 +34,6 @@ func (cfg *Config) Segmenter(id string) (segmenter.Provider, error) {
 	}
 
 	if id == "" {
-		// Take any Segmenter
-		for _, p := range cfg.segmenter {
-			return p, nil
-		}
-
 		return text.New()
 	}
 
@@ -53,21 +53,27 @@ type segmenterContext struct {
 	Limiter *rate.Limiter
 }
 
-func (cfg *Config) RegisterSegmenters(f *configFile) error {
-	for id, e := range f.Segmenters {
-		context := segmenterContext{}
+func (cfg *Config) registerSegmenters(f *configFile) error {
+	var configs map[string]segmenterConfig
 
-		limit := e.Limit
+	if err := f.Segmenters.Decode(&configs); err != nil {
+		return err
+	}
 
-		if limit == nil {
-			limit = e.Limit
+	for _, node := range f.Segmenters.Content {
+		id := node.Value
+
+		config, ok := configs[node.Value]
+
+		if !ok {
+			continue
 		}
 
-		if limit != nil {
-			context.Limiter = rate.NewLimiter(rate.Limit(*limit), *limit)
+		context := segmenterContext{
+			Limiter: createLimiter(config.Limit),
 		}
 
-		segmenter, err := createSegmenter(e, context)
+		segmenter, err := createSegmenter(config, context)
 
 		if err != nil {
 			return err

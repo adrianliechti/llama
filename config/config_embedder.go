@@ -22,6 +22,10 @@ func (cfg *Config) RegisterEmbedder(id string, p provider.Embedder) {
 		cfg.embedder = make(map[string]provider.Embedder)
 	}
 
+	if _, ok := cfg.embedder[""]; !ok {
+		cfg.embedder[""] = p
+	}
+
 	cfg.embedder[id] = p
 }
 

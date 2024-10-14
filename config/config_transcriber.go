@@ -17,6 +17,10 @@ func (cfg *Config) RegisterTranscriber(id string, p provider.Transcriber) {
 		cfg.transcriber = make(map[string]provider.Transcriber)
 	}
 
+	if _, ok := cfg.transcriber[""]; !ok {
+		cfg.transcriber[""] = p
+	}
+
 	cfg.transcriber[id] = p
 }
 

@@ -26,6 +26,10 @@ func (cfg *Config) RegisterCompleter(id string, p provider.Completer) {
 		cfg.completer = make(map[string]provider.Completer)
 	}
 
+	if _, ok := cfg.completer[""]; !ok {
+		cfg.completer[""] = p
+	}
+
 	cfg.completer[id] = p
 }
 

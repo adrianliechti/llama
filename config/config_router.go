@@ -19,10 +19,24 @@ type routerContext struct {
 }
 
 func (cfg *Config) registerRouters(f *configFile) error {
-	for id, r := range f.Routers {
+	var configs map[string]routerConfig
+
+	if err := f.Routers.Decode(&configs); err != nil {
+		return err
+	}
+
+	for _, node := range f.Routers.Content {
+		id := node.Value
+
+		config, ok := configs[node.Value]
+
+		if !ok {
+			continue
+		}
+
 		context := routerContext{}
 
-		for _, m := range r.Models {
+		for _, m := range config.Models {
 			completer, err := cfg.Completer(m)
 
 			if err != nil {
@@ -32,7 +46,7 @@ func (cfg *Config) registerRouters(f *configFile) error {
 			context.Completers = append(context.Completers, completer)
 		}
 
-		router, err := createRouter(r, context)
+		router, err := createRouter(config, context)
 
 		if err != nil {
 			return err

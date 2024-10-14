@@ -14,6 +14,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool"
 	"github.com/adrianliechti/llama/pkg/translator"
 
+	"golang.org/x/time/rate"
 	"gopkg.in/yaml.v3"
 )
 
@@ -61,23 +62,23 @@ func Parse(path string) (*Config, error) {
 		return nil, err
 	}
 
+	if err := c.registerExtractors(file); err != nil {
+		return nil, err
+	}
+
+	if err := c.registerSegmenters(file); err != nil {
+		return nil, err
+	}
+
+	if err := c.registerSummarizers(file); err != nil {
+		return nil, err
+	}
+
+	if err := c.registerTranslators(file); err != nil {
+		return nil, err
+	}
+
 	if err := c.registerIndexes(file); err != nil {
-		return nil, err
-	}
-
-	if err := c.RegisterExtractors(file); err != nil {
-		return nil, err
-	}
-
-	if err := c.RegisterSegmenters(file); err != nil {
-		return nil, err
-	}
-
-	if err := c.RegisterSummarizers(file); err != nil {
-		return nil, err
-	}
-
-	if err := c.RegisterTranslators(file); err != nil {
 		return nil, err
 	}
 
@@ -101,16 +102,16 @@ type configFile struct {
 
 	Providers []providerConfig `yaml:"providers"`
 
-	Indexes map[string]indexConfig `yaml:"indexes"`
+	Indexes yaml.Node `yaml:"indexes"`
 
-	Extractors  map[string]extractorConfig  `yaml:"extractors"`
-	Segmenters  map[string]segmenterConfig  `yaml:"segmenters"`
-	Translators map[string]translatorConfig `yaml:"translators"`
+	Extractors  yaml.Node `yaml:"extractors"`
+	Segmenters  yaml.Node `yaml:"segmenters"`
+	Translators yaml.Node `yaml:"translators"`
 
-	Tools  map[string]toolConfig  `yaml:"tools"`
-	Chains map[string]chainConfig `yaml:"chains"`
+	Tools  yaml.Node `yaml:"tools"`
+	Chains yaml.Node `yaml:"chains"`
 
-	Routers map[string]routerConfig `yaml:"routers"`
+	Routers yaml.Node `yaml:"routers"`
 }
 
 func parseFile(path string) (*configFile, error) {
@@ -132,4 +133,12 @@ func parseFile(path string) (*configFile, error) {
 	}
 
 	return &config, nil
+}
+
+func createLimiter(limit *int) *rate.Limiter {
+	if limit == nil {
+		return nil
+	}
+
+	return rate.NewLimiter(rate.Limit(*limit), *limit)
 }

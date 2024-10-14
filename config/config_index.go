@@ -20,6 +20,10 @@ func (cfg *Config) RegisterIndex(id string, p index.Provider) {
 		cfg.indexes = make(map[string]index.Provider)
 	}
 
+	if _, ok := cfg.indexes[""]; !ok {
+		cfg.indexes[""] = p
+	}
+
 	cfg.indexes[id] = p
 }
 
@@ -51,30 +55,51 @@ type indexContext struct {
 }
 
 func (cfg *Config) registerIndexes(f *configFile) error {
-	for id, i := range f.Indexes {
-		var err error
+	var configs map[string]indexConfig
+
+	if err := f.Indexes.Decode(&configs); err != nil {
+		return err
+	}
+
+	for _, node := range f.Indexes.Content {
+		id := node.Value
+
+		config, ok := configs[node.Value]
+
+		if !ok {
+			continue
+		}
+
 		context := indexContext{}
 
-		if i.Embedder != "" {
-			if context.Embedder, err = cfg.Embedder(i.Embedder); err != nil {
+		if config.Embedder != "" {
+			embedder, err := cfg.Embedder(config.Embedder)
+
+			if err != nil {
 				return err
 			}
+
+			context.Embedder = embedder
 		}
 
-		if i.Reranker != "" {
-			if context.Reranker, err = cfg.Reranker(i.Reranker); err != nil {
+		if config.Reranker != "" {
+			reranker, err := cfg.Reranker(config.Reranker)
+
+			if err != nil {
 				return err
 			}
+
+			context.Reranker = reranker
 		}
 
-		index, err := createIndex(i, context)
+		index, err := createIndex(config, context)
 
 		if err != nil {
 			return err
 		}
 
 		if _, ok := index.(otel.Index); !ok {
-			index = otel.NewIndex(i.Type, id, index)
+			index = otel.NewIndex(config.Type, id, index)
 		}
 
 		cfg.RegisterIndex(id, index)

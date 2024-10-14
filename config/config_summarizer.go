@@ -11,6 +11,10 @@ func (cfg *Config) RegisterSummarizer(id string, p summarizer.Provider) {
 		cfg.summarizer = make(map[string]summarizer.Provider)
 	}
 
+	if _, ok := cfg.summarizer[""]; !ok {
+		cfg.summarizer[""] = p
+	}
+
 	cfg.summarizer[id] = p
 }
 
@@ -24,6 +28,6 @@ func (cfg *Config) Summarizer(id string) (summarizer.Provider, error) {
 	return nil, errors.New("summarizer not found: " + id)
 }
 
-func (cfg *Config) RegisterSummarizers(f *configFile) error {
+func (cfg *Config) registerSummarizers(f *configFile) error {
 	return nil
 }

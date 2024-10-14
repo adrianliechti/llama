@@ -16,6 +16,10 @@ func (cfg *Config) RegisterSynthesizer(id string, p provider.Synthesizer) {
 		cfg.synthesizer = make(map[string]provider.Synthesizer)
 	}
 
+	if _, ok := cfg.synthesizer[""]; !ok {
+		cfg.synthesizer[""] = p
+	}
+
 	cfg.synthesizer[id] = p
 }
 

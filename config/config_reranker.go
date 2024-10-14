@@ -16,6 +16,10 @@ func (cfg *Config) RegisterReranker(id string, p provider.Reranker) {
 		cfg.reranker = make(map[string]provider.Reranker)
 	}
 
+	if _, ok := cfg.reranker[""]; !ok {
+		cfg.reranker[""] = p
+	}
+
 	cfg.reranker[id] = p
 }
 

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"golang.org/x/time/rate"
 )
 

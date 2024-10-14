@@ -17,6 +17,10 @@ func (cfg *Config) RegisterRenderer(id string, p provider.Renderer) {
 		cfg.renderer = make(map[string]provider.Renderer)
 	}
 
+	if _, ok := cfg.renderer[""]; !ok {
+		cfg.renderer[""] = p
+	}
+
 	cfg.renderer[id] = p
 }
 

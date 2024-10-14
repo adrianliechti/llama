@@ -9,7 +9,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/template"
-	"golang.org/x/time/rate"
 
 	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/chain/agent"
@@ -19,6 +18,8 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/to"
 	"github.com/adrianliechti/llama/pkg/tool"
+
+	"golang.org/x/time/rate"
 )
 
 func (cfg *Config) RegisterChain(id string, p chain.Provider) {
@@ -62,41 +63,49 @@ type chainContext struct {
 }
 
 func (cfg *Config) registerChains(f *configFile) error {
-	for id, c := range f.Chains {
-		var err error
+	var configs map[string]chainConfig
+
+	if err := f.Chains.Decode(&configs); err != nil {
+		return err
+	}
+
+	for _, node := range f.Chains.Content {
+		id := node.Value
+
+		config, ok := configs[node.Value]
+
+		if !ok {
+			continue
+		}
 
 		context := chainContext{
 			Tools:    make(map[string]tool.Tool),
 			Messages: make([]provider.Message, 0),
+
+			Limiter: createLimiter(config.Limit),
 		}
 
-		limit := c.Limit
+		if config.Index != "" {
+			index, err := cfg.Index(config.Index)
 
-		if limit == nil {
-			limit = c.Limit
-		}
-
-		if limit != nil {
-			context.Limiter = rate.NewLimiter(rate.Limit(*limit), *limit)
-		}
-
-		if c.Index != "" {
-			if context.Index, err = cfg.Index(c.Index); err != nil {
+			if err != nil {
 				return err
 			}
+
+			context.Index = index
 		}
 
-		if c.Model != "" {
-			if p, err := cfg.Completer(c.Model); err == nil {
+		if config.Model != "" {
+			if p, err := cfg.Completer(config.Model); err == nil {
 				context.Completer = p
 			}
 
-			if p, err := cfg.Embedder(c.Model); err == nil {
+			if p, err := cfg.Embedder(config.Model); err == nil {
 				context.Embedder = p
 			}
 		}
 
-		for _, t := range c.Tools {
+		for _, t := range config.Tools {
 			tool, err := cfg.Tool(t)
 
 			if err != nil {
@@ -106,19 +115,27 @@ func (cfg *Config) registerChains(f *configFile) error {
 			context.Tools[t] = tool
 		}
 
-		if c.Template != "" {
-			if context.Template, err = parseTemplate(c.Template); err != nil {
+		if config.Template != "" {
+			template, err := parseTemplate(config.Template)
+
+			if err != nil {
 				return err
 			}
+
+			context.Template = template
 		}
 
-		if c.Messages != nil {
-			if context.Messages, err = parseMessages(c.Messages); err != nil {
+		if config.Messages != nil {
+			messages, err := parseMessages(config.Messages)
+
+			if err != nil {
 				return err
 			}
+
+			context.Messages = messages
 		}
 
-		chain, err := createChain(c, context)
+		chain, err := createChain(config, context)
 
 		if err != nil {
 			return err
@@ -129,7 +146,7 @@ func (cfg *Config) registerChains(f *configFile) error {
 		}
 
 		if _, ok := chain.(otel.Chain); !ok {
-			chain = otel.NewChain(c.Type, id, chain)
+			chain = otel.NewChain(config.Type, id, chain)
 		}
 
 		cfg.RegisterChain(id, chain)

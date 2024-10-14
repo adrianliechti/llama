@@ -68,51 +68,63 @@ type toolContext struct {
 }
 
 func (cfg *Config) registerTools(f *configFile) error {
-	for id, t := range f.Tools {
-		var err error
+	var configs map[string]toolConfig
+
+	if err := f.Tools.Decode(&configs); err != nil {
+		return err
+	}
+
+	for _, node := range f.Tools.Content {
+		id := node.Value
+
+		config, ok := configs[node.Value]
+
+		if !ok {
+			continue
+		}
 
 		context := toolContext{}
 
-		if p, err := cfg.Index(t.Index); err == nil {
+		if p, err := cfg.Index(config.Index); err == nil {
 			context.Index = p
 		}
 
-		if p, err := cfg.Extractor(t.Extractor); err == nil {
+		if p, err := cfg.Extractor(config.Extractor); err == nil {
 			context.Extractor = p
 		}
 
-		if p, err := cfg.Translator(t.Translator); err == nil {
+		if p, err := cfg.Translator(config.Translator); err == nil {
 			context.Translator = p
 		}
 
-		if p, err := cfg.Index(t.Provider); err == nil {
+		if p, err := cfg.Index(config.Provider); err == nil {
 			context.Index = p
 		}
 
-		if p, err := cfg.Extractor(t.Provider); err == nil {
+		if p, err := cfg.Extractor(config.Provider); err == nil {
 			context.Extractor = p
 		}
 
-		if p, err := cfg.Translator(t.Provider); err == nil {
+		if p, err := cfg.Translator(config.Provider); err == nil {
 			context.Translator = p
 		}
 
-		if p, err := cfg.Renderer(t.Model); err == nil {
+		if p, err := cfg.Renderer(config.Model); err == nil {
 			context.Renderer = p
 		}
 
-		if p, err := cfg.Synthesizer(t.Model); err == nil {
+		if p, err := cfg.Synthesizer(config.Model); err == nil {
 			context.Synthesizer = p
 		}
 
-		tool, err := createTool(t, context)
+		tool, err := createTool(config, context)
 
 		if err != nil {
 			return err
 		}
 
 		if _, ok := tool.(otel.Tool); !ok {
-			tool = otel.NewTool(t.Type, tool)
+			tool = otel.NewTool(config.Type, tool)
 		}
 
 		cfg.RegisterTool(id, tool)

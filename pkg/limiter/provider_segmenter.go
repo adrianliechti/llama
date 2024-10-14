@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/adrianliechti/llama/pkg/segmenter"
+
 	"golang.org/x/time/rate"
 )
 
