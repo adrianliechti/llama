@@ -52,15 +52,29 @@ func New(url string, options ...Option) (*Client, error) {
 }
 
 func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
-	return nil, errors.ErrUnsupported
+	result, err := c.client.List(ctx, &ListRequest{})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return convertDocuments(result.Documents), nil
 }
 
 func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
-	return errors.ErrUnsupported
+	_, err := c.client.Index(ctx, &IndexRequest{
+		Documents: toDocuments(documents),
+	})
+
+	return err
 }
 
 func (c *Client) Delete(ctx context.Context, ids ...string) error {
-	return errors.ErrUnsupported
+	_, err := c.client.Delete(ctx, &DeleteRequest{
+		Ids: ids,
+	})
+
+	return err
 }
 
 func (c *Client) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
@@ -85,27 +99,71 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		return nil, err
 	}
 
-	var results []index.Result
+	return convertResults(data.Results), nil
+}
 
-	for _, r := range data.Results {
-		result := index.Result{
-			Score: r.Score,
+func convertResult(r *Result) index.Result {
+	return index.Result{
+		Score:    r.Score,
+		Document: convertDocument(r.Document),
+	}
+}
 
-			Document: index.Document{
-				ID: r.Document.Id,
+func convertResults(s []*Result) []index.Result {
+	var result []index.Result
 
-				Title:    r.Document.Title,
-				Content:  r.Document.Content,
-				Location: r.Document.Location,
-
-				Metadata: r.Document.Metadata,
-
-				Embedding: r.Document.Embedding,
-			},
-		}
-
-		results = append(results, result)
+	for _, r := range s {
+		result = append(result, convertResult(r))
 	}
 
-	return results, nil
+	return result
+}
+
+func convertDocument(d *Document) index.Document {
+	return index.Document{
+		ID: d.Id,
+
+		Title:    d.Title,
+		Content:  d.Content,
+		Location: d.Location,
+
+		Metadata: d.Metadata,
+
+		Embedding: d.Embedding,
+	}
+}
+
+func convertDocuments(s []*Document) []index.Document {
+	var result []index.Document
+
+	for _, d := range s {
+		result = append(result, convertDocument(d))
+	}
+
+	return result
+}
+
+func toDocument(d index.Document) *Document {
+	return &Document{
+		Id: d.ID,
+
+		Title:    d.Title,
+		Content:  d.Content,
+		Location: d.Location,
+
+		Metadata: d.Metadata,
+
+		Embedding: d.Embedding,
+	}
+}
+
+func toDocuments(s []index.Document) []*Document {
+	var result []*Document
+
+	for _, d := range s {
+		document := toDocument(d)
+		result = append(result, document)
+	}
+
+	return result
 }
