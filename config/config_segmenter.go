@@ -9,6 +9,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/segmenter"
 	"github.com/adrianliechti/llama/pkg/segmenter/jina"
 	"github.com/adrianliechti/llama/pkg/segmenter/text"
+	"github.com/adrianliechti/llama/pkg/segmenter/unstructured"
 	"golang.org/x/time/rate"
 )
 
@@ -95,6 +96,9 @@ func createSegmenter(cfg segmenterConfig, context segmenterContext) (segmenter.P
 	case "text":
 		return textSegmenter(cfg)
 
+	case "unstructured":
+		return unstructuredSegmenter(cfg)
+
 	default:
 		return nil, errors.New("invalid segmenter type: " + cfg.Type)
 	}
@@ -112,4 +116,14 @@ func jinaSegmenter(cfg segmenterConfig) (segmenter.Provider, error) {
 
 func textSegmenter(cfg segmenterConfig) (segmenter.Provider, error) {
 	return text.New()
+}
+
+func unstructuredSegmenter(cfg segmenterConfig) (segmenter.Provider, error) {
+	var options []unstructured.Option
+
+	if cfg.Token != "" {
+		options = append(options, unstructured.WithToken(cfg.Token))
+	}
+
+	return unstructured.New(cfg.URL, options...)
 }

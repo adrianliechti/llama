@@ -1,4 +1,4 @@
-package jina_test
+package unstructured_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/adrianliechti/llama/pkg/segmenter"
-	"github.com/adrianliechti/llama/pkg/segmenter/jina"
+	"github.com/adrianliechti/llama/pkg/segmenter/unstructured"
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -20,10 +20,9 @@ func TestExtract(t *testing.T) {
 		Started: true,
 
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "ghcr.io/adrianliechti/llama-segmenter",
+			Image:        "quay.io/unstructured-io/unstructured-api:0.0.80",
 			ExposedPorts: []string{"8000/tcp"},
-
-			WaitingFor: wait.ForLog("Application startup complete"),
+			WaitingFor:   wait.ForLog("Application startup complete"),
 		},
 	})
 
@@ -32,7 +31,7 @@ func TestExtract(t *testing.T) {
 	url, err := server.Endpoint(ctx, "")
 	require.NoError(t, err)
 
-	s, err := jina.New("http://" + url)
+	s, err := unstructured.New("http://" + url)
 	require.NoError(t, err)
 
 	input := segmenter.File{
