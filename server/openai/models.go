@@ -65,7 +65,7 @@ var (
 	ResponseFormatJSON ResponseFormat = "json_object"
 )
 
-// // https://platform.openai.com/docs/api-reference/chat/object
+// https://platform.openai.com/docs/api-reference/chat/object
 type FinishReason string
 
 var (
