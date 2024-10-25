@@ -21,7 +21,18 @@ type Tool struct {
 	Name        string
 	Description string
 
+	Strict *bool
+
 	Parameters map[string]any
+}
+
+type Schema struct {
+	Name        string
+	Description string
+
+	Strict *bool
+
+	Schema map[string]any
 }
 
 type Usage struct {

@@ -46,6 +46,7 @@ type CompleteOptions struct {
 	Temperature *float32
 
 	Format CompletionFormat
+	Schema *Schema
 }
 
 type Completion struct {

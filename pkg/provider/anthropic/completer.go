@@ -102,6 +102,10 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 							Name: event.ContentBlock.Name,
 						},
 					}
+
+					if options.Schema != nil {
+						completion.Message.ToolCalls = nil
+					}
 				}
 
 				if err := options.Stream(ctx, completion); err != nil {
@@ -120,6 +124,11 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 						{
 							Arguments: event.Delta.PartialJSON,
 						},
+					}
+
+					if options.Schema != nil {
+						completion.Message.ToolCalls = nil
+						completion.Message.Content = event.Delta.PartialJSON
 					}
 				}
 
@@ -142,6 +151,10 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 						InputTokens:  int(message.Usage.InputTokens),
 						OutputTokens: int(message.Usage.OutputTokens),
 					},
+				}
+
+				if options.Schema != nil && completion.Reason == provider.CompletionReasonTool {
+					completion.Reason = provider.CompletionReasonStop
 				}
 
 				if err := options.Stream(ctx, completion); err != nil {
@@ -261,9 +274,30 @@ func (c *Completer) convertMessageRequest(input []provider.Message, options *pro
 
 		tool := anthropic.ToolParam{
 			Name:        anthropic.F(t.Name),
-			Description: anthropic.F(t.Description),
 			InputSchema: anthropic.F[interface{}](t.Parameters),
 		}
+
+		if t.Description != "" {
+			tool.Description = anthropic.F(t.Description)
+		}
+
+		tools = append(tools, tool)
+	}
+
+	if options.Schema != nil {
+		tool := anthropic.ToolParam{
+			Name:        anthropic.F(options.Schema.Name),
+			InputSchema: anthropic.F(any(options.Schema.Schema)),
+		}
+
+		if options.Schema.Description != "" {
+			tool.Description = anthropic.F(options.Schema.Description)
+		}
+
+		req.ToolChoice = anthropic.F[anthropic.ToolChoiceUnionParam](anthropic.ToolChoiceToolParam{
+			Type: anthropic.F(anthropic.ToolChoiceToolTypeTool),
+			Name: anthropic.F(options.Schema.Name),
+		})
 
 		tools = append(tools, tool)
 	}

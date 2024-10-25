@@ -66,8 +66,20 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.ResponseFormat != nil {
-		if req.ResponseFormat.Type == ResponseFormatJSON {
+		if req.ResponseFormat.Type == ResponseFormatJSONObject || req.ResponseFormat.Type == ResponseFormatJSONSchema {
 			options.Format = provider.CompletionFormatJSON
+		}
+
+		if req.ResponseFormat.JSONSchema != nil {
+			options.Format = provider.CompletionFormatJSON
+
+			options.Schema = &provider.Schema{
+				Name:        req.ResponseFormat.JSONSchema.Name,
+				Description: req.ResponseFormat.JSONSchema.Description,
+
+				Strict: req.ResponseFormat.JSONSchema.Strict,
+				Schema: req.ResponseFormat.JSONSchema.Schema,
+			}
 		}
 	}
 

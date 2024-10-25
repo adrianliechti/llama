@@ -61,8 +61,9 @@ var (
 type ResponseFormat string
 
 var (
-	ResponseFormatText ResponseFormat = "text"
-	ResponseFormatJSON ResponseFormat = "json_object"
+	ResponseFormatText       ResponseFormat = "text"
+	ResponseFormatJSONObject ResponseFormat = "json_object"
+	ResponseFormatJSONSchema ResponseFormat = "json_schema"
 )
 
 // https://platform.openai.com/docs/api-reference/chat/object
@@ -111,7 +112,17 @@ type ChatCompletionRequest struct {
 
 // https://platform.openai.com/docs/api-reference/chat/create
 type ChatCompletionResponseFormat struct {
-	Type ResponseFormat `json:"type"`
+	Type       ResponseFormat `json:"type"`
+	JSONSchema *Schema        `json:"json_schema,omitempty"`
+}
+
+type Schema struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+
+	Strict *bool `json:"strict,omitempty"`
+
+	Schema map[string]any `json:"schema"`
 }
 
 // https://platform.openai.com/docs/api-reference/chat/object
@@ -253,6 +264,8 @@ type ToolCall struct {
 type Function struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
+
+	Strict *bool `json:"strict,omitempty"`
 
 	Parameters map[string]any `json:"parameters"`
 }

@@ -139,9 +139,30 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 	var messages []openai.ChatCompletionMessageParamUnion
 
 	if options.Format == provider.CompletionFormatJSON {
-		req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](shared.ResponseFormatJSONObjectParam{
-			Type: openai.F(openai.ResponseFormatJSONObjectTypeJSONObject),
-		})
+		if options.Schema != nil {
+			schema := shared.ResponseFormatJSONSchemaJSONSchemaParam{
+				Name:   openai.F(options.Schema.Name),
+				Schema: openai.F(any(options.Schema.Schema)),
+			}
+
+			if options.Schema.Description != "" {
+				schema.Description = openai.F(options.Schema.Description)
+			}
+
+			if options.Schema.Strict != nil {
+				schema.Strict = openai.F(*options.Schema.Strict)
+			}
+
+			req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](shared.ResponseFormatJSONSchemaParam{
+				Type: openai.F(openai.ResponseFormatJSONSchemaTypeJSONSchema),
+
+				JSONSchema: openai.F(schema),
+			})
+		} else {
+			req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](shared.ResponseFormatJSONObjectParam{
+				Type: openai.F(openai.ResponseFormatJSONObjectTypeJSONObject),
+			})
+		}
 	}
 
 	if options.Stop != nil {
@@ -223,16 +244,24 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 			continue
 		}
 
+		function := shared.FunctionDefinitionParam{
+			Name: openai.F(t.Name),
+
+			Parameters: openai.F(shared.FunctionParameters(t.Parameters)),
+		}
+
+		if t.Description != "" {
+			function.Description = openai.F(t.Description)
+		}
+
+		if t.Strict != nil {
+			function.Strict = openai.F(*t.Strict)
+		}
+
 		tool := openai.ChatCompletionToolParam{
 			Type: openai.F(openai.ChatCompletionToolTypeFunction),
 
-			Function: openai.F(shared.FunctionDefinitionParam{
-				Name: openai.F(t.Name),
-				//Strict: openai.F(true),
-
-				Description: openai.F(t.Description),
-				Parameters:  openai.F(shared.FunctionParameters(t.Parameters)),
-			}),
+			Function: openai.F(function),
 		}
 
 		tools = append(tools, tool)

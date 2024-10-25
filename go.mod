@@ -8,7 +8,7 @@ require (
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-chi/cors v1.2.1
 	github.com/google/uuid v1.6.0
-	github.com/openai/openai-go v0.1.0-alpha.30
+	github.com/openai/openai-go v0.1.0-alpha.31
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.34.0
 	go.opentelemetry.io/contrib/bridges/otelslog v0.6.0

@@ -279,6 +279,8 @@ func convertGenerateRequest(messages []provider.Message, options *provider.Compl
 			Parameters: t.Parameters,
 		}
 
+		delete(function.Parameters, "additionalProperties")
+
 		functions = append(functions, function)
 	}
 
@@ -287,6 +289,17 @@ func convertGenerateRequest(messages []provider.Message, options *provider.Compl
 			{
 				FunctionDeclarations: functions,
 			},
+		}
+	}
+
+	if options.Format == provider.CompletionFormatJSON {
+		req.Config = &GenerationConfig{
+			ResponseType: "application/json",
+		}
+
+		if options.Schema != nil {
+			req.Config.ResponseSchema = options.Schema.Schema
+			delete(req.Config.ResponseSchema, "additionalProperties")
 		}
 	}
 
@@ -305,6 +318,8 @@ type GenerateRequest struct {
 	Contents []Content `json:"contents"`
 
 	Tools []Tool `json:"tools,omitempty"`
+
+	Config *GenerationConfig `json:"generationConfig,omitempty"`
 }
 
 type Content struct {
@@ -318,6 +333,11 @@ type ContentPart struct {
 
 	FunctionCall     *FunctionCall     `json:"functionCall,omitempty"`
 	FunctionResponse *FunctionResponse `json:"functionResponse,omitempty"`
+}
+
+type GenerationConfig struct {
+	ResponseType   string         `json:"response_mime_type"`
+	ResponseSchema map[string]any `json:"response_schema"`
 }
 
 type FunctionCall struct {
