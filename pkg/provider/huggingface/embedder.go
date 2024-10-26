@@ -47,7 +47,13 @@ func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embeddi
 		"inputs": strings.TrimSpace(content),
 	}
 
-	req, _ := http.NewRequestWithContext(ctx, "POST", e.url, jsonReader(body))
+	url := e.url + "/embed"
+
+	if strings.Contains(e.url, "api-inference.huggingface.co") {
+		url = e.url
+	}
+
+	req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	if e.token != "" {
