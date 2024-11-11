@@ -9,7 +9,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/shared"
 )
 
 var _ provider.Completer = (*Completer)(nil)
@@ -140,7 +139,7 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 
 	if options.Format == provider.CompletionFormatJSON {
 		if options.Schema != nil {
-			schema := shared.ResponseFormatJSONSchemaJSONSchemaParam{
+			schema := openai.ResponseFormatJSONSchemaJSONSchemaParam{
 				Name:   openai.F(options.Schema.Name),
 				Schema: openai.F(any(options.Schema.Schema)),
 			}
@@ -153,13 +152,13 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 				schema.Strict = openai.F(*options.Schema.Strict)
 			}
 
-			req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](shared.ResponseFormatJSONSchemaParam{
+			req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](openai.ResponseFormatJSONSchemaParam{
 				Type: openai.F(openai.ResponseFormatJSONSchemaTypeJSONSchema),
 
 				JSONSchema: openai.F(schema),
 			})
 		} else {
-			req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](shared.ResponseFormatJSONObjectParam{
+			req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](openai.ResponseFormatJSONObjectParam{
 				Type: openai.F(openai.ResponseFormatJSONObjectTypeJSONObject),
 			})
 		}
@@ -244,10 +243,10 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 			continue
 		}
 
-		function := shared.FunctionDefinitionParam{
+		function := openai.FunctionDefinitionParam{
 			Name: openai.F(t.Name),
 
-			Parameters: openai.F(shared.FunctionParameters(t.Parameters)),
+			Parameters: openai.F(openai.FunctionParameters(t.Parameters)),
 		}
 
 		if t.Description != "" {
