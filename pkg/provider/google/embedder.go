@@ -15,7 +15,7 @@ type Embedder struct {
 	*Config
 }
 
-func NewEmbedder(url, model string, options ...Option) (*Embedder, error) {
+func NewEmbedder(model string, options ...Option) (*Embedder, error) {
 	cfg := &Config{
 		client: http.DefaultClient,
 

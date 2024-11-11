@@ -100,7 +100,7 @@ func googleEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, 
 		options = append(options, google.WithToken(cfg.Token))
 	}
 
-	return google.NewEmbedder(cfg.URL, model.ID, options...)
+	return google.NewEmbedder(model.ID, options...)
 }
 
 func huggingfaceEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
