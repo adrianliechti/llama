@@ -9,7 +9,8 @@ const (
 	FluxDev     string = "black-forest-labs/flux-dev"
 	FluxPro     string = "black-forest-labs/flux-pro"
 
-	FluxPro11 string = "black-forest-labs/flux-1.1-pro"
+	FluxPro11      string = "black-forest-labs/flux-1.1-pro"
+	FluxProUltra11 string = "black-forest-labs/flux-1.1-pro-ultra"
 
 	FluxDevRealism string = "xlabs-ai/flux-dev-realism"
 )
@@ -21,6 +22,7 @@ var (
 		FluxSchnell,
 
 		FluxPro11,
+		FluxProUltra11,
 
 		FluxDevRealism,
 	}
