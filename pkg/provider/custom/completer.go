@@ -27,15 +27,15 @@ func NewCompleter(url string, options ...Option) (*Completer, error) {
 		return nil, errors.New("invalid url")
 	}
 
-	c := &Config{
+	cfg := &Config{
 		url: url,
 	}
 
 	for _, option := range options {
-		option(c)
+		option(cfg)
 	}
 
-	client, err := grpc.NewClient(strings.TrimPrefix(c.url, "grpc://"),
+	client, err := grpc.NewClient(strings.TrimPrefix(cfg.url, "grpc://"),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 
@@ -44,7 +44,7 @@ func NewCompleter(url string, options ...Option) (*Completer, error) {
 	}
 
 	return &Completer{
-		Config: c,
+		Config: cfg,
 		client: NewCompleterClient(client),
 	}, nil
 }

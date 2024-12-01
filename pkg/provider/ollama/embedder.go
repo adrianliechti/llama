@@ -22,11 +22,5 @@ func NewEmbedder(url, model string, options ...Option) (*Embedder, error) {
 		option(cfg)
 	}
 
-	opts := []openai.Option{}
-
-	if cfg.client != nil {
-		opts = append(opts, openai.WithClient(cfg.client))
-	}
-
-	return openai.NewEmbedder(url+"/v1", model, opts...)
+	return openai.NewEmbedder(url+"/v1", model, cfg.options...)
 }

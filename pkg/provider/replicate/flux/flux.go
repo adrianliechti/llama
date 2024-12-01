@@ -133,7 +133,7 @@ func (r *Renderer) convertPredictionRequest(prompt string, options *provider.Ren
 		input = map[string]any{
 			"prompt": prompt,
 
-			"aspect_ratio":  "1:1",
+			"aspect_ratio":  "3:2",
 			"output_format": "png",
 
 			"disable_safety_checker": true,
@@ -144,7 +144,7 @@ func (r *Renderer) convertPredictionRequest(prompt string, options *provider.Ren
 		input = map[string]any{
 			"prompt": prompt,
 
-			"aspect_ratio":  "1:1",
+			"aspect_ratio":  "3:2",
 			"output_format": "png",
 
 			"disable_safety_checker": true,
@@ -155,12 +155,10 @@ func (r *Renderer) convertPredictionRequest(prompt string, options *provider.Ren
 		input = map[string]any{
 			"prompt": prompt,
 
-			"aspect_ratio":  "1:1",
+			"aspect_ratio":  "3:2",
 			"output_format": "png",
 
-			"safety_tolerance": 5,
-
-			"prompt_upsampling": true,
+			"safety_tolerance": 6,
 		}
 
 	case FluxPro11:
@@ -168,12 +166,23 @@ func (r *Renderer) convertPredictionRequest(prompt string, options *provider.Ren
 		input = map[string]any{
 			"prompt": prompt,
 
-			"aspect_ratio":  "1:1",
+			"aspect_ratio":  "3:2",
 			"output_format": "png",
 
-			"safety_tolerance": 5,
+			"safety_tolerance": 6,
+		}
 
-			"prompt_upsampling": true,
+	case FluxProUltra11:
+		// https://replicate.com/black-forest-labs/flux-1.1-pro-ultra/api/schema#input-schema
+		input = map[string]any{
+			"prompt": prompt,
+
+			"aspect_ratio":  "3:2",
+			"output_format": "png",
+
+			"safety_tolerance": 6,
+
+			"raw": true,
 		}
 
 	case FluxDevRealism:
@@ -181,7 +190,7 @@ func (r *Renderer) convertPredictionRequest(prompt string, options *provider.Ren
 		input = map[string]any{
 			"prompt": prompt,
 
-			"aspect_ratio":  "1:1",
+			"aspect_ratio":  "3:2",
 			"output_format": "png",
 		}
 	}
