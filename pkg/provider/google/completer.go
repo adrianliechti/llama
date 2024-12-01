@@ -7,13 +7,13 @@ import (
 type Completer = openai.Completer
 
 func NewCompleter(model string, options ...Option) (*Completer, error) {
-	url := "https://generativelanguage.googleapis.com/v1beta/"
+	url := "https://generativelanguage.googleapis.com/v1beta/openai/"
 
-	c := &Config{}
+	cfg := &Config{}
 
 	for _, option := range options {
-		option(c)
+		option(cfg)
 	}
 
-	return openai.NewCompleter(url, model, c.options...)
+	return openai.NewCompleter(url, model, cfg.options...)
 }

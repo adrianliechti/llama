@@ -7,13 +7,13 @@ import (
 type Embedder = openai.Embedder
 
 func NewEmbedder(model string, options ...Option) (*Embedder, error) {
-	url := "https://generativelanguage.googleapis.com/v1beta/"
+	url := "https://generativelanguage.googleapis.com/v1beta/openai/"
 
-	c := &Config{}
+	cfg := &Config{}
 
 	for _, option := range options {
-		option(c)
+		option(cfg)
 	}
 
-	return openai.NewEmbedder(url, model, c.options...)
+	return openai.NewEmbedder(url, model, cfg.options...)
 }
