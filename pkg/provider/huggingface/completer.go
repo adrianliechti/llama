@@ -17,7 +17,7 @@ func NewCompleter(url, model string, options ...Option) (*Completer, error) {
 	url = strings.TrimRight(url, "/")
 	url = strings.TrimRight(url, "/v1")
 
-	c := &Config{
+	cfg := &Config{
 		client: http.DefaultClient,
 
 		url:   url,
@@ -27,17 +27,17 @@ func NewCompleter(url, model string, options ...Option) (*Completer, error) {
 	}
 
 	for _, option := range options {
-		option(c)
+		option(cfg)
 	}
 
 	ops := []openai.Option{}
 
-	if c.client != nil {
-		ops = append(ops, openai.WithClient(c.client))
+	if cfg.client != nil {
+		ops = append(ops, openai.WithClient(cfg.client))
 	}
 
-	if c.token != "" {
-		ops = append(ops, openai.WithToken(c.token))
+	if cfg.token != "" {
+		ops = append(ops, openai.WithToken(cfg.token))
 	}
 
 	return openai.NewCompleter(url+"/v1", model, ops...)

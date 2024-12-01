@@ -11,11 +11,11 @@ func NewTranscriber(url, model string, options ...Option) (*Transcriber, error) 
 		url = "https://api.groq.com/openai/v1"
 	}
 
-	c := &Config{}
+	cfg := &Config{}
 
 	for _, option := range options {
-		option(c)
+		option(cfg)
 	}
 
-	return openai.NewTranscriber(url, model, c.options...)
+	return openai.NewTranscriber(url, model, cfg.options...)
 }

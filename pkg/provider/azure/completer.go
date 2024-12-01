@@ -11,11 +11,11 @@ func NewCompleter(url, model string, options ...Option) (*Completer, error) {
 		url = "https://models.inference.ai.azure.com"
 	}
 
-	c := &Config{}
+	cfg := &Config{}
 
 	for _, option := range options {
-		option(c)
+		option(cfg)
 	}
 
-	return openai.NewCompleter(url, model, c.options...)
+	return openai.NewCompleter(url, model, cfg.options...)
 }

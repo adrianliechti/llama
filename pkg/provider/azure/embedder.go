@@ -11,11 +11,11 @@ func NewEmbedder(url, model string, options ...Option) (*Embedder, error) {
 		url = "https://models.inference.ai.azure.com"
 	}
 
-	c := &Config{}
+	cfg := &Config{}
 
 	for _, option := range options {
-		option(c)
+		option(cfg)
 	}
 
-	return openai.NewEmbedder(url, model, c.options...)
+	return openai.NewEmbedder(url, model, cfg.options...)
 }
