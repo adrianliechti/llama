@@ -67,6 +67,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			Messages: msgs,
 
+			System:     convertSystem(messages),
 			ToolConfig: convertToolConfig(options.Tools),
 		})
 
@@ -91,6 +92,7 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			Messages: msgs,
 
+			System:     convertSystem(messages),
 			ToolConfig: convertToolConfig(options.Tools),
 		})
 
@@ -264,7 +266,7 @@ func convertMessages(messages []provider.Message) ([]types.Message, error) {
 
 			if reflect.TypeOf(data).Kind() == reflect.Slice {
 				data = map[string]any{
-					"data": data,
+					"result": data,
 				}
 			}
 
@@ -292,6 +294,28 @@ func convertMessages(messages []provider.Message) ([]types.Message, error) {
 	}
 
 	return result, nil
+}
+
+func convertSystem(messages []provider.Message) []types.SystemContentBlock {
+	var result []types.SystemContentBlock
+
+	for _, m := range messages {
+		if m.Role != provider.MessageRoleSystem {
+			continue
+		}
+
+		system := &types.SystemContentBlockMemberText{
+			Value: m.Content,
+		}
+
+		result = append(result, system)
+	}
+
+	if len(result) == 0 {
+		return nil
+	}
+
+	return result
 }
 
 func convertToolConfig(tools []provider.Tool) *types.ToolConfiguration {
