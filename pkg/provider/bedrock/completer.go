@@ -2,8 +2,10 @@ package bedrock
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
+	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/document"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
 )
 
@@ -48,6 +51,10 @@ func NewCompleter(model string, options ...Option) (*Completer, error) {
 }
 
 func (c *Completer) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
+	if options == nil {
+		options = new(provider.CompleteOptions)
+	}
+
 	msgs, err := convertMessages(messages)
 
 	if err != nil {
@@ -59,6 +66,8 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			ModelId: aws.String(c.model),
 
 			Messages: msgs,
+
+			ToolConfig: convertToolConfig(options.Tools),
 		})
 
 		if err != nil {
@@ -70,8 +79,10 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			Reason: toCompletionResult(resp.StopReason),
 
 			Message: provider.Message{
-				Role:    provider.MessageRoleAssistant,
-				Content: toContent(resp.Output),
+				Role: provider.MessageRoleAssistant,
+
+				Content:   toContent(resp.Output),
+				ToolCalls: toToolCalls(resp.Output),
 			},
 		}, nil
 	} else {
@@ -79,6 +90,8 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			ModelId: aws.String(c.model),
 
 			Messages: msgs,
+
+			ToolConfig: convertToolConfig(options.Tools),
 		})
 
 		if err != nil {
@@ -100,12 +113,25 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 			case *types.ConverseStreamOutputMemberMessageStart:
 				result.Message.Role = toRole(v.Value.Role)
 
-			//case *types.ConverseStreamOutputMemberContentBlockStart:
+			case *types.ConverseStreamOutputMemberContentBlockStart:
+				switch b := v.Value.Start.(type) {
+				case *types.ContentBlockStartMemberToolUse:
+					result.Message.ToolCalls = []provider.ToolCall{
+						{
+							ID:   aws.ToString(b.Value.ToolUseId),
+							Name: aws.ToString(b.Value.Name),
+						},
+					}
+
+				default:
+					fmt.Printf("unknown block type, %T\n", b)
+				}
 
 			case *types.ConverseStreamOutputMemberContentBlockDelta:
-				switch c := v.Value.Delta.(type) {
+				switch b := v.Value.Delta.(type) {
 				case *types.ContentBlockDeltaMemberText:
-					content := c.Value
+					content := b.Value
+					result.Message.Content += content
 
 					if len(content) > 0 {
 						completion := provider.Completion{
@@ -122,12 +148,36 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 						}
 					}
 
-					result.Message.Content += content
+				case *types.ContentBlockDeltaMemberToolUse:
+					content := *b.Value.Input
 
-				// case *types.ContentBlockDeltaMemberToolUse:
+					if len(result.Message.ToolCalls) > 0 {
+						index := len(result.Message.ToolCalls) - 1
+						result.Message.ToolCalls[index].Arguments += content
+					}
+
+					if len(content) > 0 {
+						completion := provider.Completion{
+							ID: result.ID,
+
+							Message: provider.Message{
+								Role: provider.MessageRoleAssistant,
+
+								ToolCalls: []provider.ToolCall{
+									{
+										Arguments: content,
+									},
+								},
+							},
+						}
+
+						if err := options.Stream(ctx, completion); err != nil {
+							return nil, err
+						}
+					}
 
 				default:
-					fmt.Printf("unknown delta type, %T\n", c)
+					fmt.Printf("unknown block type, %T\n", b)
 				}
 
 			case *types.ConverseStreamOutputMemberContentBlockStop:
@@ -141,12 +191,12 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 
 			case *types.ConverseStreamOutputMemberMetadata:
 				result.Usage = &provider.Usage{
-					InputTokens:  int(*v.Value.Usage.InputTokens),
-					OutputTokens: int(*v.Value.Usage.OutputTokens),
+					InputTokens:  int(aws.ToInt32(v.Value.Usage.InputTokens)),
+					OutputTokens: int(aws.ToInt32(v.Value.Usage.OutputTokens)),
 				}
 
 			case *types.UnknownUnionMember:
-				fmt.Println("unknown tag:", v.Tag)
+				fmt.Println("unknown tag", v.Tag)
 
 			default:
 				fmt.Printf("unknown event type, %T\n", v)
@@ -163,6 +213,9 @@ func convertMessages(messages []provider.Message) ([]types.Message, error) {
 	for _, m := range messages {
 		switch m.Role {
 
+		case provider.MessageRoleSystem:
+			continue
+
 		case provider.MessageRoleUser:
 			result = append(result, types.Message{
 				Role: types.ConversationRoleUser,
@@ -175,12 +228,60 @@ func convertMessages(messages []provider.Message) ([]types.Message, error) {
 			})
 
 		case provider.MessageRoleAssistant:
-			result = append(result, types.Message{
+			message := types.Message{
 				Role: types.ConversationRoleAssistant,
+			}
+
+			if m.Content != "" {
+				content := &types.ContentBlockMemberText{
+					Value: m.Content,
+				}
+
+				message.Content = append(message.Content, content)
+			}
+
+			for _, t := range m.ToolCalls {
+				var data any
+				json.Unmarshal([]byte(t.Arguments), &data)
+
+				content := &types.ContentBlockMemberToolUse{
+					Value: types.ToolUseBlock{
+						ToolUseId: aws.String(t.ID),
+						Name:      aws.String(t.Name),
+
+						Input: document.NewLazyDocument(data),
+					},
+				}
+
+				message.Content = append(message.Content, content)
+			}
+
+			result = append(result, message)
+
+		case provider.MessageRoleTool:
+			var data any
+			json.Unmarshal([]byte(m.Content), &data)
+
+			if reflect.TypeOf(data).Kind() == reflect.Slice {
+				data = map[string]any{
+					"data": data,
+				}
+			}
+
+			result = append(result, types.Message{
+				Role: types.ConversationRoleUser,
 
 				Content: []types.ContentBlock{
-					&types.ContentBlockMemberText{
-						Value: m.Content,
+					&types.ContentBlockMemberToolResult{
+						Value: types.ToolResultBlock{
+							ToolUseId: aws.String(m.Tool),
+
+							Content: []types.ToolResultContentBlock{
+								&types.ToolResultContentBlockMemberJson{
+									Value: document.NewLazyDocument(data),
+								},
+							},
+						},
 					},
 				},
 			})
@@ -193,10 +294,53 @@ func convertMessages(messages []provider.Message) ([]types.Message, error) {
 	return result, nil
 }
 
+func convertToolConfig(tools []provider.Tool) *types.ToolConfiguration {
+	if len(tools) == 0 {
+		return nil
+	}
+
+	result := &types.ToolConfiguration{}
+
+	for _, t := range tools {
+		tool := types.ToolSpecification{
+			Name: aws.String(t.Name),
+		}
+
+		if t.Description != "" {
+			tool.Description = aws.String(t.Description)
+		}
+
+		if len(t.Parameters) > 0 {
+			tool.InputSchema = &types.ToolInputSchemaMemberJson{
+				Value: document.NewLazyDocument(t.Parameters),
+			}
+		}
+
+		result.Tools = append(result.Tools, &types.ToolMemberToolSpec{Value: tool})
+	}
+
+	return result
+}
+
 func toCompletionResult(val types.StopReason) provider.CompletionReason {
 	switch val {
 	case types.StopReasonEndTurn:
 		return provider.CompletionReasonStop
+
+	case types.StopReasonToolUse:
+		return provider.CompletionReasonTool
+
+	case types.StopReasonMaxTokens:
+		return provider.CompletionReasonLength
+
+	case types.StopReasonStopSequence:
+		return provider.CompletionReasonStop
+
+	case types.StopReasonGuardrailIntervened:
+		return provider.CompletionReasonFilter
+
+	case types.StopReasonContentFiltered:
+		return provider.CompletionReasonFilter
 
 	default:
 		return ""
@@ -223,11 +367,48 @@ func toContent(val types.ConverseOutput) string {
 		return ""
 	}
 
-	content, ok := message.Value.Content[0].(*types.ContentBlockMemberText)
+	for _, b := range message.Value.Content {
+		switch block := b.(type) {
+		case *types.ContentBlockMemberText:
+			text := block.Value
 
-	if !ok {
-		return ""
+			if text != "" {
+				return text
+			}
+		}
 	}
 
-	return content.Value
+	return ""
+}
+
+func toToolCalls(val types.ConverseOutput) []provider.ToolCall {
+	message, ok := val.(*types.ConverseOutputMemberMessage)
+
+	if !ok {
+		return nil
+	}
+
+	var result []provider.ToolCall
+
+	for _, b := range message.Value.Content {
+		switch block := b.(type) {
+		case *types.ContentBlockMemberToolUse:
+			data, _ := block.Value.Input.MarshalSmithyDocument()
+
+			tool := provider.ToolCall{
+				ID:   aws.ToString(block.Value.ToolUseId),
+				Name: aws.ToString(block.Value.Name),
+
+				Arguments: string(data),
+			}
+
+			result = append(result, tool)
+		}
+	}
+
+	if len(result) == 0 {
+		return nil
+	}
+
+	return result
 }
