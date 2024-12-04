@@ -282,7 +282,7 @@ func convertMessages(messages []provider.Message) ([]types.Message, error) {
 			var data any
 			json.Unmarshal([]byte(m.Content), &data)
 
-			if reflect.TypeOf(data).Kind() == reflect.Slice {
+			if reflect.TypeOf(data).Kind() != reflect.Map {
 				data = map[string]any{
 					"result": data,
 				}
