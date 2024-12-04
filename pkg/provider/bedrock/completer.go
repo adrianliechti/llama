@@ -5,7 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"path"
 	"reflect"
+	"slices"
+	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 
@@ -219,15 +223,29 @@ func convertMessages(messages []provider.Message) ([]types.Message, error) {
 			continue
 
 		case provider.MessageRoleUser:
-			result = append(result, types.Message{
+			message := types.Message{
 				Role: types.ConversationRoleUser,
+			}
 
-				Content: []types.ContentBlock{
-					&types.ContentBlockMemberText{
-						Value: m.Content,
-					},
-				},
-			})
+			if m.Content != "" {
+				content := &types.ContentBlockMemberText{
+					Value: m.Content,
+				}
+
+				message.Content = append(message.Content, content)
+			}
+
+			for _, f := range m.Files {
+				content, err := convertFile(f)
+
+				if err != nil {
+					return nil, err
+				}
+
+				message.Content = append(message.Content, content)
+			}
+
+			result = append(result, message)
 
 		case provider.MessageRoleAssistant:
 			message := types.Message{
@@ -344,6 +362,61 @@ func convertToolConfig(tools []provider.Tool) *types.ToolConfiguration {
 	}
 
 	return result
+}
+
+func convertFile(val provider.File) (types.ContentBlock, error) {
+	format := strings.TrimPrefix(path.Ext(val.Name), ".")
+
+	if format == "jpg" || format == "jpe" {
+		format = "jpeg"
+	}
+
+	if format == "m4v" {
+		format = "mp4"
+	}
+
+	data, err := io.ReadAll(val.Content)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if slices.Contains(types.ImageFormat("").Values(), types.ImageFormat(format)) {
+		return &types.ContentBlockMemberImage{
+			Value: types.ImageBlock{
+				Format: types.ImageFormat(format),
+				Source: &types.ImageSourceMemberBytes{
+					Value: data,
+				},
+			},
+		}, nil
+	}
+
+	if slices.Contains(types.VideoFormat("").Values(), types.VideoFormat(format)) {
+		return &types.ContentBlockMemberVideo{
+			Value: types.VideoBlock{
+				Format: types.VideoFormat(format),
+				Source: &types.VideoSourceMemberBytes{
+					Value: data,
+				},
+			},
+		}, nil
+	}
+
+	if slices.Contains(types.DocumentFormat("").Values(), types.DocumentFormat(format)) {
+		return &types.ContentBlockMemberDocument{
+			Value: types.DocumentBlock{
+				Name: aws.String(strings.TrimSuffix(path.Base(val.Name), path.Ext(val.Name))),
+
+				Format: types.DocumentFormat(format),
+				Source: &types.DocumentSourceMemberBytes{
+					Value: data,
+				},
+			},
+		}, nil
+	}
+
+	return nil, errors.New("unsupported file format")
 }
 
 func toCompletionResult(val types.StopReason) provider.CompletionReason {
