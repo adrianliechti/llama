@@ -7,6 +7,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/anthropic"
 	"github.com/adrianliechti/llama/pkg/provider/azure"
+	"github.com/adrianliechti/llama/pkg/provider/bedrock"
 	"github.com/adrianliechti/llama/pkg/provider/cohere"
 	"github.com/adrianliechti/llama/pkg/provider/custom"
 	"github.com/adrianliechti/llama/pkg/provider/google"
@@ -56,6 +57,9 @@ func createCompleter(cfg providerConfig, model modelContext) (provider.Completer
 
 	case "azure":
 		return azureCompleter(cfg, model)
+
+	case "bedrock":
+		return bedrockCompleter(cfg, model)
 
 	case "cohere":
 		return cohereCompleter(cfg, model)
@@ -113,6 +117,12 @@ func azureCompleter(cfg providerConfig, model modelContext) (provider.Completer,
 	}
 
 	return azure.NewCompleter(cfg.URL, model.ID, options...)
+}
+
+func bedrockCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
+	var options []bedrock.Option
+
+	return bedrock.NewCompleter(model.ID, options...)
 }
 
 func cohereCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {

@@ -43,6 +43,10 @@ func (c *Config) Options() []option.RequestOption {
 
 		options = append(options, azure.WithEndpoint(c.url, "2024-09-01-preview"))
 
+		if c.client != nil {
+			options = append(options, option.WithHTTPClient(c.client))
+		}
+
 		if c.token != "" {
 			options = append(options, azure.WithAPIKey(c.token))
 		}
@@ -52,6 +56,10 @@ func (c *Config) Options() []option.RequestOption {
 
 	options := []option.RequestOption{
 		option.WithBaseURL(c.url),
+	}
+
+	if c.client != nil {
+		options = append(options, option.WithHTTPClient(c.client))
 	}
 
 	if c.token != "" {
