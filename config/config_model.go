@@ -97,6 +97,7 @@ func DetectModelType(id string) ModelType {
 		"llava",
 		"mistral",
 		"mixtral",
+		"nova",
 		"o1",
 		"orca",
 		"phi",

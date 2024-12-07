@@ -219,7 +219,7 @@ func (c *Completer) convertMessageRequest(input []provider.Message, options *pro
 			system = append(system, anthropic.NewTextBlock(m.Content))
 
 		case provider.MessageRoleUser:
-			blocks := []anthropic.MessageParamContentUnion{}
+			blocks := []anthropic.ContentBlockParamUnion{}
 
 			if m.Content != "" {
 				blocks = append(blocks, anthropic.NewTextBlock(m.Content))
@@ -242,7 +242,7 @@ func (c *Completer) convertMessageRequest(input []provider.Message, options *pro
 			messages = append(messages, message)
 
 		case provider.MessageRoleAssistant:
-			blocks := []anthropic.MessageParamContentUnion{}
+			blocks := []anthropic.ContentBlockParamUnion{}
 
 			if m.Content != "" {
 				blocks = append(blocks, anthropic.NewTextBlock(m.Content))

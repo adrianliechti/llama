@@ -41,6 +41,10 @@ func (c *Config) Options() []option.RequestOption {
 		option.WithBaseURL(c.url),
 	}
 
+	if c.client != nil {
+		options = append(options, option.WithHTTPClient(c.client))
+	}
+
 	if c.token != "" {
 		options = append(options, option.WithAPIKey(c.token))
 	}

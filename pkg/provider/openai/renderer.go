@@ -41,12 +41,13 @@ func (r *Renderer) Render(ctx context.Context, input string, options *provider.R
 		options = new(provider.RenderOptions)
 	}
 
-	image, err := r.images.Generate(ctx, openai.ImageGenerateParams{
-		Model:  openai.F(r.model),
-		Prompt: openai.F(input),
+	req, err := r.convertImageGenerateRequest(input, options)
 
-		ResponseFormat: openai.F(openai.ImageGenerateParamsResponseFormatB64JSON),
-	})
+	if err != nil {
+		return nil, err
+	}
+
+	image, err := r.images.Generate(ctx, *req)
 
 	if err != nil {
 		return nil, convertError(err)
@@ -66,4 +67,27 @@ func (r *Renderer) Render(ctx context.Context, input string, options *provider.R
 
 		Content: io.NopCloser(bytes.NewReader(data)),
 	}, nil
+}
+
+func (r *Renderer) convertImageGenerateRequest(input string, options *provider.RenderOptions) (*openai.ImageGenerateParams, error) {
+	if options == nil {
+		options = new(provider.RenderOptions)
+	}
+
+	req := &openai.ImageGenerateParams{
+		Model:  openai.F(r.model),
+		Prompt: openai.F(input),
+
+		ResponseFormat: openai.F(openai.ImageGenerateParamsResponseFormatB64JSON),
+	}
+
+	if options.Style == provider.ImageStyleNatural {
+		req.Style = openai.F(openai.ImageGenerateParamsStyleNatural)
+	}
+
+	if options.Style == provider.ImageStyleVivid {
+		req.Style = openai.F(openai.ImageGenerateParamsStyleVivid)
+	}
+
+	return req, nil
 }

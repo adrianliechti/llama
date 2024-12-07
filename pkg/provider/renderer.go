@@ -10,7 +10,15 @@ type Renderer interface {
 }
 
 type RenderOptions struct {
+	Style ImageStyle
 }
+
+type ImageStyle string
+
+const (
+	ImageStyleNatural ImageStyle = "natural"
+	ImageStyleVivid   ImageStyle = "vivid"
+)
 
 type Image struct {
 	ID string

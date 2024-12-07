@@ -181,8 +181,10 @@ func (r *Renderer) convertPredictionRequest(prompt string, options *provider.Ren
 			"output_format": "png",
 
 			"safety_tolerance": 6,
+		}
 
-			"raw": true,
+		if options.Style == provider.ImageStyleNatural {
+			input["raw"] = true
 		}
 
 	case FluxDevRealism:
