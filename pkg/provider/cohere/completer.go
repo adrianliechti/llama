@@ -41,117 +41,128 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		options = new(provider.CompleteOptions)
 	}
 
-	url, _ := url.JoinPath(c.url, "/v1/chat")
-	body, err := convertChatRequest(c.model, messages, options)
+	req, err := convertChatRequest(c.model, messages, options)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if options.Stream == nil {
-		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
-		req.Header.Set("Authorization", "Bearer "+c.token)
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := c.client.Do(req)
-
-		if err != nil {
-			return nil, err
-		}
-
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return nil, convertError(resp)
-		}
-
-		var response ChatResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			return nil, err
-		}
-
-		return &provider.Completion{
-			ID:     response.ID,
-			Reason: provider.CompletionReasonStop,
-
-			Message: provider.Message{
-				Role:    provider.MessageRoleAssistant,
-				Content: response.Text,
-			},
-		}, nil
-	} else {
-		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
-		req.Header.Set("Authorization", "Bearer "+c.token)
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := c.client.Do(req)
-
-		if err != nil {
-			return nil, err
-		}
-
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return nil, convertError(resp)
-		}
-
-		reader := bufio.NewReader(resp.Body)
-
-		result := &provider.Completion{
-			Message: provider.Message{
-				Role: provider.MessageRoleAssistant,
-			},
-		}
-
-		for i := 0; ; i++ {
-			data, err := reader.ReadString('\n')
-
-			if err != nil {
-				if errors.Is(err, io.EOF) {
-					break
-				}
-
-				return nil, err
-			}
-
-			data = strings.TrimSpace(data)
-
-			if len(data) == 0 {
-				continue
-			}
-
-			var event ChatEvent
-
-			if err := json.Unmarshal([]byte(data), &event); err != nil {
-				return nil, err
-			}
-
-			if event.ID != "" {
-				result.ID = event.ID
-			}
-
-			result.Reason = toCompletionReason(event.FinishReason)
-			result.Message.Content += event.Text
-
-			completion := provider.Completion{
-				ID:     result.ID,
-				Reason: result.Reason,
-
-				Message: provider.Message{
-					Role:    result.Message.Role,
-					Content: event.Text,
-				},
-			}
-
-			if err := options.Stream(ctx, completion); err != nil {
-				return nil, err
-			}
-		}
-
-		return result, nil
+	if options.Stream != nil {
+		return c.completeStream(ctx, *req, options)
 	}
+
+	return c.complete(ctx, *req, options)
+}
+
+func (c *Completer) complete(ctx context.Context, req ChatRequest, options *provider.CompleteOptions) (*provider.Completion, error) {
+	url, _ := url.JoinPath(c.url, "/v1/chat")
+
+	body, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(req))
+	body.Header.Set("Authorization", "Bearer "+c.token)
+	body.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, convertError(resp)
+	}
+
+	var response ChatResponse
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, err
+	}
+
+	return &provider.Completion{
+		ID:     response.ID,
+		Reason: provider.CompletionReasonStop,
+
+		Message: provider.Message{
+			Role:    provider.MessageRoleAssistant,
+			Content: response.Text,
+		},
+	}, nil
+}
+
+func (c *Completer) completeStream(ctx context.Context, req ChatRequest, options *provider.CompleteOptions) (*provider.Completion, error) {
+	url, _ := url.JoinPath(c.url, "/v1/chat")
+
+	body, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(req))
+	body.Header.Set("Authorization", "Bearer "+c.token)
+	body.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, convertError(resp)
+	}
+
+	reader := bufio.NewReader(resp.Body)
+
+	result := &provider.Completion{
+		Message: provider.Message{
+			Role: provider.MessageRoleAssistant,
+		},
+	}
+
+	for i := 0; ; i++ {
+		data, err := reader.ReadString('\n')
+
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			return nil, err
+		}
+
+		data = strings.TrimSpace(data)
+
+		if len(data) == 0 {
+			continue
+		}
+
+		var event ChatEvent
+
+		if err := json.Unmarshal([]byte(data), &event); err != nil {
+			return nil, err
+		}
+
+		if event.ID != "" {
+			result.ID = event.ID
+		}
+
+		result.Reason = toCompletionReason(event.FinishReason)
+		result.Message.Content += event.Text
+
+		delta := provider.Completion{
+			ID:     result.ID,
+			Reason: result.Reason,
+
+			Message: provider.Message{
+				Role:    result.Message.Role,
+				Content: event.Text,
+			},
+		}
+
+		if err := options.Stream(ctx, delta); err != nil {
+			return nil, err
+		}
+	}
+
+	return result, nil
 }
 
 func convertMessageRole(role provider.MessageRole) MessageRole {

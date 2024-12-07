@@ -45,84 +45,92 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		return nil, err
 	}
 
-	if options.Stream == nil {
-		completion, err := c.completions.New(ctx, *req)
-
-		if err != nil {
-			return nil, convertError(err)
-		}
-
-		choice := completion.Choices[0]
-
-		return &provider.Completion{
-			ID:     completion.ID,
-			Reason: toCompletionResult(choice.FinishReason),
-
-			Message: provider.Message{
-				Role:    provider.MessageRoleAssistant,
-				Content: choice.Message.Content,
-
-				ToolCalls: toToolCalls(choice.Message.ToolCalls),
-			},
-
-			Usage: &provider.Usage{
-				InputTokens:  int(completion.Usage.PromptTokens),
-				OutputTokens: int(completion.Usage.CompletionTokens),
-			},
-		}, nil
-	} else {
-		stream := c.completions.NewStreaming(ctx, *req)
-
-		completion := openai.ChatCompletionAccumulator{}
-
-		for stream.Next() {
-			chunk := stream.Current()
-			completion.AddChunk(chunk)
-
-			if len(chunk.Choices) == 0 {
-				continue
-			}
-
-			completion := provider.Completion{
-				ID:     completion.ID,
-				Reason: toDeltaCompletionResult(chunk.Choices[0].FinishReason),
-
-				Message: provider.Message{
-					Role:    provider.MessageRoleAssistant,
-					Content: chunk.Choices[0].Delta.Content,
-
-					ToolCalls: toDeltaToolCalls(chunk.Choices[0].Delta.ToolCalls),
-				},
-			}
-
-			if err := options.Stream(ctx, completion); err != nil {
-				return nil, err
-			}
-		}
-
-		if err := stream.Err(); err != nil {
-			return nil, convertError(err)
-		}
-
-		choice := completion.Choices[0]
-
-		return &provider.Completion{
-			ID:     completion.ID,
-			Reason: toCompletionResult(choice.FinishReason),
-
-			Message: provider.Message{
-				Role:    provider.MessageRoleAssistant,
-				Content: choice.Message.Content,
-
-				ToolCalls: toToolCalls(choice.Message.ToolCalls),
-			},
-
-			Usage: &provider.Usage{
-				InputTokens:  int(completion.Usage.PromptTokens),
-				OutputTokens: int(completion.Usage.CompletionTokens),
-			},
-		}, nil
+	if options.Stream != nil {
+		return c.completeStream(ctx, *req, options)
 	}
+
+	return c.complete(ctx, *req, options)
+}
+
+func (c *Completer) complete(ctx context.Context, req openai.ChatCompletionNewParams, options *provider.CompleteOptions) (*provider.Completion, error) {
+	completion, err := c.completions.New(ctx, req)
+
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	choice := completion.Choices[0]
+
+	return &provider.Completion{
+		ID:     completion.ID,
+		Reason: toCompletionResult(choice.FinishReason),
+
+		Message: provider.Message{
+			Role:    provider.MessageRoleAssistant,
+			Content: choice.Message.Content,
+
+			ToolCalls: toToolCalls(choice.Message.ToolCalls),
+		},
+
+		Usage: &provider.Usage{
+			InputTokens:  int(completion.Usage.PromptTokens),
+			OutputTokens: int(completion.Usage.CompletionTokens),
+		},
+	}, nil
+}
+
+func (c *Completer) completeStream(ctx context.Context, req openai.ChatCompletionNewParams, options *provider.CompleteOptions) (*provider.Completion, error) {
+	stream := c.completions.NewStreaming(ctx, req)
+
+	completion := openai.ChatCompletionAccumulator{}
+
+	for stream.Next() {
+		chunk := stream.Current()
+		completion.AddChunk(chunk)
+
+		if len(chunk.Choices) == 0 {
+			continue
+		}
+
+		delta := provider.Completion{
+			ID:     completion.ID,
+			Reason: toDeltaCompletionResult(chunk.Choices[0].FinishReason),
+
+			Message: provider.Message{
+				Role:    provider.MessageRoleAssistant,
+				Content: chunk.Choices[0].Delta.Content,
+
+				ToolCalls: toDeltaToolCalls(chunk.Choices[0].Delta.ToolCalls),
+			},
+		}
+
+		if err := options.Stream(ctx, delta); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := stream.Err(); err != nil {
+		return nil, convertError(err)
+	}
+
+	choice := completion.Choices[0]
+
+	return &provider.Completion{
+		ID:     completion.ID,
+		Reason: toCompletionResult(choice.FinishReason),
+
+		Message: provider.Message{
+			Role:    provider.MessageRoleAssistant,
+			Content: choice.Message.Content,
+
+			ToolCalls: toToolCalls(choice.Message.ToolCalls),
+		},
+
+		Usage: &provider.Usage{
+			InputTokens:  int(completion.Usage.PromptTokens),
+			OutputTokens: int(completion.Usage.CompletionTokens),
+		},
+	}, nil
 }
 
 func (c *Completer) convertCompletionRequest(input []provider.Message, options *provider.CompleteOptions) (*openai.ChatCompletionNewParams, error) {
@@ -130,38 +138,55 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 		options = new(provider.CompleteOptions)
 	}
 
+	tools, err := convertTools(options.Tools)
+
+	if err != nil {
+		return nil, err
+	}
+
+	messages, err := convertMessages(input)
+
+	if err != nil {
+		return nil, err
+	}
+
 	req := &openai.ChatCompletionNewParams{
 		Model: openai.F(c.model),
 	}
 
-	var tools []openai.ChatCompletionToolParam
-	var messages []openai.ChatCompletionMessageParamUnion
+	if len(tools) > 0 {
+		req.Tools = openai.F(tools)
+	}
+
+	if len(messages) > 0 {
+		req.Messages = openai.F(messages)
+	}
 
 	if options.Format == provider.CompletionFormatJSON {
-		if options.Schema != nil {
-			schema := openai.ResponseFormatJSONSchemaJSONSchemaParam{
-				Name:   openai.F(options.Schema.Name),
-				Schema: openai.F(any(options.Schema.Schema)),
-			}
+		req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](openai.ResponseFormatJSONObjectParam{
+			Type: openai.F(openai.ResponseFormatJSONObjectTypeJSONObject),
+		})
+	}
 
-			if options.Schema.Description != "" {
-				schema.Description = openai.F(options.Schema.Description)
-			}
-
-			if options.Schema.Strict != nil {
-				schema.Strict = openai.F(*options.Schema.Strict)
-			}
-
-			req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](openai.ResponseFormatJSONSchemaParam{
-				Type: openai.F(openai.ResponseFormatJSONSchemaTypeJSONSchema),
-
-				JSONSchema: openai.F(schema),
-			})
-		} else {
-			req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](openai.ResponseFormatJSONObjectParam{
-				Type: openai.F(openai.ResponseFormatJSONObjectTypeJSONObject),
-			})
+	if options.Schema != nil {
+		schema := openai.ResponseFormatJSONSchemaJSONSchemaParam{
+			Name:   openai.F(options.Schema.Name),
+			Schema: openai.F(any(options.Schema.Schema)),
 		}
+
+		if options.Schema.Description != "" {
+			schema.Description = openai.F(options.Schema.Description)
+		}
+
+		if options.Schema.Strict != nil {
+			schema.Strict = openai.F(*options.Schema.Strict)
+		}
+
+		req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](openai.ResponseFormatJSONSchemaParam{
+			Type: openai.F(openai.ResponseFormatJSONSchemaTypeJSONSchema),
+
+			JSONSchema: openai.F(schema),
+		})
 	}
 
 	if options.Stop != nil {
@@ -177,11 +202,17 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 		req.Temperature = openai.F(float64(*options.Temperature))
 	}
 
+	return req, nil
+}
+
+func convertMessages(input []provider.Message) ([]openai.ChatCompletionMessageParamUnion, error) {
+	var result []openai.ChatCompletionMessageParamUnion
+
 	for _, m := range input {
 		switch m.Role {
 		case provider.MessageRoleSystem:
 			message := openai.SystemMessage(m.Content)
-			messages = append(messages, message)
+			result = append(result, message)
 
 		case provider.MessageRoleUser:
 			parts := []openai.ChatCompletionContentPartUnionParam{}
@@ -205,7 +236,7 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 			}
 
 			message := openai.UserMessageParts(parts...)
-			messages = append(messages, message)
+			result = append(result, message)
 
 		case provider.MessageRoleAssistant:
 			message := openai.AssistantMessage(m.Content)
@@ -230,15 +261,21 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 				message.ToolCalls = openai.F(toolcalls)
 			}
 
-			messages = append(messages, message)
+			result = append(result, message)
 
 		case provider.MessageRoleTool:
 			message := openai.ToolMessage(m.Tool, m.Content)
-			messages = append(messages, message)
+			result = append(result, message)
 		}
 	}
 
-	for _, t := range options.Tools {
+	return result, nil
+}
+
+func convertTools(tools []provider.Tool) ([]openai.ChatCompletionToolParam, error) {
+	var result []openai.ChatCompletionToolParam
+
+	for _, t := range tools {
 		if t.Name == "" {
 			continue
 		}
@@ -263,18 +300,10 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 			Function: openai.F(function),
 		}
 
-		tools = append(tools, tool)
+		result = append(result, tool)
 	}
 
-	if len(tools) > 0 {
-		req.Tools = openai.F(tools)
-	}
-
-	if len(messages) > 0 {
-		req.Messages = openai.F(messages)
-	}
-
-	return req, nil
+	return result, nil
 }
 
 func toDeltaToolCalls(calls []openai.ChatCompletionChunkChoicesDeltaToolCall) []provider.ToolCall {

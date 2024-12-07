@@ -42,150 +42,161 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		options = new(provider.CompleteOptions)
 	}
 
-	url, _ := url.JoinPath(c.url, "/v1/chat/completions")
-	body, err := convertCompletionRequest(c.model, messages, options)
+	req, err := convertCompletionRequest(c.model, messages, options)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if options.Stream == nil {
-		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
-		req.Header.Set("Authorization", "Bearer "+c.token)
-		req.Header.Set("Content-Type", "application/json")
+	if options.Stream != nil {
+		return c.completeStream(ctx, *req, options)
+	}
 
-		resp, err := c.client.Do(req)
+	return c.complete(ctx, *req, options)
+}
+
+func (c *Completer) complete(ctx context.Context, req ChatCompletionRequest, options *provider.CompleteOptions) (*provider.Completion, error) {
+	url, _ := url.JoinPath(c.url, "/v1/chat/completions")
+
+	body, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(req))
+	body.Header.Set("Authorization", "Bearer "+c.token)
+	body.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, convertError(resp)
+	}
+
+	var completion ChatCompletionResponse
+
+	if err := json.NewDecoder(resp.Body).Decode(&completion); err != nil {
+		return nil, err
+	}
+
+	choice := completion.Choices[0]
+
+	return &provider.Completion{
+		ID:     completion.ID,
+		Reason: toCompletionReason(choice.FinishReason),
+
+		Message: provider.Message{
+			Role:    provider.MessageRoleAssistant,
+			Content: choice.Message.Content,
+		},
+
+		Usage: &provider.Usage{
+			InputTokens:  completion.Usage.PromptTokens,
+			OutputTokens: completion.Usage.CompletionTokens,
+		},
+	}, nil
+}
+
+func (c *Completer) completeStream(ctx context.Context, req ChatCompletionRequest, options *provider.CompleteOptions) (*provider.Completion, error) {
+	url, _ := url.JoinPath(c.url, "/v1/chat/completions")
+
+	body, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(req))
+	body.Header.Set("Authorization", "Bearer "+c.token)
+	body.Header.Set("Content-Type", "application/json")
+	body.Header.Set("Accept", "text/event-stream")
+
+	resp, err := c.client.Do(body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, convertError(resp)
+	}
+
+	reader := bufio.NewReader(resp.Body)
+
+	result := &provider.Completion{
+		Message: provider.Message{
+			Role: provider.MessageRoleAssistant,
+		},
+
+		Usage: &provider.Usage{},
+	}
+
+	for i := 0; ; i++ {
+		data, err := reader.ReadString('\n')
 
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
 			return nil, err
 		}
 
-		defer resp.Body.Close()
+		if !strings.HasPrefix(data, "data:") {
+			continue
+		}
 
-		if resp.StatusCode != http.StatusOK {
-			return nil, convertError(resp)
+		data = strings.TrimPrefix(data, "data:")
+		data = strings.TrimLeftFunc(data, unicode.IsSpace)
+		data = strings.TrimRight(data, "\n")
+
+		if len(data) == 0 || data == "[DONE]" {
+			continue
 		}
 
 		var completion ChatCompletionResponse
 
-		if err := json.NewDecoder(resp.Body).Decode(&completion); err != nil {
+		if err := json.Unmarshal([]byte(data), &completion); err != nil {
 			return nil, err
+		}
+
+		result.ID = completion.ID
+
+		if completion.Usage.PromptTokens > 0 {
+			result.Usage.InputTokens = completion.Usage.PromptTokens
+		}
+
+		if completion.Usage.CompletionTokens > 0 {
+			result.Usage.OutputTokens = completion.Usage.CompletionTokens
+		}
+
+		if len(completion.Choices) == 0 {
+			continue
 		}
 
 		choice := completion.Choices[0]
 
-		return &provider.Completion{
-			ID:     completion.ID,
-			Reason: toCompletionReason(choice.FinishReason),
+		result.Reason = toCompletionReason(choice.FinishReason)
+		result.Message.Content += choice.Delta.Content
 
-			Message: provider.Message{
-				Role:    provider.MessageRoleAssistant,
-				Content: choice.Message.Content,
-			},
+		if len(choice.Delta.Content) > 0 {
+			delta := provider.Completion{
+				ID: result.ID,
 
-			Usage: &provider.Usage{
-				InputTokens:  completion.Usage.PromptTokens,
-				OutputTokens: completion.Usage.CompletionTokens,
-			},
-		}, nil
-	} else {
-		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
-		req.Header.Set("Authorization", "Bearer "+c.token)
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "text/event-stream")
+				Message: provider.Message{
+					Role:    provider.MessageRole(MessageRoleAssistant),
+					Content: choice.Delta.Content,
+				},
+			}
 
-		resp, err := c.client.Do(req)
-
-		if err != nil {
-			return nil, err
-		}
-
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return nil, convertError(resp)
-		}
-
-		reader := bufio.NewReader(resp.Body)
-
-		result := &provider.Completion{
-			Message: provider.Message{
-				Role: provider.MessageRoleAssistant,
-			},
-
-			Usage: &provider.Usage{},
-		}
-
-		for i := 0; ; i++ {
-			data, err := reader.ReadString('\n')
-
-			if err != nil {
-				if errors.Is(err, io.EOF) {
-					break
-				}
-
+			if err := options.Stream(ctx, delta); err != nil {
 				return nil, err
 			}
-
-			if !strings.HasPrefix(data, "data:") {
-				continue
-			}
-
-			data = strings.TrimPrefix(data, "data:")
-			data = strings.TrimLeftFunc(data, unicode.IsSpace)
-			data = strings.TrimRight(data, "\n")
-
-			if len(data) == 0 || data == "[DONE]" {
-				continue
-			}
-
-			var completion ChatCompletionResponse
-
-			if err := json.Unmarshal([]byte(data), &completion); err != nil {
-				return nil, err
-			}
-
-			result.ID = completion.ID
-
-			if completion.Usage.PromptTokens > 0 {
-				result.Usage.InputTokens = completion.Usage.PromptTokens
-			}
-
-			if completion.Usage.CompletionTokens > 0 {
-				result.Usage.OutputTokens = completion.Usage.CompletionTokens
-			}
-
-			if len(completion.Choices) == 0 {
-				continue
-			}
-
-			choice := completion.Choices[0]
-
-			result.Reason = toCompletionReason(choice.FinishReason)
-			result.Message.Content += choice.Delta.Content
-
-			if len(choice.Delta.Content) > 0 {
-				completion := provider.Completion{
-					ID: result.ID,
-
-					Message: provider.Message{
-						Role:    provider.MessageRole(MessageRoleAssistant),
-						Content: choice.Delta.Content,
-					},
-				}
-
-				if err := options.Stream(ctx, completion); err != nil {
-					return nil, err
-				}
-			}
 		}
-
-		if result.Usage.OutputTokens == 0 {
-			result.Usage = nil
-		}
-
-		return result, nil
 	}
+
+	if result.Usage.OutputTokens == 0 {
+		result.Usage = nil
+	}
+
+	return result, nil
 }
 
 func convertCompletionRequest(model string, messages []provider.Message, options *provider.CompleteOptions) (*ChatCompletionRequest, error) {

@@ -46,144 +46,152 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		return nil, err
 	}
 
-	if options.Stream == nil {
-		message, err := c.messages.New(ctx, *req)
+	if options.Stream != nil {
+		return c.completeStream(ctx, *req, options)
+	}
 
-		if err != nil {
-			return nil, convertError(err)
+	return c.complete(ctx, *req, options)
+}
+
+func (c *Completer) complete(ctx context.Context, req anthropic.MessageNewParams, options *provider.CompleteOptions) (*provider.Completion, error) {
+	message, err := c.messages.New(ctx, req)
+
+	if err != nil {
+		return nil, convertError(err)
+	}
+
+	return &provider.Completion{
+		ID:     message.ID,
+		Reason: toCompletionResult(message.StopReason),
+
+		Message: provider.Message{
+			Role:    provider.MessageRoleAssistant,
+			Content: toContent(message.Content),
+
+			ToolCalls: toToolCalls(message.Content),
+		},
+
+		Usage: &provider.Usage{
+			InputTokens:  int(message.Usage.InputTokens),
+			OutputTokens: int(message.Usage.OutputTokens),
+		},
+	}, nil
+}
+
+func (c *Completer) completeStream(ctx context.Context, req anthropic.MessageNewParams, options *provider.CompleteOptions) (*provider.Completion, error) {
+	stream := c.messages.NewStreaming(ctx, req)
+
+	message := anthropic.Message{}
+
+	for stream.Next() {
+		event := stream.Current()
+
+		if err := message.Accumulate(event); err != nil {
+			return nil, err
 		}
 
-		return &provider.Completion{
-			ID:     message.ID,
-			Reason: toCompletionResult(message.StopReason),
+		switch event := event.AsUnion().(type) {
+		case anthropic.MessageStartEvent:
+			break
 
-			Message: provider.Message{
-				Role:    provider.MessageRoleAssistant,
-				Content: toContent(message.Content),
+		case anthropic.ContentBlockStartEvent:
+			delta := provider.Completion{
+				ID: message.ID,
 
-				ToolCalls: toToolCalls(message.Content),
-			},
+				Message: provider.Message{
+					Role:    provider.MessageRoleAssistant,
+					Content: event.ContentBlock.Text,
+				},
+			}
 
-			Usage: &provider.Usage{
-				InputTokens:  int(message.Usage.InputTokens),
-				OutputTokens: int(message.Usage.OutputTokens),
-			},
-		}, nil
-	} else {
-		stream := c.messages.NewStreaming(ctx, *req)
+			if event.ContentBlock.Name != "" {
+				delta.Message.ToolCalls = []provider.ToolCall{
+					{
+						ID:   event.ContentBlock.ID,
+						Name: event.ContentBlock.Name,
+					},
+				}
 
-		message := anthropic.Message{}
+				if options.Schema != nil {
+					delta.Message.ToolCalls = nil
+				}
+			}
 
-		for stream.Next() {
-			event := stream.Current()
-
-			if err := message.Accumulate(event); err != nil {
+			if err := options.Stream(ctx, delta); err != nil {
 				return nil, err
 			}
 
-			switch event := event.AsUnion().(type) {
-			case anthropic.MessageStartEvent:
-				break
+		case anthropic.ContentBlockDeltaEvent:
+			delta := provider.Completion{
+				Message: provider.Message{
+					Content: event.Delta.Text,
+				},
+			}
 
-			case anthropic.ContentBlockStartEvent:
-				completion := provider.Completion{
-					ID: message.ID,
-
-					Message: provider.Message{
-						Role:    provider.MessageRoleAssistant,
-						Content: event.ContentBlock.Text,
+			if event.Delta.PartialJSON != "" {
+				delta.Message.ToolCalls = []provider.ToolCall{
+					{
+						Arguments: event.Delta.PartialJSON,
 					},
 				}
 
-				if event.ContentBlock.Name != "" {
-					completion.Message.ToolCalls = []provider.ToolCall{
-						{
-							ID:   event.ContentBlock.ID,
-							Name: event.ContentBlock.Name,
-						},
-					}
-
-					if options.Schema != nil {
-						completion.Message.ToolCalls = nil
-					}
-				}
-
-				if err := options.Stream(ctx, completion); err != nil {
-					return nil, err
-				}
-
-			case anthropic.ContentBlockDeltaEvent:
-				completion := provider.Completion{
-					Message: provider.Message{
-						Content: event.Delta.Text,
-					},
-				}
-
-				if event.Delta.PartialJSON != "" {
-					completion.Message.ToolCalls = []provider.ToolCall{
-						{
-							Arguments: event.Delta.PartialJSON,
-						},
-					}
-
-					if options.Schema != nil {
-						completion.Message.ToolCalls = nil
-						completion.Message.Content = event.Delta.PartialJSON
-					}
-				}
-
-				if err := options.Stream(ctx, completion); err != nil {
-					return nil, err
-				}
-
-			case anthropic.ContentBlockStopEvent:
-				break
-
-			case anthropic.MessageStopEvent:
-				completion := provider.Completion{
-					ID: message.ID,
-
-					Reason: toCompletionResult(message.StopReason),
-
-					Message: provider.Message{},
-
-					Usage: &provider.Usage{
-						InputTokens:  int(message.Usage.InputTokens),
-						OutputTokens: int(message.Usage.OutputTokens),
-					},
-				}
-
-				if options.Schema != nil && completion.Reason == provider.CompletionReasonTool {
-					completion.Reason = provider.CompletionReasonStop
-				}
-
-				if err := options.Stream(ctx, completion); err != nil {
-					return nil, err
+				if options.Schema != nil {
+					delta.Message.ToolCalls = nil
+					delta.Message.Content = event.Delta.PartialJSON
 				}
 			}
+
+			if err := options.Stream(ctx, delta); err != nil {
+				return nil, err
+			}
+
+		case anthropic.ContentBlockStopEvent:
+			break
+
+		case anthropic.MessageStopEvent:
+			delta := provider.Completion{
+				ID: message.ID,
+
+				Reason: toCompletionResult(message.StopReason),
+
+				Message: provider.Message{},
+
+				Usage: &provider.Usage{
+					InputTokens:  int(message.Usage.InputTokens),
+					OutputTokens: int(message.Usage.OutputTokens),
+				},
+			}
+
+			if options.Schema != nil && delta.Reason == provider.CompletionReasonTool {
+				delta.Reason = provider.CompletionReasonStop
+			}
+
+			if err := options.Stream(ctx, delta); err != nil {
+				return nil, err
+			}
 		}
-
-		if err := stream.Err(); err != nil {
-			return nil, convertError(err)
-		}
-
-		return &provider.Completion{
-			ID:     message.ID,
-			Reason: toCompletionResult(message.StopReason),
-
-			Message: provider.Message{
-				Role:    provider.MessageRoleAssistant,
-				Content: toContent(message.Content),
-
-				ToolCalls: toToolCalls(message.Content),
-			},
-
-			Usage: &provider.Usage{
-				InputTokens:  int(message.Usage.InputTokens),
-				OutputTokens: int(message.Usage.OutputTokens),
-			},
-		}, nil
 	}
+
+	if err := stream.Err(); err != nil {
+		return nil, convertError(err)
+	}
+
+	return &provider.Completion{
+		ID:     message.ID,
+		Reason: toCompletionResult(message.StopReason),
+
+		Message: provider.Message{
+			Role:    provider.MessageRoleAssistant,
+			Content: toContent(message.Content),
+
+			ToolCalls: toToolCalls(message.Content),
+		},
+
+		Usage: &provider.Usage{
+			InputTokens:  int(message.Usage.InputTokens),
+			OutputTokens: int(message.Usage.OutputTokens),
+		},
+	}, nil
 }
 
 func (c *Completer) convertMessageRequest(input []provider.Message, options *provider.CompleteOptions) (*anthropic.MessageNewParams, error) {

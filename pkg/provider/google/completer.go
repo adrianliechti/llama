@@ -46,158 +46,166 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		options = new(provider.CompleteOptions)
 	}
 
-	body, err := convertGenerateRequest(messages, options)
+	req, err := convertGenerateRequest(messages, options)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if options.Stream == nil {
-		url, _ := url.JoinPath(c.url, "/v1beta/models/"+c.model+":generateContent")
-
-		if c.token != "" {
-			url += "?key=" + c.token
-		}
-
-		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
-		req.Header.Set("content-type", "application/json")
-
-		resp, err := c.client.Do(req)
-
-		if err != nil {
-			return nil, err
-		}
-
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return nil, convertError(resp)
-		}
-
-		var response GenerateResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			return nil, err
-		}
-
-		candidate := response.Candidates[0]
-
-		return &provider.Completion{
-			ID:     uuid.New().String(),
-			Reason: toCompletionResult(candidate.FinishReason),
-
-			Message: provider.Message{
-				Role:    provider.MessageRoleAssistant,
-				Content: toContent(candidate.Content),
-
-				ToolCalls: toToolCalls(candidate.Content),
-			},
-		}, nil
-	} else {
-		url, _ := url.JoinPath(c.url, "/v1beta/models/"+c.model+":streamGenerateContent")
-		url += "?alt=sse"
-
-		if c.token != "" {
-			url += "&key=" + c.token
-		}
-
-		req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
-		req.Header.Set("content-type", "application/json")
-
-		resp, err := c.client.Do(req)
-
-		if err != nil {
-			return nil, err
-		}
-
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return nil, convertError(resp)
-		}
-
-		reader := bufio.NewReader(resp.Body)
-
-		result := &provider.Completion{
-			ID: uuid.New().String(),
-
-			Message: provider.Message{
-				Role: provider.MessageRoleAssistant,
-			},
-
-			//Usage: &provider.Usage{},
-		}
-
-		resultToolCalls := map[string]provider.ToolCall{}
-
-		for i := 0; ; i++ {
-			data, err := reader.ReadBytes('\n')
-
-			if err != nil {
-				if errors.Is(err, io.EOF) {
-					break
-				}
-
-				return nil, err
-			}
-
-			data = bytes.TrimSpace(data)
-
-			if !bytes.HasPrefix(data, []byte("data:")) {
-				continue
-			}
-
-			data = bytes.TrimPrefix(data, []byte("data:"))
-			data = bytes.TrimSpace(data)
-
-			if len(data) == 0 {
-				continue
-			}
-
-			var event GenerateResponse
-
-			if err := json.Unmarshal([]byte(data), &event); err != nil {
-				return nil, err
-			}
-
-			candidate := event.Candidates[0]
-
-			content := toContent(candidate.Content)
-
-			if i == 0 {
-				content = strings.TrimLeftFunc(content, unicode.IsSpace)
-			}
-
-			result.Message.Content += content
-
-			if len(content) > 0 {
-				completion := provider.Completion{
-					ID: result.ID,
-
-					Message: provider.Message{
-						Role:    provider.MessageRoleAssistant,
-						Content: content,
-					},
-				}
-
-				if err := options.Stream(ctx, completion); err != nil {
-					return nil, err
-				}
-			}
-
-			for _, c := range toToolCalls(candidate.Content) {
-				resultToolCalls[c.Name] = c
-			}
-		}
-
-		result.Message.Content = strings.TrimRightFunc(result.Message.Content, unicode.IsSpace)
-
-		if len(resultToolCalls) > 0 {
-			result.Message.ToolCalls = to.Values(resultToolCalls)
-		}
-
-		return result, nil
+	if options.Stream != nil {
+		return c.completeStream(ctx, *req, options)
 	}
+
+	return c.complete(ctx, *req, options)
+}
+
+func (c *Completer) complete(ctx context.Context, req GenerateRequest, options *provider.CompleteOptions) (*provider.Completion, error) {
+	url, _ := url.JoinPath(c.url, "/v1beta/models/"+c.model+":generateContent")
+
+	if c.token != "" {
+		url += "?key=" + c.token
+	}
+
+	body, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(req))
+	body.Header.Set("content-type", "application/json")
+
+	resp, err := c.client.Do(body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, convertError(resp)
+	}
+
+	var response GenerateResponse
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, err
+	}
+
+	candidate := response.Candidates[0]
+
+	return &provider.Completion{
+		ID:     uuid.New().String(),
+		Reason: toCompletionResult(candidate.FinishReason),
+
+		Message: provider.Message{
+			Role:    provider.MessageRoleAssistant,
+			Content: toContent(candidate.Content),
+
+			ToolCalls: toToolCalls(candidate.Content),
+		},
+	}, nil
+}
+
+func (c *Completer) completeStream(ctx context.Context, req GenerateRequest, options *provider.CompleteOptions) (*provider.Completion, error) {
+	url, _ := url.JoinPath(c.url, "/v1beta/models/"+c.model+":streamGenerateContent")
+	url += "?alt=sse"
+
+	if c.token != "" {
+		url += "&key=" + c.token
+	}
+
+	body, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(req))
+	body.Header.Set("content-type", "application/json")
+
+	resp, err := c.client.Do(body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, convertError(resp)
+	}
+
+	reader := bufio.NewReader(resp.Body)
+
+	result := &provider.Completion{
+		ID: uuid.New().String(),
+
+		Message: provider.Message{
+			Role: provider.MessageRoleAssistant,
+		},
+
+		//Usage: &provider.Usage{},
+	}
+
+	resultToolCalls := map[string]provider.ToolCall{}
+
+	for i := 0; ; i++ {
+		data, err := reader.ReadBytes('\n')
+
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			return nil, err
+		}
+
+		data = bytes.TrimSpace(data)
+
+		if !bytes.HasPrefix(data, []byte("data:")) {
+			continue
+		}
+
+		data = bytes.TrimPrefix(data, []byte("data:"))
+		data = bytes.TrimSpace(data)
+
+		if len(data) == 0 {
+			continue
+		}
+
+		var event GenerateResponse
+
+		if err := json.Unmarshal([]byte(data), &event); err != nil {
+			return nil, err
+		}
+
+		candidate := event.Candidates[0]
+
+		content := toContent(candidate.Content)
+
+		if i == 0 {
+			content = strings.TrimLeftFunc(content, unicode.IsSpace)
+		}
+
+		result.Message.Content += content
+
+		if len(content) > 0 {
+			delta := provider.Completion{
+				ID: result.ID,
+
+				Message: provider.Message{
+					Role:    provider.MessageRoleAssistant,
+					Content: content,
+				},
+			}
+
+			if err := options.Stream(ctx, delta); err != nil {
+				return nil, err
+			}
+		}
+
+		for _, c := range toToolCalls(candidate.Content) {
+			resultToolCalls[c.Name] = c
+		}
+	}
+
+	result.Message.Content = strings.TrimRightFunc(result.Message.Content, unicode.IsSpace)
+
+	if len(resultToolCalls) > 0 {
+		result.Message.ToolCalls = to.Values(resultToolCalls)
+	}
+
+	return result, nil
 }
 
 func convertGenerateRequest(messages []provider.Message, options *provider.CompleteOptions) (*GenerateRequest, error) {
@@ -205,7 +213,48 @@ func convertGenerateRequest(messages []provider.Message, options *provider.Compl
 		options = new(provider.CompleteOptions)
 	}
 
+	contents, err := convertContents(messages)
+
+	if err != nil {
+		return nil, err
+	}
+
+	functions, err := convertFunctions(options.Tools)
+
+	if err != nil {
+		return nil, err
+	}
+
 	req := &GenerateRequest{}
+
+	if len(contents) > 0 {
+		req.Contents = contents
+	}
+
+	if len(functions) > 0 {
+		req.Tools = []Tool{
+			{
+				FunctionDeclarations: functions,
+			},
+		}
+	}
+
+	if options.Format == provider.CompletionFormatJSON || options.Schema != nil {
+		req.Config = &GenerationConfig{
+			ResponseType: "application/json",
+		}
+
+		if options.Schema != nil {
+			req.Config.ResponseSchema = options.Schema.Schema
+			delete(req.Config.ResponseSchema, "additionalProperties")
+		}
+	}
+
+	return req, nil
+}
+
+func convertContents(messages []provider.Message) ([]Content, error) {
+	var result []Content
 
 	for _, m := range messages {
 		switch m.Role {
@@ -217,7 +266,7 @@ func convertGenerateRequest(messages []provider.Message, options *provider.Compl
 				},
 			}
 
-			req.Contents = append(req.Contents, Content{
+			result = append(result, Content{
 				Role:  ContentRoleUser,
 				Parts: parts,
 			})
@@ -240,7 +289,7 @@ func convertGenerateRequest(messages []provider.Message, options *provider.Compl
 				})
 			}
 
-			req.Contents = append(req.Contents, Content{
+			result = append(result, Content{
 				Role:  ContentRoleModel,
 				Parts: parts,
 			})
@@ -259,7 +308,7 @@ func convertGenerateRequest(messages []provider.Message, options *provider.Compl
 				},
 			}
 
-			req.Contents = append(req.Contents, Content{
+			result = append(result, Content{
 				Role:  ContentRoleUser,
 				Parts: parts,
 			})
@@ -269,9 +318,13 @@ func convertGenerateRequest(messages []provider.Message, options *provider.Compl
 		}
 	}
 
-	var functions []FunctionDeclaration
+	return result, nil
+}
 
-	for _, t := range options.Tools {
+func convertFunctions(tools []provider.Tool) ([]FunctionDeclaration, error) {
+	var result []FunctionDeclaration
+
+	for _, t := range tools {
 		function := FunctionDeclaration{
 			Name:        t.Name,
 			Description: t.Description,
@@ -281,29 +334,10 @@ func convertGenerateRequest(messages []provider.Message, options *provider.Compl
 
 		delete(function.Parameters, "additionalProperties")
 
-		functions = append(functions, function)
+		result = append(result, function)
 	}
 
-	if len(functions) > 0 {
-		req.Tools = []Tool{
-			{
-				FunctionDeclarations: functions,
-			},
-		}
-	}
-
-	if options.Format == provider.CompletionFormatJSON {
-		req.Config = &GenerationConfig{
-			ResponseType: "application/json",
-		}
-
-		if options.Schema != nil {
-			req.Config.ResponseSchema = options.Schema.Schema
-			delete(req.Config.ResponseSchema, "additionalProperties")
-		}
-	}
-
-	return req, nil
+	return result, nil
 }
 
 type ContentRole string
