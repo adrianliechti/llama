@@ -138,30 +138,30 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 	var messages []openai.ChatCompletionMessageParamUnion
 
 	if options.Format == provider.CompletionFormatJSON {
-		if options.Schema != nil {
-			schema := openai.ResponseFormatJSONSchemaJSONSchemaParam{
-				Name:   openai.F(options.Schema.Name),
-				Schema: openai.F(any(options.Schema.Schema)),
-			}
+		req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](openai.ResponseFormatJSONObjectParam{
+			Type: openai.F(openai.ResponseFormatJSONObjectTypeJSONObject),
+		})
+	}
 
-			if options.Schema.Description != "" {
-				schema.Description = openai.F(options.Schema.Description)
-			}
-
-			if options.Schema.Strict != nil {
-				schema.Strict = openai.F(*options.Schema.Strict)
-			}
-
-			req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](openai.ResponseFormatJSONSchemaParam{
-				Type: openai.F(openai.ResponseFormatJSONSchemaTypeJSONSchema),
-
-				JSONSchema: openai.F(schema),
-			})
-		} else {
-			req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](openai.ResponseFormatJSONObjectParam{
-				Type: openai.F(openai.ResponseFormatJSONObjectTypeJSONObject),
-			})
+	if options.Schema != nil {
+		schema := openai.ResponseFormatJSONSchemaJSONSchemaParam{
+			Name:   openai.F(options.Schema.Name),
+			Schema: openai.F(any(options.Schema.Schema)),
 		}
+
+		if options.Schema.Description != "" {
+			schema.Description = openai.F(options.Schema.Description)
+		}
+
+		if options.Schema.Strict != nil {
+			schema.Strict = openai.F(*options.Schema.Strict)
+		}
+
+		req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](openai.ResponseFormatJSONSchemaParam{
+			Type: openai.F(openai.ResponseFormatJSONSchemaTypeJSONSchema),
+
+			JSONSchema: openai.F(schema),
+		})
 	}
 
 	if options.Stop != nil {

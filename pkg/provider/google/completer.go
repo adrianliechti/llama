@@ -292,7 +292,7 @@ func convertGenerateRequest(messages []provider.Message, options *provider.Compl
 		}
 	}
 
-	if options.Format == provider.CompletionFormatJSON {
+	if options.Format == provider.CompletionFormatJSON || options.Schema != nil {
 		req.Config = &GenerationConfig{
 			ResponseType: "application/json",
 		}
