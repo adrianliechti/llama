@@ -199,6 +199,24 @@ func (c *Completer) completeStream(ctx context.Context, req *bedrockruntime.Conv
 				result.Reason = reason
 			}
 
+			delta := provider.Completion{
+				ID:     result.ID,
+				Reason: result.Reason,
+
+				Message: provider.Message{
+					Role:    provider.MessageRoleAssistant,
+					Content: "",
+				},
+			}
+
+			if delta.Reason == "" {
+				delta.Reason = provider.CompletionReasonStop
+			}
+
+			if err := options.Stream(ctx, delta); err != nil {
+				return nil, err
+			}
+
 		case *types.ConverseStreamOutputMemberMetadata:
 			result.Usage = &provider.Usage{
 				InputTokens:  int(aws.ToInt32(v.Value.Usage.InputTokens)),
