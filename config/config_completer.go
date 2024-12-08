@@ -18,6 +18,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/mistralrs"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
+	"github.com/adrianliechti/llama/pkg/provider/xai"
 )
 
 func (cfg *Config) RegisterCompleter(id string, p provider.Completer) {
@@ -90,6 +91,9 @@ func createCompleter(cfg providerConfig, model modelContext) (provider.Completer
 
 	case "openai":
 		return openaiCompleter(cfg, model)
+
+	case "xai":
+		return xaiCompleter(cfg, model)
 
 	case "custom":
 		return customCompleter(cfg, model)
@@ -201,6 +205,16 @@ func openaiCompleter(cfg providerConfig, model modelContext) (provider.Completer
 	}
 
 	return openai.NewCompleter(cfg.URL, model.ID, options...)
+}
+
+func xaiCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
+	var options []xai.Option
+
+	if cfg.Token != "" {
+		options = append(options, xai.WithToken(cfg.Token))
+	}
+
+	return xai.NewCompleter(cfg.URL, model.ID, options...)
 }
 
 func customCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {

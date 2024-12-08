@@ -92,6 +92,7 @@ func DetectModelType(id string) ModelType {
 		"gemini",
 		"gemma",
 		"gpt",
+		"grok",
 		"hermes",
 		"llama",
 		"llava",
