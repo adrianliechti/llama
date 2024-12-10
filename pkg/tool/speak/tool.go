@@ -28,7 +28,7 @@ type Tool struct {
 func New(options ...Option) (*Tool, error) {
 	t := &Tool{
 		name:        "speak",
-		description: "Synthesize speech from text using a TTS (text-to-speech) model on a input prompt. Returns a URL to the generated audio file. Render the URL as markdown ```[Download Audio](url)```",
+		description: "Synthesize speech from text using a TTS (text-to-speech) model on a input prompt. Returns a URL to the generated audio file. Render the URL as markdown ```[prompt](url)```",
 
 		client: http.DefaultClient,
 	}
@@ -55,7 +55,7 @@ func (*Tool) Parameters() map[string]any {
 		"properties": map[string]any{
 			"prompt": map[string]any{
 				"type":        "string",
-				"description": "the prompt to create the audio file based from. can be in orgiginal language and should not be translated.",
+				"description": "text to generate audio for in orgiginal language",
 			},
 		},
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
+	"github.com/adrianliechti/llama/pkg/provider/replicate"
 	"github.com/adrianliechti/llama/pkg/provider/replicate/flux"
 )
 
@@ -59,13 +60,13 @@ func openaiRenderer(cfg providerConfig, model modelContext) (provider.Renderer, 
 
 func replicateRenderer(cfg providerConfig, model modelContext) (provider.Renderer, error) {
 	if slices.Contains(flux.SupportedModels, model.ID) {
-		var options []flux.Option
+		var options []replicate.Option
 
 		if cfg.Token != "" {
-			options = append(options, flux.WithToken(cfg.Token))
+			options = append(options, replicate.WithToken(cfg.Token))
 		}
 
-		return flux.NewRenderer(cfg.URL, model.ID, options...)
+		return flux.NewRenderer(model.ID, options...)
 	}
 
 	return nil, errors.New("model not supported: " + model.ID)

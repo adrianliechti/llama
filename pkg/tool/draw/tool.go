@@ -27,7 +27,7 @@ type Tool struct {
 func New(options ...Option) (*Tool, error) {
 	t := &Tool{
 		name:        "draw",
-		description: "Draw an image using stable diffusion based on a input prompt. Returns a URL to the generated image. Render the URL as markdown ```![query](url)```",
+		description: "Draw an image using stable diffusion based on a input prompt. Returns a URL to the generated image. Render the URL as markdown ```![prompt](url)```",
 
 		client: http.DefaultClient,
 	}
@@ -54,7 +54,17 @@ func (*Tool) Parameters() map[string]any {
 		"properties": map[string]any{
 			"prompt": map[string]any{
 				"type":        "string",
-				"description": "the prompt to create the image based from. must be in english - translate to english if needed.",
+				"description": "text description of the desired image. must be in english - translate if needed.",
+			},
+
+			"style": map[string]any{
+				"type":        "string",
+				"description": "style of the image. defaults to vivid",
+
+				"enum": []string{
+					"vivid",
+					"natural",
+				},
 			},
 		},
 

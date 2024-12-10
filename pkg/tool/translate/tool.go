@@ -63,8 +63,6 @@ func (*Tool) Parameters() map[string]any {
 					"fr",
 					"it",
 				},
-
-				//"default": "en",
 			},
 		},
 
