@@ -34,8 +34,10 @@ func TestTranscriber(t *testing.T) {
 	require.NoError(t, err)
 
 	result, err := p.Transcribe(ctx, provider.File{
-		Name:    "jfk.wav",
-		Content: bytes.NewReader(data),
+		Name: "jfk.wav",
+
+		Content:     bytes.NewReader(data),
+		ContentType: "audio/wav",
 	}, nil)
 
 	require.NoError(t, err)

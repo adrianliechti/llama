@@ -1,21 +1,18 @@
 package google
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
-	"net/http"
-	"net/url"
 	"strings"
 	"unicode"
 
+	"github.com/google/generative-ai-go/genai"
+	"github.com/google/uuid"
+	"google.golang.org/api/iterator"
+
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/to"
-
-	"github.com/google/uuid"
 )
 
 var _ provider.Completer = (*Completer)(nil)
@@ -26,9 +23,6 @@ type Completer struct {
 
 func NewCompleter(model string, options ...Option) (*Completer, error) {
 	cfg := &Config{
-		client: http.DefaultClient,
-
-		url:   "https://generativelanguage.googleapis.com",
 		model: model,
 	}
 
@@ -46,48 +40,80 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 		options = new(provider.CompleteOptions)
 	}
 
-	req, err := convertGenerateRequest(messages, options)
+	client, err := genai.NewClient(ctx, c.Options()...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer client.Close()
+
+	system, err := convertSystem(messages)
+
+	if err != nil {
+		return nil, err
+	}
+
+	history, err := convertHistory(messages)
+
+	if err != nil {
+		return nil, err
+	}
+
+	model := client.GenerativeModel(c.model)
+	model.SystemInstruction = system
+
+	if len(options.Tools) > 0 {
+		model.Tools = convertTools(options.Tools)
+	}
+
+	if len(options.Stop) > 0 {
+		model.StopSequences = options.Stop
+	}
+
+	if options.MaxTokens != nil {
+		model.SetMaxOutputTokens(int32(*options.MaxTokens))
+	}
+
+	if options.Temperature != nil {
+		model.SetTemperature(*options.Temperature)
+	}
+
+	if options.Format == provider.CompletionFormatJSON || options.Schema != nil {
+		model.ResponseMIMEType = "application/json"
+
+		if options.Schema != nil {
+			model.ResponseSchema = convertSchema(options.Schema.Schema)
+		}
+	}
+
+	session := model.StartChat()
+	session.History = history
+
+	prompt, err := convertContent(messages[len(messages)-1])
 
 	if err != nil {
 		return nil, err
 	}
 
 	if options.Stream != nil {
-		return c.completeStream(ctx, *req, options)
+		return c.completeStream(ctx, session, prompt.Parts, options)
 	}
 
-	return c.complete(ctx, *req, options)
+	return c.complete(ctx, session, prompt.Parts, options)
 }
 
-func (c *Completer) complete(ctx context.Context, req GenerateRequest, options *provider.CompleteOptions) (*provider.Completion, error) {
-	url, _ := url.JoinPath(c.url, "/v1beta/models/"+c.model+":generateContent")
-
-	if c.token != "" {
-		url += "?key=" + c.token
-	}
-
-	body, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(req))
-	body.Header.Set("content-type", "application/json")
-
-	resp, err := c.client.Do(body)
+func (c *Completer) complete(ctx context.Context, session *genai.ChatSession, parts []genai.Part, options *provider.CompleteOptions) (*provider.Completion, error) {
+	resp, err := session.SendMessage(ctx, parts...)
 
 	if err != nil {
-		return nil, err
+		return nil, convertError(err)
 	}
 
-	defer resp.Body.Close()
+	candidate := resp.Candidates[0]
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, convertError(resp)
-	}
-
-	var response GenerateResponse
-
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, err
-	}
-
-	candidate := response.Candidates[0]
+	content := toContent(candidate.Content)
+	content = strings.TrimRightFunc(content, unicode.IsSpace)
 
 	return &provider.Completion{
 		ID:     uuid.New().String(),
@@ -95,37 +121,15 @@ func (c *Completer) complete(ctx context.Context, req GenerateRequest, options *
 
 		Message: provider.Message{
 			Role:    provider.MessageRoleAssistant,
-			Content: toContent(candidate.Content),
+			Content: content,
 
 			ToolCalls: toToolCalls(candidate.Content),
 		},
 	}, nil
 }
 
-func (c *Completer) completeStream(ctx context.Context, req GenerateRequest, options *provider.CompleteOptions) (*provider.Completion, error) {
-	url, _ := url.JoinPath(c.url, "/v1beta/models/"+c.model+":streamGenerateContent")
-	url += "?alt=sse"
-
-	if c.token != "" {
-		url += "&key=" + c.token
-	}
-
-	body, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(req))
-	body.Header.Set("content-type", "application/json")
-
-	resp, err := c.client.Do(body)
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, convertError(resp)
-	}
-
-	reader := bufio.NewReader(resp.Body)
+func (c *Completer) completeStream(ctx context.Context, session *genai.ChatSession, parts []genai.Part, options *provider.CompleteOptions) (*provider.Completion, error) {
+	iter := session.SendMessageStream(ctx, parts...)
 
 	result := &provider.Completion{
 		ID: uuid.New().String(),
@@ -140,36 +144,17 @@ func (c *Completer) completeStream(ctx context.Context, req GenerateRequest, opt
 	resultToolCalls := map[string]provider.ToolCall{}
 
 	for i := 0; ; i++ {
-		data, err := reader.ReadBytes('\n')
+		resp, err := iter.Next()
+
+		if err == iterator.Done {
+			break
+		}
 
 		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-
-			return nil, err
+			return nil, convertError(err)
 		}
 
-		data = bytes.TrimSpace(data)
-
-		if !bytes.HasPrefix(data, []byte("data:")) {
-			continue
-		}
-
-		data = bytes.TrimPrefix(data, []byte("data:"))
-		data = bytes.TrimSpace(data)
-
-		if len(data) == 0 {
-			continue
-		}
-
-		var event GenerateResponse
-
-		if err := json.Unmarshal([]byte(data), &event); err != nil {
-			return nil, err
-		}
-
-		candidate := event.Candidates[0]
+		candidate := resp.Candidates[0]
 
 		content := toContent(candidate.Content)
 
@@ -178,6 +163,10 @@ func (c *Completer) completeStream(ctx context.Context, req GenerateRequest, opt
 		}
 
 		result.Message.Content += content
+
+		for _, c := range toToolCalls(candidate.Content) {
+			resultToolCalls[c.Name] = c
+		}
 
 		if len(content) > 0 {
 			delta := provider.Completion{
@@ -193,10 +182,6 @@ func (c *Completer) completeStream(ctx context.Context, req GenerateRequest, opt
 				return nil, err
 			}
 		}
-
-		for _, c := range toToolCalls(candidate.Content) {
-			resultToolCalls[c.Name] = c
-		}
 	}
 
 	result.Message.Content = strings.TrimRightFunc(result.Message.Content, unicode.IsSpace)
@@ -208,263 +193,276 @@ func (c *Completer) completeStream(ctx context.Context, req GenerateRequest, opt
 	return result, nil
 }
 
-func convertGenerateRequest(messages []provider.Message, options *provider.CompleteOptions) (*GenerateRequest, error) {
-	if options == nil {
-		options = new(provider.CompleteOptions)
-	}
-
-	contents, err := convertContents(messages)
-
-	if err != nil {
-		return nil, err
-	}
-
-	functions, err := convertFunctions(options.Tools)
-
-	if err != nil {
-		return nil, err
-	}
-
-	req := &GenerateRequest{}
-
-	if len(contents) > 0 {
-		req.Contents = contents
-	}
-
-	if len(functions) > 0 {
-		req.Tools = []Tool{
-			{
-				FunctionDeclarations: functions,
-			},
-		}
-	}
-
-	if options.Format == provider.CompletionFormatJSON || options.Schema != nil {
-		req.Config = &GenerationConfig{
-			ResponseType: "application/json",
-		}
-
-		if options.Schema != nil {
-			req.Config.ResponseSchema = options.Schema.Schema
-			delete(req.Config.ResponseSchema, "additionalProperties")
-		}
-	}
-
-	return req, nil
-}
-
-func convertContents(messages []provider.Message) ([]Content, error) {
-	var result []Content
+func convertSystem(messages []provider.Message) (*genai.Content, error) {
+	var parts []genai.Part
 
 	for _, m := range messages {
-		switch m.Role {
-
-		case provider.MessageRoleUser:
-			parts := []ContentPart{
-				{
-					Text: m.Content,
-				},
-			}
-
-			result = append(result, Content{
-				Role:  ContentRoleUser,
-				Parts: parts,
-			})
-
-		case provider.MessageRoleAssistant:
-			var parts []ContentPart
-
-			if m.Content != "" {
-				parts = append(parts, ContentPart{
-					Text: m.Content,
-				})
-			}
-
-			for _, c := range m.ToolCalls {
-				parts = append(parts, ContentPart{
-					FunctionCall: &FunctionCall{
-						Name: c.Name,
-						Args: json.RawMessage([]byte(c.Arguments)),
-					},
-				})
-			}
-
-			result = append(result, Content{
-				Role:  ContentRoleModel,
-				Parts: parts,
-			})
-
-		case provider.MessageRoleTool:
-			parts := []ContentPart{
-				{
-					FunctionResponse: &FunctionResponse{
-						Name: m.Tool,
-
-						Response: Response{
-							Name:    m.Tool,
-							Content: json.RawMessage([]byte(m.Content)),
-						},
-					},
-				},
-			}
-
-			result = append(result, Content{
-				Role:  ContentRoleUser,
-				Parts: parts,
-			})
-
-		default:
-			return nil, errors.New("unsupported message role")
+		if m.Role != provider.MessageRoleSystem {
+			continue
 		}
+
+		if m.Content != "" {
+			parts = append(parts, genai.Text(m.Content))
+		}
+	}
+
+	if len(parts) == 0 {
+		return nil, nil
+	}
+
+	return &genai.Content{
+		Parts: parts,
+	}, nil
+}
+
+func convertContent(message provider.Message) (*genai.Content, error) {
+	var role string
+	var parts []genai.Part
+
+	switch message.Role {
+	case provider.MessageRoleUser:
+		role = "user"
+
+		if message.Content != "" {
+			parts = append(parts, genai.Text(message.Content))
+		}
+
+		for _, f := range message.Files {
+			if strings.HasPrefix(f.ContentType, "image/") {
+				format := strings.Split(f.ContentType, "/")[1]
+
+				data, err := io.ReadAll(f.Content)
+
+				if err != nil {
+					return nil, err
+				}
+
+				parts = append(parts, genai.ImageData(format, data))
+			}
+		}
+
+	case provider.MessageRoleAssistant:
+		role = "model"
+
+		if message.Content != "" {
+			parts = append(parts, genai.Text(message.Content))
+		}
+
+		for _, c := range message.ToolCalls {
+			var data map[string]any
+			json.Unmarshal([]byte(c.Arguments), &data)
+
+			part := genai.FunctionCall{
+				Name: c.Name,
+				Args: data,
+			}
+
+			parts = append(parts, part)
+		}
+
+	case provider.MessageRoleTool:
+		role = "user"
+
+		var data any
+		json.Unmarshal([]byte(message.Content), &data)
+
+		var parameters map[string]any
+
+		if val, ok := data.(map[string]any); ok {
+			parameters = val
+		}
+
+		if val, ok := data.([]any); ok {
+			parameters = map[string]any{"data": val}
+		}
+
+		part := genai.FunctionResponse{
+			Name:     message.Tool,
+			Response: parameters,
+		}
+
+		parts = append(parts, part)
+	}
+
+	content := &genai.Content{
+		Role:  role,
+		Parts: parts,
+	}
+
+	return content, nil
+}
+
+func convertHistory(messages []provider.Message) ([]*genai.Content, error) {
+	var result []*genai.Content
+
+	if len(messages) < 1 {
+		return result, nil
+	}
+
+	for _, m := range messages[:len(messages)-1] {
+		if m.Role == provider.MessageRoleUser {
+			content, err := convertContent(m)
+
+			if err != nil {
+				return nil, err
+			}
+
+			result = append(result, content)
+		}
+
+		if m.Role == provider.MessageRoleAssistant {
+			content, err := convertContent(m)
+
+			if err != nil {
+				return nil, err
+			}
+
+			result = append(result, content)
+		}
+	}
+
+	if len(result) == 0 {
+		return nil, nil
 	}
 
 	return result, nil
 }
 
-func convertFunctions(tools []provider.Tool) ([]FunctionDeclaration, error) {
-	var result []FunctionDeclaration
+func convertTools(tools []provider.Tool) []*genai.Tool {
+	var functions []*genai.FunctionDeclaration
 
 	for _, t := range tools {
-		function := FunctionDeclaration{
+		function := &genai.FunctionDeclaration{
 			Name:        t.Name,
 			Description: t.Description,
 
-			Parameters: t.Parameters,
+			Parameters: convertSchema(t.Parameters),
 		}
 
-		delete(function.Parameters, "additionalProperties")
-
-		result = append(result, function)
+		functions = append(functions, function)
 	}
 
-	return result, nil
+	if len(functions) == 0 {
+		return nil
+	}
+
+	return []*genai.Tool{
+		{
+			FunctionDeclarations: functions,
+		},
+	}
 }
 
-type ContentRole string
+func convertSchema(parameters map[string]any) *genai.Schema {
+	if len(parameters) == 0 {
+		return nil
+	}
 
-var (
-	ContentRoleUser  ContentRole = "user"
-	ContentRoleModel ContentRole = "model"
-)
+	schema := &genai.Schema{
+		Type: genai.TypeObject,
+	}
 
-// https://ai.google.dev/gemini-api/docs/text-generation?lang=rest#chat
-type GenerateRequest struct {
-	Contents []Content `json:"contents"`
+	if val, ok := parameters["type"].(string); ok {
+		switch val {
+		case "string":
+			schema.Type = genai.TypeString
+		case "number":
+			schema.Type = genai.TypeNumber
+		case "integer":
+			schema.Type = genai.TypeInteger
+		case "boolean ":
+			schema.Type = genai.TypeBoolean
+		case "array":
+			schema.Type = genai.TypeArray
+		case "object":
+			schema.Type = genai.TypeObject
+		}
+	}
 
-	Tools []Tool `json:"tools,omitempty"`
+	if val, ok := parameters["description"].(string); ok {
+		schema.Description = val
+	}
 
-	Config *GenerationConfig `json:"generationConfig,omitempty"`
+	if val, ok := parameters["enum"].([]string); ok {
+		schema.Enum = val
+	}
+
+	if val, ok := parameters["items"].(map[string]any); ok {
+		schema.Items = convertSchema(val)
+	}
+
+	if val, ok := parameters["properties"].(map[string]any); ok {
+		schema.Properties = make(map[string]*genai.Schema)
+
+		for key, value := range val {
+			parameters, ok := value.(map[string]any)
+
+			if ok {
+				schema.Properties[key] = convertSchema(parameters)
+			}
+		}
+	}
+
+	if val, ok := parameters["required"].([]string); ok {
+		schema.Required = val
+	}
+
+	return schema
 }
 
-type Content struct {
-	Role ContentRole `json:"role"`
+func toContent(content *genai.Content) string {
+	if content == nil {
+		return ""
+	}
 
-	Parts []ContentPart `json:"parts"`
-}
-
-type ContentPart struct {
-	Text string `json:"text,omitempty"`
-
-	FunctionCall     *FunctionCall     `json:"functionCall,omitempty"`
-	FunctionResponse *FunctionResponse `json:"functionResponse,omitempty"`
-}
-
-type GenerationConfig struct {
-	ResponseType   string         `json:"response_mime_type"`
-	ResponseSchema map[string]any `json:"response_schema"`
-}
-
-type FunctionCall struct {
-	Name string          `json:"name"`
-	Args json.RawMessage `json:"args"`
-}
-
-type FunctionResponse struct {
-	Name string `json:"name"`
-
-	Response Response `json:"response,omitempty"`
-}
-
-type Response struct {
-	Name string `json:"name"`
-
-	Content json.RawMessage `json:"content"`
-}
-
-type Tool struct {
-	FunctionDeclarations []FunctionDeclaration `json:"function_declarations,omitempty"`
-}
-
-type FunctionDeclaration struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-
-	Parameters map[string]any `json:"parameters"`
-}
-
-type GenerateResponse struct {
-	Candidates []Candidate `json:"candidates"`
-}
-
-type Candidate struct {
-	Index int `json:"index"`
-
-	FinishReason FinishReason `json:"finishReason"`
-
-	Content Content `json:"content"`
-}
-
-type FinishReason string
-
-var (
-	FinishReasonStop FinishReason = "STOP"
-)
-
-type UsageMetadata struct {
-	PromptTokenCount     int `json:"promptTokenCount"`
-	CandidatesTokenCount int `json:"candidatesTokenCount"`
-	TotalTokenCount      int `json:"totalTokenCount"`
-}
-
-func toContent(content Content) string {
 	for _, p := range content.Parts {
-		if p.Text == "" {
-			continue
+		switch v := p.(type) {
+		case genai.Text:
+			return string(v)
 		}
-
-		return p.Text
 	}
-
 	return ""
 }
 
-func toToolCalls(content Content) []provider.ToolCall {
+func toToolCalls(content *genai.Content) []provider.ToolCall {
+	if content == nil {
+		return nil
+	}
+
 	var result []provider.ToolCall
 
 	for _, p := range content.Parts {
-		if p.FunctionCall == nil {
-			continue
+		switch v := p.(type) {
+		case genai.FunctionCall:
+			data, _ := json.Marshal(v.Args)
+
+			call := provider.ToolCall{
+				ID: uuid.NewString(),
+
+				Name:      v.Name,
+				Arguments: string(data),
+			}
+
+			result = append(result, call)
 		}
-
-		arguments, _ := p.FunctionCall.Args.MarshalJSON()
-
-		call := provider.ToolCall{
-			ID: uuid.NewString(),
-
-			Name:      p.FunctionCall.Name,
-			Arguments: string(arguments),
-		}
-
-		result = append(result, call)
 	}
 
 	return result
 }
 
-func toCompletionResult(val FinishReason) provider.CompletionReason {
+func toCompletionResult(val genai.FinishReason) provider.CompletionReason {
 	switch val {
-	case FinishReasonStop:
+	case genai.FinishReasonStop:
 		return provider.CompletionReasonStop
+
+	case genai.FinishReasonMaxTokens:
+		return provider.CompletionReasonLength
+
+	case genai.FinishReasonSafety:
+		return provider.CompletionReasonFilter
+
+	case genai.FinishReasonRecitation:
+		return provider.CompletionReasonFilter
 
 	default:
 		return ""

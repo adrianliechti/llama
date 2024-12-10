@@ -42,7 +42,8 @@ func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 
 	transcription, err := t.transcriptions.New(ctx, openai.AudioTranscriptionNewParams{
 		Model: openai.F(t.model),
-		File:  openai.FileParam(input.Content, input.Name, ""),
+
+		File: openai.FileParam(input.Content, input.Name, input.ContentType),
 
 		ResponseFormat: openai.F(openai.AudioResponseFormatVerboseJSON),
 	})

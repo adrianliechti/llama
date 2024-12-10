@@ -2,11 +2,9 @@ package google
 
 import (
 	"context"
-	"encoding/json"
-	"net/http"
-	"net/url"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/google/generative-ai-go/genai"
 )
 
 var _ provider.Embedder = (*Embedder)(nil)
@@ -17,9 +15,6 @@ type Embedder struct {
 
 func NewEmbedder(model string, options ...Option) (*Embedder, error) {
 	cfg := &Config{
-		client: http.DefaultClient,
-
-		url:   "https://generativelanguage.googleapis.com",
 		model: model,
 	}
 
@@ -33,59 +28,23 @@ func NewEmbedder(model string, options ...Option) (*Embedder, error) {
 }
 
 func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
-	body := EmbedRequest{
-		Model: e.model,
-
-		Content: Content{
-			Parts: []ContentPart{
-				{
-					Text: content,
-				},
-			},
-		},
-	}
-
-	url, _ := url.JoinPath(e.url, "/v1beta/models/"+e.model+":embedContent")
-
-	if e.token != "" {
-		url += "?key=" + e.token
-	}
-
-	req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
-	req.Header.Set("content-type", "application/json")
-
-	resp, err := e.client.Do(req)
+	client, err := genai.NewClient(ctx, e.Options()...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	defer resp.Body.Close()
+	defer client.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, convertError(resp)
-	}
+	model := client.EmbeddingModel(e.model)
 
-	var result EmbedResponse
+	resp, err := model.EmbedContent(ctx, genai.Text(content))
 
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
+	if err != nil {
+		return nil, convertError(err)
 	}
 
 	return &provider.Embedding{
-		Data: result.Embedding.Values,
+		Data: resp.Embedding.Values,
 	}, nil
-}
-
-type EmbedRequest struct {
-	Model   string  `json:"model"`
-	Content Content `json:"content"`
-}
-
-type EmbedResponse struct {
-	Embedding Embedding `json:"embedding"`
-}
-
-type Embedding struct {
-	Values []float32 `json:"values"`
 }

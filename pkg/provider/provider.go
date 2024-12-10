@@ -13,8 +13,10 @@ type Model struct {
 type File struct {
 	ID string
 
-	Name    string
-	Content io.Reader
+	Name string
+
+	ContentType string
+	Content     io.Reader
 }
 
 type Tool struct {

@@ -37,8 +37,10 @@ func (h *Handler) handleAudioTranscription(w http.ResponseWriter, r *http.Reques
 	defer file.Close()
 
 	input := provider.File{
-		Content: file,
-		Name:    header.Filename,
+		Name: header.Filename,
+
+		Content:     file,
+		ContentType: header.Header.Get("Content-Type"),
 	}
 
 	options := &provider.TranscribeOptions{}

@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io"
-	"net/http"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 
@@ -240,7 +239,7 @@ func (c *Completer) convertMessageRequest(input []provider.Message, options *pro
 					return nil, err
 				}
 
-				mime := http.DetectContentType(data)
+				mime := f.ContentType
 				content := base64.StdEncoding.EncodeToString(data)
 
 				blocks = append(blocks, anthropic.NewImageBlockBase64(mime, content))

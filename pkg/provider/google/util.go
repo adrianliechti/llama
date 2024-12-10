@@ -1,29 +1,17 @@
 package google
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
-	"io"
-	"net/http"
+
+	"google.golang.org/api/googleapi"
 )
 
-func convertError(resp *http.Response) error {
-	data, _ := io.ReadAll(resp.Body)
+func convertError(err error) error {
+	var apierr *googleapi.Error
 
-	if len(data) == 0 {
-		return errors.New(http.StatusText(resp.StatusCode))
+	if errors.As(err, &apierr) {
+		return errors.New(apierr.Body)
 	}
 
-	return errors.New(string(data))
-}
-
-func jsonReader(v any) io.Reader {
-	b := new(bytes.Buffer)
-
-	enc := json.NewEncoder(b)
-	enc.SetEscapeHTML(false)
-
-	enc.Encode(v)
-	return b
+	return err
 }

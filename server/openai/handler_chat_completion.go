@@ -260,10 +260,11 @@ func toFile(url string) (*provider.File, error) {
 		}
 
 		file := provider.File{
-			Content: bytes.NewReader(data),
+			Content:     bytes.NewReader(data),
+			ContentType: resp.Header.Get("Content-Type"),
 		}
 
-		if ext, _ := mime.ExtensionsByType(resp.Header.Get("Content-Type")); len(ext) > 0 {
+		if ext, _ := mime.ExtensionsByType(file.ContentType); len(ext) > 0 {
 			file.Name = uuid.New().String() + ext[0]
 		}
 
@@ -286,10 +287,11 @@ func toFile(url string) (*provider.File, error) {
 		}
 
 		file := provider.File{
-			Content: bytes.NewReader(data),
+			Content:     bytes.NewReader(data),
+			ContentType: match[1],
 		}
 
-		if ext, _ := mime.ExtensionsByType(match[1]); len(ext) > 0 {
+		if ext, _ := mime.ExtensionsByType(file.ContentType); len(ext) > 0 {
 			file.Name = uuid.New().String() + ext[0]
 		}
 

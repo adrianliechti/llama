@@ -6,10 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"path"
 	"reflect"
-	"slices"
-	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 
@@ -403,23 +400,13 @@ func convertToolConfig(tools []provider.Tool) *types.ToolConfiguration {
 }
 
 func convertFile(val provider.File) (types.ContentBlock, error) {
-	format := strings.TrimPrefix(path.Ext(val.Name), ".")
-
-	if format == "jpg" || format == "jpe" {
-		format = "jpeg"
-	}
-
-	if format == "m4v" {
-		format = "mp4"
-	}
-
 	data, err := io.ReadAll(val.Content)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if slices.Contains(types.ImageFormat("").Values(), types.ImageFormat(format)) {
+	if format, ok := convertImageFormat(val.ContentType); ok {
 		return &types.ContentBlockMemberImage{
 			Value: types.ImageBlock{
 				Format: types.ImageFormat(format),
@@ -430,7 +417,7 @@ func convertFile(val provider.File) (types.ContentBlock, error) {
 		}, nil
 	}
 
-	if slices.Contains(types.VideoFormat("").Values(), types.VideoFormat(format)) {
+	if format, ok := convertVideoFormat(val.ContentType); ok {
 		return &types.ContentBlockMemberVideo{
 			Value: types.VideoBlock{
 				Format: types.VideoFormat(format),
@@ -441,20 +428,43 @@ func convertFile(val provider.File) (types.ContentBlock, error) {
 		}, nil
 	}
 
-	if slices.Contains(types.DocumentFormat("").Values(), types.DocumentFormat(format)) {
-		return &types.ContentBlockMemberDocument{
-			Value: types.DocumentBlock{
-				Name: aws.String(strings.TrimSuffix(path.Base(val.Name), path.Ext(val.Name))),
+	return nil, errors.New("unsupported file format")
+}
 
-				Format: types.DocumentFormat(format),
-				Source: &types.DocumentSourceMemberBytes{
-					Value: data,
-				},
-			},
-		}, nil
+func convertImageFormat(mime string) (types.ImageFormat, bool) {
+	switch mime {
+	case "image/png":
+		return types.ImageFormatPng, true
+
+	case "image/jpeg":
+		return types.ImageFormatJpeg, true
+
+	case "image/gif":
+		return types.ImageFormatGif, true
+
+	case "image/webp":
+		return types.ImageFormatWebp, true
 	}
 
-	return nil, errors.New("unsupported file format")
+	return "", false
+}
+
+func convertVideoFormat(mime string) (types.VideoFormat, bool) {
+	switch mime {
+	case "video/matroska":
+		return types.VideoFormatMkv, true
+
+	case "video/quicktime":
+		return types.VideoFormatMov, true
+
+	case "video/mp4":
+		return types.VideoFormatMp4, true
+
+	case "video/webm":
+		return types.VideoFormatWebm, true
+	}
+
+	return "", false
 }
 
 func toCompletionResult(val types.StopReason) provider.CompletionReason {

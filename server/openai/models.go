@@ -23,12 +23,46 @@ type ModelList struct {
 
 // https://platform.openai.com/docs/api-reference/embeddings/create
 type EmbeddingsRequest struct {
-	Input any    `json:"input"`
 	Model string `json:"model"`
+
+	Input any `json:"input"`
 
 	// encoding_format string: float, base64
 	// dimensions int
 	// user string
+}
+
+func (r *EmbeddingsRequest) UnmarshalJSON(data []byte) error {
+	type1 := struct {
+		Model string `json:"model"`
+		Input string `json:"input"`
+	}{}
+
+	if err := json.Unmarshal(data, &type1); err == nil {
+		*r = EmbeddingsRequest{
+			Model: type1.Model,
+			Input: type1.Input,
+		}
+
+		return nil
+	}
+
+	type2 := struct {
+		Model string `json:"model"`
+
+		Input []string `json:"input"`
+	}{}
+
+	if err := json.Unmarshal(data, &type2); err == nil {
+		*r = EmbeddingsRequest{
+			Model: type2.Model,
+			Input: type2.Input,
+		}
+
+		return nil
+	}
+
+	return nil
 }
 
 // https://platform.openai.com/docs/api-reference/embeddings/object
