@@ -2,27 +2,24 @@ package mistral
 
 import (
 	"net/http"
+
+	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
 type Config struct {
-	url string
-
-	token string
-	model string
-
-	client *http.Client
+	options []openai.Option
 }
 
 type Option func(*Config)
 
 func WithClient(client *http.Client) Option {
 	return func(c *Config) {
-		c.client = client
+		c.options = append(c.options, openai.WithClient(client))
 	}
 }
 
 func WithToken(token string) Option {
 	return func(c *Config) {
-		c.token = token
+		c.options = append(c.options, openai.WithToken(token))
 	}
 }
