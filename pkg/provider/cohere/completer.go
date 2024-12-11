@@ -1,29 +1,28 @@
 package cohere
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
 	"io"
-	"net/http"
-	"net/url"
-	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/llama/pkg/to"
+	"github.com/google/uuid"
+
+	v2 "github.com/cohere-ai/cohere-go/v2"
+	client "github.com/cohere-ai/cohere-go/v2/v2"
 )
 
 var _ provider.Completer = (*Completer)(nil)
 
 type Completer struct {
 	*Config
+	client *client.Client
 }
 
 func NewCompleter(model string, options ...Option) (*Completer, error) {
 	cfg := &Config{
-		client: http.DefaultClient,
-
-		url:   "https://api.cohere.com",
 		model: model,
 	}
 
@@ -33,6 +32,7 @@ func NewCompleter(model string, options ...Option) (*Completer, error) {
 
 	return &Completer{
 		Config: cfg,
+		client: client.NewClient(cfg.Options()...),
 	}, nil
 }
 
@@ -48,255 +48,424 @@ func (c *Completer) Complete(ctx context.Context, messages []provider.Message, o
 	}
 
 	if options.Stream != nil {
-		return c.completeStream(ctx, *req, options)
+		req := &v2.V2ChatStreamRequest{
+			Model: c.model,
+
+			Tools:    req.Tools,
+			Messages: req.Messages,
+
+			ResponseFormat: req.ResponseFormat,
+
+			MaxTokens:     req.MaxTokens,
+			StopSequences: req.StopSequences,
+			Temperature:   req.Temperature,
+		}
+		return c.completeStream(ctx, req, options)
 	}
 
-	return c.complete(ctx, *req, options)
+	return c.complete(ctx, req, options)
 }
 
-func (c *Completer) complete(ctx context.Context, req ChatRequest, options *provider.CompleteOptions) (*provider.Completion, error) {
-	url, _ := url.JoinPath(c.url, "/v1/chat")
-
-	body, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(req))
-	body.Header.Set("Authorization", "Bearer "+c.token)
-	body.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.client.Do(body)
+func (c *Completer) complete(ctx context.Context, req *v2.V2ChatRequest, options *provider.CompleteOptions) (*provider.Completion, error) {
+	resp, err := c.client.Chat(ctx, req)
 
 	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, convertError(resp)
-	}
-
-	var response ChatResponse
-
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, err
+		return nil, convertError(err)
 	}
 
 	return &provider.Completion{
-		ID:     response.ID,
-		Reason: provider.CompletionReasonStop,
+		ID:     resp.Id,
+		Reason: toCompletionReason(resp.FinishReason),
 
 		Message: provider.Message{
 			Role:    provider.MessageRoleAssistant,
-			Content: response.Text,
+			Content: fromAssistantMessageContent(resp.Message),
 		},
 	}, nil
 }
 
-func (c *Completer) completeStream(ctx context.Context, req ChatRequest, options *provider.CompleteOptions) (*provider.Completion, error) {
-	url, _ := url.JoinPath(c.url, "/v1/chat")
-
-	body, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(req))
-	body.Header.Set("Authorization", "Bearer "+c.token)
-	body.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.client.Do(body)
+func (c *Completer) completeStream(ctx context.Context, req *v2.V2ChatStreamRequest, options *provider.CompleteOptions) (*provider.Completion, error) {
+	stream, err := c.client.ChatStream(ctx, req)
 
 	if err != nil {
 		return nil, err
 	}
 
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, convertError(resp)
-	}
-
-	reader := bufio.NewReader(resp.Body)
+	defer stream.Close()
 
 	result := &provider.Completion{
+		ID: uuid.New().String(),
+
 		Message: provider.Message{
 			Role: provider.MessageRoleAssistant,
 		},
+
+		//Usage: &provider.Usage{},
 	}
 
-	for i := 0; ; i++ {
-		data, err := reader.ReadString('\n')
+	resultToolID := ""
+	resultToolCalls := map[string]provider.ToolCall{}
+
+	for {
+		resp, err := stream.Recv()
+
+		if errors.Is(err, io.EOF) {
+			break
+		}
 
 		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
+			return nil, convertError(err)
+		}
+
+		if resp.MessageStart != nil {
+			result.ID = *resp.MessageStart.Id
+		}
+
+		if resp.ContentStart != nil {
+			if resp.ContentStart.Delta != nil && resp.ContentStart.Delta.Message != nil && resp.ContentStart.Delta.Message.Content != nil && resp.ContentStart.Delta.Message.Content.Text != nil {
+				content := *resp.ContentStart.Delta.Message.Content.Text
+				result.Message.Content += content
+
+				if len(content) > 0 {
+					delta := provider.Completion{
+						ID: result.ID,
+
+						Message: provider.Message{
+							Role:    provider.MessageRoleAssistant,
+							Content: content,
+						},
+					}
+
+					if err := options.Stream(ctx, delta); err != nil {
+						return nil, err
+					}
+				}
 			}
 
-			return nil, err
 		}
 
-		data = strings.TrimSpace(data)
+		if resp.ContentDelta != nil {
+			if resp.ContentDelta.Delta != nil && resp.ContentDelta.Delta.Message != nil && resp.ContentDelta.Delta.Message.Content != nil && resp.ContentDelta.Delta.Message.Content.Text != nil {
+				content := *resp.ContentDelta.Delta.Message.Content.Text
+				result.Message.Content += content
 
-		if len(data) == 0 {
-			continue
+				if len(content) > 0 {
+					delta := provider.Completion{
+						ID: result.ID,
+
+						Message: provider.Message{
+							Role:    provider.MessageRoleAssistant,
+							Content: content,
+						},
+					}
+
+					if err := options.Stream(ctx, delta); err != nil {
+						return nil, err
+					}
+				}
+			}
 		}
 
-		var event ChatEvent
-
-		if err := json.Unmarshal([]byte(data), &event); err != nil {
-			return nil, err
+		if resp.ContentEnd != nil {
 		}
 
-		if event.ID != "" {
-			result.ID = event.ID
+		if resp.MessageEnd != nil {
+			reson := resp.MessageEnd.Delta.FinishReason
+
+			delta := provider.Completion{
+				ID: result.ID,
+
+				Message: provider.Message{
+					Role:    provider.MessageRoleAssistant,
+					Content: "",
+				},
+			}
+
+			if resp.MessageEnd.Delta != nil && reson != nil {
+				result.Reason = toCompletionReason(*reson)
+			}
+
+			if delta.Reason == "" {
+				delta.Reason = provider.CompletionReasonStop
+			}
+
+			if err := options.Stream(ctx, delta); err != nil {
+				return nil, err
+			}
 		}
 
-		result.Reason = toCompletionReason(event.FinishReason)
-		result.Message.Content += event.Text
+		if resp.ToolCallStart != nil {
+			if resp.ToolCallStart.Delta != nil {
+				var data struct {
+					Message struct {
+						ToolCalls *v2.ToolCallV2 `json:"tool_calls"`
+					} `json:"message"`
+				}
 
-		delta := provider.Completion{
-			ID:     result.ID,
-			Reason: result.Reason,
+				json.Unmarshal([]byte(resp.ToolCallStart.Delta.String()), &data)
 
-			Message: provider.Message{
-				Role:    result.Message.Role,
-				Content: event.Text,
-			},
+				if data.Message.ToolCalls != nil {
+					call := data.Message.ToolCalls
+
+					tool := provider.ToolCall{}
+
+					if call.Id != nil {
+						tool.ID = *call.Id
+					}
+
+					if call.Function != nil {
+						if call.Function.Name != nil {
+							tool.Name = *call.Function.Name
+						}
+
+						if call.Function.Arguments != nil {
+							tool.Arguments = *call.Function.Arguments
+						}
+					}
+
+					if tool.ID != "" {
+						resultToolID = tool.ID
+						resultToolCalls[tool.ID] = tool
+					}
+
+					delta := provider.Completion{
+						ID: result.ID,
+
+						Message: provider.Message{
+							Role: provider.MessageRoleAssistant,
+
+							ToolCalls: []provider.ToolCall{tool},
+						},
+					}
+
+					if err := options.Stream(ctx, delta); err != nil {
+						return nil, err
+					}
+
+				}
+			}
 		}
 
-		if err := options.Stream(ctx, delta); err != nil {
-			return nil, err
+		if resp.ToolCallDelta != nil {
+			if resp.ToolCallDelta.Delta != nil {
+				var data struct {
+					Message struct {
+						ToolCalls *v2.ToolCallV2 `json:"tool_calls"`
+					} `json:"message"`
+				}
+
+				json.Unmarshal([]byte(resp.ToolCallDelta.Delta.String()), &data)
+
+				if data.Message.ToolCalls != nil {
+					call := data.Message.ToolCalls
+
+					tool := provider.ToolCall{}
+
+					if call.Function != nil {
+						if call.Function.Arguments != nil {
+							tool.Arguments = *call.Function.Arguments
+						}
+					}
+
+					if t, ok := resultToolCalls[resultToolID]; ok {
+						t.Arguments += tool.Arguments
+						resultToolCalls[resultToolID] = t
+					}
+
+					delta := provider.Completion{
+						ID: result.ID,
+
+						Message: provider.Message{
+							Role: provider.MessageRoleAssistant,
+
+							ToolCalls: []provider.ToolCall{tool},
+						},
+					}
+
+					if err := options.Stream(ctx, delta); err != nil {
+						return nil, err
+					}
+				}
+			}
 		}
+
+		if resp.ToolCallEnd != nil {
+			resultToolID = ""
+		}
+	}
+
+	if len(resultToolCalls) > 0 {
+		result.Message.ToolCalls = to.Values(resultToolCalls)
 	}
 
 	return result, nil
 }
 
-func convertMessageRole(role provider.MessageRole) MessageRole {
-	switch role {
-	case provider.MessageRoleSystem:
-		return MessageRoleSystem
-
-	case provider.MessageRoleUser:
-		return MessageRoleUser
-
-	case provider.MessageRoleAssistant:
-		return MessageRoleAssistant
-
-	case provider.MessageRoleTool:
-		return MessageRoleTool
-	}
-
-	return ""
-}
-
-func toCompletionReason(reason FinishReason) provider.CompletionReason {
-	switch reason {
-	case FinishReasonComplete:
-		return provider.CompletionReasonStop
-	}
-
-	return ""
-}
-
-func convertChatRequest(model string, messages []provider.Message, options *provider.CompleteOptions) (*ChatRequest, error) {
+func convertChatRequest(model string, messages []provider.Message, options *provider.CompleteOptions) (*v2.V2ChatRequest, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
 	}
 
-	stream := options.Stream != nil
-
-	message := messages[len(messages)-1]
-
-	req := &ChatRequest{
-		Stream: stream,
-
-		Model:   model,
-		Message: message.Content,
-
-		MaxTokens:   options.MaxTokens,
-		Temperature: options.Temperature,
-
-		StopSequences: options.Stop,
+	req := &v2.V2ChatRequest{
+		Model: model,
 	}
 
-	for _, m := range messages[:len(messages)-1] {
-		message := Message{
-			Role:    convertMessageRole(m.Role),
-			Message: m.Content,
+	if options.Stop != nil {
+		req.StopSequences = options.Stop
+	}
+
+	if options.MaxTokens != nil {
+		req.MaxTokens = options.MaxTokens
+	}
+
+	if options.Temperature != nil {
+		req.Temperature = to.Ptr(float64(*options.Temperature))
+	}
+
+	for _, t := range options.Tools {
+		tool := &v2.ToolV2{
+			Type: to.Ptr("function"),
+
+			Function: &v2.ToolV2Function{
+				Name:        to.Ptr(t.Name),
+				Description: to.Ptr(t.Description),
+
+				Parameters: t.Parameters,
+			},
 		}
 
-		req.History = append(req.History, message)
+		req.Tools = append(req.Tools, tool)
 	}
 
-	if options.Format == provider.CompletionFormatJSON {
-		req.ResponseFormat = ResponseFormatJSON
+	for _, m := range messages {
+		switch m.Role {
+
+		case provider.MessageRoleSystem:
+			message := &v2.ChatMessageV2{
+				Role: "system",
+
+				System: &v2.SystemMessage{
+					Content: &v2.SystemMessageContent{
+						String: m.Content,
+					},
+				},
+			}
+
+			req.Messages = append(req.Messages, message)
+		}
+
+		if m.Role == provider.MessageRoleUser {
+			message := &v2.ChatMessageV2{
+				Role: "user",
+
+				User: &v2.UserMessage{
+					Content: &v2.UserMessageContent{
+						String: m.Content,
+					},
+				},
+			}
+
+			req.Messages = append(req.Messages, message)
+		}
+
+		if m.Role == provider.MessageRoleAssistant {
+			message := &v2.ChatMessageV2{
+				Role: "assistant",
+
+				Assistant: &v2.AssistantMessage{},
+			}
+
+			if m.Content != "" {
+				message.Assistant.Content = &v2.AssistantMessageContent{
+					String: m.Content,
+				}
+			}
+
+			for _, t := range m.ToolCalls {
+				call := &v2.ToolCallV2{
+					Id:   to.Ptr(t.ID),
+					Type: to.Ptr("function"),
+
+					Function: &v2.ToolCallV2Function{
+						Name:      to.Ptr(t.Name),
+						Arguments: to.Ptr(t.Arguments),
+					},
+				}
+
+				message.Assistant.ToolCalls = append(message.Assistant.ToolCalls, call)
+			}
+
+			req.Messages = append(req.Messages, message)
+		}
+
+		if m.Role == provider.MessageRoleTool {
+			var data any
+			json.Unmarshal([]byte(m.Content), &data)
+
+			var parameters map[string]any
+
+			if val, ok := data.(map[string]any); ok {
+				parameters = val
+			}
+
+			if val, ok := data.([]any); ok {
+				parameters = map[string]any{"data": val}
+			}
+
+			content, _ := json.Marshal(parameters)
+
+			message := &v2.ChatMessageV2{
+				Role: "tool",
+
+				Tool: &v2.ToolMessageV2{
+					ToolCallId: m.Tool,
+
+					Content: &v2.ToolMessageV2Content{
+						String: string(content),
+					},
+				},
+			}
+
+			req.Messages = append(req.Messages, message)
+		}
 	}
 
 	return req, nil
 }
 
-type MessageRole string
+func toCompletionReason(reason v2.ChatFinishReason) provider.CompletionReason {
+	switch reason {
+	case v2.ChatFinishReasonComplete:
+		return provider.CompletionReasonStop
 
-var (
-	MessageRoleSystem    MessageRole = "SYSTEM"
-	MessageRoleUser      MessageRole = "USER"
-	MessageRoleAssistant MessageRole = "CHATBOT"
-	MessageRoleTool      MessageRole = "TOOL"
-)
+	case v2.ChatFinishReasonStopSequence:
+		return provider.CompletionReasonStop
 
-type ResponseFormat string
+	case v2.ChatFinishReasonMaxTokens:
+		return provider.CompletionReasonLength
 
-var (
-	ResponseFormatText ResponseFormat = "text"
-	ResponseFormatJSON ResponseFormat = "json_object"
-)
+	case v2.ChatFinishReasonToolCall:
+		return provider.CompletionReasonTool
 
-type FinishReason string
+	case v2.ChatFinishReasonError:
+		return ""
+	}
 
-var (
-	FinishReasonComplete FinishReason = "COMPLETE"
-)
-
-type Message struct {
-	Role MessageRole `json:"role,omitempty"`
-
-	Message string `json:"message"`
+	return ""
 }
 
-type ChatRequest struct {
-	Stream bool `json:"stream,omitempty"`
+func fromAssistantMessageContent(val *v2.AssistantMessageResponse) string {
+	if val == nil {
+		return ""
+	}
 
-	Model   string    `json:"model"`
-	Message string    `json:"message"`
-	History []Message `json:"chat_history"`
+	for _, c := range val.Content {
+		if c.Text == nil || c.Text.Text == "" {
+			continue
+		}
 
-	MaxTokens   *int     `json:"max_tokens,omitempty"`
-	Temperature *float32 `json:"temperature,omitempty"`
+		return c.Text.Text
+	}
 
-	StopSequences  []string       `json:"stop_sequences,omitempty"`
-	ResponseFormat ResponseFormat `json:"response_format,omitempty"`
-}
-
-type ChatResponse struct {
-	ID string `json:"generation_id"`
-
-	Text string `json:"text"`
-
-	FinishReason FinishReason `json:"finish_reason"`
-
-	Metadata Metadata `json:"meta"`
-}
-
-type ChatEvent struct {
-	ID string `json:"generation_id"`
-
-	Type     string `json:"event_type"`
-	Finished bool   `json:"is_finished"`
-
-	Text string `json:"text"`
-
-	FinishReason FinishReason `json:"finish_reason"`
-}
-
-type Metadata struct {
-	Usage Usage `json:"billed_units"`
-}
-
-type Usage struct {
-	InputTokens  int `json:"input_tokens"`
-	OutputTokens int `json:"output_tokens"`
+	return ""
 }

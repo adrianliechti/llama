@@ -421,6 +421,7 @@ func toContent(content *genai.Content) string {
 			return string(v)
 		}
 	}
+
 	return ""
 }
 

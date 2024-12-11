@@ -1,29 +1,15 @@
 package cohere
 
-import (
-	"bytes"
-	"encoding/json"
-	"errors"
-	"io"
-	"net/http"
-)
-
-func convertError(resp *http.Response) error {
-	data, _ := io.ReadAll(resp.Body)
-
-	if len(data) == 0 {
-		return errors.New(http.StatusText(resp.StatusCode))
-	}
-
-	return errors.New(string(data))
+func convertError(err error) error {
+	return err
 }
 
-func jsonReader(v any) io.Reader {
-	b := new(bytes.Buffer)
+func toFloat32(input []float64) []float32 {
+	result := make([]float32, len(input))
 
-	enc := json.NewEncoder(b)
-	enc.SetEscapeHTML(false)
+	for i, v := range input {
+		result[i] = float32(v)
+	}
 
-	enc.Encode(v)
-	return b
+	return result
 }

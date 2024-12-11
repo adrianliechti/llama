@@ -90,7 +90,7 @@ func cohereEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, 
 		options = append(options, cohere.WithToken(cfg.Token))
 	}
 
-	return cohere.NewEmbedder(cfg.URL, model.ID, options...)
+	return cohere.NewEmbedder(model.ID, options...)
 }
 
 func googleEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
