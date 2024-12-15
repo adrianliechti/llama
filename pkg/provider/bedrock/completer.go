@@ -190,9 +190,7 @@ func (c *Completer) completeStream(ctx context.Context, req *bedrockruntime.Conv
 		case *types.ConverseStreamOutputMemberContentBlockStop:
 
 		case *types.ConverseStreamOutputMemberMessageStop:
-			reason := toCompletionResult(v.Value.StopReason)
-
-			if reason != "" {
+			if reason := toCompletionResult(v.Value.StopReason); reason != "" {
 				result.Reason = reason
 			}
 
@@ -226,6 +224,10 @@ func (c *Completer) completeStream(ctx context.Context, req *bedrockruntime.Conv
 		default:
 			fmt.Printf("unknown event type, %T\n", v)
 		}
+	}
+
+	if result.Reason == "" {
+		result.Reason = provider.CompletionReasonStop
 	}
 
 	return result, nil

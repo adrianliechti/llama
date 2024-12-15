@@ -122,7 +122,10 @@ func (c *Completer) completeStream(ctx context.Context, req anthropic.MessageNew
 
 		case anthropic.ContentBlockDeltaEvent:
 			delta := provider.Completion{
+				ID: message.ID,
+
 				Message: provider.Message{
+					Role:    provider.MessageRoleAssistant,
 					Content: event.Delta.Text,
 				},
 			}

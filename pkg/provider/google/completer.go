@@ -156,6 +156,10 @@ func (c *Completer) completeStream(ctx context.Context, session *genai.ChatSessi
 
 		candidate := resp.Candidates[0]
 
+		if reason := toCompletionResult(candidate.FinishReason); reason != "" {
+			result.Reason = reason
+		}
+
 		content := toContent(candidate.Content)
 
 		if i == 0 {
@@ -172,6 +176,8 @@ func (c *Completer) completeStream(ctx context.Context, session *genai.ChatSessi
 			delta := provider.Completion{
 				ID: result.ID,
 
+				Reason: result.Reason,
+
 				Message: provider.Message{
 					Role:    provider.MessageRoleAssistant,
 					Content: content,
@@ -186,7 +192,12 @@ func (c *Completer) completeStream(ctx context.Context, session *genai.ChatSessi
 
 	result.Message.Content = strings.TrimRightFunc(result.Message.Content, unicode.IsSpace)
 
+	if result.Reason == "" {
+		result.Reason = provider.CompletionReasonStop
+	}
+
 	if len(resultToolCalls) > 0 {
+		result.Reason = provider.CompletionReasonTool
 		result.Message.ToolCalls = to.Values(resultToolCalls)
 	}
 
