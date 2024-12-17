@@ -6,7 +6,7 @@ export ANTHROPIC_API_KEY=sk-ant-......
 docker compose up --force-recreate --remove-orphans
 ```
 
-open [localhost:8501](http://localhost:8501) in your favorite browser
+open [localhost:8000](http://localhost:8000) in your favorite browser
 
 ## Completion API
 
@@ -14,7 +14,7 @@ open [localhost:8501](http://localhost:8501) in your favorite browser
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "claude-3.5-sonnet",
+    "model": "claude-sonnet",
     "messages": [
       {
         "role": "system",
@@ -34,7 +34,7 @@ curl http://localhost:8080/v1/chat/completions \
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "claude-3.5-sonnet",
+    "model": "claude-sonnet",
     "messages": [
       {
         "role": "user",

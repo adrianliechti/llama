@@ -45,4 +45,4 @@ tasks:
 
   webui:
     cmds:
-      - docker run -it --rm --pull always -p 8501:8501 -e OPENAI_BASE_URL=http://host.docker.internal:8080/v1 ghcr.io/adrianliechti/llama-streamlit
+      - docker run -it --rm --pull always -p 8000:8000 -e OPENAI_BASE_URL=http://host.docker.internal:8080/v1 ghcr.io/adrianliechti/llama-chat

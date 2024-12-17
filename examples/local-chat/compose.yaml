@@ -15,7 +15,7 @@ services:
       - ollama-companion
   
   ollama:
-    image: ollama/ollama:0.3.12
+    image: ollama/ollama:0.5.3
     pull_policy: always
     volumes:
       - ollama-data:/root/.ollama
@@ -29,10 +29,10 @@ services:
       - OLLAMA_MODELS=llama3.2:1b,nomic-embed-text:v1.5
 
   web:
-    image: ghcr.io/adrianliechti/llama-streamlit
+    image: ghcr.io/adrianliechti/llama-chat
     pull_policy: always
     ports:
-      - 8501:8501
+      - 8000:8000
     environment:
       - OPENAI_BASE_URL=http://platform:8080/v1
     depends_on:

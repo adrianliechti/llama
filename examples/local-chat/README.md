@@ -12,7 +12,7 @@ docker compose up --force-recreate --remove-orphans
 ## Open Web UI
 
 ```shell
-$ open http://localhost:8501
+$ open http://localhost:8000
 ```
 
 ## Completion API
