@@ -79,7 +79,19 @@ func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, err
 		return nil, errors.New("missing prompt parameter")
 	}
 
-	options := &provider.RenderOptions{}
+	options := &provider.RenderOptions{
+		Style: provider.ImageStyleVivid,
+	}
+
+	if style, ok := parameters["style"].(string); ok {
+		if style == "vivid" {
+			options.Style = provider.ImageStyleVivid
+		}
+
+		if style == "natural" {
+			options.Style = provider.ImageStyleNatural
+		}
+	}
 
 	image, err := t.renderer.Render(ctx, prompt, options)
 
@@ -109,5 +121,8 @@ func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, err
 
 	return Result{
 		URL: url,
+
+		//Style:  string(options.Style),
+		//Prompt: prompt,
 	}, nil
 }
