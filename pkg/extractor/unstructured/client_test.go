@@ -33,7 +33,7 @@ func TestExtract(t *testing.T) {
 	url, err := server.Endpoint(ctx, "")
 	require.NoError(t, err)
 
-	c, err := unstructured.New("http://"+url,
+	c, err := unstructured.New("http://"+url+"/general/v0/general",
 		unstructured.WithStrategy(unstructured.StrategyFast),
 	)
 

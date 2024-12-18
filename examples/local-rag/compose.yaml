@@ -69,7 +69,7 @@ configs:
       extractors:
         unstructured:
           type: unstructured
-          url: http://unstructured:8000
+          url: http://unstructured:8000/general/v0/general
 
         text:
           type: text

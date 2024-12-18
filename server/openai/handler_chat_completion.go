@@ -191,11 +191,16 @@ func toMessages(s []ChatCompletionMessage) ([]provider.Message, error) {
 
 	for _, m := range s {
 		content := m.Content
+
 		files := make([]provider.File, 0)
 
 		for _, c := range m.Contents {
 			if c.Type == "text" {
-				content = c.Text
+				if len(content) > 0 {
+					content += "\n\n"
+				}
+
+				content += c.Text
 			}
 
 			if c.Type == MessageContentTypeFileURL && c.FileURL != nil {

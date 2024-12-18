@@ -9,7 +9,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 
 	"github.com/adrianliechti/llama/pkg/segmenter"
 )
@@ -46,8 +45,6 @@ func (c *Client) Segment(ctx context.Context, input segmenter.File, options *seg
 		options = new(segmenter.SegmentOptions)
 	}
 
-	url, _ := url.JoinPath(c.url, "/general/v0/general")
-
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 
@@ -80,7 +77,7 @@ func (c *Client) Segment(ctx context.Context, input segmenter.File, options *seg
 
 	w.Close()
 
-	req, _ := http.NewRequestWithContext(ctx, "POST", url, &b)
+	req, _ := http.NewRequestWithContext(ctx, "POST", c.url, &b)
 	req.Header.Set("Content-Type", w.FormDataContentType())
 
 	resp, err := c.client.Do(req)
