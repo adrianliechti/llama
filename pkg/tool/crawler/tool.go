@@ -20,7 +20,7 @@ type Tool struct {
 func New(extractor extractor.Provider, options ...Option) (*Tool, error) {
 	t := &Tool{
 		name:        "crawler",
-		description: "return the content of a website as markdown",
+		description: "fetch and return the markdown content from a given URL, including website pages, YouTube video transcriptions, and similar sources",
 
 		extractor: extractor,
 	}
