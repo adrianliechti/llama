@@ -27,7 +27,7 @@ type Tool struct {
 func New(options ...Option) (*Tool, error) {
 	t := &Tool{
 		name:        "draw",
-		description: "Draw an image using stable diffusion based on a input prompt. Returns a URL to the generated image. Render the URL as markdown ```![prompt](url)```",
+		description: "Generate images based based on user-provided prompts. Returns a URL to download the generated image.",
 
 		client: http.DefaultClient,
 	}
@@ -54,12 +54,12 @@ func (*Tool) Parameters() map[string]any {
 		"properties": map[string]any{
 			"prompt": map[string]any{
 				"type":        "string",
-				"description": "text description of the desired image. must be in english - translate if needed.",
+				"description": "detailed text description of the image to generate. must be english.",
 			},
 
 			"style": map[string]any{
 				"type":        "string",
-				"description": "style of the image. defaults to vivid",
+				"description": "style of the image. defaults to vivid.",
 
 				"enum": []string{
 					"vivid",
@@ -79,7 +79,19 @@ func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, err
 		return nil, errors.New("missing prompt parameter")
 	}
 
-	options := &provider.RenderOptions{}
+	options := &provider.RenderOptions{
+		Style: provider.ImageStyleVivid,
+	}
+
+	if style, ok := parameters["style"].(string); ok {
+		if style == "vivid" {
+			options.Style = provider.ImageStyleVivid
+		}
+
+		if style == "natural" {
+			options.Style = provider.ImageStyleNatural
+		}
+	}
 
 	image, err := t.renderer.Render(ctx, prompt, options)
 
@@ -109,5 +121,8 @@ func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, err
 
 	return Result{
 		URL: url,
+
+		//Style:  string(options.Style),
+		//Prompt: prompt,
 	}, nil
 }
