@@ -408,10 +408,22 @@ func convertFile(val provider.File) (types.ContentBlock, error) {
 		return nil, err
 	}
 
+	if format, ok := convertDocumentFormat(val.ContentType); ok {
+		return &types.ContentBlockMemberDocument{
+			Value: types.DocumentBlock{
+				Name:   aws.String(uuid.NewString()),
+				Format: format,
+				Source: &types.DocumentSourceMemberBytes{
+					Value: data,
+				},
+			},
+		}, nil
+	}
+
 	if format, ok := convertImageFormat(val.ContentType); ok {
 		return &types.ContentBlockMemberImage{
 			Value: types.ImageBlock{
-				Format: types.ImageFormat(format),
+				Format: format,
 				Source: &types.ImageSourceMemberBytes{
 					Value: data,
 				},
@@ -422,7 +434,7 @@ func convertFile(val provider.File) (types.ContentBlock, error) {
 	if format, ok := convertVideoFormat(val.ContentType); ok {
 		return &types.ContentBlockMemberVideo{
 			Value: types.VideoBlock{
-				Format: types.VideoFormat(format),
+				Format: format,
 				Source: &types.VideoSourceMemberBytes{
 					Value: data,
 				},
@@ -431,6 +443,30 @@ func convertFile(val provider.File) (types.ContentBlock, error) {
 	}
 
 	return nil, errors.New("unsupported file format")
+}
+
+func convertDocumentFormat(mime string) (types.DocumentFormat, bool) {
+	switch mime {
+	case "application/pdf":
+		return types.DocumentFormatPdf, true
+
+	case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+		return types.DocumentFormatDocx, true
+
+	case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+		return types.DocumentFormatXlsx, true
+
+	case "text/plain":
+		return types.DocumentFormatTxt, true
+
+	case "text/csv":
+		return types.DocumentFormatCsv, true
+
+	case "text/markdown":
+		return types.DocumentFormatMd, true
+	}
+
+	return "", false
 }
 
 func convertImageFormat(mime string) (types.ImageFormat, bool) {

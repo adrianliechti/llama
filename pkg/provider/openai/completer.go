@@ -3,8 +3,8 @@ package openai
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"io"
-	"net/http"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 
@@ -228,11 +228,17 @@ func convertMessages(input []provider.Message) ([]openai.ChatCompletionMessagePa
 					return nil, err
 				}
 
-				mime := http.DetectContentType(data)
+				mime := f.ContentType
 				content := base64.StdEncoding.EncodeToString(data)
 
-				url := "data:" + mime + ";base64," + content
-				parts = append(parts, openai.ImagePart(url))
+				switch f.ContentType {
+				case "image/png", "image/jpeg", "image/webp", "image/gif":
+					url := "data:" + mime + ";base64," + content
+					parts = append(parts, openai.ImagePart(url))
+
+				default:
+					return nil, errors.New("unsupported content type")
+				}
 			}
 
 			message := openai.UserMessageParts(parts...)

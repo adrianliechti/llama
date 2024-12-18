@@ -3,6 +3,7 @@ package google
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"strings"
 	"unicode"
@@ -239,7 +240,8 @@ func convertContent(message provider.Message) (*genai.Content, error) {
 		}
 
 		for _, f := range message.Files {
-			if strings.HasPrefix(f.ContentType, "image/") {
+			switch f.ContentType {
+			case "image/png", "image/jpeg", "image/webp", "image/heic", "image/heif":
 				format := strings.Split(f.ContentType, "/")[1]
 
 				data, err := io.ReadAll(f.Content)
@@ -249,6 +251,9 @@ func convertContent(message provider.Message) (*genai.Content, error) {
 				}
 
 				parts = append(parts, genai.ImageData(format, data))
+
+			default:
+				return nil, errors.New("unsupported content type")
 			}
 		}
 

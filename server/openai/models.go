@@ -194,10 +194,20 @@ type ChatCompletionMessage struct {
 	ToolCallID string     `json:"tool_call_id,omitempty"`
 }
 
+type MessageContentType string
+
+var (
+	MessageContentTypeText     MessageContentType = "text"
+	MessageContentTypeFileURL  MessageContentType = "file_url" // non-standard
+	MessageContentTypeImageURL MessageContentType = "image_url"
+)
+
 type MessageContent struct {
-	Type string `json:"type,omitempty"`
+	Type MessageContentType `json:"type,omitempty"`
+
 	Text string `json:"text,omitempty"`
 
+	FileURL  *MessageContentURL `json:"file_url,omitempty"` // non-standard
 	ImageURL *MessageContentURL `json:"image_url,omitempty"`
 }
 

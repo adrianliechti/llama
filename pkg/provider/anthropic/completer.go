@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"io"
 
 	"github.com/adrianliechti/llama/pkg/provider"
@@ -245,7 +246,26 @@ func (c *Completer) convertMessageRequest(input []provider.Message, options *pro
 				mime := f.ContentType
 				content := base64.StdEncoding.EncodeToString(data)
 
-				blocks = append(blocks, anthropic.NewImageBlockBase64(mime, content))
+				switch mime {
+				case "image/jpeg", "image/png", "image/gif", "image/webp":
+					blocks = append(blocks, anthropic.NewImageBlockBase64(mime, content))
+
+				case "application/pdf":
+					block := anthropic.DocumentBlockParam{
+						Type: anthropic.F(anthropic.DocumentBlockParamTypeDocument),
+
+						Source: anthropic.F(anthropic.Base64PDFSourceParam{
+							Type:      anthropic.F(anthropic.Base64PDFSourceTypeBase64),
+							Data:      anthropic.F(content),
+							MediaType: anthropic.F(anthropic.Base64PDFSourceMediaTypeApplicationPDF),
+						}),
+					}
+
+					blocks = append(blocks, block)
+
+				default:
+					return nil, errors.New("unsupported content type")
+				}
 			}
 
 			message := anthropic.NewUserMessage(blocks...)

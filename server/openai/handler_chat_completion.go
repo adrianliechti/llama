@@ -198,8 +198,18 @@ func toMessages(s []ChatCompletionMessage) ([]provider.Message, error) {
 				content = c.Text
 			}
 
-			if c.Type == "image_url" && c.ImageURL != nil {
-				file, err := toFile(*&c.ImageURL.URL)
+			if c.Type == MessageContentTypeFileURL && c.FileURL != nil {
+				file, err := toFile(c.FileURL.URL)
+
+				if err != nil {
+					return nil, err
+				}
+
+				files = append(files, *file)
+			}
+
+			if c.Type == MessageContentTypeImageURL && c.ImageURL != nil {
+				file, err := toFile(c.ImageURL.URL)
 
 				if err != nil {
 					return nil, err
