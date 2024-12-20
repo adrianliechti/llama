@@ -120,6 +120,10 @@ func (cfg *Config) registerTools(f *configFile) error {
 			context.Synthesizer = p
 		}
 
+		if config.Name == "" {
+			config.Name = id
+		}
+
 		tool, err := createTool(config, context)
 
 		if err != nil {
