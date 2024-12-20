@@ -118,7 +118,7 @@ func (c *Completer) complete(ctx context.Context, session *genai.ChatSession, pa
 
 	return &provider.Completion{
 		ID:     uuid.New().String(),
-		Reason: toCompletionResult(candidate.FinishReason),
+		Reason: toCompletionResult(candidate),
 
 		Message: provider.Message{
 			Role:    provider.MessageRoleAssistant,
@@ -157,7 +157,7 @@ func (c *Completer) completeStream(ctx context.Context, session *genai.ChatSessi
 
 		candidate := resp.Candidates[0]
 
-		if reason := toCompletionResult(candidate.FinishReason); reason != "" {
+		if reason := toCompletionResult(candidate); reason != "" {
 			result.Reason = reason
 		}
 
@@ -467,11 +467,8 @@ func toToolCalls(content *genai.Content) []provider.ToolCall {
 	return result
 }
 
-func toCompletionResult(val genai.FinishReason) provider.CompletionReason {
-	switch val {
-	case genai.FinishReasonStop:
-		return provider.CompletionReasonStop
-
+func toCompletionResult(candidate *genai.Candidate) provider.CompletionReason {
+	switch candidate.FinishReason {
 	case genai.FinishReasonMaxTokens:
 		return provider.CompletionReasonLength
 
@@ -480,6 +477,15 @@ func toCompletionResult(val genai.FinishReason) provider.CompletionReason {
 
 	case genai.FinishReasonRecitation:
 		return provider.CompletionReasonFilter
+	}
+
+	if len(toToolCalls(candidate.Content)) > 0 {
+		return provider.CompletionReasonTool
+	}
+
+	switch candidate.FinishReason {
+	case genai.FinishReasonStop:
+		return provider.CompletionReasonStop
 
 	default:
 		return ""
