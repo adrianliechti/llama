@@ -26,6 +26,7 @@ func NewTemplate(text string) (*Template, error) {
 			"now":        now,
 			"date":       date,
 			"dateInZone": dateInZone,
+			"include":    include,
 		}).
 		Parse(text)
 
