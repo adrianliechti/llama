@@ -1,4 +1,4 @@
-package duckduckgo
+package search
 
 type Result struct {
 	URL string `json:"url"`

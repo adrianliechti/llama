@@ -1,13 +1,6 @@
 package tavily
 
-type Result struct {
-	URL string `json:"url"`
-
-	Title   string `json:"title"`
-	Content string `json:"content"`
-}
-
-type SearchResult struct {
+type searchResult struct {
 	Query string `json:"query"`
 
 	Answer string `json:"answer"`
