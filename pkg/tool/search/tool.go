@@ -1,12 +1,10 @@
-package searxng
+package search
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"net/http"
-	"net/url"
 
+	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/tool"
 )
 
@@ -16,21 +14,23 @@ type Tool struct {
 	name        string
 	description string
 
-	url    string
-	client *http.Client
+	index index.Provider
 }
 
-func New(url string, options ...Option) (*Tool, error) {
+func New(index index.Provider, options ...Option) (*Tool, error) {
 	t := &Tool{
-		name:        "searxng",
-		description: "Search online if the requested information cannot be found in the language model or the information could be present in a time after the language model was trained.",
+		name:        "search",
+		description: "Search online if the requested information cannot be found in the language model or the information could be present in a time after the language model was trained",
 
-		url:    url,
-		client: http.DefaultClient,
+		index: index,
 	}
 
 	for _, option := range options {
 		option(t)
+	}
+
+	if t.index == nil {
+		return nil, errors.New("missing index provider")
 	}
 
 	return t, nil
@@ -66,44 +66,22 @@ func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, err
 		return nil, errors.New("missing query parameter")
 	}
 
-	url, _ := url.Parse(t.url)
-	url = url.JoinPath("/search")
+	options := &index.QueryOptions{}
 
-	values := url.Query()
-	values.Set("q", query)
-	values.Set("format", "json")
-	values.Set("safesearch", "0")
-
-	url.RawQuery = values.Encode()
-
-	req, _ := http.NewRequestWithContext(ctx, "GET", url.String(), nil)
-
-	resp, err := t.client.Do(req)
+	data, err := t.index.Query(ctx, query, options)
 
 	if err != nil {
 		return nil, err
 	}
 
-	defer resp.Body.Close()
+	results := []Result{}
 
-	if resp.StatusCode != 200 {
-		return nil, errors.New("failed to fetch search results")
-	}
-
-	var data SearchResponse
-
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, err
-	}
-
-	var results []Result
-
-	for _, r := range data.Results {
+	for _, r := range data {
 		result := Result{
-			URL: r.URL,
-
 			Title:   r.Title,
 			Content: r.Content,
+
+			URL: r.Location,
 		}
 
 		results = append(results, result)

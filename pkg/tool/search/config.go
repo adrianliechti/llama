@@ -1,16 +1,6 @@
-package duckduckgo
-
-import (
-	"net/http"
-)
+package search
 
 type Option func(*Tool)
-
-func WithClient(client *http.Client) Option {
-	return func(t *Tool) {
-		t.client = client
-	}
-}
 
 func WithName(val string) Option {
 	return func(t *Tool) {

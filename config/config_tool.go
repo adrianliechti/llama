@@ -5,20 +5,23 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
-	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"github.com/adrianliechti/llama/pkg/tool"
-	"github.com/adrianliechti/llama/pkg/tool/bing"
 	"github.com/adrianliechti/llama/pkg/tool/crawler"
 	"github.com/adrianliechti/llama/pkg/tool/custom"
 	"github.com/adrianliechti/llama/pkg/tool/draw"
-	"github.com/adrianliechti/llama/pkg/tool/duckduckgo"
 	"github.com/adrianliechti/llama/pkg/tool/retriever"
-	"github.com/adrianliechti/llama/pkg/tool/searxng"
+	"github.com/adrianliechti/llama/pkg/tool/search"
 	"github.com/adrianliechti/llama/pkg/tool/speak"
-	"github.com/adrianliechti/llama/pkg/tool/tavily"
 	"github.com/adrianliechti/llama/pkg/tool/translate"
 	"github.com/adrianliechti/llama/pkg/translator"
+
+	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/llama/pkg/index/bing"
+	"github.com/adrianliechti/llama/pkg/index/duckduckgo"
+	"github.com/adrianliechti/llama/pkg/index/searxng"
+	"github.com/adrianliechti/llama/pkg/index/tavily"
 
 	"github.com/adrianliechti/llama/pkg/otel"
 )
@@ -135,8 +138,6 @@ func (cfg *Config) registerTools(f *configFile) error {
 
 func createTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	switch strings.ToLower(cfg.Type) {
-	case "bing":
-		return bingTool(cfg, context)
 
 	case "crawler":
 		return crawlerTool(cfg, context)
@@ -144,20 +145,14 @@ func createTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	case "draw":
 		return drawTool(cfg, context)
 
-	case "duckduckgo":
-		return duckduckgoTool(cfg, context)
-
 	case "retriever":
 		return retrieverTool(cfg, context)
 
-	case "searxng":
-		return searxngTool(cfg, context)
+	case "search":
+		return searchTool(cfg, context)
 
 	case "speak":
 		return speakTool(cfg, context)
-
-	case "tavily":
-		return tavilyTool(cfg, context)
 
 	case "translate":
 		return translateTool(cfg, context)
@@ -165,23 +160,21 @@ func createTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	case "custom":
 		return customTool(cfg, context)
 
+	case "bing":
+		return bingTool(cfg, context)
+
+	case "duckduckgo":
+		return duckduckgoTool(cfg, context)
+
+	case "searxng":
+		return searxngTool(cfg, context)
+
+	case "tavily":
+		return tavilyTool(cfg, context)
+
 	default:
 		return nil, errors.New("invalid tool type: " + cfg.Type)
 	}
-}
-
-func bingTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
-	var options []bing.Option
-
-	if cfg.Name != "" {
-		options = append(options, bing.WithName(cfg.Name))
-	}
-
-	if cfg.Description != "" {
-		options = append(options, bing.WithDescription(cfg.Description))
-	}
-
-	return bing.New(cfg.Token, options...)
 }
 
 func crawlerTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
@@ -216,20 +209,6 @@ func drawTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	return draw.New(options...)
 }
 
-func duckduckgoTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
-	var options []duckduckgo.Option
-
-	if cfg.Name != "" {
-		options = append(options, duckduckgo.WithName(cfg.Name))
-	}
-
-	if cfg.Description != "" {
-		options = append(options, duckduckgo.WithDescription(cfg.Description))
-	}
-
-	return duckduckgo.New(options...)
-}
-
 func retrieverTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	var options []retriever.Option
 
@@ -244,18 +223,18 @@ func retrieverTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	return retriever.New(context.Index, options...)
 }
 
-func searxngTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
-	var options []searxng.Option
+func searchTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+	var options []search.Option
 
 	if cfg.Name != "" {
-		options = append(options, searxng.WithName(cfg.Name))
+		options = append(options, search.WithName(cfg.Name))
 	}
 
 	if cfg.Description != "" {
-		options = append(options, searxng.WithDescription(cfg.Description))
+		options = append(options, search.WithDescription(cfg.Description))
 	}
 
-	return searxng.New(cfg.URL, options...)
+	return search.New(context.Index, options...)
 }
 
 func speakTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
@@ -274,20 +253,6 @@ func speakTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	}
 
 	return speak.New(options...)
-}
-
-func tavilyTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
-	var options []tavily.Option
-
-	if cfg.Name != "" {
-		options = append(options, tavily.WithName(cfg.Name))
-	}
-
-	if cfg.Description != "" {
-		options = append(options, tavily.WithDescription(cfg.Description))
-	}
-
-	return tavily.New(cfg.Token, options...)
 }
 
 func translateTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
@@ -316,4 +281,52 @@ func customTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	}
 
 	return custom.New(cfg.URL, options...)
+}
+
+func bingTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+	index, err := bing.New(cfg.Token)
+
+	if err != nil {
+		return nil, err
+	}
+
+	context.Index = index
+
+	return searchTool(cfg, context)
+}
+
+func duckduckgoTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+	index, err := duckduckgo.New()
+
+	if err != nil {
+		return nil, err
+	}
+
+	context.Index = index
+
+	return searchTool(cfg, context)
+}
+
+func searxngTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+	index, err := searxng.New(cfg.Token)
+
+	if err != nil {
+		return nil, err
+	}
+
+	context.Index = index
+
+	return searchTool(cfg, context)
+}
+
+func tavilyTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+	index, err := tavily.New(cfg.Token)
+
+	if err != nil {
+		return nil, err
+	}
+
+	context.Index = index
+
+	return searchTool(cfg, context)
 }

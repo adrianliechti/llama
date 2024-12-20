@@ -9,64 +9,29 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/index"
 	"github.com/adrianliechti/llama/pkg/text"
-	"github.com/adrianliechti/llama/pkg/tool"
 )
 
-var _ tool.Tool = &Tool{}
+var _ index.Provider = &Client{}
 
-type Tool struct {
-	name        string
-	description string
-
+type Client struct {
 	client *http.Client
 }
 
-func New(options ...Option) (*Tool, error) {
-	t := &Tool{
-		name:        "duckduckgo",
-		description: "Search online if the requested information cannot be found in the language model or the information could be present in a time after the language model was trained.",
-
+func New(options ...Option) (*Client, error) {
+	c := &Client{
 		client: http.DefaultClient,
 	}
 
 	for _, option := range options {
-		option(t)
+		option(c)
 	}
 
-	return t, nil
+	return c, nil
 }
 
-func (t *Tool) Name() string {
-	return t.name
-}
-
-func (t *Tool) Description() string {
-	return t.description
-}
-
-func (*Tool) Parameters() map[string]any {
-	return map[string]any{
-		"type": "object",
-
-		"properties": map[string]any{
-			"query": map[string]any{
-				"type":        "string",
-				"description": "the text to search online for to get the necessary information",
-			},
-		},
-
-		"required": []string{"query"},
-	}
-}
-
-func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, error) {
-	query, ok := parameters["query"].(string)
-
-	if !ok {
-		return nil, errors.New("missing query parameter")
-	}
-
+func (c *Client) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
 	url, _ := url.Parse("https://duckduckgo.com/html/")
 
 	values := url.Query()
@@ -83,7 +48,7 @@ func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, err
 	req.Header.Set("Sec-Fetch-Site", "cross-site")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Safari/605.1.15")
 
-	resp, err := t.client.Do(req)
+	resp, err := c.client.Do(req)
 
 	if err != nil {
 		return nil, err
@@ -91,7 +56,7 @@ func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, err
 
 	defer resp.Body.Close()
 
-	var results []Result
+	var results []index.Result
 
 	regexLink := regexp.MustCompile(`href="([^"]+)"`)
 	regexSnippet := regexp.MustCompile(`<[^>]*>`)
@@ -131,10 +96,13 @@ func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, err
 			continue
 		}
 
-		result := Result{
-			URL:     resultURL,
-			Title:   resultTitle,
-			Content: resultSnippet,
+		result := index.Result{
+			Document: index.Document{
+				Location: resultURL,
+
+				Title:   resultTitle,
+				Content: resultSnippet,
+			},
 		}
 
 		results = append(results, result)
@@ -145,4 +113,16 @@ func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, err
 	}
 
 	return results, nil
+}
+
+func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+	return nil, errors.ErrUnsupported
+}
+
+func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
+	return errors.ErrUnsupported
+}
+
+func (c *Client) Delete(ctx context.Context, ids ...string) error {
+	return errors.ErrUnsupported
 }
