@@ -16,7 +16,7 @@ services:
       - qdrant
   
   ollama:
-    image: ollama/ollama:0.3.12
+    image: ollama/ollama:0.5.4
     pull_policy: always
     volumes:
       - ollama-data:/root/.ollama
