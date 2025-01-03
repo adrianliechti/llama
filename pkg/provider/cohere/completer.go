@@ -195,96 +195,75 @@ func (c *Completer) completeStream(ctx context.Context, req *v2.V2ChatStreamRequ
 		}
 
 		if resp.ToolCallStart != nil {
-			if resp.ToolCallStart.Delta != nil {
-				var data struct {
-					Message struct {
-						ToolCalls *v2.ToolCallV2 `json:"tool_calls"`
-					} `json:"message"`
+			if resp.ToolCallStart.Delta != nil && resp.ToolCallStart.Delta.Message != nil && resp.ToolCallStart.Delta.Message.ToolCalls != nil {
+				call := resp.ToolCallStart.Delta.Message.ToolCalls
+
+				tool := provider.ToolCall{}
+
+				if call.Id != nil {
+					tool.ID = *call.Id
 				}
 
-				json.Unmarshal([]byte(resp.ToolCallStart.Delta.String()), &data)
-
-				if data.Message.ToolCalls != nil {
-					call := data.Message.ToolCalls
-
-					tool := provider.ToolCall{}
-
-					if call.Id != nil {
-						tool.ID = *call.Id
+				if call.Function != nil {
+					if call.Function.Name != nil {
+						tool.Name = *call.Function.Name
 					}
 
-					if call.Function != nil {
-						if call.Function.Name != nil {
-							tool.Name = *call.Function.Name
-						}
-
-						if call.Function.Arguments != nil {
-							tool.Arguments = *call.Function.Arguments
-						}
+					if call.Function.Arguments != nil {
+						tool.Arguments = *call.Function.Arguments
 					}
+				}
 
-					if tool.ID != "" {
-						resultToolID = tool.ID
-						resultToolCalls[tool.ID] = tool
-					}
+				if tool.ID != "" {
+					resultToolID = tool.ID
+					resultToolCalls[tool.ID] = tool
+				}
 
-					delta := provider.Completion{
-						ID: result.ID,
+				delta := provider.Completion{
+					ID: result.ID,
 
-						Message: provider.Message{
-							Role: provider.MessageRoleAssistant,
+					Message: provider.Message{
+						Role: provider.MessageRoleAssistant,
 
-							ToolCalls: []provider.ToolCall{tool},
-						},
-					}
+						ToolCalls: []provider.ToolCall{tool},
+					},
+				}
 
-					if err := options.Stream(ctx, delta); err != nil {
-						return nil, err
-					}
-
+				if err := options.Stream(ctx, delta); err != nil {
+					return nil, err
 				}
 			}
 		}
 
 		if resp.ToolCallDelta != nil {
-			if resp.ToolCallDelta.Delta != nil {
-				var data struct {
-					Message struct {
-						ToolCalls *v2.ToolCallV2 `json:"tool_calls"`
-					} `json:"message"`
+			if resp.ToolCallDelta.Delta != nil && resp.ToolCallDelta.Delta.Message != nil && resp.ToolCallDelta.Delta.Message.ToolCalls != nil {
+				call := resp.ToolCallDelta.Delta.Message.ToolCalls
+
+				tool := provider.ToolCall{}
+
+				if call.Function != nil {
+					if call.Function.Arguments != nil {
+						tool.Arguments = *call.Function.Arguments
+					}
 				}
 
-				json.Unmarshal([]byte(resp.ToolCallDelta.Delta.String()), &data)
+				if t, ok := resultToolCalls[resultToolID]; ok {
+					t.Arguments += tool.Arguments
+					resultToolCalls[resultToolID] = t
+				}
 
-				if data.Message.ToolCalls != nil {
-					call := data.Message.ToolCalls
+				delta := provider.Completion{
+					ID: result.ID,
 
-					tool := provider.ToolCall{}
+					Message: provider.Message{
+						Role: provider.MessageRoleAssistant,
 
-					if call.Function != nil {
-						if call.Function.Arguments != nil {
-							tool.Arguments = *call.Function.Arguments
-						}
-					}
+						ToolCalls: []provider.ToolCall{tool},
+					},
+				}
 
-					if t, ok := resultToolCalls[resultToolID]; ok {
-						t.Arguments += tool.Arguments
-						resultToolCalls[resultToolID] = t
-					}
-
-					delta := provider.Completion{
-						ID: result.ID,
-
-						Message: provider.Message{
-							Role: provider.MessageRoleAssistant,
-
-							ToolCalls: []provider.ToolCall{tool},
-						},
-					}
-
-					if err := options.Stream(ctx, delta); err != nil {
-						return nil, err
-					}
+				if err := options.Stream(ctx, delta); err != nil {
+					return nil, err
 				}
 			}
 		}
