@@ -60,10 +60,15 @@ func (c *Completer) complete(ctx context.Context, req openai.ChatCompletionNewPa
 	}
 
 	choice := completion.Choices[0]
+	reason := toCompletionResult(choice.FinishReason)
+
+	if reason == "" {
+		reason = provider.CompletionReasonStop
+	}
 
 	return &provider.Completion{
 		ID:     completion.ID,
-		Reason: toCompletionResult(choice.FinishReason),
+		Reason: reason,
 
 		Message: provider.Message{
 			Role:    provider.MessageRoleAssistant,
@@ -92,15 +97,17 @@ func (c *Completer) completeStream(ctx context.Context, req openai.ChatCompletio
 			continue
 		}
 
+		choice := chunk.Choices[0]
+
 		delta := provider.Completion{
 			ID:     completion.ID,
-			Reason: toDeltaCompletionResult(chunk.Choices[0].FinishReason),
+			Reason: toDeltaCompletionResult(choice.FinishReason),
 
 			Message: provider.Message{
 				Role:    provider.MessageRoleAssistant,
-				Content: chunk.Choices[0].Delta.Content,
+				Content: choice.Delta.Content,
 
-				ToolCalls: toDeltaToolCalls(chunk.Choices[0].Delta.ToolCalls),
+				ToolCalls: toDeltaToolCalls(choice.Delta.ToolCalls),
 			},
 		}
 
@@ -114,10 +121,15 @@ func (c *Completer) completeStream(ctx context.Context, req openai.ChatCompletio
 	}
 
 	choice := completion.Choices[0]
+	reason := toCompletionResult(choice.FinishReason)
+
+	if reason == "" {
+		reason = provider.CompletionReasonStop
+	}
 
 	return &provider.Completion{
 		ID:     completion.ID,
-		Reason: toCompletionResult(choice.FinishReason),
+		Reason: reason,
 
 		Message: provider.Message{
 			Role:    provider.MessageRoleAssistant,

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/router/roundrobin"
 )
@@ -53,6 +54,10 @@ func (cfg *Config) registerRouters(f *configFile) error {
 		}
 
 		if completer, ok := router.(provider.Completer); ok {
+			if _, ok := completer.(otel.Completer); !ok {
+				completer = otel.NewCompleter(config.Type, id, completer)
+			}
+
 			cfg.RegisterCompleter(id, completer)
 		}
 	}
