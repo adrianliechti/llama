@@ -125,20 +125,6 @@ func (c *Completer) completeStream(ctx context.Context, req openai.ChatCompletio
 
 	if reason == "" {
 		reason = provider.CompletionReasonStop
-
-		delta := provider.Completion{
-			ID:     completion.ID,
-			Reason: provider.CompletionReasonStop,
-
-			Message: provider.Message{
-				Role:    provider.MessageRoleAssistant,
-				Content: "",
-			},
-		}
-
-		if err := options.Stream(ctx, delta); err != nil {
-			return nil, err
-		}
 	}
 
 	return &provider.Completion{
