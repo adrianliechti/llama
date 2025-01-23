@@ -3,7 +3,7 @@ module github.com/adrianliechti/llama
 go 1.23
 
 require (
-	github.com/anthropics/anthropic-sdk-go v0.2.0-alpha.8
+	github.com/anthropics/anthropic-sdk-go v0.2.0-alpha.9
 	github.com/aws/aws-sdk-go-v2 v1.33.0
 	github.com/aws/aws-sdk-go-v2/config v1.29.1
 	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.24.0
@@ -29,8 +29,8 @@ require (
 	go.opentelemetry.io/otel/sdk/log v0.10.0
 	go.opentelemetry.io/otel/sdk/metric v1.34.0
 	golang.org/x/time v0.9.0
-	google.golang.org/api v0.217.0
-	google.golang.org/grpc v1.69.4
+	google.golang.org/api v0.218.0
+	google.golang.org/grpc v1.70.0
 	google.golang.org/protobuf v1.36.3
 	gopkg.in/yaml.v3 v3.0.1
 )

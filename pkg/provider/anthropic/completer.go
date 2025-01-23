@@ -254,11 +254,11 @@ func (c *Completer) convertMessageRequest(input []provider.Message, options *pro
 					block := anthropic.DocumentBlockParam{
 						Type: anthropic.F(anthropic.DocumentBlockParamTypeDocument),
 
-						Source: anthropic.F(anthropic.Base64PDFSourceParam{
+						Source: anthropic.F(anthropic.DocumentBlockParamSourceUnion(anthropic.Base64PDFSourceParam{
 							Type:      anthropic.F(anthropic.Base64PDFSourceTypeBase64),
 							Data:      anthropic.F(content),
 							MediaType: anthropic.F(anthropic.Base64PDFSourceMediaTypeApplicationPDF),
-						}),
+						})),
 					}
 
 					blocks = append(blocks, block)
