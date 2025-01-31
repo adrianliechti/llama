@@ -14,7 +14,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/chain/agent"
 	"github.com/adrianliechti/llama/pkg/chain/assistant"
 	"github.com/adrianliechti/llama/pkg/chain/rag"
-	"github.com/adrianliechti/llama/pkg/chain/reasoning"
 
 	"github.com/adrianliechti/llama/pkg/to"
 	"github.com/adrianliechti/llama/pkg/tool"
@@ -166,9 +165,6 @@ func createChain(cfg chainConfig, context chainContext) (chain.Provider, error) 
 	case "rag":
 		return ragChain(cfg, context)
 
-	case "reasoning":
-		return reasoningChain(cfg, context)
-
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
 	}
@@ -234,18 +230,4 @@ func ragChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 	}
 
 	return rag.New(options...)
-}
-
-func reasoningChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
-	var options []reasoning.Option
-
-	if context.Completer != nil {
-		options = append(options, reasoning.WithCompleter(context.Completer))
-	}
-
-	if cfg.Temperature != nil {
-		options = append(options, reasoning.WithTemperature(*cfg.Temperature))
-	}
-
-	return reasoning.New(options...)
 }
