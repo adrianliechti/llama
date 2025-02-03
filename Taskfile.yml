@@ -50,6 +50,10 @@ tasks:
   start:
     cmds:
       - docker run --name llama-platform -d --rm --pull always -p 8080:8080 --env-file .env -v ./config.yaml:/config.yaml -v ./prompts:/prompts ghcr.io/adrianliechti/llama-platform
+  
+  otel:
+    cmds:
+      - docker run --rm -it -p 3000:3000 -p 4317:4317 -p 4318:4318 grafana/otel-lgtm
 
   stop:
     cmds:
