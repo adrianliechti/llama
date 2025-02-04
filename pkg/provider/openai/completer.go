@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"io"
+	"slices"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 
@@ -156,7 +157,7 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 		return nil, err
 	}
 
-	messages, err := convertMessages(input)
+	messages, err := c.convertMessages(input)
 
 	if err != nil {
 		return nil, err
@@ -217,13 +218,24 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 	return req, nil
 }
 
-func convertMessages(input []provider.Message) ([]openai.ChatCompletionMessageParamUnion, error) {
+func (c *Completer) convertMessages(input []provider.Message) ([]openai.ChatCompletionMessageParamUnion, error) {
 	var result []openai.ChatCompletionMessageParamUnion
 
 	for _, m := range input {
 		switch m.Role {
 		case provider.MessageRoleSystem:
 			message := openai.SystemMessage(m.Content)
+
+			if slices.Contains([]string{"o1", "o1-mini", "o3-mini"}, c.model) {
+				message = openai.ChatCompletionDeveloperMessageParam{
+					Role: openai.F(openai.ChatCompletionDeveloperMessageParamRoleDeveloper),
+
+					Content: openai.F([]openai.ChatCompletionContentPartTextParam{
+						openai.TextPart(m.Content),
+					}),
+				}
+			}
+
 			result = append(result, message)
 
 		case provider.MessageRoleUser:
