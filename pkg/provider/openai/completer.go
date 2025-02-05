@@ -208,7 +208,11 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 	}
 
 	if options.MaxTokens != nil {
-		req.MaxTokens = openai.F(int64(*options.MaxTokens))
+		if slices.Contains([]string{"o1", "o1-mini", "o3-mini"}, c.model) {
+			req.MaxCompletionTokens = openai.F(int64(*options.MaxTokens))
+		} else {
+			req.MaxTokens = openai.F(int64(*options.MaxTokens))
+		}
 	}
 
 	if options.Temperature != nil {
