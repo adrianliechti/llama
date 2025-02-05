@@ -36,7 +36,8 @@ type chainConfig struct {
 
 	Index string `yaml:"index"`
 
-	Model string `yaml:"model"`
+	Model  string `yaml:"model"`
+	Effort string `yaml:"effort"`
 
 	Template string    `yaml:"template"`
 	Messages []message `yaml:"messages"`
@@ -56,7 +57,8 @@ type chainContext struct {
 	Template *template.Template
 	Messages []provider.Message
 
-	Tools map[string]tool.Tool
+	Tools  map[string]tool.Tool
+	Effort provider.ReasoningEffort
 
 	Limiter *rate.Limiter
 }
@@ -112,6 +114,15 @@ func (cfg *Config) registerChains(f *configFile) error {
 			}
 
 			context.Tools[t] = tool
+		}
+
+		switch config.Effort {
+		case string(provider.ReasoningEffortLow):
+			context.Effort = provider.ReasoningEffortLow
+		case string(provider.ReasoningEffortMedium):
+			context.Effort = provider.ReasoningEffortMedium
+		case string(provider.ReasoningEffortHigh):
+			context.Effort = provider.ReasoningEffortHigh
 		}
 
 		if config.Template != "" {
@@ -185,6 +196,10 @@ func agentChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 		options = append(options, agent.WithMessages(context.Messages...))
 	}
 
+	if context.Effort != "" {
+		options = append(options, agent.WithEffort(context.Effort))
+	}
+
 	return agent.New(options...)
 }
 
@@ -197,6 +212,10 @@ func assistantChain(cfg chainConfig, context chainContext) (chain.Provider, erro
 
 	if context.Messages != nil {
 		options = append(options, assistant.WithMessages(context.Messages...))
+	}
+
+	if context.Effort != "" {
+		options = append(options, assistant.WithEffort(context.Effort))
 	}
 
 	if cfg.Temperature != nil {
@@ -223,6 +242,10 @@ func ragChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 
 	if context.Index != nil {
 		options = append(options, rag.WithIndex(context.Index))
+	}
+
+	if context.Effort != "" {
+		options = append(options, rag.WithEffort(context.Effort))
 	}
 
 	if cfg.Temperature != nil {

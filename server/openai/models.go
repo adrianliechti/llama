@@ -117,6 +117,8 @@ type ChatCompletionRequest struct {
 
 	Messages []ChatCompletionMessage `json:"messages"`
 
+	ReasoningEffort ReasoningEffort `json:"reasoning_effort,omitempty"`
+
 	Stream bool   `json:"stream,omitempty"`
 	Stop   any    `json:"stop,omitempty"`
 	Tools  []Tool `json:"tools,omitempty"`
@@ -143,6 +145,14 @@ type ChatCompletionRequest struct {
 
 	// user string
 }
+
+type ReasoningEffort string
+
+var (
+	ReasoningEffortLow    ReasoningEffort = "low"
+	ReasoningEffortMedium ReasoningEffort = "medium"
+	ReasoningEffortHigh   ReasoningEffort = "high"
+)
 
 // https://platform.openai.com/docs/api-reference/chat/create
 type ChatCompletionResponseFormat struct {

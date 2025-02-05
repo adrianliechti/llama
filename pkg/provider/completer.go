@@ -38,6 +38,7 @@ type StreamHandler = func(ctx context.Context, completion Completion) error
 
 type CompleteOptions struct {
 	Stream StreamHandler
+	Effort ReasoningEffort
 
 	Stop  []string
 	Tools []Tool
@@ -58,6 +59,14 @@ type Completion struct {
 
 	Usage *Usage
 }
+
+type ReasoningEffort string
+
+const (
+	ReasoningEffortLow    ReasoningEffort = "low"
+	ReasoningEffortMedium ReasoningEffort = "medium"
+	ReasoningEffortHigh   ReasoningEffort = "high"
+)
 
 type CompletionFormat string
 

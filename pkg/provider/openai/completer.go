@@ -175,6 +175,15 @@ func (c *Completer) convertCompletionRequest(input []provider.Message, options *
 		req.Messages = openai.F(messages)
 	}
 
+	switch options.Effort {
+	case provider.ReasoningEffortLow:
+		req.ReasoningEffort = openai.F(openai.ChatCompletionReasoningEffortLow)
+	case provider.ReasoningEffortMedium:
+		req.ReasoningEffort = openai.F(openai.ChatCompletionReasoningEffortMedium)
+	case provider.ReasoningEffortHigh:
+		req.ReasoningEffort = openai.F(openai.ChatCompletionReasoningEffortHigh)
+	}
+
 	if options.Format == provider.CompletionFormatJSON {
 		req.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](openai.ResponseFormatJSONObjectParam{
 			Type: openai.F(openai.ResponseFormatJSONObjectTypeJSONObject),

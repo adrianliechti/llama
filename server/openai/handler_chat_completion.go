@@ -65,6 +65,15 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 		Temperature: req.Temperature,
 	}
 
+	switch req.ReasoningEffort {
+	case ReasoningEffortLow:
+		options.Effort = provider.ReasoningEffortLow
+	case ReasoningEffortMedium:
+		options.Effort = provider.ReasoningEffortMedium
+	case ReasoningEffortHigh:
+		options.Effort = provider.ReasoningEffortHigh
+	}
+
 	if req.ResponseFormat != nil {
 		if req.ResponseFormat.Type == ResponseFormatJSONObject || req.ResponseFormat.Type == ResponseFormatJSONSchema {
 			options.Format = provider.CompletionFormatJSON

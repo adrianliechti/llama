@@ -27,7 +27,7 @@ type Tool struct {
 func New(options ...Option) (*Tool, error) {
 	t := &Tool{
 		name:        "draw",
-		description: "Generate images based based on user-provided prompts. Returns a URL to download the generated image.",
+		description: "Generate images based based on user-provided prompts. Returns a URL to download the generated image. Editing images is not supported.",
 
 		client: http.DefaultClient,
 	}

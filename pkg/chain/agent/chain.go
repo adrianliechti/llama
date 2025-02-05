@@ -20,6 +20,9 @@ type Chain struct {
 
 	tools    []tool.Tool
 	messages []provider.Message
+
+	effort      provider.ReasoningEffort
+	temperature *float32
 }
 
 type Option func(*Chain)
@@ -56,9 +59,29 @@ func WithTools(tool ...tool.Tool) Option {
 	}
 }
 
+func WithEffort(effort provider.ReasoningEffort) Option {
+	return func(c *Chain) {
+		c.effort = effort
+	}
+}
+
+func WithTemperature(temperature float32) Option {
+	return func(c *Chain) {
+		c.temperature = &temperature
+	}
+}
+
 func (c *Chain) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
+	}
+
+	if options.Effort == "" {
+		options.Effort = c.effort
+	}
+
+	if options.Temperature == nil {
+		options.Temperature = c.temperature
 	}
 
 	if len(c.messages) > 0 {
@@ -95,12 +118,16 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 	var result *provider.Completion
 
 	inputOptions := &provider.CompleteOptions{
+		Effort: options.Effort,
+
+		Stop:  options.Stop,
 		Tools: to.Values(inputTools),
 
 		MaxTokens:   options.MaxTokens,
 		Temperature: options.Temperature,
 
 		Format: options.Format,
+		Schema: options.Schema,
 	}
 
 	var lastToolCallID string
