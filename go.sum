@@ -173,6 +173,8 @@ github.com/openai/openai-go v0.1.0-alpha.53 h1:yznkGj7ZC2GS3ptkuaBU7FjR4604UEDGq
 github.com/openai/openai-go v0.1.0-alpha.53/go.mod h1:3SdE6BffOX9HPEQv8IL/fi3LYZ5TUpRYaqGQZbyk11A=
 github.com/openai/openai-go v0.1.0-alpha.54 h1:c5tMXxGyne6FmvQziVZG6oKH26Tx0uCnZXH9HJTnDzM=
 github.com/openai/openai-go v0.1.0-alpha.54/go.mod h1:3SdE6BffOX9HPEQv8IL/fi3LYZ5TUpRYaqGQZbyk11A=
+github.com/openai/openai-go v0.1.0-alpha.55 h1:J1LDFRkp+dlHE0dEcDd9eN606co1xb+PQPKM/QznTwk=
+github.com/openai/openai-go v0.1.0-alpha.55/go.mod h1:3SdE6BffOX9HPEQv8IL/fi3LYZ5TUpRYaqGQZbyk11A=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.0 h1:8SG7/vwALn54lVB/0yZ/MMwhFrPYtpEHQb2IpWsCzug=
