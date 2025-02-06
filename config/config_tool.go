@@ -26,18 +26,18 @@ import (
 	"github.com/adrianliechti/llama/pkg/otel"
 )
 
-func (c *Config) RegisterTool(id string, p tool.Tool) {
+func (c *Config) RegisterTool(id string, p tool.Provider) {
 	if c.tools == nil {
-		c.tools = make(map[string]tool.Tool)
+		c.tools = make(map[string]tool.Provider)
 	}
 
 	c.tools[id] = p
 }
 
-func (cfg *Config) Tool(id string) (tool.Tool, error) {
+func (cfg *Config) Tool(id string) (tool.Provider, error) {
 	if cfg.tools != nil {
-		if t, ok := cfg.tools[id]; ok {
-			return t, nil
+		if p, ok := cfg.tools[id]; ok {
+			return p, nil
 		}
 	}
 
@@ -46,9 +46,6 @@ func (cfg *Config) Tool(id string) (tool.Tool, error) {
 
 type toolConfig struct {
 	Type string `yaml:"type"`
-
-	Name        string `yaml:"name"`
-	Description string `yaml:"description"`
 
 	URL   string `yaml:"url"`
 	Token string `yaml:"token"`
@@ -120,10 +117,6 @@ func (cfg *Config) registerTools(f *configFile) error {
 			context.Synthesizer = p
 		}
 
-		if config.Name == "" {
-			config.Name = id
-		}
-
 		tool, err := createTool(config, context)
 
 		if err != nil {
@@ -140,7 +133,7 @@ func (cfg *Config) registerTools(f *configFile) error {
 	return nil
 }
 
-func createTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+func createTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
 	switch strings.ToLower(cfg.Type) {
 
 	case "crawler":
@@ -181,113 +174,49 @@ func createTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	}
 }
 
-func crawlerTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+func crawlerTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
 	var options []crawler.Option
-
-	if cfg.Name != "" {
-		options = append(options, crawler.WithName(cfg.Name))
-	}
-
-	if cfg.Description != "" {
-		options = append(options, crawler.WithDescription(cfg.Description))
-	}
 
 	return crawler.New(context.Extractor, options...)
 }
 
-func drawTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+func drawTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
 	var options []draw.Option
 
-	if cfg.Name != "" {
-		options = append(options, draw.WithName(cfg.Name))
-	}
-
-	if cfg.Description != "" {
-		options = append(options, draw.WithDescription(cfg.Description))
-	}
-
-	if context.Renderer != nil {
-		options = append(options, draw.WithRenderer(context.Renderer))
-	}
-
-	return draw.New(options...)
+	return draw.New(context.Renderer, options...)
 }
 
-func retrieverTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+func retrieverTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
 	var options []retriever.Option
-
-	if cfg.Name != "" {
-		options = append(options, retriever.WithName(cfg.Name))
-	}
-
-	if cfg.Description != "" {
-		options = append(options, retriever.WithDescription(cfg.Description))
-	}
 
 	return retriever.New(context.Index, options...)
 }
 
-func searchTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+func searchTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
 	var options []search.Option
-
-	if cfg.Name != "" {
-		options = append(options, search.WithName(cfg.Name))
-	}
-
-	if cfg.Description != "" {
-		options = append(options, search.WithDescription(cfg.Description))
-	}
 
 	return search.New(context.Index, options...)
 }
 
-func speakTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+func speakTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
 	var options []speak.Option
 
-	if cfg.Name != "" {
-		options = append(options, speak.WithName(cfg.Name))
-	}
-
-	if cfg.Description != "" {
-		options = append(options, speak.WithDescription(cfg.Description))
-	}
-
-	if context.Synthesizer != nil {
-		options = append(options, speak.WithSynthesizer(context.Synthesizer))
-	}
-
-	return speak.New(options...)
+	return speak.New(context.Synthesizer, options...)
 }
 
-func translateTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+func translateTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
 	var options []translate.Option
-
-	if cfg.Name != "" {
-		options = append(options, translate.WithName(cfg.Name))
-	}
-
-	if cfg.Description != "" {
-		options = append(options, translate.WithDescription(cfg.Description))
-	}
 
 	return translate.New(context.Translator, options...)
 }
 
-func customTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+func customTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
 	var options []custom.Option
-
-	if cfg.Name != "" {
-		options = append(options, custom.WithName(cfg.Name))
-	}
-
-	if cfg.Description != "" {
-		options = append(options, custom.WithDescription(cfg.Description))
-	}
 
 	return custom.New(cfg.URL, options...)
 }
 
-func bingTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+func bingTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
 	index, err := bing.New(cfg.Token)
 
 	if err != nil {
@@ -299,7 +228,7 @@ func bingTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	return searchTool(cfg, context)
 }
 
-func duckduckgoTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+func duckduckgoTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
 	index, err := duckduckgo.New()
 
 	if err != nil {
@@ -311,7 +240,7 @@ func duckduckgoTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	return searchTool(cfg, context)
 }
 
-func searxngTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+func searxngTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
 	index, err := searxng.New(cfg.Token)
 
 	if err != nil {
@@ -323,7 +252,7 @@ func searxngTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
 	return searchTool(cfg, context)
 }
 
-func tavilyTool(cfg toolConfig, context toolContext) (tool.Tool, error) {
+func tavilyTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
 	index, err := tavily.New(cfg.Token)
 
 	if err != nil {

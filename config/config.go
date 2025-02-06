@@ -39,7 +39,7 @@ type Config struct {
 	summarizer map[string]summarizer.Provider
 	translator map[string]translator.Provider
 
-	tools  map[string]tool.Tool
+	tools  map[string]tool.Provider
 	chains map[string]chain.Provider
 }
 

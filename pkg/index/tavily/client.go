@@ -40,7 +40,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	body := map[string]any{
 		"api_key":      c.token,
 		"query":        query,
-		"search_depth": "basic",
+		"search_depth": "advanced",
 	}
 
 	req, _ := http.NewRequestWithContext(ctx, "POST", u.String(), jsonReader(body))

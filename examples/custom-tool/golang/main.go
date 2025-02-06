@@ -33,10 +33,7 @@ func newServer() *server {
 	return &server{}
 }
 
-func (s *server) Info(context.Context, *custom.InfoRequest) (*custom.Definition, error) {
-	name := "kubectl"
-	description := "invoke the Kubernetes CLI kubectl with the given arguments"
-
+func (s *server) Tools(context.Context, *custom.ToolsRequest) (*custom.ToolsResponse, error) {
 	schema, _ := json.Marshal(map[string]any{
 		"type": "object",
 
@@ -53,19 +50,30 @@ func (s *server) Info(context.Context, *custom.InfoRequest) (*custom.Definition,
 		"required": []string{"args"},
 	})
 
-	return &custom.Definition{
-		Name:        name,
-		Description: description,
-		Schema:      string(schema),
+	definition := custom.Definition{
+		Name:        "kubectl",
+		Description: "invoke the Kubernetes CLI kubectl with the given arguments",
+
+		Parameters: string(schema),
+	}
+
+	return &custom.ToolsResponse{
+		Definitions: []*custom.Definition{
+			&definition,
+		},
 	}, nil
 }
 
-func (s *server) Execute(ctx context.Context, r *custom.ExecuteRequest) (*custom.Result, error) {
+func (s *server) Execute(ctx context.Context, r *custom.ExecuteRequest) (*custom.ResultResponse, error) {
+	if r.Name != "kubectl" {
+		return nil, fmt.Errorf("unknown tool: %s", r.Name)
+	}
+
 	var input struct {
 		Args []string `json:"args"`
 	}
 
-	if err := json.Unmarshal([]byte(r.Parameter), &input); err != nil {
+	if err := json.Unmarshal([]byte(r.Parameters), &input); err != nil {
 		return nil, err
 	}
 
@@ -77,7 +85,7 @@ func (s *server) Execute(ctx context.Context, r *custom.ExecuteRequest) (*custom
 
 	output, _ := cmd.CombinedOutput()
 
-	return &custom.Result{
-		Content: string(output),
+	return &custom.ResultResponse{
+		Data: string(output),
 	}, nil
 }

@@ -15,13 +15,10 @@ import (
 )
 
 var (
-	_ tool.Tool = (*Client)(nil)
+	_ tool.Provider = (*Client)(nil)
 )
 
 type Client struct {
-	name        string
-	description string
-
 	url    string
 	client ToolClient
 }
@@ -52,77 +49,57 @@ func New(url string, options ...Option) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) Name() string {
-	if c.name != "" {
-		return c.name
-	}
-
-	ctx := context.Background()
-	data, err := c.client.Info(ctx, &InfoRequest{})
-
-	if err != nil {
-		return ""
-	}
-
-	return data.Name
-}
-
-func (c *Client) Description() string {
-	if c.description != "" {
-		return c.description
-	}
-
-	ctx := context.Background()
-	data, err := c.client.Info(ctx, &InfoRequest{})
-
-	if err != nil {
-		return ""
-	}
-
-	return data.Description
-}
-
-func (c *Client) Parameters() map[string]any {
-	ctx := context.Background()
-	data, err := c.client.Info(ctx, &InfoRequest{})
-
-	if err != nil {
-		return nil
-	}
-
-	var result map[string]any
-
-	if err := json.Unmarshal([]byte(data.Schema), &result); err != nil {
-		return nil
-	}
-
-	return result
-}
-
-func (c *Client) Execute(ctx context.Context, parameters map[string]any) (any, error) {
-	parameter, err := json.Marshal(parameters)
+func (c *Client) Tools(ctx context.Context) ([]tool.Tool, error) {
+	resp, err := c.client.Tools(ctx, &ToolsRequest{})
 
 	if err != nil {
 		return nil, err
 	}
 
-	data, err := c.client.Execute(ctx, &ExecuteRequest{
-		Parameter: string(parameter),
+	var tools []tool.Tool
+
+	for _, d := range resp.GetDefinitions() {
+		var parameters map[string]any
+		json.Unmarshal([]byte(d.Parameters), &parameters)
+
+		tools = append(tools, tool.Tool{
+			Name:        d.Name,
+			Description: d.Description,
+
+			Parameters: parameters,
+		})
+	}
+
+	return tools, nil
+}
+
+func (c *Client) Execute(ctx context.Context, name string, parameters map[string]any) (any, error) {
+	params, err := json.Marshal(parameters)
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.client.Execute(ctx, &ExecuteRequest{
+		Name:       name,
+		Parameters: string(params),
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
+	data := resp.GetData()
+
 	var result map[string]any
 
-	if err := json.Unmarshal([]byte(data.Content), &result); err == nil {
+	if err := json.Unmarshal([]byte(data), &result); err == nil {
 		return result, nil
 	}
 
-	if err := yaml.Unmarshal([]byte(data.Content), &result); err == nil {
+	if err := yaml.Unmarshal([]byte(data), &result); err == nil {
 		return result, nil
 	}
 
-	return data.Content, nil
+	return data, nil
 }
