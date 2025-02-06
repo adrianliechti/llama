@@ -2,13 +2,18 @@ package tool
 
 import (
 	"context"
+	"errors"
+
+	"github.com/adrianliechti/llama/pkg/provider"
 )
 
-type Tool interface {
-	Name() string
-	Description() string
+type Tool = provider.Tool
 
-	Parameters() map[string]any
+var (
+	ErrInvalidTool = errors.New("invalid tool")
+)
 
-	Execute(ctx context.Context, parameters map[string]any) (any, error)
+type Provider interface {
+	Tools(ctx context.Context) ([]Tool, error)
+	Execute(ctx context.Context, name string, parameters map[string]any) (any, error)
 }

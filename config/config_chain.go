@@ -57,7 +57,7 @@ type chainContext struct {
 	Template *template.Template
 	Messages []provider.Message
 
-	Tools  map[string]tool.Tool
+	Tools  map[string]tool.Provider
 	Effort provider.ReasoningEffort
 
 	Limiter *rate.Limiter
@@ -80,7 +80,7 @@ func (cfg *Config) registerChains(f *configFile) error {
 		}
 
 		context := chainContext{
-			Tools:    make(map[string]tool.Tool),
+			Tools:    make(map[string]tool.Provider),
 			Messages: make([]provider.Message, 0),
 
 			Limiter: createLimiter(config.Limit),

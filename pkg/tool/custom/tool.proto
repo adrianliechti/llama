@@ -5,24 +5,29 @@ option go_package = "github.com/adrianliechti/llama/pkg/tool/custom;custom";
 package tool;
 
 service Tool {
-  rpc Info (InfoRequest) returns (Definition) {}
-  rpc Execute (ExecuteRequest) returns (Result) {}
+  rpc Tools (ToolsRequest) returns (ToolsResponse) {}
+  rpc Execute (ExecuteRequest) returns (ResultResponse) {}
 }
 
-message InfoRequest {
+message ToolsRequest {
+}
+
+message ToolsResponse {
+  repeated Definition definitions = 1;
 }
 
 message Definition {
   string name = 1;
   string description = 2;
 
-  string schema = 3;
+  string parameters = 3;
 }
 
 message ExecuteRequest {
-  string parameter = 1;
+  string name = 1;
+  string Parameters = 2;
 }
 
-message Result {
-  string content = 1;
+message ResultResponse {
+  string data = 1;
 }
