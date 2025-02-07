@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/index"
 )
 
-var _ index.Provider = &Client{}
+var _ extractor.Provider = &Client{}
 
 type Client struct {
 	token  string
@@ -34,13 +35,21 @@ func New(token string, options ...Option) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
-	u, _ := url.Parse("https://api.tavily.com/search")
+func (c *Client) Extract(ctx context.Context, input extractor.File, options *extractor.ExtractOptions) (*extractor.Document, error) {
+	if options == nil {
+		options = new(extractor.ExtractOptions)
+	}
+
+	if input.URL == "" {
+		return nil, extractor.ErrUnsupported
+	}
+
+	u, _ := url.Parse("https://api.tavily.com/extract")
 
 	body := map[string]any{
-		"api_key":      c.token,
-		"query":        query,
-		"search_depth": "advanced",
+		"api_key":       c.token,
+		"urls":          input.URL,
+		"extract_depth": "advanced",
 	}
 
 	req, _ := http.NewRequestWithContext(ctx, "POST", u.String(), jsonReader(body))
@@ -56,28 +65,21 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		return nil, convertError(resp)
 	}
 
-	var data searchResult
+	var data extractResult
 
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		return nil, err
 	}
 
-	var results []index.Result
-
-	for _, r := range data.Results {
-		result := index.Result{
-			Document: index.Document{
-				Location: r.URL,
-
-				Title:   r.Title,
-				Content: r.Content,
-			},
-		}
-
-		results = append(results, result)
+	if len(data.Results) == 0 {
+		return nil, errors.New("no results")
 	}
 
-	return results, nil
+	result := &extractor.Document{
+		Content: data.Results[0].Content,
+	}
+
+	return result, nil
 }
 
 func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
