@@ -80,8 +80,10 @@ func (cfg *Config) registerChains(f *configFile) error {
 		}
 
 		context := chainContext{
-			Tools:    make(map[string]tool.Provider),
 			Messages: make([]provider.Message, 0),
+
+			Tools:  make(map[string]tool.Provider),
+			Effort: parseEffort(config.Effort),
 
 			Limiter: createLimiter(config.Limit),
 		}
@@ -114,15 +116,6 @@ func (cfg *Config) registerChains(f *configFile) error {
 			}
 
 			context.Tools[t] = tool
-		}
-
-		switch config.Effort {
-		case string(provider.ReasoningEffortLow):
-			context.Effort = provider.ReasoningEffortLow
-		case string(provider.ReasoningEffortMedium):
-			context.Effort = provider.ReasoningEffortMedium
-		case string(provider.ReasoningEffortHigh):
-			context.Effort = provider.ReasoningEffortHigh
 		}
 
 		if config.Template != "" {
