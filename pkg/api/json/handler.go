@@ -3,6 +3,7 @@ package json
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/adrianliechti/llama/pkg/api"
 	"github.com/adrianliechti/llama/pkg/provider"
@@ -34,14 +35,49 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
+	messages := []provider.Message{}
+
+	var system strings.Builder
+
+	if h.input != nil {
+		system.WriteString("## Input (`" + h.input.Name + "`):\n")
+		system.WriteString(h.input.Description)
+		system.WriteString("\n\n")
+
+		schema, _ := json.MarshalIndent(h.input.Schema, "", "  ")
+
+		system.WriteString("Input Schema:")
+		system.WriteString("\n```json\n")
+		system.WriteString(string(schema))
+		system.WriteString("\n```\n\n")
+	}
+
+	if h.output != nil {
+		system.WriteString("## Output (`" + h.output.Name + "`):\n")
+		system.WriteString(h.output.Description)
+		system.WriteString("\n\n")
+
+		schema, _ := json.MarshalIndent(h.output.Schema, "", "  ")
+
+		system.WriteString("Output Schema:")
+		system.WriteString("\n```json\n")
+		system.WriteString(string(schema))
+		system.WriteString("\n```\n\n")
+	}
+
+	messages = append(messages, provider.Message{
+		Role:    provider.MessageRoleSystem,
+		Content: system.String(),
+	})
+
+	println(system.String())
+
 	input, _ := json.MarshalIndent(body, "", "  ")
 
-	messages := []provider.Message{
-		{
-			Role:    provider.MessageRoleUser,
-			Content: string(input),
-		},
-	}
+	messages = append(messages, provider.Message{
+		Role:    provider.MessageRoleUser,
+		Content: string(input),
+	})
 
 	options := &provider.CompleteOptions{
 		Format: provider.CompletionFormatJSON,
