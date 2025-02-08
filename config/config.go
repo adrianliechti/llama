@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 
+	"github.com/adrianliechti/llama/pkg/api"
 	"github.com/adrianliechti/llama/pkg/authorizer"
 	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/extractor"
@@ -41,6 +42,8 @@ type Config struct {
 
 	tools  map[string]tool.Provider
 	chains map[string]chain.Provider
+
+	APIs map[string]api.Provider
 }
 
 func Parse(path string) (*Config, error) {
@@ -94,6 +97,10 @@ func Parse(path string) (*Config, error) {
 		return nil, err
 	}
 
+	if err := c.registerAPI(file); err != nil {
+		return nil, err
+	}
+
 	return c, nil
 }
 
@@ -112,6 +119,8 @@ type configFile struct {
 	Chains yaml.Node `yaml:"chains"`
 
 	Routers yaml.Node `yaml:"routers"`
+
+	APIs yaml.Node `yaml:"apis"`
 }
 
 func parseFile(path string) (*configFile, error) {
