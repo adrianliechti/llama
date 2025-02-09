@@ -8,11 +8,6 @@ import (
 	"net/http"
 )
 
-type DocumentRequest struct {
-	Index     string
-	Documents []Document
-}
-
 type Document struct {
 	ID string `json:"id,omitempty"`
 
@@ -35,21 +30,17 @@ func NewDocumentService(opts ...RequestOption) *DocumentService {
 	}
 }
 
-func (r *DocumentService) New(ctx context.Context, body DocumentRequest, opts ...RequestOption) ([]Document, error) {
+func (r *DocumentService) New(ctx context.Context, index string, documents []Document, opts ...RequestOption) ([]Document, error) {
 	c := newRequestConfig(append(r.Options, opts...)...)
 
 	var data bytes.Buffer
 
-	if err := json.NewEncoder(&data).Encode(body.Documents); err != nil {
+	if err := json.NewEncoder(&data).Encode(documents); err != nil {
 		return nil, err
 	}
 
-	req, _ := http.NewRequestWithContext(ctx, "POST", c.URL+"/v1/index", &data)
+	req, _ := http.NewRequestWithContext(ctx, "POST", c.URL+"/v1/index/"+index, &data)
 	req.Header.Set("Content-Type", "application/json")
-
-	if body.Index != "" {
-		req.URL.Path = req.URL.Path + "/" + body.Index
-	}
 
 	if c.Token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.Token)
@@ -67,5 +58,66 @@ func (r *DocumentService) New(ctx context.Context, body DocumentRequest, opts ..
 		return nil, errors.New(resp.Status)
 	}
 
-	return body.Documents, nil
+	return documents, nil
+}
+
+func (r *DocumentService) List(ctx context.Context, index string, opts ...RequestOption) ([]Document, error) {
+	c := newRequestConfig(append(r.Options, opts...)...)
+
+	req, _ := http.NewRequestWithContext(ctx, "GET", c.URL+"/v1/index/"+index, nil)
+
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.Token)
+	}
+
+	resp, err := c.Client.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.Status)
+	}
+
+	var documents []Document
+
+	if err := json.NewDecoder(resp.Body).Decode(&documents); err != nil {
+		return nil, err
+	}
+
+	return documents, nil
+}
+
+func (r *DocumentService) Delete(ctx context.Context, index string, ids []string, opts ...RequestOption) error {
+	c := newRequestConfig(append(r.Options, opts...)...)
+
+	var body bytes.Buffer
+
+	if err := json.NewEncoder(&body).Encode(ids); err != nil {
+		return err
+	}
+
+	req, _ := http.NewRequestWithContext(ctx, "DELETE", c.URL+"/v1/index/"+index, &body)
+	req.Header.Set("Content-Type", "application/json")
+
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.Token)
+	}
+
+	resp, err := c.Client.Do(req)
+
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		return errors.New(resp.Status)
+	}
+
+	return nil
 }
