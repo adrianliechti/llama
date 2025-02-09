@@ -7,23 +7,8 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool"
 )
 
-var (
-	Claims []string
-)
-
-var _ tool.Provider = (*Tool)(nil)
-
 type Tool struct {
-}
-
-func New(options ...Option) (tool.Provider, error) {
-	t := &Tool{}
-
-	for _, option := range options {
-		option(t)
-	}
-
-	return t, nil
+	Claims []string
 }
 
 func (t *Tool) Tools(ctx context.Context) ([]tool.Tool, error) {
@@ -59,7 +44,7 @@ func (t *Tool) Execute(ctx context.Context, name string, parameters map[string]a
 		return nil, errors.New("missing claim parameter")
 	}
 
-	Claims = append(Claims, claim)
+	t.Claims = append(t.Claims, claim)
 
 	result := map[string]any{
 		"status": "ok",

@@ -11,7 +11,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool/crawler"
 	"github.com/adrianliechti/llama/pkg/tool/custom"
 	"github.com/adrianliechti/llama/pkg/tool/draw"
-	"github.com/adrianliechti/llama/pkg/tool/memory"
 	"github.com/adrianliechti/llama/pkg/tool/retriever"
 	"github.com/adrianliechti/llama/pkg/tool/search"
 	"github.com/adrianliechti/llama/pkg/tool/speak"
@@ -143,9 +142,6 @@ func createTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
 	case "draw":
 		return drawTool(cfg, context)
 
-	case "memory":
-		return memoryTool(cfg, context)
-
 	case "retriever":
 		return retrieverTool(cfg, context)
 
@@ -188,12 +184,6 @@ func drawTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
 	var options []draw.Option
 
 	return draw.New(context.Renderer, options...)
-}
-
-func memoryTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
-	var options []memory.Option
-
-	return memory.New(options...)
 }
 
 func retrieverTool(cfg toolConfig, context toolContext) (tool.Provider, error) {

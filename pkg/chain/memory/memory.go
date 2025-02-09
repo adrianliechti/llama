@@ -5,13 +5,16 @@ import (
 	"errors"
 
 	"github.com/adrianliechti/llama/pkg/chain"
+	"github.com/adrianliechti/llama/pkg/chain/agent"
 	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/tool/memory"
 )
 
 var _ chain.Provider = &Chain{}
 
 type Chain struct {
+	tool  *Tool
+	chain *agent.Chain
+
 	completer provider.Completer
 }
 
@@ -28,6 +31,20 @@ func New(options ...Option) (*Chain, error) {
 		return nil, errors.New("missing completer provider")
 	}
 
+	tool := &Tool{}
+
+	chain, err := agent.New(
+		agent.WithCompleter(c.completer),
+		agent.WithTools(tool),
+	)
+
+	c.tool = tool
+	c.chain = chain
+
+	if err != nil {
+		return nil, err
+	}
+
 	return c, nil
 }
 
@@ -42,8 +59,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		options = new(provider.CompleteOptions)
 	}
 
-	if len(memory.Claims) > 0 {
-
+	if len(c.tool.Claims) > 0 {
 		message := messages[len(messages)-1]
 
 		if message.Role == provider.MessageRoleUser {
@@ -51,7 +67,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 			content += "\n\nMemorized Claims. Use this information if helpful:\n"
 
-			for _, claim := range memory.Claims {
+			for _, claim := range c.tool.Claims {
 				content += "  - " + claim + "\n"
 			}
 
@@ -61,5 +77,5 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		messages[len(messages)-1] = message
 	}
 
-	return c.completer.Complete(ctx, messages, options)
+	return c.chain.Complete(ctx, messages, options)
 }
