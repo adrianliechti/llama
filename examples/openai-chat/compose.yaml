@@ -12,13 +12,12 @@ services:
         target: /config.yaml
   
   web:
-    image: ghcr.io/adrianliechti/llama-streamlit
+    image: ghcr.io/adrianliechti/llama-chat
     pull_policy: always
     ports:
-      - 8501:8501
+      - 8000:8000
     environment:
       - OPENAI_BASE_URL=http://platform:8080/v1
-      - MODEL=gpt-4o
     depends_on:
       - platform
   

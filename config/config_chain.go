@@ -9,26 +9,27 @@ import (
 	"github.com/adrianliechti/llama/pkg/otel"
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/template"
-	"golang.org/x/time/rate"
 
 	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/chain/agent"
 	"github.com/adrianliechti/llama/pkg/chain/assistant"
+	"github.com/adrianliechti/llama/pkg/chain/memory"
 	"github.com/adrianliechti/llama/pkg/chain/rag"
-	"github.com/adrianliechti/llama/pkg/chain/reasoning"
 
 	"github.com/adrianliechti/llama/pkg/to"
 	"github.com/adrianliechti/llama/pkg/tool"
+
+	"golang.org/x/time/rate"
 )
 
-func (cfg *Config) RegisterChain(model string, p chain.Provider) {
-	cfg.RegisterModel(model)
+func (cfg *Config) RegisterChain(id string, p chain.Provider) {
+	cfg.RegisterModel(id)
 
 	if cfg.chains == nil {
 		cfg.chains = make(map[string]chain.Provider)
 	}
 
-	cfg.chains[model] = p
+	cfg.chains[id] = p
 }
 
 type chainConfig struct {
@@ -36,7 +37,8 @@ type chainConfig struct {
 
 	Index string `yaml:"index"`
 
-	Model string `yaml:"model"`
+	Model  string `yaml:"model"`
+	Effort string `yaml:"effort"`
 
 	Template string    `yaml:"template"`
 	Messages []message `yaml:"messages"`
@@ -56,47 +58,58 @@ type chainContext struct {
 	Template *template.Template
 	Messages []provider.Message
 
-	Tools map[string]tool.Tool
+	Tools  map[string]tool.Provider
+	Effort provider.ReasoningEffort
 
 	Limiter *rate.Limiter
 }
 
 func (cfg *Config) registerChains(f *configFile) error {
-	for id, c := range f.Chains {
-		var err error
+	var configs map[string]chainConfig
+
+	if err := f.Chains.Decode(&configs); err != nil {
+		return err
+	}
+
+	for _, node := range f.Chains.Content {
+		id := node.Value
+
+		config, ok := configs[node.Value]
+
+		if !ok {
+			continue
+		}
 
 		context := chainContext{
-			Tools:    make(map[string]tool.Tool),
 			Messages: make([]provider.Message, 0),
+
+			Tools:  make(map[string]tool.Provider),
+			Effort: parseEffort(config.Effort),
+
+			Limiter: createLimiter(config.Limit),
 		}
 
-		limit := c.Limit
+		if config.Index != "" {
+			index, err := cfg.Index(config.Index)
 
-		if limit == nil {
-			limit = c.Limit
-		}
-
-		if limit != nil {
-			context.Limiter = rate.NewLimiter(rate.Limit(*limit), *limit)
-		}
-
-		if c.Index != "" {
-			if context.Index, err = cfg.Index(c.Index); err != nil {
+			if err != nil {
 				return err
 			}
+
+			context.Index = index
 		}
 
-		if c.Model != "" {
-			if p, err := cfg.Completer(c.Model); err == nil {
+		if config.Model != "" {
+			if p, err := cfg.Completer(config.Model); err == nil {
 				context.Completer = p
 			}
 
-			if p, err := cfg.Embedder(c.Model); err == nil {
+			if p, err := cfg.Embedder(config.Model); err == nil {
 				context.Embedder = p
 			}
 		}
 
-		for _, t := range c.Tools {
+		for _, t := range config.Tools {
 			tool, err := cfg.Tool(t)
 
 			if err != nil {
@@ -106,19 +119,27 @@ func (cfg *Config) registerChains(f *configFile) error {
 			context.Tools[t] = tool
 		}
 
-		if c.Template != "" {
-			if context.Template, err = parseTemplate(c.Template); err != nil {
+		if config.Template != "" {
+			template, err := parseTemplate(config.Template)
+
+			if err != nil {
 				return err
 			}
+
+			context.Template = template
 		}
 
-		if c.Messages != nil {
-			if context.Messages, err = parseMessages(c.Messages); err != nil {
+		if config.Messages != nil {
+			messages, err := parseMessages(config.Messages)
+
+			if err != nil {
 				return err
 			}
+
+			context.Messages = messages
 		}
 
-		chain, err := createChain(c, context)
+		chain, err := createChain(config, context)
 
 		if err != nil {
 			return err
@@ -129,7 +150,7 @@ func (cfg *Config) registerChains(f *configFile) error {
 		}
 
 		if _, ok := chain.(otel.Chain); !ok {
-			chain = otel.NewChain(c.Type, id, chain)
+			chain = otel.NewChain(config.Type, id, chain)
 		}
 
 		cfg.RegisterChain(id, chain)
@@ -146,11 +167,11 @@ func createChain(cfg chainConfig, context chainContext) (chain.Provider, error) 
 	case "assistant":
 		return assistantChain(cfg, context)
 
+	case "memory":
+		return memoryChain(cfg, context)
+
 	case "rag":
 		return ragChain(cfg, context)
-
-	case "reasoning":
-		return reasoningChain(cfg, context)
 
 	default:
 		return nil, errors.New("invalid chain type: " + cfg.Type)
@@ -172,6 +193,10 @@ func agentChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 		options = append(options, agent.WithMessages(context.Messages...))
 	}
 
+	if context.Effort != "" {
+		options = append(options, agent.WithEffort(context.Effort))
+	}
+
 	return agent.New(options...)
 }
 
@@ -186,11 +211,25 @@ func assistantChain(cfg chainConfig, context chainContext) (chain.Provider, erro
 		options = append(options, assistant.WithMessages(context.Messages...))
 	}
 
+	if context.Effort != "" {
+		options = append(options, assistant.WithEffort(context.Effort))
+	}
+
 	if cfg.Temperature != nil {
 		options = append(options, assistant.WithTemperature(*cfg.Temperature))
 	}
 
 	return assistant.New(options...)
+}
+
+func memoryChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
+	var options []memory.Option
+
+	if context.Completer != nil {
+		options = append(options, memory.WithCompleter(context.Completer))
+	}
+
+	return memory.New(options...)
 }
 
 func ragChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
@@ -212,23 +251,13 @@ func ragChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
 		options = append(options, rag.WithIndex(context.Index))
 	}
 
+	if context.Effort != "" {
+		options = append(options, rag.WithEffort(context.Effort))
+	}
+
 	if cfg.Temperature != nil {
 		options = append(options, rag.WithTemperature(*cfg.Temperature))
 	}
 
 	return rag.New(options...)
-}
-
-func reasoningChain(cfg chainConfig, context chainContext) (chain.Provider, error) {
-	var options []reasoning.Option
-
-	if context.Completer != nil {
-		options = append(options, reasoning.WithCompleter(context.Completer))
-	}
-
-	if cfg.Temperature != nil {
-		options = append(options, reasoning.WithTemperature(*cfg.Temperature))
-	}
-
-	return reasoning.New(options...)
 }

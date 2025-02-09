@@ -9,19 +9,56 @@ import (
 	reranker "github.com/adrianliechti/llama/pkg/provider/adapter/reranker"
 	summarizer "github.com/adrianliechti/llama/pkg/summarizer/adapter"
 
-	"golang.org/x/time/rate"
 	"gopkg.in/yaml.v3"
 )
 
 func (cfg *Config) registerProviders(f *configFile) error {
 	for _, p := range f.Providers {
-		for id, m := range p.Models {
+		models := map[string]modelConfig{}
+
+		if err := p.Models.Decode(&models); err != nil {
+			var ids []string
+
+			if err := p.Models.Decode(&ids); err != nil {
+				return err
+			}
+
+			for _, id := range ids {
+				models[id] = modelConfig{
+					ID: id,
+				}
+			}
+		}
+
+		for _, node := range p.Models.Content {
+			id := node.Value
+
+			if id == "" {
+				continue
+			}
+
+			m, ok := models[id]
+
+			if !ok {
+				continue
+			}
+
+			if m.ID == "" {
+				m.ID = id
+			}
+
 			if m.Type == "" {
 				m.Type = DetectModelType(m.ID)
 			}
 
 			if m.Type == "" {
 				m.Type = DetectModelType(id)
+			}
+
+			limit := m.Limit
+
+			if limit == nil {
+				limit = p.Limit
 			}
 
 			context := modelContext{
@@ -31,16 +68,8 @@ func (cfg *Config) registerProviders(f *configFile) error {
 
 				Name:        m.Name,
 				Description: m.Description,
-			}
 
-			limit := m.Limit
-
-			if limit == nil {
-				limit = p.Limit
-			}
-
-			if limit != nil {
-				context.Limiter = rate.NewLimiter(rate.Limit(*limit), *limit)
+				Limiter: createLimiter(limit),
 			}
 
 			switch context.Type {
@@ -165,41 +194,5 @@ type providerConfig struct {
 
 	Limit *int `yaml:"limit"`
 
-	Models providerModelsConfig `yaml:"models"`
-}
-
-type providerModelsConfig map[string]modelConfig
-
-func (c *providerModelsConfig) UnmarshalYAML(value *yaml.Node) error {
-	var config map[string]modelConfig
-
-	if err := value.Decode(&config); err == nil {
-		for id, model := range config {
-			if model.ID == "" {
-				model.ID = id
-			}
-
-			config[id] = model
-		}
-
-		*c = config
-		return nil
-	}
-
-	var list []string
-
-	if err := value.Decode(&list); err == nil {
-		config = make(map[string]modelConfig)
-
-		for _, id := range list {
-			config[id] = modelConfig{
-				ID: id,
-			}
-		}
-
-		*c = config
-		return nil
-	}
-
-	return errors.New("invalid models config")
+	Models yaml.Node `yaml:"models"`
 }

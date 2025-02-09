@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"golang.org/x/time/rate"
 )
 
@@ -91,13 +92,18 @@ func DetectModelType(id string) ModelType {
 		"gemini",
 		"gemma",
 		"gpt",
+		"grok",
 		"hermes",
 		"llama",
 		"llava",
 		"mistral",
 		"mixtral",
+		"nova",
+		"o1",
+		"o3",
 		"orca",
 		"phi",
+		"pixtral",
 		"qwen",
 		"stable-code",
 		"stablelm",

@@ -53,7 +53,7 @@ func New(url string, namespace string, options ...Option) (*Client, error) {
 }
 
 func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
-	if err := c.ensureCollection(c.namespace); err != nil {
+	if err := c.ensureCollection(ctx, c.namespace); err != nil {
 		return nil, err
 	}
 
@@ -73,7 +73,7 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 
 		u, _ := url.JoinPath(c.url, "collections/"+c.namespace+"/points/scroll")
 
-		req, _ := http.NewRequest("POST", u, jsonReader(body))
+		req, _ := http.NewRequestWithContext(ctx, "POST", u, jsonReader(body))
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := c.client.Do(req)
@@ -123,7 +123,7 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 		return nil
 	}
 
-	if err := c.ensureCollection(c.namespace); err != nil {
+	if err := c.ensureCollection(ctx, c.namespace); err != nil {
 		return err
 	}
 
@@ -164,7 +164,7 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 		"points": points,
 	}
 
-	req, _ := http.NewRequest("PUT", u+"?wait=true", jsonReader(body))
+	req, _ := http.NewRequestWithContext(ctx, "PUT", u+"?wait=true", jsonReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.client.Do(req)
@@ -187,7 +187,7 @@ func (c *Client) Delete(ctx context.Context, ids ...string) error {
 		return nil
 	}
 
-	if err := c.ensureCollection(c.namespace); err != nil {
+	if err := c.ensureCollection(ctx, c.namespace); err != nil {
 		return err
 	}
 
@@ -223,7 +223,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		options.Limit = to.Ptr(10)
 	}
 
-	if err := c.ensureCollection(c.namespace); err != nil {
+	if err := c.ensureCollection(ctx, c.namespace); err != nil {
 		return nil, err
 	}
 
@@ -243,7 +243,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		"with_payload": true,
 	}
 
-	req, _ := http.NewRequest("POST", u, jsonReader(body))
+	req, _ := http.NewRequestWithContext(ctx, "POST", u, jsonReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.client.Do(req)
@@ -287,7 +287,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	return results, nil
 }
 
-func (c *Client) ensureCollection(name string) error {
+func (c *Client) ensureCollection(ctx context.Context, name string) error {
 	u, _ := url.JoinPath(c.url, "/collections/"+name)
 
 	resp, err := c.client.Get(u)
@@ -310,7 +310,7 @@ func (c *Client) ensureCollection(name string) error {
 			},
 		}
 
-		req, _ := http.NewRequest("PUT", u, jsonReader(body))
+		req, _ := http.NewRequestWithContext(ctx, "PUT", u, jsonReader(body))
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err = c.client.Do(req)

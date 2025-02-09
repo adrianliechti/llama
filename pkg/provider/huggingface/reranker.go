@@ -2,7 +2,7 @@ package huggingface
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -50,14 +50,18 @@ func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string, op
 		"texts": inputs,
 	}
 
+	url := r.url + "/rerank"
+
 	if strings.Contains(r.url, "api-inference.huggingface.co") {
+		url = r.url
+
 		body = map[string]any{
 			"source_sentence": query,
 			"sentences":       inputs,
 		}
 	}
 
-	req, _ := http.NewRequestWithContext(ctx, "POST", r.url, jsonReader(body))
+	req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	if r.token != "" {
@@ -76,5 +80,25 @@ func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string, op
 		return nil, convertError(resp)
 	}
 
-	return nil, errors.New("unable to rerank input")
+	var data []Result
+
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return nil, err
+	}
+
+	var results []provider.Ranking
+
+	for _, item := range data {
+		results = append(results, provider.Ranking{
+			Content: inputs[item.Index],
+			Score:   item.Score,
+		})
+	}
+
+	return results, nil
+}
+
+type Result struct {
+	Index int     `json:"index"`
+	Score float64 `json:"score"`
 }

@@ -462,5 +462,5 @@ docker run -it --rm -p 9085:8000 quay.io/unstructured-io/unstructured-api:0.0.80
 extractors:
   unstructured:
     type: unstructured
-    url: http://localhost:9085
+    url: http://localhost:9085/general/v0/general
 ```

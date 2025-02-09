@@ -32,11 +32,11 @@ func TestExtract(t *testing.T) {
 	url, err := server.Endpoint(ctx, "")
 	require.NoError(t, err)
 
-	s, err := jina.New("http://" + url + "/v1/segment")
+	s, err := jina.New("http://" + url)
 	require.NoError(t, err)
 
 	input := segmenter.File{
-		Content: strings.NewReader("Hello, World!"),
+		Content: strings.NewReader(strings.Repeat("Hello, World! ", 2000)),
 	}
 
 	segments, err := s.Segment(ctx, input, nil)

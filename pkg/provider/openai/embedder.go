@@ -6,7 +6,6 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 
 	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/shared"
 )
 
 var _ provider.Embedder = (*Embedder)(nil)
@@ -35,7 +34,7 @@ func NewEmbedder(url, model string, options ...Option) (*Embedder, error) {
 func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
 	result, err := e.embeddings.New(ctx, openai.EmbeddingNewParams{
 		Model:          openai.F(e.model),
-		Input:          openai.F[openai.EmbeddingNewParamsInputUnion](shared.UnionString(content)),
+		Input:          openai.F[openai.EmbeddingNewParamsInputUnion](openai.EmbeddingNewParamsInputArrayOfStrings([]string{content})),
 		EncodingFormat: openai.F(openai.EmbeddingNewParamsEncodingFormatFloat),
 	})
 

@@ -11,17 +11,28 @@ type Model struct {
 }
 
 type File struct {
-	ID string
+	Name string
 
-	Name    string
-	Content io.Reader
+	ContentType string
+	Content     io.Reader
 }
 
 type Tool struct {
 	Name        string
 	Description string
 
+	Strict *bool
+
 	Parameters map[string]any
+}
+
+type Schema struct {
+	Name        string
+	Description string
+
+	Strict *bool
+
+	Schema map[string]any
 }
 
 type Usage struct {

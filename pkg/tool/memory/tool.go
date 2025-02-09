@@ -7,18 +7,17 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool"
 )
 
-var _ tool.Tool = &Tool{}
+var (
+	Claims []string
+)
+
+var _ tool.Provider = (*Tool)(nil)
 
 type Tool struct {
-	name        string
-	description string
 }
 
-func New(options ...Option) (*Tool, error) {
-	t := &Tool{
-		name:        "memory",
-		description: "The `memory` tool allows you to persist information across conversations. Address your message `to=memory` and write whatever information you want to remember. The information will appear in the model set context below in future conversations.",
-	}
+func New(options ...Option) (tool.Provider, error) {
+	t := &Tool{}
 
 	for _, option := range options {
 		option(t)
@@ -27,39 +26,40 @@ func New(options ...Option) (*Tool, error) {
 	return t, nil
 }
 
-func (t *Tool) Name() string {
-	return t.name
-}
+func (t *Tool) Tools(ctx context.Context) ([]tool.Tool, error) {
+	return []tool.Tool{
+		{
+			Name:        "memory",
+			Description: "The `memory` tool allows you to persist information across conversations. The information will appear in the model set context below in future conversations.",
 
-func (t *Tool) Description() string {
-	return t.description
-}
+			Parameters: map[string]any{
+				"type": "object",
 
-func (*Tool) Parameters() map[string]any {
-	return map[string]any{
-		"type": "object",
+				"properties": map[string]any{
+					"claim": map[string]any{
+						"type":        "string",
+						"description": "the information to persist across conversations",
+					},
+				},
 
-		"properties": map[string]any{
-			"claim": map[string]any{
-				"type":        "string",
-				"description": "the information to persist across conversations",
+				"required": []string{"claim"},
 			},
 		},
-
-		"required": []string{"claim"},
-	}
+	}, nil
 }
 
-func (t *Tool) Execute(ctx context.Context, parameters map[string]any) (any, error) {
+func (t *Tool) Execute(ctx context.Context, name string, parameters map[string]any) (any, error) {
+	if name != "memory" {
+		return nil, tool.ErrInvalidTool
+	}
+
 	claim, ok := parameters["claim"].(string)
 
 	if !ok {
 		return nil, errors.New("missing claim parameter")
 	}
 
-	_ = claim
-
-	println(claim)
+	Claims = append(Claims, claim)
 
 	result := map[string]any{
 		"status": "ok",

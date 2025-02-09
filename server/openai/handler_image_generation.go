@@ -26,7 +26,9 @@ func (h *Handler) handleImageGeneration(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	options := &provider.RenderOptions{}
+	options := &provider.RenderOptions{
+		Style: toImageStyle(req.Style),
+	}
 
 	image, err := renderer.Render(r.Context(), req.Prompt, options)
 
@@ -66,4 +68,16 @@ func (h *Handler) handleImageGeneration(w http.ResponseWriter, r *http.Request) 
 	}
 
 	writeJson(w, result)
+}
+
+func toImageStyle(style ImageStyle) provider.ImageStyle {
+	switch style {
+	case ImageStyleVivid:
+		return provider.ImageStyleVivid
+
+	case ImageStyleNatural:
+		return provider.ImageStyleNatural
+	}
+
+	return ""
 }

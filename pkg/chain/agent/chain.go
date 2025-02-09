@@ -18,8 +18,11 @@ var _ chain.Provider = &Chain{}
 type Chain struct {
 	completer provider.Completer
 
-	tools    []tool.Tool
+	tools    []tool.Provider
 	messages []provider.Message
+
+	effort      provider.ReasoningEffort
+	temperature *float32
 }
 
 type Option func(*Chain)
@@ -50,15 +53,35 @@ func WithMessages(messages ...provider.Message) Option {
 	}
 }
 
-func WithTools(tool ...tool.Tool) Option {
+func WithTools(tool ...tool.Provider) Option {
 	return func(c *Chain) {
 		c.tools = tool
+	}
+}
+
+func WithEffort(effort provider.ReasoningEffort) Option {
+	return func(c *Chain) {
+		c.effort = effort
+	}
+}
+
+func WithTemperature(temperature float32) Option {
+	return func(c *Chain) {
+		c.temperature = &temperature
 	}
 }
 
 func (c *Chain) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
+	}
+
+	if options.Effort == "" {
+		options.Effort = c.effort
+	}
+
+	if options.Temperature == nil {
+		options.Temperature = c.temperature
 	}
 
 	if len(c.messages) > 0 {
@@ -73,19 +96,20 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	input := slices.Clone(messages)
 
-	agentTools := make(map[string]tool.Tool)
+	agentTools := make(map[string]tool.Provider)
 	inputTools := make(map[string]provider.Tool)
 
-	for _, t := range c.tools {
-		tool := provider.Tool{
-			Name:        t.Name(),
-			Description: t.Description(),
+	for _, p := range c.tools {
+		tools, err := p.Tools(ctx)
 
-			Parameters: t.Parameters(),
+		if err != nil {
+			return nil, err
 		}
 
-		agentTools[tool.Name] = t
-		inputTools[tool.Name] = tool
+		for _, tool := range tools {
+			agentTools[tool.Name] = p
+			inputTools[tool.Name] = tool
+		}
 	}
 
 	for _, t := range options.Tools {
@@ -95,12 +119,16 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 	var result *provider.Completion
 
 	inputOptions := &provider.CompleteOptions{
+		Effort: options.Effort,
+
+		Stop:  options.Stop,
 		Tools: to.Values(inputTools),
 
 		MaxTokens:   options.MaxTokens,
 		Temperature: options.Temperature,
 
 		Format: options.Format,
+		Schema: options.Schema,
 	}
 
 	var lastToolCallID string
@@ -157,7 +185,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 		var loop bool
 
 		for _, t := range completion.Message.ToolCalls {
-			tool, found := agentTools[t.Name]
+			p, found := agentTools[t.Name]
 
 			if !found {
 				continue
@@ -169,7 +197,7 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 				return nil, err
 			}
 
-			result, err := tool.Execute(ctx, params)
+			result, err := p.Execute(ctx, t.Name, params)
 
 			if err != nil {
 				return nil, err

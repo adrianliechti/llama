@@ -2,11 +2,11 @@ package google
 
 import (
 	"net/http"
+
+	"google.golang.org/api/option"
 )
 
 type Config struct {
-	url string
-
 	token string
 	model string
 
@@ -21,14 +21,22 @@ func WithClient(client *http.Client) Option {
 	}
 }
 
-func WithURL(url string) Option {
-	return func(c *Config) {
-		c.url = url
-	}
-}
-
 func WithToken(token string) Option {
 	return func(c *Config) {
 		c.token = token
 	}
+}
+
+func (c *Config) Options() []option.ClientOption {
+	options := []option.ClientOption{}
+
+	if c.client != nil {
+		options = append(options, option.WithHTTPClient(c.client))
+	}
+
+	if c.token != "" {
+		options = append(options, option.WithAPIKey(c.token))
+	}
+
+	return options
 }

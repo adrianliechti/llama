@@ -20,7 +20,6 @@ import (
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
-	"github.com/openai/openai-go/shared"
 )
 
 func main() {
@@ -198,7 +197,7 @@ LOOP:
 
 		result, err := client.Embeddings.New(ctx, openai.EmbeddingNewParams{
 			Model:          openai.F(model),
-			Input:          openai.F[openai.EmbeddingNewParamsInputUnion](shared.UnionString(input)),
+			Input:          openai.F[openai.EmbeddingNewParamsInputUnion](openai.EmbeddingNewParamsInputArrayOfStrings([]string{input})),
 			EncodingFormat: openai.F(openai.EmbeddingNewParamsEncodingFormatFloat),
 		})
 

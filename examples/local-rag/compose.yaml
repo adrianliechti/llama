@@ -16,7 +16,7 @@ services:
       - qdrant
   
   ollama:
-    image: ollama/ollama:0.3.12
+    image: ollama/ollama:0.5.4
     pull_policy: always
     volumes:
       - ollama-data:/root/.ollama
@@ -42,10 +42,10 @@ services:
     pull_policy: always
 
   web:
-    image: ghcr.io/adrianliechti/llama-streamlit
+    image: ghcr.io/adrianliechti/llama-chat
     pull_policy: always
     ports:
-      - 8501:8501
+      - 8000:8000
     environment:
       - OPENAI_BASE_URL=http://platform:8080/v1
     depends_on:
@@ -69,7 +69,7 @@ configs:
       extractors:
         unstructured:
           type: unstructured
-          url: http://unstructured:8000
+          url: http://unstructured:8000/general/v0/general
 
         text:
           type: text

@@ -65,9 +65,30 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 		Temperature: req.Temperature,
 	}
 
+	switch req.ReasoningEffort {
+	case ReasoningEffortLow:
+		options.Effort = provider.ReasoningEffortLow
+	case ReasoningEffortMedium:
+		options.Effort = provider.ReasoningEffortMedium
+	case ReasoningEffortHigh:
+		options.Effort = provider.ReasoningEffortHigh
+	}
+
 	if req.ResponseFormat != nil {
-		if req.ResponseFormat.Type == ResponseFormatJSON {
+		if req.ResponseFormat.Type == ResponseFormatJSONObject || req.ResponseFormat.Type == ResponseFormatJSONSchema {
 			options.Format = provider.CompletionFormatJSON
+		}
+
+		if req.ResponseFormat.JSONSchema != nil {
+			options.Format = provider.CompletionFormatJSON
+
+			options.Schema = &provider.Schema{
+				Name:        req.ResponseFormat.JSONSchema.Name,
+				Description: req.ResponseFormat.JSONSchema.Description,
+
+				Strict: req.ResponseFormat.JSONSchema.Strict,
+				Schema: req.ResponseFormat.JSONSchema.Schema,
+			}
 		}
 	}
 
@@ -179,15 +200,30 @@ func toMessages(s []ChatCompletionMessage) ([]provider.Message, error) {
 
 	for _, m := range s {
 		content := m.Content
+
 		files := make([]provider.File, 0)
 
 		for _, c := range m.Contents {
 			if c.Type == "text" {
-				content = c.Text
+				if len(content) > 0 {
+					content += "\n\n"
+				}
+
+				content += c.Text
 			}
 
-			if c.Type == "image_url" && c.ImageURL != nil {
-				file, err := toFile(*&c.ImageURL.URL)
+			if c.Type == MessageContentTypeFileURL && c.FileURL != nil {
+				file, err := toFile(c.FileURL.URL)
+
+				if err != nil {
+					return nil, err
+				}
+
+				files = append(files, *file)
+			}
+
+			if c.Type == MessageContentTypeImageURL && c.ImageURL != nil {
+				file, err := toFile(c.ImageURL.URL)
 
 				if err != nil {
 					return nil, err
@@ -248,10 +284,11 @@ func toFile(url string) (*provider.File, error) {
 		}
 
 		file := provider.File{
-			Content: bytes.NewReader(data),
+			Content:     bytes.NewReader(data),
+			ContentType: resp.Header.Get("Content-Type"),
 		}
 
-		if ext, _ := mime.ExtensionsByType(resp.Header.Get("Content-Type")); len(ext) > 0 {
+		if ext, _ := mime.ExtensionsByType(file.ContentType); len(ext) > 0 {
 			file.Name = uuid.New().String() + ext[0]
 		}
 
@@ -274,10 +311,11 @@ func toFile(url string) (*provider.File, error) {
 		}
 
 		file := provider.File{
-			Content: bytes.NewReader(data),
+			Content:     bytes.NewReader(data),
+			ContentType: match[1],
 		}
 
-		if ext, _ := mime.ExtensionsByType(match[1]); len(ext) > 0 {
+		if ext, _ := mime.ExtensionsByType(file.ContentType); len(ext) > 0 {
 			file.Name = uuid.New().String() + ext[0]
 		}
 

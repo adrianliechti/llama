@@ -5,6 +5,7 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/chain"
 	"github.com/adrianliechti/llama/pkg/provider"
+
 	"golang.org/x/time/rate"
 )
 

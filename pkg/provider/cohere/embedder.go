@@ -2,29 +2,22 @@ package cohere
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"net/http"
-	"net/url"
 
 	"github.com/adrianliechti/llama/pkg/provider"
+
+	v2 "github.com/cohere-ai/cohere-go/v2"
+	client "github.com/cohere-ai/cohere-go/v2/v2"
 )
 
 var _ provider.Embedder = (*Embedder)(nil)
 
 type Embedder struct {
 	*Config
+	client *client.Client
 }
 
-func NewEmbedder(url, model string, options ...Option) (*Embedder, error) {
-	if url == "" {
-		url = "https://api.cohere.com"
-	}
-
+func NewEmbedder(model string, options ...Option) (*Embedder, error) {
 	cfg := &Config{
-		client: http.DefaultClient,
-
-		url:   url,
 		model: model,
 	}
 
@@ -34,59 +27,32 @@ func NewEmbedder(url, model string, options ...Option) (*Embedder, error) {
 
 	return &Embedder{
 		Config: cfg,
+		client: client.NewClient(cfg.Options()...),
 	}, nil
 }
 
 func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
-	url, _ := url.JoinPath(e.url, "/v1/embed")
+	req := &v2.V2EmbedRequest{
+		Model: e.model,
 
-	body := map[string]any{
-		"model": e.model,
-
-		"texts": []string{
+		Texts: []string{
 			content,
 		},
 
-		"input_type": "search_document",
+		InputType: v2.EmbedInputTypeSearchDocument,
 
-		"embedding_types": []string{
-			"float",
+		EmbeddingTypes: []v2.EmbeddingType{
+			v2.EmbeddingTypeFloat,
 		},
 	}
 
-	req, _ := http.NewRequestWithContext(ctx, "POST", url, jsonReader(body))
-	req.Header.Set("Authorization", "Bearer "+e.token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := e.client.Do(req)
+	resp, err := e.client.Embed(ctx, req)
 
 	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, convertError(resp)
-	}
-
-	var result EmbedResponse
-
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
-	}
-
-	floats := result.Embeddings["float"]
-
-	if len(floats) == 0 {
-		return nil, errors.New("invalid embeddings")
+		return nil, convertError(err)
 	}
 
 	return &provider.Embedding{
-		Data: floats[0],
+		Data: toFloat32(resp.Embeddings.Float[0]),
 	}, nil
-}
-
-type EmbedResponse struct {
-	Embeddings map[string][][]float32 `json:"embeddings"`
 }

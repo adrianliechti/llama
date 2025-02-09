@@ -8,17 +8,23 @@ import (
 	"github.com/adrianliechti/llama/pkg/extractor/azure"
 	"github.com/adrianliechti/llama/pkg/extractor/jina"
 	"github.com/adrianliechti/llama/pkg/extractor/multi"
+	"github.com/adrianliechti/llama/pkg/extractor/tavily"
 	"github.com/adrianliechti/llama/pkg/extractor/text"
 	"github.com/adrianliechti/llama/pkg/extractor/tika"
 	"github.com/adrianliechti/llama/pkg/extractor/unstructured"
 	"github.com/adrianliechti/llama/pkg/limiter"
 	"github.com/adrianliechti/llama/pkg/otel"
+
 	"golang.org/x/time/rate"
 )
 
 func (cfg *Config) RegisterExtractor(id string, p extractor.Provider) {
 	if cfg.extractors == nil {
 		cfg.extractors = make(map[string]extractor.Provider)
+	}
+
+	if _, ok := cfg.extractors[""]; !ok {
+		cfg.extractors[""] = p
 	}
 
 	cfg.extractors[id] = p
@@ -47,23 +53,29 @@ type extractorContext struct {
 	Limiter *rate.Limiter
 }
 
-func (cfg *Config) RegisterExtractors(f *configFile) error {
+func (cfg *Config) registerExtractors(f *configFile) error {
+	var configs map[string]extractorConfig
+
+	if err := f.Extractors.Decode(&configs); err != nil {
+		return err
+	}
+
 	var extractors []extractor.Provider
 
-	for id, e := range f.Extractors {
-		context := extractorContext{}
+	for _, node := range f.Extractors.Content {
+		id := node.Value
 
-		limit := e.Limit
+		config, ok := configs[node.Value]
 
-		if limit == nil {
-			limit = e.Limit
+		if !ok {
+			continue
 		}
 
-		if limit != nil {
-			context.Limiter = rate.NewLimiter(rate.Limit(*limit), *limit)
+		context := extractorContext{
+			Limiter: createLimiter(config.Limit),
 		}
 
-		extractor, err := createExtractor(e, context)
+		extractor, err := createExtractor(config, context)
 
 		if err != nil {
 			return err
@@ -94,6 +106,9 @@ func createExtractor(cfg extractorConfig, context extractorContext) (extractor.P
 
 	case "jina":
 		return jinaExtractor(cfg)
+
+	case "tavily":
+		return tavilyExtractor(cfg)
 
 	case "text":
 		return textExtractor(cfg)
@@ -131,6 +146,10 @@ func jinaExtractor(cfg extractorConfig) (extractor.Provider, error) {
 
 func textExtractor(cfg extractorConfig) (extractor.Provider, error) {
 	return text.New()
+}
+
+func tavilyExtractor(cfg extractorConfig) (extractor.Provider, error) {
+	return tavily.New(cfg.Token)
 }
 
 func tikaExtractor(cfg extractorConfig) (extractor.Provider, error) {

@@ -25,5 +25,5 @@ open http://localhost:6333/dashboard#/collections/docs
 ## Open Web UI
 
 ```shell
-$ open http://localhost:8501
+$ open http://localhost:8000
 ```

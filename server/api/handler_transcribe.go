@@ -25,8 +25,10 @@ func (h *Handler) handleTranscribe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	input := provider.File{
-		Name:    header.Filename,
-		Content: file,
+		Name: header.Filename,
+
+		Content:     file,
+		ContentType: header.Header.Get("Content-Type"),
 	}
 
 	options := &provider.TranscribeOptions{

@@ -11,7 +11,7 @@ import (
 
 type Tool interface {
 	Observable
-	tool.Tool
+	tool.Provider
 }
 
 type observableTool struct {
@@ -20,10 +20,10 @@ type observableTool struct {
 
 	provider string
 
-	tool tool.Tool
+	tool tool.Provider
 }
 
-func NewTool(provider string, p tool.Tool) Tool {
+func NewTool(provider string, p tool.Provider) Tool {
 	library := strings.ToLower(provider)
 
 	return &observableTool{
@@ -39,23 +39,20 @@ func NewTool(provider string, p tool.Tool) Tool {
 func (p *observableTool) otelSetup() {
 }
 
-func (p *observableTool) Name() string {
-	return p.tool.Name()
-}
-
-func (p *observableTool) Description() string {
-	return p.tool.Description()
-}
-
-func (p *observableTool) Parameters() map[string]any {
-	return p.tool.Parameters()
-}
-
-func (p *observableTool) Execute(ctx context.Context, parameters map[string]any) (any, error) {
+func (p *observableTool) Tools(ctx context.Context) ([]tool.Tool, error) {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 
-	result, err := p.tool.Execute(ctx, parameters)
+	tools, err := p.tool.Tools(ctx)
+
+	return tools, err
+}
+
+func (p *observableTool) Execute(ctx context.Context, tool string, parameters map[string]any) (any, error) {
+	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
+	defer span.End()
+
+	result, err := p.tool.Execute(ctx, tool, parameters)
 
 	return result, err
 }

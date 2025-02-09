@@ -7,27 +7,32 @@ import (
 
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
+	"github.com/adrianliechti/llama/pkg/provider/replicate"
 	"github.com/adrianliechti/llama/pkg/provider/replicate/flux"
 )
 
-func (cfg *Config) RegisterRenderer(model string, p provider.Renderer) {
-	cfg.RegisterModel(model)
+func (cfg *Config) RegisterRenderer(id string, p provider.Renderer) {
+	cfg.RegisterModel(id)
 
 	if cfg.renderer == nil {
 		cfg.renderer = make(map[string]provider.Renderer)
 	}
 
-	cfg.renderer[model] = p
+	if _, ok := cfg.renderer[""]; !ok {
+		cfg.renderer[""] = p
+	}
+
+	cfg.renderer[id] = p
 }
 
-func (cfg *Config) Renderer(model string) (provider.Renderer, error) {
+func (cfg *Config) Renderer(id string) (provider.Renderer, error) {
 	if cfg.renderer != nil {
-		if t, ok := cfg.renderer[model]; ok {
+		if t, ok := cfg.renderer[id]; ok {
 			return t, nil
 		}
 	}
 
-	return nil, errors.New("renderer not found: " + model)
+	return nil, errors.New("renderer not found: " + id)
 }
 
 func createRenderer(cfg providerConfig, model modelContext) (provider.Renderer, error) {
@@ -55,13 +60,13 @@ func openaiRenderer(cfg providerConfig, model modelContext) (provider.Renderer, 
 
 func replicateRenderer(cfg providerConfig, model modelContext) (provider.Renderer, error) {
 	if slices.Contains(flux.SupportedModels, model.ID) {
-		var options []flux.Option
+		var options []replicate.Option
 
 		if cfg.Token != "" {
-			options = append(options, flux.WithToken(cfg.Token))
+			options = append(options, replicate.WithToken(cfg.Token))
 		}
 
-		return flux.NewRenderer(cfg.URL, model.ID, options...)
+		return flux.NewRenderer(model.ID, options...)
 	}
 
 	return nil, errors.New("model not supported: " + model.ID)

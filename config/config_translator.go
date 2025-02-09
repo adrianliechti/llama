@@ -7,12 +7,17 @@ import (
 	"github.com/adrianliechti/llama/pkg/translator"
 	"github.com/adrianliechti/llama/pkg/translator/azure"
 	"github.com/adrianliechti/llama/pkg/translator/deepl"
+
 	"golang.org/x/time/rate"
 )
 
 func (cfg *Config) RegisterTranslator(id string, p translator.Provider) {
 	if cfg.translator == nil {
 		cfg.translator = make(map[string]translator.Provider)
+	}
+
+	if _, ok := cfg.translator[""]; !ok {
+		cfg.translator[""] = p
 	}
 
 	cfg.translator[id] = p
@@ -41,29 +46,31 @@ type translatorContext struct {
 	Limiter *rate.Limiter
 }
 
-func (cfg *Config) RegisterTranslators(f *configFile) error {
-	var translators []translator.Provider
+func (cfg *Config) registerTranslators(f *configFile) error {
+	var configs map[string]translatorConfig
 
-	for id, t := range f.Translators {
-		context := translatorContext{}
+	if err := f.Translators.Decode(&configs); err != nil {
+		return err
+	}
 
-		limit := t.Limit
+	for _, node := range f.Translators.Content {
+		id := node.Value
 
-		if limit == nil {
-			limit = t.Limit
+		config, ok := configs[node.Value]
+
+		if !ok {
+			continue
 		}
 
-		if limit != nil {
-			context.Limiter = rate.NewLimiter(rate.Limit(*limit), *limit)
+		context := translatorContext{
+			Limiter: createLimiter(config.Limit),
 		}
 
-		translator, err := createTranslator(t, context)
+		translator, err := createTranslator(config, context)
 
 		if err != nil {
 			return err
 		}
-
-		translators = append(translators, translator)
 
 		cfg.RegisterTranslator(id, translator)
 	}

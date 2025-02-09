@@ -23,12 +23,46 @@ type ModelList struct {
 
 // https://platform.openai.com/docs/api-reference/embeddings/create
 type EmbeddingsRequest struct {
-	Input any    `json:"input"`
 	Model string `json:"model"`
+
+	Input any `json:"input"`
 
 	// encoding_format string: float, base64
 	// dimensions int
 	// user string
+}
+
+func (r *EmbeddingsRequest) UnmarshalJSON(data []byte) error {
+	type1 := struct {
+		Model string `json:"model"`
+		Input string `json:"input"`
+	}{}
+
+	if err := json.Unmarshal(data, &type1); err == nil {
+		*r = EmbeddingsRequest{
+			Model: type1.Model,
+			Input: type1.Input,
+		}
+
+		return nil
+	}
+
+	type2 := struct {
+		Model string `json:"model"`
+
+		Input []string `json:"input"`
+	}{}
+
+	if err := json.Unmarshal(data, &type2); err == nil {
+		*r = EmbeddingsRequest{
+			Model: type2.Model,
+			Input: type2.Input,
+		}
+
+		return nil
+	}
+
+	return nil
 }
 
 // https://platform.openai.com/docs/api-reference/embeddings/object
@@ -61,11 +95,12 @@ var (
 type ResponseFormat string
 
 var (
-	ResponseFormatText ResponseFormat = "text"
-	ResponseFormatJSON ResponseFormat = "json_object"
+	ResponseFormatText       ResponseFormat = "text"
+	ResponseFormatJSONObject ResponseFormat = "json_object"
+	ResponseFormatJSONSchema ResponseFormat = "json_schema"
 )
 
-// // https://platform.openai.com/docs/api-reference/chat/object
+// https://platform.openai.com/docs/api-reference/chat/object
 type FinishReason string
 
 var (
@@ -81,6 +116,8 @@ type ChatCompletionRequest struct {
 	Model string `json:"model"`
 
 	Messages []ChatCompletionMessage `json:"messages"`
+
+	ReasoningEffort ReasoningEffort `json:"reasoning_effort,omitempty"`
 
 	Stream bool   `json:"stream,omitempty"`
 	Stop   any    `json:"stop,omitempty"`
@@ -109,9 +146,27 @@ type ChatCompletionRequest struct {
 	// user string
 }
 
+type ReasoningEffort string
+
+var (
+	ReasoningEffortLow    ReasoningEffort = "low"
+	ReasoningEffortMedium ReasoningEffort = "medium"
+	ReasoningEffortHigh   ReasoningEffort = "high"
+)
+
 // https://platform.openai.com/docs/api-reference/chat/create
 type ChatCompletionResponseFormat struct {
-	Type ResponseFormat `json:"type"`
+	Type       ResponseFormat `json:"type"`
+	JSONSchema *Schema        `json:"json_schema,omitempty"`
+}
+
+type Schema struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+
+	Strict *bool `json:"strict,omitempty"`
+
+	Schema map[string]any `json:"schema"`
 }
 
 // https://platform.openai.com/docs/api-reference/chat/object
@@ -149,10 +204,20 @@ type ChatCompletionMessage struct {
 	ToolCallID string     `json:"tool_call_id,omitempty"`
 }
 
+type MessageContentType string
+
+var (
+	MessageContentTypeText     MessageContentType = "text"
+	MessageContentTypeFileURL  MessageContentType = "file_url" // non-standard
+	MessageContentTypeImageURL MessageContentType = "image_url"
+)
+
 type MessageContent struct {
-	Type string `json:"type,omitempty"`
+	Type MessageContentType `json:"type,omitempty"`
+
 	Text string `json:"text,omitempty"`
 
+	FileURL  *MessageContentURL `json:"file_url,omitempty"` // non-standard
 	ImageURL *MessageContentURL `json:"image_url,omitempty"`
 }
 
@@ -254,6 +319,8 @@ type Function struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 
+	Strict *bool `json:"strict,omitempty"`
+
 	Parameters map[string]any `json:"parameters"`
 }
 
@@ -280,12 +347,19 @@ type Transcription struct {
 	Text string `json:"text"`
 }
 
+type ImageStyle string
+
+const (
+	ImageStyleNatural ImageStyle = "natural"
+	ImageStyleVivid   ImageStyle = "vivid"
+)
+
 // https://platform.openai.com/docs/api-reference/images/create
 type ImageCreateRequest struct {
 	Model string `json:"model"`
 
-	Prompt string `json:"prompt"`
-	Style  string `json:"style,omitempty"`
+	Prompt string     `json:"prompt"`
+	Style  ImageStyle `json:"style,omitempty"`
 
 	ResponseFormat string `json:"response_format,omitempty"`
 }

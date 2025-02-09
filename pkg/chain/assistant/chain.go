@@ -17,6 +17,7 @@ type Chain struct {
 
 	messages []provider.Message
 
+	effort      provider.ReasoningEffort
 	temperature *float32
 }
 
@@ -48,6 +49,12 @@ func WithMessages(messages ...provider.Message) Option {
 	}
 }
 
+func WithEffort(effort provider.ReasoningEffort) Option {
+	return func(c *Chain) {
+		c.effort = effort
+	}
+}
+
 func WithTemperature(temperature float32) Option {
 	return func(c *Chain) {
 		c.temperature = &temperature
@@ -57,6 +64,10 @@ func WithTemperature(temperature float32) Option {
 func (c *Chain) Complete(ctx context.Context, messages []provider.Message, options *provider.CompleteOptions) (*provider.Completion, error) {
 	if options == nil {
 		options = new(provider.CompleteOptions)
+	}
+
+	if options.Effort == "" {
+		options.Effort = c.effort
 	}
 
 	if options.Temperature == nil {

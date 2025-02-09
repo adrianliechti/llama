@@ -15,24 +15,28 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/openai"
 )
 
-func (cfg *Config) RegisterEmbedder(model string, p provider.Embedder) {
-	cfg.RegisterModel(model)
+func (cfg *Config) RegisterEmbedder(id string, p provider.Embedder) {
+	cfg.RegisterModel(id)
 
 	if cfg.embedder == nil {
 		cfg.embedder = make(map[string]provider.Embedder)
 	}
 
-	cfg.embedder[model] = p
+	if _, ok := cfg.embedder[""]; !ok {
+		cfg.embedder[""] = p
+	}
+
+	cfg.embedder[id] = p
 }
 
-func (cfg *Config) Embedder(model string) (provider.Embedder, error) {
+func (cfg *Config) Embedder(id string) (provider.Embedder, error) {
 	if cfg.embedder != nil {
-		if e, ok := cfg.embedder[model]; ok {
+		if e, ok := cfg.embedder[id]; ok {
 			return e, nil
 		}
 	}
 
-	return nil, errors.New("embedder not found: " + model)
+	return nil, errors.New("embedder not found: " + id)
 }
 
 func createEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
@@ -86,7 +90,7 @@ func cohereEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, 
 		options = append(options, cohere.WithToken(cfg.Token))
 	}
 
-	return cohere.NewEmbedder(cfg.URL, model.ID, options...)
+	return cohere.NewEmbedder(model.ID, options...)
 }
 
 func googleEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {
@@ -96,7 +100,7 @@ func googleEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, 
 		options = append(options, google.WithToken(cfg.Token))
 	}
 
-	return google.NewEmbedder(cfg.URL, model.ID, options...)
+	return google.NewEmbedder(model.ID, options...)
 }
 
 func huggingfaceEmbedder(cfg providerConfig, model modelContext) (provider.Embedder, error) {

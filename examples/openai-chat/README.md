@@ -10,7 +10,7 @@ export OPENAI_API_KEY=sk-......
 docker compose up --force-recreate --remove-orphans
 ```
 
-open [localhost:8501](http://localhost:8501) in your favorite browser
+open [localhost:8000](http://localhost:8000) in your favorite browser
 
 ## Completion API
 
@@ -20,7 +20,7 @@ https://platform.openai.com/docs/api-reference/chat/create
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gpt-4-turbo",
+    "model": "gpt-4o",
     "messages": [
       {
         "role": "system",
@@ -42,7 +42,7 @@ https://platform.openai.com/docs/guides/vision
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gpt-4-turbo",
+    "model": "gpt-4o",
     "messages": [
       {
         "role": "user",

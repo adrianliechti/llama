@@ -1,11 +1,27 @@
 syntax = "proto3";
 
+import "google/protobuf/empty.proto";
+
 option go_package = "github.com/adrianliechti/llama/pkg/index/custom;custom";
 
 package index;
 
 service index {
+  rpc List (ListRequest) returns (Documents) {}
+  rpc Delete(DeleteRequest) returns (google.protobuf.Empty) {}
+  rpc Index(IndexRequest) returns (google.protobuf.Empty) {}
   rpc Query (QueryRequest) returns (Results) {}
+}
+
+message ListRequest {
+}
+
+message DeleteRequest {
+  repeated string ids = 1;
+}
+
+message IndexRequest {
+  repeated Document documents = 1;
 }
 
 message QueryRequest {
@@ -16,14 +32,8 @@ message QueryRequest {
   map<string, string> filters = 3;
 }
 
-message Results {
-    repeated Result results = 1;
-}
-
-message Result {
-  Document document = 1;
-
-  float score = 2; 
+message Documents {
+  repeated Document documents = 1;
 }
 
 message Document {
@@ -36,4 +46,14 @@ message Document {
 	map<string, string> metadata = 5;
 
 	repeated float embedding = 6;
+}
+
+message Results {
+    repeated Result results = 1;
+}
+
+message Result {
+  Document document = 1;
+
+  float score = 2; 
 }

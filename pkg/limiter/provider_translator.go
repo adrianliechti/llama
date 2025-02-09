@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/adrianliechti/llama/pkg/translator"
+
 	"golang.org/x/time/rate"
 )
 

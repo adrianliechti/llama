@@ -7,8 +7,8 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 	"github.com/adrianliechti/llama/pkg/provider/anthropic"
 	"github.com/adrianliechti/llama/pkg/provider/azure"
+	"github.com/adrianliechti/llama/pkg/provider/bedrock"
 	"github.com/adrianliechti/llama/pkg/provider/cohere"
-	"github.com/adrianliechti/llama/pkg/provider/custom"
 	"github.com/adrianliechti/llama/pkg/provider/google"
 	"github.com/adrianliechti/llama/pkg/provider/groq"
 	"github.com/adrianliechti/llama/pkg/provider/huggingface"
@@ -17,32 +17,37 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider/mistralrs"
 	"github.com/adrianliechti/llama/pkg/provider/ollama"
 	"github.com/adrianliechti/llama/pkg/provider/openai"
+	"github.com/adrianliechti/llama/pkg/provider/xai"
 )
 
-func (cfg *Config) RegisterCompleter(model string, p provider.Completer) {
-	cfg.RegisterModel(model)
+func (cfg *Config) RegisterCompleter(id string, p provider.Completer) {
+	cfg.RegisterModel(id)
 
 	if cfg.completer == nil {
 		cfg.completer = make(map[string]provider.Completer)
 	}
 
-	cfg.completer[model] = p
+	if _, ok := cfg.completer[""]; !ok {
+		cfg.completer[""] = p
+	}
+
+	cfg.completer[id] = p
 }
 
-func (cfg *Config) Completer(model string) (provider.Completer, error) {
+func (cfg *Config) Completer(id string) (provider.Completer, error) {
 	if cfg.completer != nil {
-		if c, ok := cfg.completer[model]; ok {
+		if c, ok := cfg.completer[id]; ok {
 			return c, nil
 		}
 	}
 
 	if cfg.chains != nil {
-		if c, ok := cfg.chains[model]; ok {
+		if c, ok := cfg.chains[id]; ok {
 			return c, nil
 		}
 	}
 
-	return nil, errors.New("completer not found: " + model)
+	return nil, errors.New("completer not found: " + id)
 }
 
 func createCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
@@ -52,6 +57,9 @@ func createCompleter(cfg providerConfig, model modelContext) (provider.Completer
 
 	case "azure":
 		return azureCompleter(cfg, model)
+
+	case "bedrock":
+		return bedrockCompleter(cfg, model)
 
 	case "cohere":
 		return cohereCompleter(cfg, model)
@@ -83,8 +91,8 @@ func createCompleter(cfg providerConfig, model modelContext) (provider.Completer
 	case "openai":
 		return openaiCompleter(cfg, model)
 
-	case "custom":
-		return customCompleter(cfg, model)
+	case "xai":
+		return xaiCompleter(cfg, model)
 
 	default:
 		return nil, errors.New("invalid completer type: " + cfg.Type)
@@ -109,6 +117,12 @@ func azureCompleter(cfg providerConfig, model modelContext) (provider.Completer,
 	}
 
 	return azure.NewCompleter(cfg.URL, model.ID, options...)
+}
+
+func bedrockCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
+	var options []bedrock.Option
+
+	return bedrock.NewCompleter(model.ID, options...)
 }
 
 func cohereCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
@@ -189,8 +203,12 @@ func openaiCompleter(cfg providerConfig, model modelContext) (provider.Completer
 	return openai.NewCompleter(cfg.URL, model.ID, options...)
 }
 
-func customCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
-	var options []custom.Option
+func xaiCompleter(cfg providerConfig, model modelContext) (provider.Completer, error) {
+	var options []xai.Option
 
-	return custom.NewCompleter(cfg.URL, options...)
+	if cfg.Token != "" {
+		options = append(options, xai.WithToken(cfg.Token))
+	}
+
+	return xai.NewCompleter(cfg.URL, model.ID, options...)
 }

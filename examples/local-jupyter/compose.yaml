@@ -15,7 +15,7 @@ services:
       - ollama-companion
   
   ollama:
-    image: ollama/ollama:0.3.12
+    image: ollama/ollama:0.5.4
     pull_policy: always
     volumes:
       - ollama-data:/root/.ollama
@@ -29,8 +29,14 @@ services:
       - OLLAMA_MODELS=llama3.2:1b
   
   jupyter:
-    image: quay.io/jupyter/datascience-notebook:2024-05-06
-    command: start-notebook.sh --NotebookApp.token='' -ServerApp.root_dir=/home/jovyan/work  
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    environment:
+      - OPENAI_BASE_URL=http://platform:8080/v1
+      - OPENAI_API_KEY=sk-
+
     ports:
       - 8888:8888
     volumes:
@@ -47,6 +53,23 @@ configs:
           models:
             llama:
               id: llama3.2:1b
+      
+      chains:
+        gpt-3.5-turbo:
+          type: assistant
+          model: llama
+
+        gpt-4:
+          type: assistant
+          model: llama
+        
+        gpt-4o:
+          type: assistant
+          model: llama
+        
+        gpt-4o-mini:
+          type: assistant
+          model: llama
 
 volumes:
   ollama-data:
