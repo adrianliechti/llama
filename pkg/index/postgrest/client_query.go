@@ -61,9 +61,8 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 			Document: index.Document{
 				ID: doc.ID,
 
-				Title:    doc.Title,
-				Location: doc.Location,
-
+				Title:   doc.Title,
+				Source:  doc.Source,
 				Content: doc.Content,
 			},
 		})

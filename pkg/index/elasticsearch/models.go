@@ -3,9 +3,8 @@ package elasticsearch
 type Document struct {
 	ID string `json:"id"`
 
-	Title    string `json:"title"`
-	Location string `json:"location"`
-
+	Title   string `json:"title"`
+	Source  string `json:"source"`
 	Content string `json:"content"`
 
 	Metadata map[string]string `json:"metadata"`

@@ -17,6 +17,7 @@ type Client struct {
 	Segments    *SegmentService
 	Extractions *ExtractionService
 
+	Documents *DocumentService
 	Summaries *SummaryService
 }
 
@@ -31,6 +32,9 @@ func New(url string, opts ...RequestOption) *Client {
 
 		Segments:    NewSegmentService(opts...),
 		Extractions: NewExtractionService(opts...),
+
+		Documents: NewDocumentService(opts...),
+		Summaries: NewSummaryService(opts...),
 	}
 }
 

@@ -98,9 +98,8 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 		result := index.Result{
 			Document: index.Document{
-				Location: resultURL,
-
 				Title:   resultTitle,
+				Source:  resultURL,
 				Content: resultSnippet,
 			},
 		}

@@ -25,9 +25,9 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 		item := Document{
 			ID: d.ID,
 
-			Title:    d.Title,
-			Content:  d.Content,
-			Location: d.Location,
+			Title:   d.Title,
+			Source:  d.Source,
+			Content: d.Content,
 
 			Embedding: d.Embedding,
 		}

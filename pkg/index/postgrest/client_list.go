@@ -38,9 +38,8 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		result = append(result, index.Document{
 			ID: doc.ID,
 
-			Title:    doc.Title,
-			Location: doc.Location,
-
+			Title:   doc.Title,
+			Source:  doc.Source,
 			Content: doc.Content,
 		})
 	}

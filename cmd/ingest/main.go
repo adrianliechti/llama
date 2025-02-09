@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -202,7 +203,7 @@ func IndexDir(ctx context.Context, c *client.Client, index, root string) error {
 
 			embeddings.Segments = append(embeddings.Segments, Segment{
 				Text:      title,
-				Embedding: titleEmbedding.Data[0].Embedding,
+				Embedding: toFloat32(titleEmbedding.Data[0].Embedding),
 			})
 
 			for _, segment := range segments {
@@ -218,7 +219,7 @@ func IndexDir(ctx context.Context, c *client.Client, index, root string) error {
 
 				embeddings.Segments = append(embeddings.Segments, Segment{
 					Text:      segment.Text,
-					Embedding: segmentEmbedding.Data[0].Embedding,
+					Embedding: toFloat32(segmentEmbedding.Data[0].Embedding),
 				})
 			}
 
@@ -226,6 +227,37 @@ func IndexDir(ctx context.Context, c *client.Client, index, root string) error {
 				result = errors.Join(result, err)
 				return nil
 			}
+		}
+
+		if index != "" && !exists(cachedir, "documents.json") {
+			var embeddings Embeddings
+
+			if err := readJSON(cachedir, "embeddings.json", &embeddings); err != nil {
+				result = errors.Join(result, err)
+				return nil
+			}
+
+			for i, segment := range embeddings.Segments {
+				document := client.Document{
+					Title:  metadata.Title,
+					Source: fmt.Sprintf("%s#%d", metadata.Path, i+1),
+
+					Content:   segment.Text,
+					Embedding: segment.Embedding,
+				}
+
+				_, err := c.Documents.New(ctx, client.DocumentRequest{
+					Index:     index,
+					Documents: []client.Document{document},
+				})
+
+				if err != nil {
+					result = errors.Join(result, err)
+					return nil
+				}
+			}
+
+			println(embeddings.Model)
 		}
 
 		revisions[metadata.Path] = metadata.MD5
@@ -342,7 +374,7 @@ type Embeddings struct {
 type Segment struct {
 	Text string `json:"text"`
 
-	Embedding []float64 `json:"embedding"`
+	Embedding []float32 `json:"embedding"`
 }
 
 func exists(path, name string) bool {
@@ -395,6 +427,16 @@ func writeJSON(dir, name string, v any) error {
 	}
 
 	return writeData(dir, name, data)
+}
+
+func toFloat32(input []float64) []float32 {
+	result := make([]float32, len(input))
+
+	for i, v := range input {
+		result[i] = float32(v)
+	}
+
+	return result
 }
 
 // type client struct {

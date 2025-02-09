@@ -71,10 +71,10 @@ func (c *Client) Execute(ctx context.Context, name string, parameters map[string
 
 	for _, r := range data {
 		result := Result{
+			URL: r.Source,
+
 			Title:   r.Title,
 			Content: r.Content,
-
-			URL: r.Location,
 		}
 
 		results = append(results, result)

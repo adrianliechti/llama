@@ -105,9 +105,9 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		documents = append(documents, index.Document{
 			ID: p.ID,
 
-			Title:    p.Payload.Title,
-			Content:  p.Payload.Content,
-			Location: p.Payload.Location,
+			Title:   p.Payload.Title,
+			Source:  p.Payload.Source,
+			Content: p.Payload.Content,
 
 			Metadata: p.Payload.Metadata,
 
@@ -151,9 +151,9 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 			Vector: d.Embedding,
 
 			Payload: payload{
-				Title:    d.Title,
-				Content:  d.Content,
-				Location: d.Location,
+				Title:   d.Title,
+				Source:  d.Source,
+				Content: d.Content,
 
 				Metadata: d.Metadata,
 			}})
@@ -273,9 +273,9 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 			Document: index.Document{
 				ID: r.ID,
 
-				Title:    r.Payload.Title,
-				Content:  r.Payload.Content,
-				Location: r.Payload.Location,
+				Title:   r.Payload.Title,
+				Source:  r.Payload.Source,
+				Content: r.Payload.Content,
 
 				Metadata: r.Payload.Metadata,
 

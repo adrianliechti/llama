@@ -123,9 +123,9 @@ func convertDocument(d *Document) index.Document {
 	return index.Document{
 		ID: d.Id,
 
-		Title:    d.Title,
-		Content:  d.Content,
-		Location: d.Location,
+		Title:   d.Title,
+		Source:  d.Source,
+		Content: d.Content,
 
 		Metadata: d.Metadata,
 
@@ -147,9 +147,9 @@ func toDocument(d index.Document) *Document {
 	return &Document{
 		Id: d.ID,
 
-		Title:    d.Title,
-		Content:  d.Content,
-		Location: d.Location,
+		Title:   d.Title,
+		Source:  d.Source,
+		Content: d.Content,
 
 		Metadata: d.Metadata,
 
