@@ -108,8 +108,8 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 			title := o.Properties["title"]
 			delete(metadata, "title")
 
-			location := o.Properties["location"]
-			delete(metadata, "location")
+			source := o.Properties["source"]
+			delete(metadata, "source")
 
 			content := o.Properties["content"]
 			delete(metadata, "content")
@@ -121,10 +121,10 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 			d := index.Document{
 				ID: key,
 
-				Title:    title,
-				Location: location,
+				Title:   title,
+				Source:  source,
+				Content: content,
 
-				Content:  content,
 				Metadata: metadata,
 			}
 
@@ -285,10 +285,10 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 			Document: index.Document{
 				ID: key,
 
-				Title:    d.Title,
-				Location: d.Location,
+				Title:   d.Title,
+				Source:  d.Source,
+				Content: d.Content,
 
-				Content:  d.Content,
 				Metadata: metadata,
 			},
 		}
@@ -321,8 +321,7 @@ func (c *Client) createObject(d index.Document) error {
 	properties["key"] = d.ID
 
 	properties["title"] = d.Title
-	properties["location"] = d.Location
-
+	properties["source"] = d.Source
 	properties["content"] = d.Content
 
 	body := map[string]any{
@@ -360,8 +359,7 @@ func (c *Client) updateObject(ctx context.Context, d index.Document) error {
 	properties["key"] = d.ID
 
 	properties["title"] = d.Title
-	properties["location"] = d.Location
-
+	properties["source"] = d.Source
 	properties["content"] = d.Content
 
 	body := map[string]any{
@@ -423,9 +421,8 @@ type errorDetail struct {
 type document struct {
 	Key string `json:"key"`
 
-	Title    string `json:"title,omitempty"`
-	Location string `json:"location,omitempty"`
-
+	Title   string `json:"title,omitempty"`
+	Source  string `json:"source,omitempty"`
 	Content string `json:"content"`
 
 	Additional additional `json:"_additional"`

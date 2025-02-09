@@ -27,9 +27,9 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 
 			"id": id,
 
-			"title":    d.Title,
-			"content":  d.Content,
-			"location": d.Location,
+			"title":   d.Title,
+			"source":  d.Source,
+			"content": d.Content,
 		}
 
 		if len(d.Metadata) > 0 {

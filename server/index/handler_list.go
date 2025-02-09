@@ -25,8 +25,13 @@ func (s *Handler) handleList(w http.ResponseWriter, r *http.Request) {
 		results = append(results, Document{
 			ID: r.ID,
 
-			Content:  r.Content,
+			Title:   r.Title,
+			Source:  r.Source,
+			Content: r.Content,
+
 			Metadata: r.Metadata,
+
+			Embedding: r.Embedding,
 		})
 	}
 

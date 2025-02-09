@@ -27,9 +27,9 @@ type QueryOptions struct {
 type Document struct {
 	ID string
 
-	Title    string
-	Content  string
-	Location string
+	Title   string
+	Source  string
+	Content string
 
 	Metadata map[string]string
 

@@ -1,7 +1,7 @@
 package retriever
 
 type Result struct {
-	Title    string `json:"title,omitempty"`
-	Content  string `json:"content,omitempty"`
-	Location string `json:"location,omitempty"`
+	Title   string `json:"title,omitempty"`
+	Source  string `json:"source,omitempty"`
+	Content string `json:"content,omitempty"`
 }

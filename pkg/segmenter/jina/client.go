@@ -43,7 +43,7 @@ func (c *Client) Segment(ctx context.Context, input segmenter.File, options *seg
 		options = new(segmenter.SegmentOptions)
 	}
 
-	data, err := io.ReadAll(input.Content)
+	data, err := io.ReadAll(input.Reader)
 
 	if err != nil {
 		return nil, err

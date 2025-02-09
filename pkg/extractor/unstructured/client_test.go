@@ -47,8 +47,8 @@ func TestExtract(t *testing.T) {
 	require.NoError(t, err)
 
 	input := extractor.File{
-		Name:    "acrobat_reference.pdf",
-		Content: bytes.NewReader(data),
+		Name:   "acrobat_reference.pdf",
+		Reader: bytes.NewReader(data),
 	}
 
 	result, err := c.Extract(ctx, input, nil)

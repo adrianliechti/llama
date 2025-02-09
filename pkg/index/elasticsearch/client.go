@@ -85,10 +85,10 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		results = append(results, index.Document{
 			ID: hit.Document.ID,
 
-			Title:    hit.Document.Title,
-			Location: hit.Document.Location,
+			Title:   hit.Document.Title,
+			Source:  hit.Document.Source,
+			Content: hit.Document.Content,
 
-			Content:  hit.Document.Content,
 			Metadata: hit.Document.Metadata,
 		})
 	}
@@ -109,10 +109,10 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 		body := Document{
 			ID: d.ID,
 
-			Title:    d.Title,
-			Location: d.Location,
+			Title:   d.Title,
+			Source:  d.Source,
+			Content: d.Content,
 
-			Content:  d.Content,
 			Metadata: d.Metadata,
 		}
 
@@ -198,10 +198,10 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 			Document: index.Document{
 				ID: hit.Document.ID,
 
-				Title:    hit.Document.Title,
-				Location: hit.Document.Location,
+				Title:   hit.Document.Title,
+				Source:  hit.Document.Source,
+				Content: hit.Document.Content,
 
-				Content:  hit.Document.Content,
 				Metadata: hit.Document.Metadata,
 			},
 		})

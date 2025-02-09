@@ -71,7 +71,7 @@ func (c *Client) Segment(ctx context.Context, input segmenter.File, options *seg
 		return nil, err
 	}
 
-	if _, err := io.Copy(file, input.Content); err != nil {
+	if _, err := io.Copy(file, input.Reader); err != nil {
 		return nil, err
 	}
 

@@ -99,14 +99,14 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		title := metadata["_title"]
 		delete(metadata, "_title")
 
-		location := metadata["_location"]
-		delete(metadata, "_location")
+		source := metadata["_source"]
+		delete(metadata, "_source")
 
 		r := index.Document{
 			ID: id,
 
-			Title:    title,
-			Location: location,
+			Title:  title,
+			Source: source,
 
 			Content:  content,
 			Metadata: metadata,
@@ -287,8 +287,8 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 			title := metadata["_title"]
 			delete(metadata, "_title")
 
-			location := metadata["_location"]
-			delete(metadata, "_location")
+			source := metadata["_source"]
+			delete(metadata, "_source")
 
 			r := index.Result{
 				Score: score,
@@ -296,10 +296,10 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 				Document: index.Document{
 					ID: id,
 
-					Title:    title,
-					Location: location,
+					Title:   title,
+					Source:  source,
+					Content: content,
 
-					Content:  content,
 					Metadata: metadata,
 				},
 			}

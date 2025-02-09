@@ -28,7 +28,8 @@ type RerankResponse struct {
 }
 
 type SegmentRequest struct {
-	Content string `json:"content"`
+	Text    string `json:"text"`
+	Content string `json:"content"` // Deprecated
 
 	SegmentLength  *int `json:"segment_length"`
 	SegmentOverlap *int `json:"segment_overlap"`

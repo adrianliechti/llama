@@ -51,7 +51,7 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	}
 
 	url, _ := url.JoinPath(c.url, "/tika/text")
-	req, _ := http.NewRequestWithContext(ctx, "PUT", url, input.Content)
+	req, _ := http.NewRequestWithContext(ctx, "PUT", url, input.Reader)
 
 	resp, err := c.client.Do(req)
 
@@ -77,7 +77,7 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 }
 
 func isSupported(input extractor.File) bool {
-	if input.Content == nil {
+	if input.Reader == nil {
 		return false
 	}
 

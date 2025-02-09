@@ -20,8 +20,8 @@ type SegmentOptions struct {
 }
 
 type File struct {
-	Name    string
-	Content io.Reader
+	Name   string
+	Reader io.Reader
 }
 
 type Segment struct {

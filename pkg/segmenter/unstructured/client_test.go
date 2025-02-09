@@ -35,7 +35,7 @@ func TestExtract(t *testing.T) {
 	require.NoError(t, err)
 
 	input := segmenter.File{
-		Content: strings.NewReader(strings.Repeat("Hello, World! ", 2000)),
+		Reader: strings.NewReader(strings.Repeat("Hello, World! ", 2000)),
 	}
 
 	segments, err := s.Segment(ctx, input, nil)

@@ -64,9 +64,8 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	for _, p := range data.WebPages.Value {
 		result := index.Result{
 			Document: index.Document{
-				Location: p.URL,
-
 				Title:   p.Name,
+				Source:  p.URL,
 				Content: p.Snippet,
 			},
 		}

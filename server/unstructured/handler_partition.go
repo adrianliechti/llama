@@ -42,7 +42,7 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 		defer file.Close()
 
 		input.Name = header.Filename
-		input.Content = file
+		input.Reader = file
 	}
 
 	outputFormat := r.FormValue("output_format")
@@ -82,8 +82,8 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 		}
 
 		input := segmenter.File{
-			Name:    input.Name,
-			Content: strings.NewReader(document.Content),
+			Name:   input.Name,
+			Reader: strings.NewReader(document.Content),
 		}
 
 		segments, err := s.Segment(r.Context(), input, &segmenter.SegmentOptions{

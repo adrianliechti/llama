@@ -18,10 +18,10 @@ func (h *Handler) handleExtract(w http.ResponseWriter, r *http.Request) {
 
 	if file, header, err := r.FormFile("file"); err == nil {
 		input.Name = header.Filename
-		input.Content = file
+		input.Reader = file
 	}
 
-	if input.Content == nil && input.URL == "" {
+	if input.Reader == nil && input.URL == "" {
 		writeError(w, http.StatusBadRequest, errors.New("invalid input"))
 		return
 	}

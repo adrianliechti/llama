@@ -17,8 +17,8 @@ func (s *Handler) fileText(ctx context.Context, model string, name string, conte
 	}
 
 	input := extractor.File{
-		Name:    name,
-		Content: content,
+		Name:   name,
+		Reader: content,
 	}
 
 	document, err := p.Extract(ctx, input, &extractor.ExtractOptions{})
@@ -46,8 +46,8 @@ func (s *Handler) textSegment(ctx context.Context, model, text string, segmentLe
 	}
 
 	input := segmenter.File{
-		Name:    "input.txt",
-		Content: strings.NewReader(text),
+		Name:   "input.txt",
+		Reader: strings.NewReader(text),
 	}
 
 	segments, err := p.Segment(ctx, input, &segmenter.SegmentOptions{

@@ -58,7 +58,7 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 
 	u.RawQuery = query.Encode()
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), input.Content)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), input.Reader)
 	req.Header.Set("Content-Type", "application/octet-stream")
 	req.Header.Set("Ocp-Apim-Subscription-Key", c.token)
 
@@ -119,7 +119,7 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 }
 
 func isSupported(input extractor.File) bool {
-	if input.Content == nil {
+	if input.Reader == nil {
 		return false
 	}
 
