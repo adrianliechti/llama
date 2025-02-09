@@ -33,7 +33,7 @@ func (p *Provider) Segment(ctx context.Context, input segmenter.File, options *s
 		options = new(segmenter.SegmentOptions)
 	}
 
-	data, err := io.ReadAll(input.Content)
+	data, err := io.ReadAll(input.Reader)
 
 	if err != nil {
 		return nil, err

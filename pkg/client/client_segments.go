@@ -19,7 +19,7 @@ func NewSegmentService(opts ...RequestOption) *SegmentService {
 }
 
 type SegmentRequest struct {
-	Content string `json:"content"`
+	Text string `json:"text"`
 
 	SegmentLength  *int `json:"segment_length"`
 	SegmentOverlap *int `json:"segment_overlap"`

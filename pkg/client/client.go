@@ -51,7 +51,7 @@ func openaiOptions(opts ...RequestOption) []option.RequestOption {
 
 	options := []option.RequestOption{
 		option.WithHTTPClient(c.Client),
-		option.WithBaseURL(strings.TrimRight(c.URL, "/") + "/"),
+		option.WithBaseURL(strings.TrimRight(c.URL, "/") + "/v1/"),
 	}
 
 	if c.Token != "" {

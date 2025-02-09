@@ -19,7 +19,7 @@ func NewExtractionService(opts ...RequestOption) *ExtractionService {
 	}
 }
 
-type ExtractionNewParams struct {
+type ExtractionRequest struct {
 	Name   string
 	Reader io.Reader
 }
@@ -28,7 +28,7 @@ type Extraction struct {
 	Text string `json:"text"`
 }
 
-func (r *ExtractionService) New(ctx context.Context, body ExtractionNewParams, opts ...RequestOption) (*Extraction, error) {
+func (r *ExtractionService) New(ctx context.Context, body ExtractionRequest, opts ...RequestOption) (*Extraction, error) {
 	c := newRequestConfig(append(r.Options, opts...)...)
 
 	var data bytes.Buffer

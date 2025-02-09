@@ -28,8 +28,8 @@ func (e *Extractor) Extract(ctx context.Context, input extractor.File, options *
 
 	var content []byte
 
-	if input.Content != nil {
-		data, err := io.ReadAll(input.Content)
+	if input.Reader != nil {
+		data, err := io.ReadAll(input.Reader)
 
 		if err != nil {
 			return nil, err
@@ -46,7 +46,7 @@ func (e *Extractor) Extract(ctx context.Context, input extractor.File, options *
 		}
 
 		if content != nil {
-			file.Content = bytes.NewReader(content)
+			file.Reader = bytes.NewReader(content)
 		}
 
 		result, err := p.Extract(ctx, file, options)

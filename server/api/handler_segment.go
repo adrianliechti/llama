@@ -23,9 +23,15 @@ func (h *Handler) handleSegment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	text := req.Text
+
+	if text == "" {
+		text = req.Content
+	}
+
 	input := segmenter.File{
-		Name:    "file.txt",
-		Content: strings.NewReader(req.Content),
+		Name:   "file.txt",
+		Reader: strings.NewReader(req.Text),
 	}
 
 	options := &segmenter.SegmentOptions{
