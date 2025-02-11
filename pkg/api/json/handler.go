@@ -2,11 +2,15 @@ package json
 
 import (
 	"encoding/json"
+	"io"
+	"mime"
 	"net/http"
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/api"
 	"github.com/adrianliechti/llama/pkg/provider"
+
+	"gopkg.in/yaml.v3"
 )
 
 var _ api.Provider = (*Handler)(nil)
@@ -29,13 +33,52 @@ func New(options ...Option) (*Handler, error) {
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var body map[string]any
+	var input string
 
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	mediatype, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
-	messages := []provider.Message{}
+	switch mediatype {
+	case "application/json":
+		var body map[string]any
+
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		data, _ := json.MarshalIndent(body, "", "  ")
+		input = string(data)
+
+	case "application/yaml":
+		var body map[string]any
+
+		if err := yaml.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		data, _ := json.MarshalIndent(body, "", "  ")
+		input = string(data)
+
+	case "text/plain":
+		data, err := io.ReadAll(r.Body)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		input = string(data)
+
+	default:
+		http.Error(w, "unsupported content type", http.StatusBadRequest)
+		return
+	}
 
 	var system strings.Builder
 
@@ -65,19 +108,22 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		system.WriteString("\n```\n\n")
 	}
 
-	messages = append(messages, provider.Message{
-		Role:    provider.MessageRoleSystem,
-		Content: system.String(),
-	})
+	messages := []provider.Message{}
 
-	println(system.String())
+	if system.Len() > 0 {
 
-	input, _ := json.MarshalIndent(body, "", "  ")
+		messages = append(messages, provider.Message{
+			Role:    provider.MessageRoleSystem,
+			Content: system.String(),
+		})
+	}
 
-	messages = append(messages, provider.Message{
-		Role:    provider.MessageRoleUser,
-		Content: string(input),
-	})
+	if input != "" {
+		messages = append(messages, provider.Message{
+			Role:    provider.MessageRoleUser,
+			Content: input,
+		})
+	}
 
 	options := &provider.CompleteOptions{
 		Format: provider.CompletionFormatJSON,
