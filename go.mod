@@ -13,7 +13,7 @@ require (
 	github.com/go-chi/cors v1.2.1
 	github.com/google/generative-ai-go v0.19.0
 	github.com/google/uuid v1.6.0
-	github.com/openai/openai-go v0.1.0-alpha.55
+	github.com/openai/openai-go v0.1.0-alpha.57
 	github.com/replicate/replicate-go v0.26.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.35.0
@@ -31,7 +31,7 @@ require (
 	golang.org/x/time v0.10.0
 	google.golang.org/api v0.220.0
 	google.golang.org/grpc v1.70.0
-	google.golang.org/protobuf v1.36.4
+	google.golang.org/protobuf v1.36.5
 	gopkg.in/yaml.v3 v3.0.1
 )
 
