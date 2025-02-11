@@ -83,7 +83,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var system strings.Builder
 
 	if h.input != nil {
-		system.WriteString("## Input (`" + h.input.Name + "`):\n")
+		system.WriteString("## Input (`" + h.input.Name + "`):\n\n")
 		system.WriteString(h.input.Description)
 		system.WriteString("\n\n")
 
@@ -96,7 +96,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.output != nil {
-		system.WriteString("## Output (`" + h.output.Name + "`):\n")
+		system.WriteString("## Output (`" + h.output.Name + "`):\n\n")
 		system.WriteString(h.output.Description)
 		system.WriteString("\n\n")
 
@@ -111,7 +111,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	messages := []provider.Message{}
 
 	if system.Len() > 0 {
-
 		messages = append(messages, provider.Message{
 			Role:    provider.MessageRoleSystem,
 			Content: system.String(),
