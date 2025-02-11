@@ -54,7 +54,7 @@ func (s *Handler) handleQuery(w http.ResponseWriter, r *http.Request) {
 
 				Metadata: r.Metadata,
 
-				Embedding: r.Embedding,
+				//Embedding: r.Embedding,
 			},
 		})
 	}
