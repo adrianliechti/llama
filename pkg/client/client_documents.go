@@ -64,31 +64,51 @@ func (r *DocumentService) New(ctx context.Context, index string, documents []Doc
 func (r *DocumentService) List(ctx context.Context, index string, opts ...RequestOption) ([]Document, error) {
 	c := newRequestConfig(append(r.Options, opts...)...)
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", c.URL+"/v1/index/"+index, nil)
+	var cursor string
 
-	if c.Token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.Token)
+	var items []Document
+
+	for {
+		url := c.URL + "/v1/index/" + index
+
+		if cursor != "" {
+			url += "?cursor=" + cursor
+		}
+
+		req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
+
+		if c.Token != "" {
+			req.Header.Set("Authorization", "Bearer "+c.Token)
+		}
+
+		resp, err := c.Client.Do(req)
+
+		if err != nil {
+			return nil, err
+		}
+
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, errors.New(resp.Status)
+		}
+
+		var page Page[Document]
+
+		if err := json.NewDecoder(resp.Body).Decode(&page); err != nil {
+			return nil, err
+		}
+
+		items = append(items, page.Items...)
+
+		if page.Cursor == "" {
+			break
+		}
+
+		cursor = page.Cursor
 	}
 
-	resp, err := c.Client.Do(req)
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New(resp.Status)
-	}
-
-	var documents []Document
-
-	if err := json.NewDecoder(resp.Body).Decode(&documents); err != nil {
-		return nil, err
-	}
-
-	return documents, nil
+	return items, nil
 }
 
 func (r *DocumentService) Delete(ctx context.Context, index string, ids []string, opts ...RequestOption) error {

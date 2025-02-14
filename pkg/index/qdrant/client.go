@@ -52,57 +52,51 @@ func New(url string, namespace string, options ...Option) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+func (c *Client) List(ctx context.Context, options *index.ListOptions) (*index.Page[index.Document], error) {
+	if options == nil {
+		options = new(index.ListOptions)
+	}
+
 	if err := c.ensureCollection(ctx, c.namespace); err != nil {
 		return nil, err
 	}
 
-	var offset string
-
-	var points []point
-
-	for {
-		body := map[string]any{
-			"with_vector":  true,
-			"with_payload": true,
-		}
-
-		if offset != "" {
-			body["offset"] = offset
-		}
-
-		u, _ := url.JoinPath(c.url, "collections/"+c.namespace+"/points/scroll")
-
-		req, _ := http.NewRequestWithContext(ctx, "POST", u, jsonReader(body))
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := c.client.Do(req)
-
-		if err != nil {
-			return nil, err
-		}
-
-		defer resp.Body.Close()
-
-		var result scrollResult
-
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			return nil, err
-		}
-
-		points = append(points, result.Result.Points...)
-
-		if result.Result.NextPageOffset == "" {
-			break
-		}
-
-		offset = result.Result.NextPageOffset
+	body := map[string]any{
+		"with_vector":  true,
+		"with_payload": true,
 	}
 
-	var documents []index.Document
+	if options.Limit != nil {
+		body["limit"] = *options.Limit
+	}
 
-	for _, p := range points {
-		documents = append(documents, index.Document{
+	if options.Cursor != "" {
+		body["offset"] = options.Cursor
+	}
+
+	u, _ := url.JoinPath(c.url, "collections/"+c.namespace+"/points/scroll")
+
+	req, _ := http.NewRequestWithContext(ctx, "POST", u, jsonReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	var result scrollResult
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	var items []index.Document
+
+	for _, p := range result.Result.Points {
+		items = append(items, index.Document{
 			ID: p.ID,
 
 			Title:   p.Payload.Title,
@@ -115,7 +109,10 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		})
 	}
 
-	return documents, nil
+	return &index.Page[index.Document]{
+		Items:  items,
+		Cursor: result.Result.NextPageOffset,
+	}, nil
 }
 
 func (c *Client) Index(ctx context.Context, documents ...index.Document) error {

@@ -7,7 +7,7 @@ import (
 )
 
 type Provider interface {
-	List(ctx context.Context, options *ListOptions) ([]Document, error)
+	List(ctx context.Context, options *ListOptions) (*Page[Document], error)
 
 	Index(ctx context.Context, documents ...Document) error
 	Delete(ctx context.Context, ids ...string) error
@@ -16,12 +16,20 @@ type Provider interface {
 }
 
 type ListOptions struct {
+	Limit  *int
+	Cursor string
 }
 
 type QueryOptions struct {
 	Limit *int
 
 	Filters map[string]string
+}
+
+type Page[T Document] struct {
+	Items []T
+
+	Cursor string
 }
 
 type Document struct {

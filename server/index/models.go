@@ -1,5 +1,10 @@
 package index
 
+type Page[T any] struct {
+	Items  []T    `json:"items,omitempty"`
+	Cursor string `json:"cursor,omitempty"`
+}
+
 type Document struct {
 	ID string `json:"id,omitempty"`
 

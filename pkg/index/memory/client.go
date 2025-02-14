@@ -37,14 +37,18 @@ func New(options ...Option) (*Provider, error) {
 	return p, nil
 }
 
-func (p *Provider) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
-	result := make([]index.Document, 0, len(p.documents))
+func (p *Provider) List(ctx context.Context, options *index.ListOptions) (*index.Page[index.Document], error) {
+	items := make([]index.Document, 0, len(p.documents))
 
 	for _, d := range p.documents {
-		result = append(result, d)
+		items = append(items, d)
 	}
 
-	return result, nil
+	page := index.Page[index.Document]{
+		Items: items,
+	}
+
+	return &page, nil
 }
 
 func (p *Provider) Index(ctx context.Context, documents ...index.Document) error {

@@ -55,7 +55,7 @@ func New(url, namespace string, options ...Option) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+func (c *Client) List(ctx context.Context, options *index.ListOptions) (*index.Page[index.Document], error) {
 	col, err := c.createCollection(c.namespace)
 
 	if err != nil {
@@ -84,7 +84,7 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		return nil, err
 	}
 
-	results := make([]index.Document, 0)
+	items := make([]index.Document, 0)
 
 	for i := range result.IDs {
 		id := result.IDs[i]
@@ -102,7 +102,7 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		source := metadata["_source"]
 		delete(metadata, "_source")
 
-		r := index.Document{
+		d := index.Document{
 			ID: id,
 
 			Title:  title,
@@ -112,10 +112,14 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 			Metadata: metadata,
 		}
 
-		results = append(results, r)
+		items = append(items, d)
 	}
 
-	return results, nil
+	page := index.Page[index.Document]{
+		Items: items,
+	}
+
+	return &page, nil
 }
 
 func (c *Client) Index(ctx context.Context, documents ...index.Document) error {

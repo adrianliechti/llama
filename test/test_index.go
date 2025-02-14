@@ -60,13 +60,29 @@ func TestIndex(t *testing.T, c *TestContext, i index.Provider) {
 		t.Fatal(err)
 	}
 
-	listed, err := i.List(c.Context, &index.ListOptions{})
+	var cursor string
+	var items []index.Document
 
-	if err != nil {
-		t.Fatal(err)
+	for {
+		page, err := i.List(c.Context, &index.ListOptions{
+			Limit:  to.Ptr(1),
+			Cursor: cursor,
+		})
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		items = append(items, page.Items...)
+
+		cursor = page.Cursor
+
+		if cursor == "" {
+			break
+		}
 	}
 
-	for _, d := range listed {
+	for _, d := range items {
 		t.Log("documents", d.ID, d.Title, d.Source)
 	}
 

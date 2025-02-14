@@ -40,7 +40,7 @@ func NewIndex(provider, index string, p index.Provider) Index {
 func (p *observableIndex) otelSetup() {
 }
 
-func (p *observableIndex) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+func (p *observableIndex) List(ctx context.Context, options *index.ListOptions) (*index.Page[index.Document], error) {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 

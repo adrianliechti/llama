@@ -64,3 +64,8 @@ func openaiOptions(opts ...RequestOption) []option.RequestOption {
 
 	return options
 }
+
+type Page[T any] struct {
+	Items  []T    `json:"items"`
+	Cursor string `json:"cursor"`
+}

@@ -9,7 +9,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/index"
 )
 
-func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+func (c *Client) List(ctx context.Context, options *index.ListOptions) (*index.Page[index.Document], error) {
 	url, _ := url.JoinPath(c.url, "/docs")
 
 	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
@@ -32,10 +32,10 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		return nil, err
 	}
 
-	var result []index.Document
+	var items []index.Document
 
 	for _, doc := range documents {
-		result = append(result, index.Document{
+		items = append(items, index.Document{
 			ID: doc.ID,
 
 			Title:   doc.Title,
@@ -44,5 +44,9 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		})
 	}
 
-	return result, nil
+	page := index.Page[index.Document]{
+		Items: items,
+	}
+
+	return &page, nil
 }
