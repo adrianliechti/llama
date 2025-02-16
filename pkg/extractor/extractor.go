@@ -25,6 +25,8 @@ type File struct {
 }
 
 type Document struct {
-	Name    string
-	Content string
+	Name string
+
+	Content     string
+	ContentType string
 }

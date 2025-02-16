@@ -72,7 +72,8 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	}
 
 	return &extractor.Document{
-		Content: text.Normalize(response.Content),
+		Content:     text.Normalize(response.Content),
+		ContentType: "text/plain",
 	}, nil
 }
 

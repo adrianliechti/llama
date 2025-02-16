@@ -40,7 +40,8 @@ func (e *Extractor) Extract(ctx context.Context, input extractor.File, options *
 	}
 
 	return &extractor.Document{
-		Content: string(data),
+		Content:     string(data),
+		ContentType: "text/plain",
 	}, nil
 }
 

@@ -1,43 +1,34 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/adrianliechti/llama/pkg/segmenter"
 )
 
 func (h *Handler) handleSegment(w http.ResponseWriter, r *http.Request) {
-	var req SegmentRequest
+	model := valueModel(r)
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, err)
-		return
-	}
-
-	p, err := h.Segmenter("")
+	p, err := h.Segmenter(model)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
 
-	text := req.Text
+	name, reader, err := h.readContent(r)
 
-	if text == "" {
-		text = req.Content
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	input := segmenter.File{
-		Name:   "file.txt",
-		Reader: strings.NewReader(req.Text),
+		Name:   name,
+		Reader: reader,
 	}
 
-	options := &segmenter.SegmentOptions{
-		SegmentLength:  req.SegmentLength,
-		SegmentOverlap: req.SegmentOverlap,
-	}
+	options := &segmenter.SegmentOptions{}
 
 	segments, err := p.Segment(r.Context(), input, options)
 

@@ -112,8 +112,10 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 		}
 
 		return &extractor.Document{
-			Name:    input.Name,
-			Content: strings.TrimSpace(operation.Result.Content),
+			Name: input.Name,
+
+			Content:     strings.TrimSpace(operation.Result.Content),
+			ContentType: "text/plain",
 		}, nil
 	}
 }

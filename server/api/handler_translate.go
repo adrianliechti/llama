@@ -4,13 +4,14 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/summarizer"
+	"github.com/adrianliechti/llama/pkg/translator"
 )
 
-func (h *Handler) handleSummarize(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleTranslate(w http.ResponseWriter, r *http.Request) {
 	model := valueModel(r)
+	language := valueLanguage(r)
 
-	p, err := h.Summarizer(model)
+	p, err := h.Translator(model)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -33,9 +34,11 @@ func (h *Handler) handleSummarize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	options := &summarizer.SummarizerOptions{}
+	options := &translator.TranslateOptions{
+		Language: language,
+	}
 
-	summary, err := p.Summarize(r.Context(), string(data), options)
+	translation, err := p.Translate(r.Context(), string(data), options)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -45,5 +48,5 @@ func (h *Handler) handleSummarize(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 
 	w.WriteHeader(http.StatusOK)
-	io.WriteString(w, summary.Text)
+	io.WriteString(w, translation.Content)
 }

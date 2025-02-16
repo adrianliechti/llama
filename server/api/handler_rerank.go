@@ -9,6 +9,21 @@ import (
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
+type RerankRequest struct {
+	Model string `json:"model"`
+
+	Query     string   `json:"query"`
+	Documents []string `json:"documents"`
+
+	Limit *int `json:"limit,omitempty"`
+}
+
+type RerankResponse struct {
+	Model string `json:"model"`
+
+	Results []Result `json:"results"`
+}
+
 func (h *Handler) handleRerank(w http.ResponseWriter, r *http.Request) {
 	var req RerankRequest
 
