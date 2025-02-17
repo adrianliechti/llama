@@ -18,16 +18,7 @@ func (h *Handler) handleTranslate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, reader, err := h.readContent(r)
-
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err)
-		return
-	}
-
-	defer reader.Close()
-
-	data, err := io.ReadAll(reader)
+	text, err := h.readText(r)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -38,7 +29,7 @@ func (h *Handler) handleTranslate(w http.ResponseWriter, r *http.Request) {
 		Language: language,
 	}
 
-	translation, err := p.Translate(r.Context(), string(data), options)
+	translation, err := p.Translate(r.Context(), text, options)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)

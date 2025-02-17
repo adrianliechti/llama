@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 )
 
@@ -54,11 +55,13 @@ func (r *SummaryService) New(ctx context.Context, body SummaryRequest, opts ...R
 		return nil, errors.New(resp.Status)
 	}
 
-	var result Summary
+	result, err := io.ReadAll(resp.Body)
 
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
-	return &result, nil
+	return &Summary{
+		Text: string(result),
+	}, nil
 }

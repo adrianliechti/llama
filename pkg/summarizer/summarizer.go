@@ -3,13 +3,12 @@ package summarizer
 import "context"
 
 type Provider interface {
-	Summarize(ctx context.Context, content string, options *SummarizerOptions) (*Result, error)
+	Summarize(ctx context.Context, text string, options *SummarizerOptions) (*Summary, error)
 }
 
 type SummarizerOptions struct {
 }
 
-type Result struct {
-	Text     string
-	Segments []string
+type Summary struct {
+	Text string
 }

@@ -21,7 +21,7 @@ func FromCompleter(completer provider.Completer) *Adapter {
 	}
 }
 
-func (a *Adapter) Summarize(ctx context.Context, content string, options *summarizer.SummarizerOptions) (*summarizer.Result, error) {
+func (a *Adapter) Summarize(ctx context.Context, content string, options *summarizer.SummarizerOptions) (*summarizer.Summary, error) {
 	splitter := text.NewSplitter()
 	splitter.ChunkSize = 16000
 	splitter.ChunkOverlap = 0
@@ -54,10 +54,8 @@ func (a *Adapter) Summarize(ctx context.Context, content string, options *summar
 		return nil, err
 	}
 
-	result := &summarizer.Result{
+	result := &summarizer.Summary{
 		Text: completion.Message.Content,
-
-		Segments: segments,
 	}
 
 	return result, nil

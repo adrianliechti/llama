@@ -6,7 +6,7 @@ import (
 )
 
 type Synthesizer interface {
-	Synthesize(ctx context.Context, content string, options *SynthesizeOptions) (*Synthesis, error)
+	Synthesize(ctx context.Context, input string, options *SynthesizeOptions) (*Synthesis, error)
 }
 
 type SynthesizeOptions struct {

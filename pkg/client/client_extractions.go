@@ -19,16 +19,16 @@ func NewExtractionService(opts ...RequestOption) *ExtractionService {
 	}
 }
 
+type Extraction struct {
+	Text string `json:"text"`
+}
+
 type ExtractionRequest struct {
 	Name   string
 	Reader io.Reader
 }
 
-type Extraction struct {
-	Text string `json:"text"`
-}
-
-func (r *ExtractionService) New(ctx context.Context, body ExtractionRequest, opts ...RequestOption) (*Extraction, error) {
+func (r *ExtractionService) New(ctx context.Context, input ExtractionRequest, opts ...RequestOption) (*Extraction, error) {
 	c := newRequestConfig(append(r.Options, opts...)...)
 
 	var data bytes.Buffer
@@ -37,13 +37,13 @@ func (r *ExtractionService) New(ctx context.Context, body ExtractionRequest, opt
 	//w.WriteField("model", string(options.Model))
 	//w.WriteField("format", string(options.Format))
 
-	file, err := w.CreateFormFile("file", body.Name)
+	file, err := w.CreateFormFile("file", input.Name)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := io.Copy(file, body.Reader); err != nil {
+	if _, err := io.Copy(file, input.Reader); err != nil {
 		return nil, err
 	}
 

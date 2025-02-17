@@ -6,19 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+
+	"github.com/adrianliechti/llama/server/index"
 )
 
-type Document struct {
-	ID string `json:"id,omitempty"`
-
-	Title   string `json:"title,omitempty"`
-	Source  string `json:"source,omitempty"`
-	Content string `json:"content,omitempty"`
-
-	Metadata map[string]string `json:"metadata,omitempty"`
-
-	Embedding []float32 `json:"embedding,omitempty"`
-}
+type Document = index.Document
+type DocumentPage = index.Page[Document]
 
 type DocumentService struct {
 	Options []RequestOption
@@ -30,12 +23,12 @@ func NewDocumentService(opts ...RequestOption) *DocumentService {
 	}
 }
 
-func (r *DocumentService) New(ctx context.Context, index string, documents []Document, opts ...RequestOption) ([]Document, error) {
+func (r *DocumentService) New(ctx context.Context, index string, input []Document, opts ...RequestOption) ([]Document, error) {
 	c := newRequestConfig(append(r.Options, opts...)...)
 
 	var data bytes.Buffer
 
-	if err := json.NewEncoder(&data).Encode(documents); err != nil {
+	if err := json.NewEncoder(&data).Encode(input); err != nil {
 		return nil, err
 	}
 
@@ -58,7 +51,7 @@ func (r *DocumentService) New(ctx context.Context, index string, documents []Doc
 		return nil, errors.New(resp.Status)
 	}
 
-	return documents, nil
+	return input, nil
 }
 
 func (r *DocumentService) List(ctx context.Context, index string, opts ...RequestOption) ([]Document, error) {
@@ -93,7 +86,7 @@ func (r *DocumentService) List(ctx context.Context, index string, opts ...Reques
 			return nil, errors.New(resp.Status)
 		}
 
-		var page Page[Document]
+		var page DocumentPage
 
 		if err := json.NewDecoder(resp.Body).Decode(&page); err != nil {
 			return nil, err

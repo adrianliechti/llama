@@ -16,35 +16,30 @@ func (h *Handler) handleSegment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name, reader, err := h.readContent(r)
+	text, err := h.readText(r)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
-	}
-
-	input := segmenter.File{
-		Name:   name,
-		Reader: reader,
 	}
 
 	options := &segmenter.SegmentOptions{}
 
-	segments, err := p.Segment(r.Context(), input, options)
+	segments, err := p.Segment(r.Context(), text, options)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
 
-	result := Document{}
+	result := make([]Segment, 0)
 
 	for _, s := range segments {
 		segment := Segment{
-			Text: s.Content,
+			Text: s.Text,
 		}
 
-		result.Segments = append(result.Segments, segment)
+		result = append(result, segment)
 	}
 
 	writeJson(w, result)

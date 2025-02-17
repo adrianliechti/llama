@@ -5,7 +5,7 @@ import (
 )
 
 type Provider interface {
-	Translate(ctx context.Context, content string, options *TranslateOptions) (*Translation, error)
+	Translate(ctx context.Context, text string, options *TranslateOptions) (*Translation, error)
 }
 
 type TranslateOptions struct {

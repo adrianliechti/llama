@@ -37,6 +37,24 @@ func valueLanguage(r *http.Request) string {
 	return ""
 }
 
+func (h *Handler) readText(r *http.Request) (string, error) {
+	_, reader, err := h.readContent(r)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer reader.Close()
+
+	data, err := io.ReadAll(reader)
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
 func (h *Handler) readContent(r *http.Request) (string, io.ReadCloser, error) {
 	e, err := h.Extractor("")
 
@@ -69,22 +87,12 @@ func (h *Handler) readContent(r *http.Request) (string, io.ReadCloser, error) {
 }
 
 func (h *Handler) readFile(r *http.Request) (string, io.ReadCloser, error) {
+	if file, header, err := r.FormFile("file"); err == nil {
+		return header.Filename, file, nil
+	}
+
 	contentType := r.Header.Get("Content-Type")
 	contentDisposition := r.Header.Get("Content-Disposition")
-
-	if strings.Contains(contentType, "multipart/form-data") || strings.Contains(contentType, "application/x-www-form-urlencoded") {
-		if file, header, err := r.FormFile("file"); err == nil {
-			return header.Filename, file, nil
-		}
-
-		if file, header, err := r.FormFile("files"); err == nil {
-			return header.Filename, file, nil
-		}
-
-		if file, header, err := r.FormFile("input"); err == nil {
-			return header.Filename, file, nil
-		}
-	}
 
 	_, params, _ := mime.ParseMediaType(contentDisposition)
 
@@ -95,6 +103,9 @@ func (h *Handler) readFile(r *http.Request) (string, io.ReadCloser, error) {
 	if filename == "" {
 		filename = params["filename"]
 	}
+
+	_ = contentType
+	_ = contentDisposition
 
 	return filename, r.Body, nil
 }

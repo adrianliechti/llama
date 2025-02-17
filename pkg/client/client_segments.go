@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+
+	"github.com/adrianliechti/llama/server/api"
 )
 
 type SegmentService struct {
@@ -18,6 +20,8 @@ func NewSegmentService(opts ...RequestOption) *SegmentService {
 	}
 }
 
+type Segment = api.Segment
+
 type SegmentRequest struct {
 	Text string `json:"text"`
 
@@ -25,16 +29,12 @@ type SegmentRequest struct {
 	SegmentOverlap *int `json:"segment_overlap"`
 }
 
-type Segment struct {
-	Text string `json:"text"`
-}
-
-func (r *SegmentService) New(ctx context.Context, body SegmentRequest, opts ...RequestOption) ([]Segment, error) {
+func (r *SegmentService) New(ctx context.Context, input SegmentRequest, opts ...RequestOption) ([]Segment, error) {
 	c := newRequestConfig(append(r.Options, opts...)...)
 
 	var data bytes.Buffer
 
-	if err := json.NewEncoder(&data).Encode(body); err != nil {
+	if err := json.NewEncoder(&data).Encode(input); err != nil {
 		return nil, err
 	}
 

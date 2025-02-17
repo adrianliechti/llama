@@ -17,16 +17,7 @@ func (h *Handler) handleSummarize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, reader, err := h.readContent(r)
-
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err)
-		return
-	}
-
-	defer reader.Close()
-
-	data, err := io.ReadAll(reader)
+	text, err := h.readText(r)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -35,7 +26,7 @@ func (h *Handler) handleSummarize(w http.ResponseWriter, r *http.Request) {
 
 	options := &summarizer.SummarizerOptions{}
 
-	summary, err := p.Summarize(r.Context(), string(data), options)
+	summary, err := p.Summarize(r.Context(), text, options)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)

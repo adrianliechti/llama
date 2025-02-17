@@ -38,7 +38,7 @@ func NewSegmenter(provider string, p segmenter.Provider) Segmenter {
 func (p *observableSegmenter) otelSetup() {
 }
 
-func (p *observableSegmenter) Segment(ctx context.Context, input segmenter.File, options *segmenter.SegmentOptions) ([]segmenter.Segment, error) {
+func (p *observableSegmenter) Segment(ctx context.Context, input string, options *segmenter.SegmentOptions) ([]segmenter.Segment, error) {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 
