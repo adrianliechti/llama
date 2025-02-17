@@ -57,13 +57,11 @@ func (r *SegmentService) New(ctx context.Context, input SegmentRequest, opts ...
 		return nil, errors.New(resp.Status)
 	}
 
-	var result struct {
-		Segments []Segment `json:"segments,omitempty"`
-	}
+	var result []Segment
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
 
-	return result.Segments, nil
+	return result, nil
 }
