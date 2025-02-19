@@ -42,11 +42,13 @@ func (e *Embedder) Embed(ctx context.Context, texts []string) (*provider.Embeddi
 		return nil, convertError(err)
 	}
 
-	result := &provider.Embedding{
-		Usage: &provider.Usage{
+	result := &provider.Embedding{}
+
+	if embedding.Usage.PromptTokens > 0 {
+		result.Usage = &provider.Usage{
 			InputTokens:  int(embedding.Usage.PromptTokens),
 			OutputTokens: 0,
-		},
+		}
 	}
 
 	for _, e := range embedding.Data {

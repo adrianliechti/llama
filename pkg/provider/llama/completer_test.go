@@ -19,7 +19,7 @@ func TestCompleter(t *testing.T) {
 		Started: true,
 
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/ggerganov/llama.cpp:server",
+			Image: "ghcr.io/ggml-org/llama.cpp:server",
 
 			Cmd: []string{
 				"--hf-repo", "bartowski/Phi-3.5-mini-instruct-GGUF",
