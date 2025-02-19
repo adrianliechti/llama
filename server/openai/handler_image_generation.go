@@ -37,7 +37,7 @@ func (h *Handler) handleImageGeneration(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	data, err := io.ReadAll(image.Content)
+	data, err := io.ReadAll(image.Reader)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)

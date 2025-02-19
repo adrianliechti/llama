@@ -42,16 +42,16 @@ func NewEmbedder(provider, model string, p provider.Embedder) Embedder {
 func (p *observableEmbedder) otelSetup() {
 }
 
-func (p *observableEmbedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
+func (p *observableEmbedder) Embed(ctx context.Context, texts []string) (*provider.Embedding, error) {
 	ctx, span := otel.Tracer(p.library).Start(ctx, p.name)
 	defer span.End()
 
-	result, err := p.embedder.Embed(ctx, content)
+	result, err := p.embedder.Embed(ctx, texts)
 
 	meterRequest(ctx, p.library, p.provider, "embed", p.model)
 
 	if EnableDebug {
-		span.SetAttributes(attribute.String("input", content))
+		span.SetAttributes(attribute.StringSlice("texts", texts))
 	}
 
 	if result != nil {

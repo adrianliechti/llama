@@ -12,8 +12,8 @@ import (
 type RerankRequest struct {
 	Model string `json:"model"`
 
-	Query     string   `json:"query"`
-	Documents []string `json:"documents"`
+	Query string   `json:"query"`
+	Texts []string `json:"texts"`
 
 	Limit *int `json:"limit,omitempty"`
 }
@@ -39,7 +39,7 @@ func (h *Handler) handleRerank(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rankings, err := p.Rerank(r.Context(), req.Query, req.Documents, &provider.RerankOptions{
+	rankings, err := p.Rerank(r.Context(), req.Query, req.Texts, &provider.RerankOptions{
 		Limit: req.Limit,
 	})
 
@@ -53,7 +53,7 @@ func (h *Handler) handleRerank(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, r := range rankings {
-		index := slices.Index(req.Documents, r.Content)
+		index := slices.Index(req.Texts, r.Text)
 
 		if index < 0 {
 			continue
@@ -64,7 +64,7 @@ func (h *Handler) handleRerank(w http.ResponseWriter, r *http.Request) {
 			Score: r.Score,
 
 			Document: Document{
-				Content: r.Content,
+				Text: r.Text,
 			},
 		}
 

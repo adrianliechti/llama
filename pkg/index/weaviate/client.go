@@ -155,13 +155,13 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) (*index.P
 func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 	for _, d := range documents {
 		if len(d.Embedding) == 0 && c.embedder != nil {
-			embedding, err := c.embedder.Embed(ctx, d.Content)
+			embedding, err := c.embedder.Embed(ctx, []string{d.Content})
 
 			if err != nil {
 				return err
 			}
 
-			d.Embedding = embedding.Data
+			d.Embedding = embedding.Embeddings[0]
 		}
 
 		if len(d.Embedding) == 0 {
@@ -213,13 +213,13 @@ func (c *Client) Delete(ctx context.Context, ids ...string) error {
 func (c *Client) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
 	var vector strings.Builder
 
-	embedding, err := c.embedder.Embed(ctx, query)
+	embedding, err := c.embedder.Embed(ctx, []string{query})
 
 	if err != nil {
 		return nil, err
 	}
 
-	for i, v := range embedding.Data {
+	for i, v := range embedding.Embeddings[0] {
 		if i > 0 {
 			vector.WriteString(", ")
 		}
@@ -231,7 +231,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		Class: c.class,
 
 		Query:  query,
-		Vector: embedding.Data,
+		Vector: embedding.Embeddings[0],
 
 		Limit: options.Limit,
 		Where: options.Filters,

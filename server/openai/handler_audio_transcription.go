@@ -58,7 +58,7 @@ func (h *Handler) handleAudioTranscription(w http.ResponseWriter, r *http.Reques
 		Language: transcription.Language,
 		Duration: transcription.Duration,
 
-		Text: transcription.Content,
+		Text: transcription.Text,
 	}
 
 	writeJson(w, result)

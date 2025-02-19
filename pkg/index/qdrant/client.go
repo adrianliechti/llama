@@ -134,13 +134,13 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 		}
 
 		if len(d.Embedding) == 0 && c.embedder != nil {
-			embedding, err := c.embedder.Embed(ctx, d.Content)
+			embedding, err := c.embedder.Embed(ctx, []string{d.Content})
 
 			if err != nil {
 				return err
 			}
 
-			d.Embedding = embedding.Data
+			d.Embedding = embedding.Embeddings[0]
 		}
 
 		points = append(points, point{
@@ -224,7 +224,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		return nil, err
 	}
 
-	embedding, err := c.embedder.Embed(ctx, query)
+	embedding, err := c.embedder.Embed(ctx, []string{query})
 
 	if err != nil {
 		return nil, err
@@ -233,7 +233,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	u, _ := url.JoinPath(c.url, "collections/"+c.namespace+"/points/search")
 
 	body := map[string]any{
-		"vector": embedding.Data,
+		"vector": embedding.Embeddings[0],
 		"limit":  options.Limit,
 
 		"with_vector":  true,
@@ -294,7 +294,7 @@ func (c *Client) ensureCollection(ctx context.Context, name string) error {
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		embeddings, err := c.embedder.Embed(context.Background(), "init")
+		embeddings, err := c.embedder.Embed(context.Background(), []string{"init"})
 
 		if err != nil {
 			return err
@@ -302,7 +302,7 @@ func (c *Client) ensureCollection(ctx context.Context, name string) error {
 
 		body := map[string]any{
 			"vectors": map[string]any{
-				"size":     len(embeddings.Data),
+				"size":     len(embeddings.Embeddings[0]),
 				"distance": "Cosine",
 			},
 		}

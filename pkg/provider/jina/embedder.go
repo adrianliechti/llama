@@ -3,7 +3,6 @@ package jina
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/url"
 	"strings"
@@ -45,11 +44,9 @@ func NewEmbedder(url string, model string, options ...Option) (*Embedder, error)
 	}, nil
 }
 
-func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
+func (e *Embedder) Embed(ctx context.Context, texts []string) (*provider.Embedding, error) {
 	body := map[string]any{
-		"input": []string{
-			strings.TrimSpace(content),
-		},
+		"input": texts,
 	}
 
 	u, _ := url.JoinPath(e.url, "/v1/embeddings")
@@ -73,19 +70,19 @@ func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embeddi
 		return nil, convertError(resp)
 	}
 
-	var result EmbeddingList
+	var embedding EmbeddingList
 
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&embedding); err != nil {
 		return nil, err
 	}
 
-	if len(result.Data) == 0 {
-		return nil, errors.New("no embeddings found")
+	result := &provider.Embedding{}
+
+	for _, e := range embedding.Data {
+		result.Embeddings = append(result.Embeddings, e.Embedding)
 	}
 
-	return &provider.Embedding{
-		Data: result.Data[0].Embedding,
-	}, nil
+	return result, nil
 }
 
 type EmbeddingList struct {

@@ -65,7 +65,7 @@ func (r *Renderer) Render(ctx context.Context, input string, options *provider.R
 		ID:   id,
 		Name: id + ".png",
 
-		Content: io.NopCloser(bytes.NewReader(data)),
+		Reader: io.NopCloser(bytes.NewReader(data)),
 	}, nil
 }
 

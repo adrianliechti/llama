@@ -45,7 +45,7 @@ func NewReranker(url, model string, options ...Option) (*Reranker, error) {
 	}, nil
 }
 
-func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string, options *provider.RerankOptions) ([]provider.Ranking, error) {
+func (r *Reranker) Rerank(ctx context.Context, query string, texts []string, options *provider.RerankOptions) ([]provider.Ranking, error) {
 	if options == nil {
 		options = new(provider.RerankOptions)
 	}
@@ -54,7 +54,7 @@ func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string, op
 		"model": r.model,
 
 		"query":     query,
-		"documents": inputs,
+		"documents": texts,
 	}
 
 	if options.Limit != nil {
@@ -96,8 +96,8 @@ func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string, op
 
 	for _, r := range data.Results {
 		result = append(result, provider.Ranking{
-			Content: inputs[r.Index],
-			Score:   r.Score,
+			Text:  texts[r.Index],
+			Score: r.Score,
 		})
 	}
 

@@ -41,7 +41,7 @@ func TestTranscriber(t *testing.T) {
 	}, nil)
 
 	require.NoError(t, err)
-	require.NotEmpty(t, result.Content)
+	require.NotEmpty(t, result.Text)
 
-	t.Log(result.Content)
+	t.Log(result.Text)
 }

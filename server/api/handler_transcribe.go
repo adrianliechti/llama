@@ -46,5 +46,5 @@ func (h *Handler) handleTranscribe(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 
 	w.WriteHeader(http.StatusOK)
-	io.WriteString(w, transcription.Content)
+	io.WriteString(w, transcription.Text)
 }

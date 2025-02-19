@@ -43,8 +43,11 @@ func TestEmbedder(t *testing.T) {
 	e, err := jina.NewEmbedder("http://"+url, "")
 	require.NoError(t, err)
 
-	result, err := e.Embed(ctx, "Hello, World!")
+	result, err := e.Embed(ctx, []string{"Hello, World!", "Hello Welt!"})
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Data)
+	require.Len(t, result.Embeddings, 2)
+
+	require.NotEmpty(t, result.Embeddings[0])
+	require.NotEmpty(t, result.Embeddings[1])
 }

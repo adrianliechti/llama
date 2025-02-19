@@ -31,13 +31,11 @@ func NewEmbedder(model string, options ...Option) (*Embedder, error) {
 	}, nil
 }
 
-func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
+func (e *Embedder) Embed(ctx context.Context, texts []string) (*provider.Embedding, error) {
 	req := &v2.V2EmbedRequest{
 		Model: e.model,
 
-		Texts: []string{
-			content,
-		},
+		Texts: texts,
 
 		InputType: v2.EmbedInputTypeSearchDocument,
 
@@ -52,7 +50,11 @@ func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embeddi
 		return nil, convertError(err)
 	}
 
-	return &provider.Embedding{
-		Data: toFloat32(resp.Embeddings.Float[0]),
-	}, nil
+	result := &provider.Embedding{}
+
+	for _, e := range resp.Embeddings.Float {
+		result.Embeddings = append(result.Embeddings, toFloat32(e))
+	}
+
+	return result, nil
 }

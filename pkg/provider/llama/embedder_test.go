@@ -53,8 +53,8 @@ func TestEmbedder(t *testing.T) {
 	e, err := llama.NewEmbedder("http://"+url, "default")
 	require.NoError(t, err)
 
-	result, err := e.Embed(ctx, "Hallo!")
+	result, err := e.Embed(ctx, []string{"Hallo!"})
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Data)
+	require.NotEmpty(t, result.Embeddings[0])
 }

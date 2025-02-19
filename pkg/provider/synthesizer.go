@@ -16,6 +16,6 @@ type SynthesizeOptions struct {
 type Synthesis struct {
 	ID string
 
-	Name    string
-	Content io.ReadCloser
+	Name   string
+	Reader io.ReadCloser
 }

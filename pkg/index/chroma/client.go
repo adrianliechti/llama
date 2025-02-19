@@ -156,13 +156,13 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 		}
 
 		if len(d.Embedding) == 0 && c.embedder != nil {
-			embedding, err := c.embedder.Embed(ctx, d.Content)
+			embedding, err := c.embedder.Embed(ctx, []string{d.Content})
 
 			if err != nil {
 				return err
 			}
 
-			d.Embedding = embedding.Data
+			d.Embedding = embedding.Embeddings[0]
 		}
 
 		body.IDs[i] = d.ID
@@ -227,7 +227,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		return nil, err
 	}
 
-	embedding, err := c.embedder.Embed(ctx, query)
+	embedding, err := c.embedder.Embed(ctx, []string{query})
 
 	if err != nil {
 		return nil, err
@@ -237,7 +237,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 	body := map[string]any{
 		"query_embeddings": [][]float32{
-			embedding.Data,
+			embedding.Embeddings[0],
 		},
 
 		"include": []string{

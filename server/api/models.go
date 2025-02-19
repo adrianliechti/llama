@@ -11,7 +11,7 @@ type Segment struct {
 }
 
 type Document struct {
-	Content string `json:"content,omitempty"`
+	Text string `json:"text,omitempty"`
 
 	Segments []Segment `json:"segments,omitempty"`
 }
