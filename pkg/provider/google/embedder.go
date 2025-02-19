@@ -27,7 +27,7 @@ func NewEmbedder(model string, options ...Option) (*Embedder, error) {
 	}, nil
 }
 
-func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
+func (e *Embedder) Embed(ctx context.Context, texts []string) (*provider.Embedding, error) {
 	client, err := genai.NewClient(ctx, e.Options()...)
 
 	if err != nil {
@@ -38,13 +38,23 @@ func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embeddi
 
 	model := client.EmbeddingModel(e.model)
 
-	resp, err := model.EmbedContent(ctx, genai.Text(content))
+	batch := model.NewBatch()
+
+	for _, text := range texts {
+		batch.AddContent(genai.Text(text))
+	}
+
+	resp, err := model.BatchEmbedContents(ctx, batch)
 
 	if err != nil {
 		return nil, convertError(err)
 	}
 
-	return &provider.Embedding{
-		Data: resp.Embedding.Values,
-	}, nil
+	result := &provider.Embedding{}
+
+	for _, e := range resp.Embeddings {
+		result.Embeddings = append(result.Embeddings, e.Values)
+	}
+
+	return result, nil
 }

@@ -48,8 +48,13 @@ func (s *Handler) handleQuery(w http.ResponseWriter, r *http.Request) {
 			Document: Document{
 				ID: r.ID,
 
-				Content:  r.Content,
+				Title:   r.Title,
+				Source:  r.Source,
+				Content: r.Content,
+
 				Metadata: r.Metadata,
+
+				//Embedding: r.Embedding,
 			},
 		})
 	}

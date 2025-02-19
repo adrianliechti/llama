@@ -10,7 +10,7 @@ import (
 	"maps"
 	"net/http"
 	"net/url"
-	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/index"
@@ -55,103 +55,113 @@ func New(url, namespace string, options ...Option) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+func (c *Client) List(ctx context.Context, options *index.ListOptions) (*index.Page[index.Document], error) {
 	if options == nil {
 		options = new(index.ListOptions)
 	}
 
-	limit := 50
-	cursor := ""
-
-	results := make([]index.Document, 0)
-
 	type pageType struct {
 		Objects []Object `json:"objects"`
+
+		TotalResults int `json:"totalResults"`
 	}
 
-	for {
-		query := url.Values{}
-		query.Set("class", c.class)
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	limit := 25
+	offset := 0
 
-		if cursor != "" {
-			query.Set("after", cursor)
-		}
-
-		u, _ := url.JoinPath(c.url, "/v1/objects")
-		u += "?" + query.Encode()
-
-		resp, err := c.client.Get(u)
-
-		if err != nil {
-			return nil, err
-		}
-
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return nil, errors.New("bad request")
-		}
-
-		var page pageType
-
-		if err := json.NewDecoder(resp.Body).Decode(&page); err != nil {
-			return nil, err
-		}
-
-		for _, o := range page.Objects {
-			metadata := maps.Clone(o.Properties)
-
-			key := o.Properties["key"]
-			delete(metadata, "key")
-
-			title := o.Properties["title"]
-			delete(metadata, "title")
-
-			location := o.Properties["location"]
-			delete(metadata, "location")
-
-			content := o.Properties["content"]
-			delete(metadata, "content")
-
-			if key == "" {
-				key = o.ID
-			}
-
-			d := index.Document{
-				ID: key,
-
-				Title:    title,
-				Location: location,
-
-				Content:  content,
-				Metadata: metadata,
-			}
-
-			cursor = o.ID
-			results = append(results, d)
-		}
-
-		if len(page.Objects) < limit {
-			break
-		}
+	if options.Limit != nil {
+		limit = *options.Limit
 	}
 
-	slices.Reverse(results)
+	if options.Cursor != "" {
+		offset, _ = strconv.Atoi(options.Cursor)
+	}
 
-	return results, nil
+	query := url.Values{}
+
+	query.Set("class", c.class)
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	query.Set("offset", fmt.Sprintf("%d", offset))
+
+	u, _ := url.JoinPath(c.url, "/v1/objects")
+	u += "?" + query.Encode()
+
+	resp, err := c.client.Get(u)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("bad request")
+	}
+
+	var result pageType
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	var items []index.Document
+
+	for _, o := range result.Objects {
+		metadata := maps.Clone(o.Properties)
+
+		key := o.Properties["key"]
+		delete(metadata, "key")
+
+		title := o.Properties["title"]
+		delete(metadata, "title")
+
+		source := o.Properties["source"]
+		delete(metadata, "source")
+
+		content := o.Properties["content"]
+		delete(metadata, "content")
+
+		if key == "" {
+			key = o.ID
+		}
+
+		d := index.Document{
+			ID: key,
+
+			Title:   title,
+			Source:  source,
+			Content: content,
+
+			Metadata: metadata,
+		}
+
+		items = append(items, d)
+	}
+
+	cursor := fmt.Sprintf("%d", offset+limit)
+
+	if len(items) < limit {
+		cursor = ""
+	}
+
+	page := index.Page[index.Document]{
+		Items:  items,
+		Cursor: cursor,
+	}
+
+	return &page, nil
 }
 
 func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 	for _, d := range documents {
 		if len(d.Embedding) == 0 && c.embedder != nil {
-			embedding, err := c.embedder.Embed(ctx, d.Content)
+			embedding, err := c.embedder.Embed(ctx, []string{d.Content})
 
 			if err != nil {
 				return err
 			}
 
-			d.Embedding = embedding.Data
+			d.Embedding = embedding.Embeddings[0]
 		}
 
 		if len(d.Embedding) == 0 {
@@ -203,13 +213,13 @@ func (c *Client) Delete(ctx context.Context, ids ...string) error {
 func (c *Client) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {
 	var vector strings.Builder
 
-	embedding, err := c.embedder.Embed(ctx, query)
+	embedding, err := c.embedder.Embed(ctx, []string{query})
 
 	if err != nil {
 		return nil, err
 	}
 
-	for i, v := range embedding.Data {
+	for i, v := range embedding.Embeddings[0] {
 		if i > 0 {
 			vector.WriteString(", ")
 		}
@@ -221,7 +231,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		Class: c.class,
 
 		Query:  query,
-		Vector: embedding.Data,
+		Vector: embedding.Embeddings[0],
 
 		Limit: options.Limit,
 		Where: options.Filters,
@@ -285,10 +295,10 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 			Document: index.Document{
 				ID: key,
 
-				Title:    d.Title,
-				Location: d.Location,
+				Title:   d.Title,
+				Source:  d.Source,
+				Content: d.Content,
 
-				Content:  d.Content,
 				Metadata: metadata,
 			},
 		}
@@ -321,8 +331,7 @@ func (c *Client) createObject(d index.Document) error {
 	properties["key"] = d.ID
 
 	properties["title"] = d.Title
-	properties["location"] = d.Location
-
+	properties["source"] = d.Source
 	properties["content"] = d.Content
 
 	body := map[string]any{
@@ -360,8 +369,7 @@ func (c *Client) updateObject(ctx context.Context, d index.Document) error {
 	properties["key"] = d.ID
 
 	properties["title"] = d.Title
-	properties["location"] = d.Location
-
+	properties["source"] = d.Source
 	properties["content"] = d.Content
 
 	body := map[string]any{
@@ -423,9 +431,8 @@ type errorDetail struct {
 type document struct {
 	Key string `json:"key"`
 
-	Title    string `json:"title,omitempty"`
-	Location string `json:"location,omitempty"`
-
+	Title   string `json:"title,omitempty"`
+	Source  string `json:"source,omitempty"`
 	Content string `json:"content"`
 
 	Additional additional `json:"_additional"`

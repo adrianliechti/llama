@@ -9,22 +9,7 @@ import (
 )
 
 func (h *Handler) handleExtract(w http.ResponseWriter, r *http.Request) {
-	model := r.FormValue("model")
-	format := r.FormValue("format")
-
-	input := extractor.File{
-		URL: r.FormValue("url"),
-	}
-
-	if file, header, err := r.FormFile("file"); err == nil {
-		input.Name = header.Filename
-		input.Content = file
-	}
-
-	if input.Content == nil && input.URL == "" {
-		writeError(w, http.StatusBadRequest, errors.New("invalid input"))
-		return
-	}
+	model := valueModel(r)
 
 	p, err := h.Extractor(model)
 
@@ -33,16 +18,37 @@ func (h *Handler) handleExtract(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	document, err := p.Extract(r.Context(), input, nil)
+	input := extractor.File{
+		URL: valueURL(r),
+	}
+
+	if file, header, err := r.FormFile("file"); err == nil {
+		input.Name = header.Filename
+		input.Reader = file
+	}
+
+	if input.URL == "" && input.Reader == nil {
+		writeError(w, http.StatusBadRequest, errors.New("invalid input"))
+		return
+	}
+
+	options := &extractor.ExtractOptions{}
+
+	document, err := p.Extract(r.Context(), input, options)
 
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	_ = format
-	//w.Header().Set("Content-Type", "text/plain")
-	w.Header().Set("Content-Type", "application/octet-stream")
+	contentType := document.ContentType
 
+	if contentType != "" {
+		contentType = "application/octet-stream"
+	}
+
+	w.Header().Set("Content-Type", contentType)
+
+	w.WriteHeader(http.StatusOK)
 	io.WriteString(w, document.Content)
 }

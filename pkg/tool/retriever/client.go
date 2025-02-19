@@ -73,9 +73,9 @@ func (c *Client) Execute(ctx context.Context, name string, parameters map[string
 
 	for _, r := range data {
 		result := Result{
-			Title:    r.Title,
-			Content:  r.Content,
-			Location: r.Location,
+			Title:   r.Title,
+			Source:  r.Source,
+			Content: r.Content,
 		}
 
 		results = append(results, result)

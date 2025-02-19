@@ -40,7 +40,7 @@ func New(url string, options ...Option) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) Segment(ctx context.Context, input segmenter.File, options *segmenter.SegmentOptions) ([]segmenter.Segment, error) {
+func (c *Client) Segment(ctx context.Context, input string, options *segmenter.SegmentOptions) ([]segmenter.Segment, error) {
 	if options == nil {
 		options = new(segmenter.SegmentOptions)
 	}
@@ -59,19 +59,13 @@ func (c *Client) Segment(ctx context.Context, input segmenter.File, options *seg
 		w.WriteField("overlap", fmt.Sprintf("%d", *options.SegmentOverlap))
 	}
 
-	name := input.Name
-
-	if name == "" {
-		name = "file.txt"
-	}
-
-	file, err := w.CreateFormFile("files", name)
+	file, err := w.CreateFormFile("files", "content.txt")
 
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := io.Copy(file, input.Content); err != nil {
+	if _, err := io.WriteString(file, input); err != nil {
 		return nil, err
 	}
 
@@ -102,7 +96,7 @@ func (c *Client) Segment(ctx context.Context, input segmenter.File, options *seg
 
 	for _, chunk := range elements {
 		segment := segmenter.Segment{
-			Content: chunk.Text,
+			Text: chunk.Text,
 		}
 
 		segments = append(segments, segment)

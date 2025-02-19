@@ -28,7 +28,7 @@ func NewSegmenter(l *rate.Limiter, p segmenter.Provider) Segmenter {
 func (p *limitedSegmenter) limiterSetup() {
 }
 
-func (p *limitedSegmenter) Segment(ctx context.Context, input segmenter.File, options *segmenter.SegmentOptions) ([]segmenter.Segment, error) {
+func (p *limitedSegmenter) Segment(ctx context.Context, input string, options *segmenter.SegmentOptions) ([]segmenter.Segment, error) {
 	if p.limiter != nil {
 		p.limiter.Wait(ctx)
 	}

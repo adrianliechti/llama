@@ -52,62 +52,56 @@ func New(url string, namespace string, options ...Option) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+func (c *Client) List(ctx context.Context, options *index.ListOptions) (*index.Page[index.Document], error) {
+	if options == nil {
+		options = new(index.ListOptions)
+	}
+
 	if err := c.ensureCollection(ctx, c.namespace); err != nil {
 		return nil, err
 	}
 
-	var offset string
-
-	var points []point
-
-	for {
-		body := map[string]any{
-			"with_vector":  true,
-			"with_payload": true,
-		}
-
-		if offset != "" {
-			body["offset"] = offset
-		}
-
-		u, _ := url.JoinPath(c.url, "collections/"+c.namespace+"/points/scroll")
-
-		req, _ := http.NewRequestWithContext(ctx, "POST", u, jsonReader(body))
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := c.client.Do(req)
-
-		if err != nil {
-			return nil, err
-		}
-
-		defer resp.Body.Close()
-
-		var result scrollResult
-
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			return nil, err
-		}
-
-		points = append(points, result.Result.Points...)
-
-		if result.Result.NextPageOffset == "" {
-			break
-		}
-
-		offset = result.Result.NextPageOffset
+	body := map[string]any{
+		"with_vector":  true,
+		"with_payload": true,
 	}
 
-	var documents []index.Document
+	if options.Limit != nil {
+		body["limit"] = *options.Limit
+	}
 
-	for _, p := range points {
-		documents = append(documents, index.Document{
+	if options.Cursor != "" {
+		body["offset"] = options.Cursor
+	}
+
+	u, _ := url.JoinPath(c.url, "collections/"+c.namespace+"/points/scroll")
+
+	req, _ := http.NewRequestWithContext(ctx, "POST", u, jsonReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	var result scrollResult
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	var items []index.Document
+
+	for _, p := range result.Result.Points {
+		items = append(items, index.Document{
 			ID: p.ID,
 
-			Title:    p.Payload.Title,
-			Content:  p.Payload.Content,
-			Location: p.Payload.Location,
+			Title:   p.Payload.Title,
+			Source:  p.Payload.Source,
+			Content: p.Payload.Content,
 
 			Metadata: p.Payload.Metadata,
 
@@ -115,7 +109,10 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		})
 	}
 
-	return documents, nil
+	return &index.Page[index.Document]{
+		Items:  items,
+		Cursor: result.Result.NextPageOffset,
+	}, nil
 }
 
 func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
@@ -137,13 +134,13 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 		}
 
 		if len(d.Embedding) == 0 && c.embedder != nil {
-			embedding, err := c.embedder.Embed(ctx, d.Content)
+			embedding, err := c.embedder.Embed(ctx, []string{d.Content})
 
 			if err != nil {
 				return err
 			}
 
-			d.Embedding = embedding.Data
+			d.Embedding = embedding.Embeddings[0]
 		}
 
 		points = append(points, point{
@@ -151,9 +148,9 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 			Vector: d.Embedding,
 
 			Payload: payload{
-				Title:    d.Title,
-				Content:  d.Content,
-				Location: d.Location,
+				Title:   d.Title,
+				Source:  d.Source,
+				Content: d.Content,
 
 				Metadata: d.Metadata,
 			}})
@@ -227,7 +224,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		return nil, err
 	}
 
-	embedding, err := c.embedder.Embed(ctx, query)
+	embedding, err := c.embedder.Embed(ctx, []string{query})
 
 	if err != nil {
 		return nil, err
@@ -236,7 +233,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	u, _ := url.JoinPath(c.url, "collections/"+c.namespace+"/points/search")
 
 	body := map[string]any{
-		"vector": embedding.Data,
+		"vector": embedding.Embeddings[0],
 		"limit":  options.Limit,
 
 		"with_vector":  true,
@@ -273,9 +270,9 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 			Document: index.Document{
 				ID: r.ID,
 
-				Title:    r.Payload.Title,
-				Content:  r.Payload.Content,
-				Location: r.Payload.Location,
+				Title:   r.Payload.Title,
+				Source:  r.Payload.Source,
+				Content: r.Payload.Content,
 
 				Metadata: r.Payload.Metadata,
 
@@ -297,7 +294,7 @@ func (c *Client) ensureCollection(ctx context.Context, name string) error {
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		embeddings, err := c.embedder.Embed(context.Background(), "init")
+		embeddings, err := c.embedder.Embed(context.Background(), []string{"init"})
 
 		if err != nil {
 			return err
@@ -305,7 +302,7 @@ func (c *Client) ensureCollection(ctx context.Context, name string) error {
 
 		body := map[string]any{
 			"vectors": map[string]any{
-				"size":     len(embeddings.Data),
+				"size":     len(embeddings.Embeddings[0]),
 				"distance": "Cosine",
 			},
 		}

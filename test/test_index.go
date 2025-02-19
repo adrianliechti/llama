@@ -12,8 +12,8 @@ func TestIndex(t *testing.T, c *TestContext, i index.Provider) {
 		{
 			ID: "9a7b6b57-a097-492f-b57f-123ae1924f3b",
 
-			Title:    "Embeddings",
-			Location: "https://platform.openai.com/docs/guides/embeddings/what-are-embeddings",
+			Title:  "Embeddings",
+			Source: "https://platform.openai.com/docs/guides/embeddings/what-are-embeddings",
 
 			Content: `OpenAI's text embeddings measure the relatedness of text strings. Embeddings are commonly used for:
 			Search (where results are ranked by relevance to a query string)
@@ -27,8 +27,8 @@ func TestIndex(t *testing.T, c *TestContext, i index.Provider) {
 		{
 			ID: "c4f8fd79-5457-4ea8-a567-e9125e445b76",
 
-			Title:    "Text generation models",
-			Location: "https://platform.openai.com/docs/guides/text-generation",
+			Title:  "Text generation models",
+			Source: "https://platform.openai.com/docs/guides/text-generation",
 
 			Content: `OpenAI's text generation models (often called generative pre-trained transformers or large language models) have been trained to understand natural language, code, and images. The models provide text outputs in response to their inputs. The text inputs to these models are also referred to as "prompts". Designing a prompt is essentially how you “program” a large language model model, usually by providing instructions or some examples of how to successfully complete a task.
 			Using OpenAI's text generation models, you can build applications to:
@@ -60,14 +60,30 @@ func TestIndex(t *testing.T, c *TestContext, i index.Provider) {
 		t.Fatal(err)
 	}
 
-	listed, err := i.List(c.Context, &index.ListOptions{})
+	var cursor string
+	var items []index.Document
 
-	if err != nil {
-		t.Fatal(err)
+	for {
+		page, err := i.List(c.Context, &index.ListOptions{
+			Limit:  to.Ptr(1),
+			Cursor: cursor,
+		})
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		items = append(items, page.Items...)
+
+		cursor = page.Cursor
+
+		if cursor == "" {
+			break
+		}
 	}
 
-	for _, d := range listed {
-		t.Log("documents", d.ID, d.Title, d.Location)
+	for _, d := range items {
+		t.Log("documents", d.ID, d.Title, d.Source)
 	}
 
 	results, err := i.Query(c.Context, "what are large language models", &index.QueryOptions{Limit: to.Ptr(1)})
@@ -77,6 +93,6 @@ func TestIndex(t *testing.T, c *TestContext, i index.Provider) {
 	}
 
 	for _, d := range results {
-		t.Log("results", d.Score, d.ID, d.Title, d.Location)
+		t.Log("results", d.Score, d.ID, d.Title, d.Source)
 	}
 }

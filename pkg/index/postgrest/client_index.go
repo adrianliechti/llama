@@ -13,21 +13,21 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 
 	for _, d := range documents {
 		if len(d.Embedding) == 0 && c.embedder != nil {
-			embedding, err := c.embedder.Embed(ctx, d.Content)
+			embedding, err := c.embedder.Embed(ctx, []string{d.Content})
 
 			if err != nil {
 				return err
 			}
 
-			d.Embedding = embedding.Data
+			d.Embedding = embedding.Embeddings[0]
 		}
 
 		item := Document{
 			ID: d.ID,
 
-			Title:    d.Title,
-			Content:  d.Content,
-			Location: d.Location,
+			Title:   d.Title,
+			Source:  d.Source,
+			Content: d.Content,
 
 			Embedding: d.Embedding,
 		}

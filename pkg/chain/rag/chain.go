@@ -126,9 +126,9 @@ func (c *Chain) Complete(ctx context.Context, messages []provider.Message, optio
 
 	for _, r := range results {
 		data.Results = append(data.Results, promptResult{
-			Title:    r.Title,
-			Content:  text.Normalize(r.Content),
-			Location: r.Location,
+			Title:   r.Title,
+			Source:  r.Source,
+			Content: text.Normalize(r.Content),
 
 			Metadata: r.Metadata,
 		})

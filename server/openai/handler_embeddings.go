@@ -41,34 +41,26 @@ func (h *Handler) handleEmbeddings(w http.ResponseWriter, r *http.Request) {
 		Model: req.Model,
 	}
 
-	inputTokens := 0
-	outputToken := 0
+	embedding, err := embedder.Embed(r.Context(), inputs)
 
-	for i, input := range inputs {
-		embedding, err := embedder.Embed(r.Context(), input)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
 
-		if err != nil {
-			writeError(w, http.StatusBadRequest, err)
-			return
-		}
-
+	for i, e := range embedding.Embeddings {
 		result.Data = append(result.Data, Embedding{
 			Object: "embedding",
 
 			Index:     i,
-			Embedding: embedding.Data,
+			Embedding: e,
 		})
-
-		if embedding.Usage != nil {
-			inputTokens += embedding.Usage.InputTokens
-			outputToken += embedding.Usage.OutputTokens
-		}
 	}
 
-	if inputTokens > 0 || outputToken > 0 {
+	if embedding.Usage != nil {
 		result.Usage = &Usage{
-			PromptTokens: inputTokens,
-			TotalTokens:  inputTokens + outputToken,
+			PromptTokens: embedding.Usage.InputTokens,
+			TotalTokens:  embedding.Usage.InputTokens + embedding.Usage.OutputTokens,
 		}
 	}
 

@@ -55,7 +55,7 @@ func New(url, namespace string, options ...Option) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+func (c *Client) List(ctx context.Context, options *index.ListOptions) (*index.Page[index.Document], error) {
 	col, err := c.createCollection(c.namespace)
 
 	if err != nil {
@@ -84,7 +84,7 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		return nil, err
 	}
 
-	results := make([]index.Document, 0)
+	items := make([]index.Document, 0)
 
 	for i := range result.IDs {
 		id := result.IDs[i]
@@ -99,23 +99,27 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		title := metadata["_title"]
 		delete(metadata, "_title")
 
-		location := metadata["_location"]
-		delete(metadata, "_location")
+		source := metadata["_source"]
+		delete(metadata, "_source")
 
-		r := index.Document{
+		d := index.Document{
 			ID: id,
 
-			Title:    title,
-			Location: location,
+			Title:  title,
+			Source: source,
 
 			Content:  content,
 			Metadata: metadata,
 		}
 
-		results = append(results, r)
+		items = append(items, d)
 	}
 
-	return results, nil
+	page := index.Page[index.Document]{
+		Items: items,
+	}
+
+	return &page, nil
 }
 
 func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
@@ -152,13 +156,13 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 		}
 
 		if len(d.Embedding) == 0 && c.embedder != nil {
-			embedding, err := c.embedder.Embed(ctx, d.Content)
+			embedding, err := c.embedder.Embed(ctx, []string{d.Content})
 
 			if err != nil {
 				return err
 			}
 
-			d.Embedding = embedding.Data
+			d.Embedding = embedding.Embeddings[0]
 		}
 
 		body.IDs[i] = d.ID
@@ -223,7 +227,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		return nil, err
 	}
 
-	embedding, err := c.embedder.Embed(ctx, query)
+	embedding, err := c.embedder.Embed(ctx, []string{query})
 
 	if err != nil {
 		return nil, err
@@ -233,7 +237,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 	body := map[string]any{
 		"query_embeddings": [][]float32{
-			embedding.Data,
+			embedding.Embeddings[0],
 		},
 
 		"include": []string{
@@ -287,8 +291,8 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 			title := metadata["_title"]
 			delete(metadata, "_title")
 
-			location := metadata["_location"]
-			delete(metadata, "_location")
+			source := metadata["_source"]
+			delete(metadata, "_source")
 
 			r := index.Result{
 				Score: score,
@@ -296,10 +300,10 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 				Document: index.Document{
 					ID: id,
 
-					Title:    title,
-					Location: location,
+					Title:   title,
+					Source:  source,
+					Content: content,
 
-					Content:  content,
 					Metadata: metadata,
 				},
 			}

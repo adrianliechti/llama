@@ -48,7 +48,7 @@ func New(url, namespace string, options ...Option) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+func (c *Client) List(ctx context.Context, options *index.ListOptions) (*index.Page[index.Document], error) {
 	u, _ := url.JoinPath(c.url, "/"+c.namespace+"/_search")
 
 	body := map[string]any{
@@ -78,22 +78,25 @@ func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.
 		return nil, err
 	}
 
-	var results []index.Document
+	var items []index.Document
 
 	for _, hit := range result.Hits.Hits {
-
-		results = append(results, index.Document{
+		items = append(items, index.Document{
 			ID: hit.Document.ID,
 
-			Title:    hit.Document.Title,
-			Location: hit.Document.Location,
+			Title:   hit.Document.Title,
+			Source:  hit.Document.Source,
+			Content: hit.Document.Content,
 
-			Content:  hit.Document.Content,
 			Metadata: hit.Document.Metadata,
 		})
 	}
 
-	return results, nil
+	page := index.Page[index.Document]{
+		Items: items,
+	}
+
+	return &page, nil
 }
 
 func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
@@ -109,10 +112,10 @@ func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
 		body := Document{
 			ID: d.ID,
 
-			Title:    d.Title,
-			Location: d.Location,
+			Title:   d.Title,
+			Source:  d.Source,
+			Content: d.Content,
 
-			Content:  d.Content,
 			Metadata: d.Metadata,
 		}
 
@@ -198,10 +201,10 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 			Document: index.Document{
 				ID: hit.Document.ID,
 
-				Title:    hit.Document.Title,
-				Location: hit.Document.Location,
+				Title:   hit.Document.Title,
+				Source:  hit.Document.Source,
+				Content: hit.Document.Content,
 
-				Content:  hit.Document.Content,
 				Metadata: hit.Document.Metadata,
 			},
 		})

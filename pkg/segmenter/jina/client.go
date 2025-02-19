@@ -38,19 +38,13 @@ func New(url string, options ...Option) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) Segment(ctx context.Context, input segmenter.File, options *segmenter.SegmentOptions) ([]segmenter.Segment, error) {
+func (c *Client) Segment(ctx context.Context, input string, options *segmenter.SegmentOptions) ([]segmenter.Segment, error) {
 	if options == nil {
 		options = new(segmenter.SegmentOptions)
 	}
 
-	data, err := io.ReadAll(input.Content)
-
-	if err != nil {
-		return nil, err
-	}
-
 	body := SegmentRequest{
-		Content: string(data),
+		Content: input,
 
 		ReturnChunks:   true,
 		MaxChunkLength: 1000,
@@ -89,7 +83,7 @@ func (c *Client) Segment(ctx context.Context, input segmenter.File, options *seg
 
 	for _, chunk := range result.Chunks {
 		segment := segmenter.Segment{
-			Content: chunk,
+			Text: chunk,
 		}
 
 		segments = append(segments, segment)

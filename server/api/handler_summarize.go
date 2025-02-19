@@ -1,43 +1,40 @@
 package api
 
 import (
-	"encoding/json"
+	"io"
 	"net/http"
+
+	"github.com/adrianliechti/llama/pkg/summarizer"
 )
 
 func (h *Handler) handleSummarize(w http.ResponseWriter, r *http.Request) {
-	var req SummarizeRequest
+	model := valueModel(r)
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, err)
-		return
-	}
-
-	p, err := h.Summarizer(req.Model)
+	p, err := h.Summarizer(model)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
 
-	summary, err := p.Summarize(r.Context(), req.Content, nil)
+	text, err := h.readText(r)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
 
-	result := Document{
-		Content: summary.Text,
+	options := &summarizer.SummarizerOptions{}
+
+	summary, err := p.Summarize(r.Context(), text, options)
+
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
 	}
 
-	for _, s := range summary.Segments {
-		segment := Segment{
-			Text: s,
-		}
+	w.Header().Set("Content-Type", "text/plain")
 
-		result.Segments = append(result.Segments, segment)
-	}
-
-	writeJson(w, result)
+	w.WriteHeader(http.StatusOK)
+	io.WriteString(w, summary.Text)
 }

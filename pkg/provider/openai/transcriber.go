@@ -55,7 +55,7 @@ func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 	result := provider.Transcription{
 		ID: id,
 
-		Content: transcription.Text,
+		Text: transcription.Text,
 	}
 
 	var metadata struct {

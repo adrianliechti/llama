@@ -64,9 +64,8 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	for _, p := range data.WebPages.Value {
 		result := index.Result{
 			Document: index.Document{
-				Location: p.URL,
-
 				Title:   p.Name,
+				Source:  p.URL,
 				Content: p.Snippet,
 			},
 		}
@@ -77,7 +76,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	return results, nil
 }
 
-func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+func (c *Client) List(ctx context.Context, options *index.ListOptions) (*index.Page[index.Document], error) {
 	return nil, errors.ErrUnsupported
 }
 

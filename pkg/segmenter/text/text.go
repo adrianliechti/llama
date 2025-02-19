@@ -2,8 +2,6 @@ package text
 
 import (
 	"context"
-	"fmt"
-	"io"
 	"path"
 	"strings"
 
@@ -28,15 +26,9 @@ func New(options ...Option) (*Provider, error) {
 	return p, nil
 }
 
-func (p *Provider) Segment(ctx context.Context, input segmenter.File, options *segmenter.SegmentOptions) ([]segmenter.Segment, error) {
+func (p *Provider) Segment(ctx context.Context, input string, options *segmenter.SegmentOptions) ([]segmenter.Segment, error) {
 	if options == nil {
 		options = new(segmenter.SegmentOptions)
-	}
-
-	data, err := io.ReadAll(input.Content)
-
-	if err != nil {
-		return nil, err
 	}
 
 	splitter := text.NewSplitter()
@@ -49,16 +41,15 @@ func (p *Provider) Segment(ctx context.Context, input segmenter.File, options *s
 		splitter.ChunkOverlap = *options.SegmentOverlap
 	}
 
-	if sep := getSeperators(input); len(sep) > 0 {
+	if sep := getSeperators(options.FileName); len(sep) > 0 {
 		splitter.Separators = sep
 	}
 
 	var segments []segmenter.Segment
 
-	for i, chunk := range splitter.Split(string(data)) {
+	for _, chunk := range splitter.Split(input) {
 		segment := segmenter.Segment{
-			Name:    fmt.Sprintf("%s#%d", input.Name, i),
-			Content: chunk,
+			Text: chunk,
 		}
 
 		segments = append(segments, segment)
@@ -67,8 +58,8 @@ func (p *Provider) Segment(ctx context.Context, input segmenter.File, options *s
 	return segments, nil
 }
 
-func getSeperators(input segmenter.File) []string {
-	switch strings.ToLower(path.Ext(input.Name)) {
+func getSeperators(name string) []string {
+	switch strings.ToLower(path.Ext(name)) {
 	case ".cs":
 		return languageCSharp
 	case ".cpp":

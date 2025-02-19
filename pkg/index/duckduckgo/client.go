@@ -98,9 +98,8 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 
 		result := index.Result{
 			Document: index.Document{
-				Location: resultURL,
-
 				Title:   resultTitle,
+				Source:  resultURL,
 				Content: resultSnippet,
 			},
 		}
@@ -115,7 +114,7 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 	return results, nil
 }
 
-func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+func (c *Client) List(ctx context.Context, options *index.ListOptions) (*index.Page[index.Document], error) {
 	return nil, errors.ErrUnsupported
 }
 

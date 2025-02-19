@@ -6,7 +6,7 @@ import (
 )
 
 type Synthesizer interface {
-	Synthesize(ctx context.Context, content string, options *SynthesizeOptions) (*Synthesis, error)
+	Synthesize(ctx context.Context, input string, options *SynthesizeOptions) (*Synthesis, error)
 }
 
 type SynthesizeOptions struct {
@@ -16,6 +16,6 @@ type SynthesizeOptions struct {
 type Synthesis struct {
 	ID string
 
-	Name    string
-	Content io.ReadCloser
+	Name   string
+	Reader io.ReadCloser
 }

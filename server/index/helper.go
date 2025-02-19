@@ -3,13 +3,12 @@ package index
 import (
 	"context"
 	"io"
-	"strings"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/segmenter"
 )
 
-func (s *Handler) fileText(ctx context.Context, model string, name string, content io.Reader) (string, error) {
+func (s *Handler) readText(ctx context.Context, model string, name string, content io.Reader) (string, error) {
 	p, err := s.Extractor(model)
 
 	if err != nil {
@@ -17,8 +16,8 @@ func (s *Handler) fileText(ctx context.Context, model string, name string, conte
 	}
 
 	input := extractor.File{
-		Name:    name,
-		Content: content,
+		Name:   name,
+		Reader: content,
 	}
 
 	document, err := p.Extract(ctx, input, &extractor.ExtractOptions{})
@@ -30,7 +29,7 @@ func (s *Handler) fileText(ctx context.Context, model string, name string, conte
 	return document.Content, nil
 }
 
-func (s *Handler) textSegment(ctx context.Context, model, text string, segmentLength, segmentOverlap int) ([]string, error) {
+func (s *Handler) segmentText(ctx context.Context, model, text string, segmentLength, segmentOverlap int) ([]string, error) {
 	if segmentLength <= 0 {
 		segmentLength = 1500
 	}
@@ -45,12 +44,7 @@ func (s *Handler) textSegment(ctx context.Context, model, text string, segmentLe
 		return nil, err
 	}
 
-	input := segmenter.File{
-		Name:    "input.txt",
-		Content: strings.NewReader(text),
-	}
-
-	segments, err := p.Segment(ctx, input, &segmenter.SegmentOptions{
+	segments, err := p.Segment(ctx, text, &segmenter.SegmentOptions{
 		SegmentLength:  &segmentLength,
 		SegmentOverlap: &segmentOverlap,
 	})
@@ -62,7 +56,7 @@ func (s *Handler) textSegment(ctx context.Context, model, text string, segmentLe
 	var result []string
 
 	for _, s := range segments {
-		result = append(result, s.Content)
+		result = append(result, s.Text)
 	}
 
 	return result, nil

@@ -37,14 +37,18 @@ func New(options ...Option) (*Provider, error) {
 	return p, nil
 }
 
-func (p *Provider) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
-	result := make([]index.Document, 0, len(p.documents))
+func (p *Provider) List(ctx context.Context, options *index.ListOptions) (*index.Page[index.Document], error) {
+	items := make([]index.Document, 0, len(p.documents))
 
 	for _, d := range p.documents {
-		result = append(result, d)
+		items = append(items, d)
 	}
 
-	return result, nil
+	page := index.Page[index.Document]{
+		Items: items,
+	}
+
+	return &page, nil
 }
 
 func (p *Provider) Index(ctx context.Context, documents ...index.Document) error {
@@ -54,13 +58,13 @@ func (p *Provider) Index(ctx context.Context, documents ...index.Document) error
 		}
 
 		if len(d.Embedding) == 0 && p.embedder != nil {
-			embedding, err := p.embedder.Embed(ctx, d.Content)
+			embedding, err := p.embedder.Embed(ctx, []string{d.Content})
 
 			if err != nil {
 				return err
 			}
 
-			d.Embedding = embedding.Data
+			d.Embedding = embedding.Embeddings[0]
 		}
 
 		if len(d.Embedding) == 0 {
@@ -90,7 +94,7 @@ func (p *Provider) Query(ctx context.Context, query string, options *index.Query
 		return nil, errors.New("no embedder configured")
 	}
 
-	embedding, err := p.embedder.Embed(ctx, query)
+	embedding, err := p.embedder.Embed(ctx, []string{query})
 
 	if err != nil {
 		return nil, err
@@ -100,7 +104,7 @@ func (p *Provider) Query(ctx context.Context, query string, options *index.Query
 
 DOCUMENTS:
 	for _, d := range p.documents {
-		score := cosineSimilarity(embedding.Data, d.Embedding)
+		score := cosineSimilarity(embedding.Embeddings[0], d.Embedding)
 
 		r := index.Result{
 			Score:    score,

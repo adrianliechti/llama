@@ -5,11 +5,11 @@ import (
 )
 
 type Embedder interface {
-	Embed(ctx context.Context, content string) (*Embedding, error)
+	Embed(ctx context.Context, texts []string) (*Embedding, error)
 }
 
 type Embedding struct {
-	Data []float32
+	Embeddings [][]float32
 
 	Usage *Usage
 }

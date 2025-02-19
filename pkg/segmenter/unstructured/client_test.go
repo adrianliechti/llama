@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/adrianliechti/llama/pkg/segmenter"
 	"github.com/adrianliechti/llama/pkg/segmenter/unstructured"
 
 	"github.com/stretchr/testify/require"
@@ -34,9 +33,7 @@ func TestExtract(t *testing.T) {
 	s, err := unstructured.New("http://" + url)
 	require.NoError(t, err)
 
-	input := segmenter.File{
-		Content: strings.NewReader(strings.Repeat("Hello, World! ", 2000)),
-	}
+	input := strings.Repeat("Hello, World! ", 2000)
 
 	segments, err := s.Segment(ctx, input, nil)
 	require.NoError(t, err)

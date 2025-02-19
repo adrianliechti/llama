@@ -76,7 +76,8 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	}
 
 	result := &extractor.Document{
-		Content: data.Results[0].Content,
+		Content:     data.Results[0].Content,
+		ContentType: "text/plain",
 	}
 
 	return result, nil

@@ -3,7 +3,6 @@ package jina
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/url"
 	"strings"
@@ -45,7 +44,7 @@ func NewReranker(url, model string, options ...Option) (*Reranker, error) {
 	}, nil
 }
 
-func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string, options *provider.RerankOptions) ([]provider.Ranking, error) {
+func (r *Reranker) Rerank(ctx context.Context, query string, texts []string, options *provider.RerankOptions) ([]provider.Ranking, error) {
 	if options == nil {
 		options = new(provider.RerankOptions)
 	}
@@ -53,8 +52,8 @@ func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string, op
 	body := map[string]any{
 		"model": r.model,
 
-		"query":     query,
-		"documents": inputs,
+		"query": query,
+		"texts": texts,
 	}
 
 	if options.Limit != nil {
@@ -82,40 +81,25 @@ func (r *Reranker) Rerank(ctx context.Context, query string, inputs []string, op
 		return nil, convertError(resp)
 	}
 
-	var data RerankList
+	type Result struct {
+		Index int     `json:"index"`
+		Score float64 `json:"score"`
+	}
+
+	var data []Result
 
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		return nil, err
 	}
 
-	if len(data.Results) == 0 {
-		return nil, errors.New("no reranks found")
-	}
-
 	var result []provider.Ranking
 
-	for _, r := range data.Results {
+	for _, r := range data {
 		result = append(result, provider.Ranking{
-			Content: inputs[r.Index],
-			Score:   r.Score,
+			Text:  texts[r.Index],
+			Score: r.Score,
 		})
 	}
 
 	return result, nil
-}
-
-type RerankList struct {
-	Model   string   `json:"model"`
-	Results []Result `json:"results"`
-}
-
-type Result struct {
-	Index int `json:"index"`
-
-	Document Document `json:"document"`
-	Score    float64  `json:"relevance_score"`
-}
-
-type Document struct {
-	Text string `json:"text"`
 }

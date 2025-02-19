@@ -40,8 +40,8 @@ message Document {
   string id = 1;
 
 	string title = 2;
-	string content = 3;
-	string location = 4;
+	string source = 3;
+	string content = 4;
 
 	map<string, string> metadata = 5;
 

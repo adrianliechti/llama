@@ -67,7 +67,7 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 		return nil, err
 	}
 
-	if _, err := io.Copy(file, input.Content); err != nil {
+	if _, err := io.Copy(file, input.Reader); err != nil {
 		return nil, err
 	}
 
@@ -108,13 +108,15 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	}
 
 	return &extractor.Document{
-		Name:    name,
-		Content: builder.String(),
+		Name: name,
+
+		Content:     builder.String(),
+		ContentType: "text/plain",
 	}, nil
 }
 
 func isSupported(input extractor.File) bool {
-	if input.Content == nil {
+	if input.Reader == nil {
 		return false
 	}
 

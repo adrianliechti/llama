@@ -5,4 +5,8 @@ version: "3"
 tasks:
   server:
     cmds:
-      - docker run -it --rm -p 6333:6333 -v qdrant-data:/qdrant/storage qdrant/qdrant:v1.11.4
+      - docker run -it --rm -p 6333:6333 -v qdrant-data:/qdrant/storage qdrant/qdrant:v1.13.2
+  
+  webui:
+    cmds:
+      - open http://localhost:6333/dashboard

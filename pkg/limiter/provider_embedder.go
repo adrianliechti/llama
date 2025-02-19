@@ -28,10 +28,10 @@ func NewEmbedder(l *rate.Limiter, p provider.Embedder) Embedder {
 func (p *limitedEmbedder) limiterSetup() {
 }
 
-func (p *limitedEmbedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
+func (p *limitedEmbedder) Embed(ctx context.Context, texts []string) (*provider.Embedding, error) {
 	if p.limiter != nil {
 		p.limiter.Wait(ctx)
 	}
 
-	return p.provider.Embed(ctx, content)
+	return p.provider.Embed(ctx, texts)
 }

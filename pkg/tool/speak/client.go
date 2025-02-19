@@ -83,7 +83,7 @@ func (c *Client) Execute(ctx context.Context, name string, parameters map[string
 		return nil, err
 	}
 
-	if _, err := io.Copy(f, synthesis.Content); err != nil {
+	if _, err := io.Copy(f, synthesis.Reader); err != nil {
 		return nil, err
 	}
 

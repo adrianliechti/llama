@@ -3,11 +3,10 @@ package segmenter
 import (
 	"context"
 	"errors"
-	"io"
 )
 
 type Provider interface {
-	Segment(ctx context.Context, input File, options *SegmentOptions) ([]Segment, error)
+	Segment(ctx context.Context, text string, options *SegmentOptions) ([]Segment, error)
 }
 
 var (
@@ -15,16 +14,12 @@ var (
 )
 
 type SegmentOptions struct {
+	FileName string
+
 	SegmentLength  *int
 	SegmentOverlap *int
 }
 
-type File struct {
-	Name    string
-	Content io.Reader
-}
-
 type Segment struct {
-	Name    string
-	Content string
+	Text string
 }

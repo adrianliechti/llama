@@ -103,10 +103,10 @@ func (t *Transcriber) Transcribe(ctx context.Context, input provider.File, optio
 	result := provider.Transcription{
 		ID: id,
 
+		Text: content,
+
 		Language: inference.Language,
 		Duration: inference.Duration,
-
-		Content: content,
 	}
 
 	return &result, nil

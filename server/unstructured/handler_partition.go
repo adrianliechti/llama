@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
 	"github.com/adrianliechti/llama/pkg/segmenter"
@@ -42,7 +41,7 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 		defer file.Close()
 
 		input.Name = header.Filename
-		input.Content = file
+		input.Reader = file
 	}
 
 	outputFormat := r.FormValue("output_format")
@@ -81,12 +80,7 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		input := segmenter.File{
-			Name:    input.Name,
-			Content: strings.NewReader(document.Content),
-		}
-
-		segments, err := s.Segment(r.Context(), input, &segmenter.SegmentOptions{
+		segments, err := s.Segment(r.Context(), document.Content, &segmenter.SegmentOptions{
 			SegmentLength:  &chunkLength,
 			SegmentOverlap: &chunkOverlap,
 		})
@@ -101,7 +95,7 @@ func (h *Handler) handlePartition(w http.ResponseWriter, r *http.Request) {
 		for i, s := range segments {
 			partition := Partition{
 				ID:   fmt.Sprintf("%s#%d", input.Name, i),
-				Text: s.Content,
+				Text: s.Text,
 			}
 
 			result = append(result, partition)

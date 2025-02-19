@@ -18,7 +18,7 @@ func TestEmbedder(t *testing.T) {
 		Started: true,
 
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/ggerganov/llama.cpp:server",
+			Image: "ghcr.io/ggml-org/llama.cpp:server",
 
 			Cmd: []string{
 				"--hf-repo", "nomic-ai/nomic-embed-text-v1.5-GGUF",
@@ -53,8 +53,11 @@ func TestEmbedder(t *testing.T) {
 	e, err := llama.NewEmbedder("http://"+url, "default")
 	require.NoError(t, err)
 
-	result, err := e.Embed(ctx, "Hallo!")
+	result, err := e.Embed(ctx, []string{"Hello, World!", "Hello Welt!"})
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Data)
+	require.Len(t, result.Embeddings, 2)
+
+	require.NotEmpty(t, result.Embeddings[0])
+	require.NotEmpty(t, result.Embeddings[1])
 }

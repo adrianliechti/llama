@@ -16,8 +16,8 @@ type TranscribeOptions struct {
 type Transcription struct {
 	ID string
 
+	Text string
+
 	Language string
 	Duration float64
-
-	Content string
 }

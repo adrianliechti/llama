@@ -78,7 +78,8 @@ func (c *Client) Extract(ctx context.Context, input extractor.File, options *ext
 	}
 
 	return &extractor.Document{
-		Content: string(data),
+		Content:     string(data),
+		ContentType: "text/plain",
 	}, nil
 }
 

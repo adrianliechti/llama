@@ -29,14 +29,14 @@ func (s *Handler) handleUnstructured(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	content, err := s.fileText(r.Context(), "", header.Filename, file)
+	text, err := s.readText(r.Context(), "", header.Filename, file)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
 
-	segments, err := s.textSegment(r.Context(), "", content, segmentLength, segmentOverlap)
+	segments, err := s.segmentText(r.Context(), "", text, segmentLength, segmentOverlap)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -46,7 +46,7 @@ func (s *Handler) handleUnstructured(w http.ResponseWriter, r *http.Request) {
 	filename := header.Filename
 	filepath := header.Filename
 
-	md5_hash := md5.Sum([]byte(content))
+	md5_hash := md5.Sum([]byte(text))
 	md5_text := hex.EncodeToString(md5_hash[:])
 
 	revision := strings.ToLower(filepath + "@" + md5_text)

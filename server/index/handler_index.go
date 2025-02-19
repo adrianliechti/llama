@@ -28,8 +28,13 @@ func (s *Handler) handleIndex(w http.ResponseWriter, r *http.Request) {
 		document := index.Document{
 			ID: d.ID,
 
-			Content:  d.Content,
+			Title:   d.Title,
+			Source:  d.Source,
+			Content: d.Content,
+
 			Metadata: d.Metadata,
+
+			Embedding: d.Embedding,
 		}
 
 		documents = append(documents, document)

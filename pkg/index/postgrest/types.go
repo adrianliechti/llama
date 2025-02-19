@@ -9,9 +9,8 @@ import (
 type Document struct {
 	ID string `json:"id"`
 
-	Title    string `json:"title"`
-	Location string `json:"location"`
-
+	Title   string `json:"title"`
+	Source  string `json:"source"`
 	Content string `json:"content"`
 
 	Embedding []float32 `json:"embedding"`
@@ -21,9 +20,8 @@ func (d *Document) UnmarshalJSON(data []byte) error {
 	var alias struct {
 		ID string `json:"id"`
 
-		Title    string `json:"title"`
-		Location string `json:"location"`
-
+		Title   string `json:"title"`
+		Source  string `json:"source"`
 		Content string `json:"content"`
 
 		Embedding string `json:"embedding"`
@@ -35,7 +33,7 @@ func (d *Document) UnmarshalJSON(data []byte) error {
 
 	d.ID = alias.ID
 	d.Title = alias.Title
-	d.Location = alias.Location
+	d.Source = alias.Source
 
 	d.Content = alias.Content
 

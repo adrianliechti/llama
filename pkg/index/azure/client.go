@@ -102,7 +102,7 @@ func (c *Client) upsertCollection(ctx context.Context, name string) error {
 				"type": "Edm.String",
 			},
 			{
-				"name": "location",
+				"name": "source",
 				"type": "Edm.String",
 			},
 			{

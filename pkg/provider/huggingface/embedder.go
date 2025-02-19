@@ -42,9 +42,9 @@ func NewEmbedder(url, model string, options ...Option) (*Embedder, error) {
 	}, nil
 }
 
-func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
+func (e *Embedder) Embed(ctx context.Context, texts []string) (*provider.Embedding, error) {
 	body := map[string]any{
-		"inputs": strings.TrimSpace(content),
+		"inputs": texts,
 	}
 
 	url := e.url + "/embed"
@@ -82,7 +82,7 @@ func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embeddi
 
 	if err := json.Unmarshal(data, &result1); err == nil {
 		return &provider.Embedding{
-			Data: result1,
+			Embeddings: [][]float32{result1},
 		}, nil
 	}
 
@@ -90,7 +90,7 @@ func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embeddi
 
 	if err := json.Unmarshal(data, &result2); err == nil && len(result2) > 0 {
 		return &provider.Embedding{
-			Data: result2[0],
+			Embeddings: result2,
 		}, nil
 	}
 

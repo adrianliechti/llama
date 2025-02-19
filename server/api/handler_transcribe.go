@@ -1,23 +1,24 @@
 package api
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/adrianliechti/llama/pkg/provider"
 )
 
 func (h *Handler) handleTranscribe(w http.ResponseWriter, r *http.Request) {
-	model := r.FormValue("model")
-	language := r.FormValue("language")
+	model := valueModel(r)
+	language := valueLanguage(r)
 
-	file, header, err := r.FormFile("file")
+	p, err := h.Transcriber(model)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
 
-	p, err := h.Transcriber(model)
+	file, header, err := r.FormFile("file")
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -42,9 +43,8 @@ func (h *Handler) handleTranscribe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := Document{
-		Content: transcription.Content,
-	}
+	w.Header().Set("Content-Type", "text/plain")
 
-	writeJson(w, result)
+	w.WriteHeader(http.StatusOK)
+	io.WriteString(w, transcription.Text)
 }

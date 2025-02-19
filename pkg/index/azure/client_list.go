@@ -6,18 +6,22 @@ import (
 	"github.com/adrianliechti/llama/pkg/index"
 )
 
-func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+func (c *Client) List(ctx context.Context, options *index.ListOptions) (*index.Page[index.Document], error) {
 	results, err := c.Query(ctx, "*", &index.QueryOptions{})
 
 	if err != nil {
 		return nil, err
 	}
 
-	var result []index.Document
+	var items []index.Document
 
 	for _, r := range results {
-		result = append(result, r.Document)
+		items = append(items, r.Document)
 	}
 
-	return result, nil
+	page := index.Page[index.Document]{
+		Items: items,
+	}
+
+	return &page, nil
 }

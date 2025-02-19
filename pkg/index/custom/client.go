@@ -51,14 +51,20 @@ func New(url string, options ...Option) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) List(ctx context.Context, options *index.ListOptions) ([]index.Document, error) {
+func (c *Client) List(ctx context.Context, options *index.ListOptions) (*index.Page[index.Document], error) {
 	result, err := c.client.List(ctx, &ListRequest{})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return convertDocuments(result.Documents), nil
+	items := convertDocuments(result.Documents)
+
+	page := index.Page[index.Document]{
+		Items: items,
+	}
+
+	return &page, nil
 }
 
 func (c *Client) Index(ctx context.Context, documents ...index.Document) error {
@@ -123,9 +129,9 @@ func convertDocument(d *Document) index.Document {
 	return index.Document{
 		ID: d.Id,
 
-		Title:    d.Title,
-		Content:  d.Content,
-		Location: d.Location,
+		Title:   d.Title,
+		Source:  d.Source,
+		Content: d.Content,
 
 		Metadata: d.Metadata,
 
@@ -147,9 +153,9 @@ func toDocument(d index.Document) *Document {
 	return &Document{
 		Id: d.ID,
 
-		Title:    d.Title,
-		Content:  d.Content,
-		Location: d.Location,
+		Title:   d.Title,
+		Source:  d.Source,
+		Content: d.Content,
 
 		Metadata: d.Metadata,
 

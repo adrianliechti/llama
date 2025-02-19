@@ -18,7 +18,7 @@ func TestReranker(t *testing.T) {
 		Started: true,
 
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/ggerganov/llama.cpp:server",
+			Image: "ghcr.io/ggml-org/llama.cpp:server",
 
 			Cmd: []string{
 				"--hf-repo", "gpustack/bge-reranker-v2-m3-GGUF",
@@ -55,6 +55,7 @@ func TestReranker(t *testing.T) {
 		"it is a bear",
 		"The giant panda (Ailuropoda melanoleuca), sometimes called a panda bear or simply panda, is a bear species endemic to China.",
 	}, nil)
+
 	require.NoError(t, err)
 
 	require.NotEmpty(t, result)

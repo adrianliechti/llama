@@ -18,7 +18,7 @@ func TestEmbedder(t *testing.T) {
 		Started: true,
 
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:         "ghcr.io/huggingface/text-embeddings-inference:cpu-1.5",
+			Image:         "ghcr.io/huggingface/text-embeddings-inference:cpu-1.6",
 			ImagePlatform: "linux/amd64",
 
 			Cmd: []string{"--model-id", "BAAI/bge-large-en-v1.5"},
@@ -46,8 +46,11 @@ func TestEmbedder(t *testing.T) {
 	e, err := huggingface.NewEmbedder("http://"+url, "")
 	require.NoError(t, err)
 
-	result, err := e.Embed(ctx, "Hello, World!")
+	result, err := e.Embed(ctx, []string{"Hello, World!", "Hello Welt!"})
 	require.NoError(t, err)
 
-	require.NotEmpty(t, result.Data)
+	require.Len(t, result.Embeddings, 2)
+
+	require.NotEmpty(t, result.Embeddings[0])
+	require.NotEmpty(t, result.Embeddings[1])
 }

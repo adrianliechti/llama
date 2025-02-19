@@ -64,7 +64,7 @@ func (s *Synthesizer) Synthesize(ctx context.Context, content string, options *p
 	return &provider.Synthesis{
 		ID: id,
 
-		Name:    id + ".mp3",
-		Content: resp.Body,
+		Name:   id + ".mp3",
+		Reader: resp.Body,
 	}, nil
 }

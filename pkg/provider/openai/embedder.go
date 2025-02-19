@@ -31,10 +31,10 @@ func NewEmbedder(url, model string, options ...Option) (*Embedder, error) {
 	}, nil
 }
 
-func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embedding, error) {
-	result, err := e.embeddings.New(ctx, openai.EmbeddingNewParams{
+func (e *Embedder) Embed(ctx context.Context, texts []string) (*provider.Embedding, error) {
+	embedding, err := e.embeddings.New(ctx, openai.EmbeddingNewParams{
 		Model:          openai.F(e.model),
-		Input:          openai.F[openai.EmbeddingNewParamsInputUnion](openai.EmbeddingNewParamsInputArrayOfStrings([]string{content})),
+		Input:          openai.F[openai.EmbeddingNewParamsInputUnion](openai.EmbeddingNewParamsInputArrayOfStrings(texts)),
 		EncodingFormat: openai.F(openai.EmbeddingNewParamsEncodingFormatFloat),
 	})
 
@@ -42,14 +42,20 @@ func (e *Embedder) Embed(ctx context.Context, content string) (*provider.Embeddi
 		return nil, convertError(err)
 	}
 
-	return &provider.Embedding{
-		Data: toFloat32(result.Data[0].Embedding),
+	result := &provider.Embedding{}
 
-		Usage: &provider.Usage{
-			InputTokens:  int(result.Usage.PromptTokens),
+	if embedding.Usage.PromptTokens > 0 {
+		result.Usage = &provider.Usage{
+			InputTokens:  int(embedding.Usage.PromptTokens),
 			OutputTokens: 0,
-		},
-	}, nil
+		}
+	}
+
+	for _, e := range embedding.Data {
+		result.Embeddings = append(result.Embeddings, toFloat32(e.Embedding))
+	}
+
+	return result, nil
 }
 
 func toFloat32(input []float64) []float32 {

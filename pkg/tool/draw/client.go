@@ -104,7 +104,7 @@ func (c *Client) Execute(ctx context.Context, name string, parameters map[string
 		return nil, err
 	}
 
-	if _, err := io.Copy(f, image.Content); err != nil {
+	if _, err := io.Copy(f, image.Reader); err != nil {
 		return nil, err
 	}
 

@@ -5,7 +5,7 @@ import (
 )
 
 type Reranker interface {
-	Rerank(ctx context.Context, query string, inputs []string, options *RerankOptions) ([]Ranking, error)
+	Rerank(ctx context.Context, query string, texts []string, options *RerankOptions) ([]Ranking, error)
 }
 
 type RerankOptions struct {
@@ -13,6 +13,6 @@ type RerankOptions struct {
 }
 
 type Ranking struct {
-	Content string
-	Score   float64
+	Text  string
+	Score float64
 }

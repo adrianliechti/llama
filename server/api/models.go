@@ -6,40 +6,12 @@ type Result struct {
 	Document `json:",inline"`
 }
 
-type Document struct {
-	Content string `json:"content,omitempty"`
-
-	Segments []Segment `json:"segments,omitempty"`
-}
-
-type RerankRequest struct {
-	Model string `json:"model"`
-
-	Query     string   `json:"query"`
-	Documents []string `json:"documents"`
-
-	Limit *int `json:"limit,omitempty"`
-}
-
-type RerankResponse struct {
-	Model string `json:"model"`
-
-	Results []Result `json:"results"`
-}
-
-type SegmentRequest struct {
-	Content string `json:"content"`
-
-	SegmentLength  *int `json:"segment_length"`
-	SegmentOverlap *int `json:"segment_overlap"`
-}
-
 type Segment struct {
 	Text string `json:"text"`
 }
 
-type SummarizeRequest struct {
-	Model string `json:"model"`
+type Document struct {
+	Text string `json:"text,omitempty"`
 
-	Content string `json:"content"`
+	Segments []Segment `json:"segments,omitempty"`
 }

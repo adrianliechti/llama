@@ -162,7 +162,7 @@ func (r *Renderer) convertImage(output replicate.PredictionOutput) (*provider.Im
 	return &provider.Image{
 		ID: uuid.New().String(),
 
-		Name:    path.Base(url.Path),
-		Content: file,
+		Name:   path.Base(url.Path),
+		Reader: file,
 	}, nil
 }

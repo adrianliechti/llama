@@ -20,14 +20,14 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 		limit = *options.Limit
 	}
 
-	embedding, err := c.embedder.Embed(ctx, query)
+	embedding, err := c.embedder.Embed(ctx, []string{query})
 
 	if err != nil {
 		return nil, err
 	}
 
 	body := map[string]any{
-		"query_embedding": embedding.Data,
+		"query_embedding": embedding.Embeddings[0],
 		"limit_count":     limit,
 	}
 
@@ -61,9 +61,8 @@ func (c *Client) Query(ctx context.Context, query string, options *index.QueryOp
 			Document: index.Document{
 				ID: doc.ID,
 
-				Title:    doc.Title,
-				Location: doc.Location,
-
+				Title:   doc.Title,
+				Source:  doc.Source,
 				Content: doc.Content,
 			},
 		})

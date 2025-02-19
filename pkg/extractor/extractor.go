@@ -20,11 +20,13 @@ type ExtractOptions struct {
 type File struct {
 	Name string
 
-	URL     string
-	Content io.Reader
+	URL    string
+	Reader io.Reader
 }
 
 type Document struct {
-	Name    string
-	Content string
+	Name string
+
+	Content     string
+	ContentType string
 }

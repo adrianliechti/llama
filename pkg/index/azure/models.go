@@ -34,12 +34,12 @@ func (r Result) Content() string {
 	return ""
 }
 
-func (r Result) Location() string {
-	if val := r.String("location"); val != "" {
+func (r Result) Source() string {
+	if val := r.String("source"); val != "" {
 		return val
 	}
 
-	if val := r.String("source"); val != "" {
+	if val := r.String("location"); val != "" {
 		return val
 	}
 
