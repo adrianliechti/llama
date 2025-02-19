@@ -9,7 +9,7 @@ In this guide, we'll walk through creating a plugin that can be invoked by the L
 ### Generate gRPC Server & Messages
 
 ```shell
-pip install grpcio-tools
+pip install grpcio-tools grpcio-reflection
 ```
 
 ```shell

@@ -5,44 +5,53 @@ import tool_pb2
 import tool_pb2_grpc
 
 from concurrent import futures
+from grpc_reflection.v1alpha import reflection
 
 class ToolServicer(tool_pb2_grpc.ToolServicer):
-    def Info(self, request, context):
-        d = tool_pb2.Definition()
-        
-        d.name = "get_weather"
-        d.description = "get the weather for a given location."
-        d.schema = json.dumps({
-            "type": "object",
+    def Tools(self, request, context):
+        return tool_pb2.ToolsResponse(
+            definitions=[
+                tool_pb2.Definition(
+                    name="get_weather",
+                    description="get the weather for a given location.",
+                    parameters=json.dumps({
+                        "type": "object",
 
-		    "properties": {
-		    	"location": {
-		    		"type": "array",
+                        "properties": {
+                            "location": {
+                                "type": "array",
 
-		    		"items": {
-		    			"type": "string",
-		    		},
-		    	},
-		    },
+                                "items": {
+                                    "type": "string",
+                                },
+                            },
+                        },
 
-            "required": ["location"],
-        })
+                        "required": ["location"],
+                    }),
+                ),
+            ],
+        )
 
-        return d
-    
     def Execute(self, request, context):
-        params = json.loads(request.parameter)
+        print(request.name, request.parameters)
+
+        params = json.loads(request.parameters)
         location = params["location"]
         
-        r = tool_pb2.Result()
-        r.content = f"It is always sunny in {location}!!!"
-
-        return r
+        return tool_pb2.ResultResponse(data=f"It is always sunny in {location}!!!")
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
 
     tool_pb2_grpc.add_ToolServicer_to_server(ToolServicer(), server)
+
+    SERVICE_NAMES = (
+        tool_pb2.DESCRIPTOR.services_by_name['Tool'].full_name,
+        reflection.SERVICE_NAME,
+    )
+
+    reflection.enable_server_reflection(SERVICE_NAMES, server)
 
     server.add_insecure_port('[::]:50051')
     server.start()
