@@ -11,6 +11,7 @@ import (
 	"github.com/adrianliechti/llama/pkg/tool/crawler"
 	"github.com/adrianliechti/llama/pkg/tool/custom"
 	"github.com/adrianliechti/llama/pkg/tool/draw"
+	"github.com/adrianliechti/llama/pkg/tool/genaitoolbox"
 	"github.com/adrianliechti/llama/pkg/tool/retriever"
 	"github.com/adrianliechti/llama/pkg/tool/search"
 	"github.com/adrianliechti/llama/pkg/tool/speak"
@@ -163,6 +164,9 @@ func createTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
 	case "duckduckgo":
 		return duckduckgoTool(cfg, context)
 
+	case "genaitoolbox":
+		return genaitoolboxTool(cfg, context)
+
 	case "searxng":
 		return searxngTool(cfg, context)
 
@@ -238,6 +242,12 @@ func duckduckgoTool(cfg toolConfig, context toolContext) (tool.Provider, error) 
 	context.Index = index
 
 	return searchTool(cfg, context)
+}
+
+func genaitoolboxTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
+	var options []genaitoolbox.Option
+
+	return genaitoolbox.New(cfg.URL, options...)
 }
 
 func searxngTool(cfg toolConfig, context toolContext) (tool.Provider, error) {
