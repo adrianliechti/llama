@@ -3,7 +3,7 @@ module github.com/adrianliechti/llama
 go 1.24
 
 require (
-	github.com/anthropics/anthropic-sdk-go v0.2.0-alpha.10
+	github.com/anthropics/anthropic-sdk-go v0.2.0-alpha.11
 	github.com/aws/aws-sdk-go-v2 v1.36.2
 	github.com/aws/aws-sdk-go-v2/config v1.29.7
 	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.24.6

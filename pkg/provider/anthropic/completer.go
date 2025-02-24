@@ -209,7 +209,7 @@ func (c *Completer) convertMessageRequest(input []provider.Message, options *pro
 
 	var system []anthropic.TextBlockParam
 
-	var tools []anthropic.ToolParam
+	var tools []anthropic.ToolUnionUnionParam
 	var messages []anthropic.MessageParam
 
 	if options.Stop != nil {
