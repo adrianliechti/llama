@@ -94,6 +94,10 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 
 	if req.Stream {
 		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+
+		rc := http.NewResponseController(w)
 
 		options.Stream = func(ctx context.Context, completion provider.Completion) error {
 			result := ChatCompletion{
@@ -139,7 +143,9 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 				return err
 			}
 
-			w.(http.Flusher).Flush()
+			if err := rc.Flush(); err != nil {
+				return err
+			}
 
 			return nil
 		}
@@ -150,8 +156,7 @@ func (h *Handler) handleChatCompletion(w http.ResponseWriter, r *http.Request) {
 		}
 
 		fmt.Fprintf(w, "data: [DONE]\n\n")
-		w.(http.Flusher).Flush()
-
+		rc.Flush()
 	} else {
 		completion, err := completer.Complete(r.Context(), messages, options)
 
