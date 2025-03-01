@@ -1,12 +1,14 @@
 package api
 
 import (
+	"encoding/json"
 	"io"
 	"mime"
 	"net/http"
 	"strings"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
+	"github.com/adrianliechti/llama/pkg/provider"
 )
 
 func valueModel(r *http.Request) string {
@@ -23,6 +25,36 @@ func valueURL(r *http.Request) string {
 	}
 
 	return ""
+}
+
+func valueSchema(r *http.Request) (*provider.Schema, error) {
+	val := r.FormValue("schema")
+
+	if val == "" {
+		return nil, nil
+	}
+
+	var schema struct {
+		Name        string
+		Description string
+
+		Strict *bool
+
+		Schema map[string]any
+	}
+
+	if err := json.Unmarshal([]byte(val), &schema); err != nil {
+		return nil, err
+	}
+
+	return &provider.Schema{
+		Name:        schema.Name,
+		Description: schema.Description,
+
+		Strict: schema.Strict,
+
+		Schema: schema.Schema,
+	}, nil
 }
 
 func valueLanguage(r *http.Request) string {

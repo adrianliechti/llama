@@ -6,12 +6,20 @@ import (
 	"net/http"
 
 	"github.com/adrianliechti/llama/pkg/extractor"
+	"github.com/adrianliechti/llama/pkg/provider"
 )
 
 func (h *Handler) handleExtract(w http.ResponseWriter, r *http.Request) {
 	model := valueModel(r)
 
 	p, err := h.Extractor(model)
+
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	schema, err := valueSchema(r)
 
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -45,6 +53,40 @@ func (h *Handler) handleExtract(w http.ResponseWriter, r *http.Request) {
 
 	if contentType != "" {
 		contentType = "application/octet-stream"
+	}
+
+	if schema != nil {
+		c, err := h.Completer("")
+
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+
+		messages := []provider.Message{
+			{
+				Role:    provider.MessageRoleUser,
+				Content: document.Content,
+			},
+		}
+
+		options := &provider.CompleteOptions{
+			Schema: schema,
+		}
+
+		completion, err := c.Complete(r.Context(), messages, options)
+
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+
+		w.WriteHeader(http.StatusOK)
+		io.WriteString(w, completion.Message.Content)
+
+		return
 	}
 
 	w.Header().Set("Content-Type", contentType)
