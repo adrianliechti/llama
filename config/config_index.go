@@ -4,15 +4,15 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/index"
-	"github.com/adrianliechti/llama/pkg/index/azure"
-	"github.com/adrianliechti/llama/pkg/index/chroma"
-	"github.com/adrianliechti/llama/pkg/index/custom"
-	"github.com/adrianliechti/llama/pkg/index/elasticsearch"
-	"github.com/adrianliechti/llama/pkg/index/memory"
-	"github.com/adrianliechti/llama/pkg/index/qdrant"
-	"github.com/adrianliechti/llama/pkg/index/weaviate"
-	"github.com/adrianliechti/llama/pkg/otel"
+	"github.com/adrianliechti/wingman/pkg/index"
+	"github.com/adrianliechti/wingman/pkg/index/azure"
+	"github.com/adrianliechti/wingman/pkg/index/chroma"
+	"github.com/adrianliechti/wingman/pkg/index/custom"
+	"github.com/adrianliechti/wingman/pkg/index/elasticsearch"
+	"github.com/adrianliechti/wingman/pkg/index/memory"
+	"github.com/adrianliechti/wingman/pkg/index/qdrant"
+	"github.com/adrianliechti/wingman/pkg/index/weaviate"
+	"github.com/adrianliechti/wingman/pkg/otel"
 )
 
 func (cfg *Config) RegisterIndex(id string, p index.Provider) {

@@ -3,7 +3,7 @@ package limiter
 import (
 	"context"
 
-	"github.com/adrianliechti/llama/pkg/translator"
+	"github.com/adrianliechti/wingman/pkg/translator"
 
 	"golang.org/x/time/rate"
 )

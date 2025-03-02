@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/api"
-	"github.com/adrianliechti/llama/pkg/api/json"
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/api"
+	"github.com/adrianliechti/wingman/pkg/api/json"
+	"github.com/adrianliechti/wingman/pkg/provider"
 )
 
 func (cfg *Config) RegisterAPI(id string, p api.Provider) {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/provider/llama"
+	"github.com/adrianliechti/wingman/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider/llama"
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"

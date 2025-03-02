@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/wingman/pkg/index"
 )
 
 func (s *Handler) handleUnstructured(w http.ResponseWriter, r *http.Request) {

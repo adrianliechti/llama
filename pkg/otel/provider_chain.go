@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/chain"
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/chain"
+	"github.com/adrianliechti/wingman/pkg/provider"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"

@@ -4,10 +4,10 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/provider/groq"
-	"github.com/adrianliechti/llama/pkg/provider/openai"
-	"github.com/adrianliechti/llama/pkg/provider/whisper"
+	"github.com/adrianliechti/wingman/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider/groq"
+	"github.com/adrianliechti/wingman/pkg/provider/openai"
+	"github.com/adrianliechti/wingman/pkg/provider/whisper"
 )
 
 func (cfg *Config) RegisterTranscriber(id string, p provider.Transcriber) {

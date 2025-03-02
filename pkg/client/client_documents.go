@@ -7,7 +7,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/adrianliechti/llama/server/index"
+	"github.com/adrianliechti/wingman/server/index"
 )
 
 type Document = index.Document

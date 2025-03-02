@@ -1,6 +1,6 @@
 services:
   platform:
-    image: ghcr.io/adrianliechti/llama-platform
+    image: ghcr.io/adrianliechti/wingman
     pull_policy: always
     build:
       context: ../../
@@ -12,7 +12,7 @@ services:
         target: /config.yaml
   
   web:
-    image: ghcr.io/adrianliechti/llama-chat
+    image: ghcr.io/adrianliechti/wingman-chat
     pull_policy: always
     ports:
       - 8000:8000

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/adrianliechti/llama/pkg/extractor"
-	"github.com/adrianliechti/llama/pkg/extractor/jina"
+	"github.com/adrianliechti/wingman/pkg/extractor"
+	"github.com/adrianliechti/wingman/pkg/extractor/jina"
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -19,7 +19,7 @@ func TestExtract(t *testing.T) {
 		Started: true,
 
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "ghcr.io/adrianliechti/llama-reader",
+			Image:        "ghcr.io/adrianliechti/wingman-reader",
 			ExposedPorts: []string{"8080/tcp"},
 			WaitingFor:   wait.ForExposedPort(),
 		},

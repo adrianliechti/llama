@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/adrianliechti/llama/pkg/extractor"
-	"github.com/adrianliechti/llama/pkg/extractor/unstructured"
+	"github.com/adrianliechti/wingman/pkg/extractor"
+	"github.com/adrianliechti/wingman/pkg/extractor/unstructured"
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"

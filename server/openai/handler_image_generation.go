@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider"
 )
 
 func (h *Handler) handleImageGeneration(w http.ResponseWriter, r *http.Request) {

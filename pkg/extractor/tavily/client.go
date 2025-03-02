@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/adrianliechti/llama/pkg/extractor"
-	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/wingman/pkg/extractor"
+	"github.com/adrianliechti/wingman/pkg/index"
 )
 
 var _ extractor.Provider = &Client{}

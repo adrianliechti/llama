@@ -3,7 +3,7 @@ package weaviate
 import (
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/wingman/pkg/index"
 )
 
 type Option func(*Client)

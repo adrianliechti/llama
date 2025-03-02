@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 
-	"github.com/adrianliechti/llama/pkg/summarizer"
+	"github.com/adrianliechti/wingman/pkg/summarizer"
 )
 
 func (cfg *Config) RegisterSummarizer(id string, p summarizer.Provider) {

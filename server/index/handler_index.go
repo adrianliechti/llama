@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/wingman/pkg/index"
 )
 
 func (s *Handler) handleIndex(w http.ResponseWriter, r *http.Request) {

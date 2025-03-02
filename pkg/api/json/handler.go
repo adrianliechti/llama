@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/api"
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/api"
+	"github.com/adrianliechti/wingman/pkg/provider"
 
 	"gopkg.in/yaml.v3"
 )

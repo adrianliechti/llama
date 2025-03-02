@@ -1,4 +1,4 @@
-module github.com/adrianliechti/llama
+module github.com/adrianliechti/wingman
 
 go 1.24
 

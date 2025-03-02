@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/tool/custom"
+	"github.com/adrianliechti/wingman/pkg/tool/custom"
 
 	"google.golang.org/grpc"
 )

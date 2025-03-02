@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/tool"
+	"github.com/adrianliechti/wingman/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/tool"
 
 	"github.com/google/uuid"
 )

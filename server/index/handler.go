@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/adrianliechti/llama/config"
+	"github.com/adrianliechti/wingman/config"
 
 	"github.com/go-chi/chi/v5"
 )

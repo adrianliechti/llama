@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/provider/huggingface"
-	"github.com/adrianliechti/llama/pkg/provider/jina"
+	"github.com/adrianliechti/wingman/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider/huggingface"
+	"github.com/adrianliechti/wingman/pkg/provider/jina"
 )
 
 func (cfg *Config) RegisterReranker(id string, p provider.Reranker) {

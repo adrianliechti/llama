@@ -3,11 +3,11 @@ package config
 import (
 	"errors"
 
-	"github.com/adrianliechti/llama/pkg/limiter"
-	"github.com/adrianliechti/llama/pkg/otel"
+	"github.com/adrianliechti/wingman/pkg/limiter"
+	"github.com/adrianliechti/wingman/pkg/otel"
 
-	reranker "github.com/adrianliechti/llama/pkg/provider/adapter/reranker"
-	summarizer "github.com/adrianliechti/llama/pkg/summarizer/adapter"
+	reranker "github.com/adrianliechti/wingman/pkg/provider/adapter/reranker"
+	summarizer "github.com/adrianliechti/wingman/pkg/summarizer/adapter"
 
 	"gopkg.in/yaml.v3"
 )

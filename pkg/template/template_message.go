@@ -3,7 +3,7 @@ package template
 import (
 	"slices"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider"
 )
 
 func Message(message provider.Message, data any) (provider.Message, error) {

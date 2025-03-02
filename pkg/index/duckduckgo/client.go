@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/index"
-	"github.com/adrianliechti/llama/pkg/text"
+	"github.com/adrianliechti/wingman/pkg/index"
+	"github.com/adrianliechti/wingman/pkg/text"
 )
 
 var _ index.Provider = &Client{}

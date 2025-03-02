@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/translator"
+	"github.com/adrianliechti/wingman/pkg/translator"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"

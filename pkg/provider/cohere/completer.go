@@ -6,8 +6,8 @@ import (
 	"errors"
 	"io"
 
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/to"
+	"github.com/adrianliechti/wingman/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/to"
 	"github.com/google/uuid"
 
 	v2 "github.com/cohere-ai/cohere-go/v2"

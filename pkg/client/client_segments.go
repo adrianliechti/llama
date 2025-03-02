@@ -7,7 +7,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/adrianliechti/llama/server/api"
+	"github.com/adrianliechti/wingman/server/api"
 )
 
 type SegmentService struct {

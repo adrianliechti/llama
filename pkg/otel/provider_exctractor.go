@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/extractor"
+	"github.com/adrianliechti/wingman/pkg/extractor"
 	"go.opentelemetry.io/otel"
 )
 

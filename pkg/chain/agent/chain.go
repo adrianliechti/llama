@@ -6,11 +6,11 @@ import (
 	"errors"
 	"slices"
 
-	"github.com/adrianliechti/llama/pkg/chain"
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/template"
-	"github.com/adrianliechti/llama/pkg/to"
-	"github.com/adrianliechti/llama/pkg/tool"
+	"github.com/adrianliechti/wingman/pkg/chain"
+	"github.com/adrianliechti/wingman/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/template"
+	"github.com/adrianliechti/wingman/pkg/to"
+	"github.com/adrianliechti/wingman/pkg/tool"
 )
 
 var _ chain.Provider = &Chain{}

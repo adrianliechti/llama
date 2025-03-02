@@ -3,7 +3,7 @@ package xai
 import (
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/provider/openai"
+	"github.com/adrianliechti/wingman/pkg/provider/openai"
 )
 
 type Completer = openai.Completer

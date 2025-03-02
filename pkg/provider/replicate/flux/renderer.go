@@ -7,8 +7,8 @@ import (
 	"path"
 	"slices"
 
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/provider/replicate"
+	"github.com/adrianliechti/wingman/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider/replicate"
 
 	"github.com/google/uuid"
 )

@@ -5,10 +5,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/provider/openai"
-	"github.com/adrianliechti/llama/pkg/provider/replicate"
-	"github.com/adrianliechti/llama/pkg/provider/replicate/flux"
+	"github.com/adrianliechti/wingman/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider/openai"
+	"github.com/adrianliechti/wingman/pkg/provider/replicate"
+	"github.com/adrianliechti/wingman/pkg/provider/replicate/flux"
 )
 
 func (cfg *Config) RegisterRenderer(id string, p provider.Renderer) {

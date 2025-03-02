@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/adrianliechti/llama/pkg/provider/huggingface"
+	"github.com/adrianliechti/wingman/pkg/provider/huggingface"
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
