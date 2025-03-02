@@ -3,8 +3,8 @@ package test
 import (
 	"context"
 
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/provider/ollama"
+	"github.com/adrianliechti/wingman/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider/ollama"
 )
 
 type TestContext struct {

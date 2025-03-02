@@ -16,8 +16,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/adrianliechti/llama/pkg/client"
-	"github.com/adrianliechti/llama/pkg/to"
+	"github.com/adrianliechti/wingman/pkg/client"
+	"github.com/adrianliechti/wingman/pkg/to"
 
 	"github.com/openai/openai-go"
 )

@@ -3,8 +3,8 @@ package postgrest_test
 import (
 	"testing"
 
-	"github.com/adrianliechti/llama/pkg/index/postgrest"
-	"github.com/adrianliechti/llama/test"
+	"github.com/adrianliechti/wingman/pkg/index/postgrest"
+	"github.com/adrianliechti/wingman/test"
 )
 
 func TestQdrant(t *testing.T) {

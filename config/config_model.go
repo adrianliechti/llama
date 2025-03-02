@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider"
 
 	"golang.org/x/time/rate"
 )

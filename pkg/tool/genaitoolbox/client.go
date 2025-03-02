@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/tool"
+	"github.com/adrianliechti/wingman/pkg/tool"
 )
 
 var _ tool.Provider = (*Client)(nil)

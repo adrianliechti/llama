@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/otel"
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/router/roundrobin"
+	"github.com/adrianliechti/wingman/pkg/otel"
+	"github.com/adrianliechti/wingman/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/router/roundrobin"
 )
 
 type routerConfig struct {

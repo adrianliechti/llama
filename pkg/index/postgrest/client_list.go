@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/wingman/pkg/index"
 )
 
 func (c *Client) List(ctx context.Context, options *index.ListOptions) (*index.Page[index.Document], error) {

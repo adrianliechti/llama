@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/adrianliechti/llama/pkg/segmenter/unstructured"
+	"github.com/adrianliechti/wingman/pkg/segmenter/unstructured"
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"

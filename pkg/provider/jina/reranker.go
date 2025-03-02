@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider"
 )
 
 var _ provider.Reranker = (*Reranker)(nil)

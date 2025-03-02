@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/wingman/pkg/index"
 )
 
 func (c *Client) Query(ctx context.Context, query string, options *index.QueryOptions) ([]index.Result, error) {

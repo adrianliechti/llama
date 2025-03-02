@@ -3,11 +3,11 @@ package server
 import (
 	"net/http"
 
-	"github.com/adrianliechti/llama/config"
-	"github.com/adrianliechti/llama/server/api"
-	"github.com/adrianliechti/llama/server/index"
-	"github.com/adrianliechti/llama/server/openai"
-	"github.com/adrianliechti/llama/server/unstructured"
+	"github.com/adrianliechti/wingman/config"
+	"github.com/adrianliechti/wingman/server/api"
+	"github.com/adrianliechti/wingman/server/index"
+	"github.com/adrianliechti/wingman/server/openai"
+	"github.com/adrianliechti/wingman/server/unstructured"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"

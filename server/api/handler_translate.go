@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/translator"
+	"github.com/adrianliechti/wingman/pkg/translator"
 )
 
 func (h *Handler) handleTranslate(w http.ResponseWriter, r *http.Request) {

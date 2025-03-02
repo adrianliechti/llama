@@ -3,8 +3,8 @@ package elasticsearch_test
 import (
 	"testing"
 
-	"github.com/adrianliechti/llama/pkg/index/elasticsearch"
-	"github.com/adrianliechti/llama/test"
+	"github.com/adrianliechti/wingman/pkg/index/elasticsearch"
+	"github.com/adrianliechti/wingman/test"
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"

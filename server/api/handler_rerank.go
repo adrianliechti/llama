@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider"
 )
 
 type RerankRequest struct {

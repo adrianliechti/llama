@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/wingman/pkg/index"
 
 	"github.com/google/uuid"
 )

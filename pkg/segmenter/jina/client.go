@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/segmenter"
+	"github.com/adrianliechti/wingman/pkg/segmenter"
 )
 
 var _ segmenter.Provider = &Client{}

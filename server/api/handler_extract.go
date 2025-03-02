@@ -5,8 +5,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/extractor"
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/extractor"
+	"github.com/adrianliechti/wingman/pkg/provider"
 )
 
 func (h *Handler) handleExtract(w http.ResponseWriter, r *http.Request) {

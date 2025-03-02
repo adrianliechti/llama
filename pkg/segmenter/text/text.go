@@ -5,8 +5,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/segmenter"
-	"github.com/adrianliechti/llama/pkg/text"
+	"github.com/adrianliechti/wingman/pkg/segmenter"
+	"github.com/adrianliechti/wingman/pkg/text"
 )
 
 var _ segmenter.Provider = &Provider{}

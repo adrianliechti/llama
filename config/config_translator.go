@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/translator"
-	"github.com/adrianliechti/llama/pkg/translator/azure"
-	"github.com/adrianliechti/llama/pkg/translator/deepl"
+	"github.com/adrianliechti/wingman/pkg/translator"
+	"github.com/adrianliechti/wingman/pkg/translator/azure"
+	"github.com/adrianliechti/wingman/pkg/translator/deepl"
 
 	"golang.org/x/time/rate"
 )

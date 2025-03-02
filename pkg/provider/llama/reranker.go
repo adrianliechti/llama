@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/provider/jina"
+	"github.com/adrianliechti/wingman/pkg/provider/jina"
 )
 
 type Reranker = jina.Reranker

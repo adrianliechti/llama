@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/adrianliechti/llama/pkg/index/azure"
-	"github.com/adrianliechti/llama/test"
+	"github.com/adrianliechti/wingman/pkg/index/azure"
+	"github.com/adrianliechti/wingman/test"
 
 	"github.com/stretchr/testify/require"
 )

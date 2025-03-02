@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/wingman/pkg/index"
 )
 
 var _ index.Provider = &Client{}

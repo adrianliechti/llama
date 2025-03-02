@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/segmenter"
+	"github.com/adrianliechti/wingman/pkg/segmenter"
 )
 
 func (h *Handler) handleSegment(w http.ResponseWriter, r *http.Request) {

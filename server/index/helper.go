@@ -4,8 +4,8 @@ import (
 	"context"
 	"io"
 
-	"github.com/adrianliechti/llama/pkg/extractor"
-	"github.com/adrianliechti/llama/pkg/segmenter"
+	"github.com/adrianliechti/wingman/pkg/extractor"
+	"github.com/adrianliechti/wingman/pkg/segmenter"
 )
 
 func (s *Handler) readText(ctx context.Context, model string, name string, content io.Reader) (string, error) {

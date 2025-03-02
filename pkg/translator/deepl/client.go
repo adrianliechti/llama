@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/translator"
+	"github.com/adrianliechti/wingman/pkg/translator"
 
 	"github.com/google/uuid"
 )

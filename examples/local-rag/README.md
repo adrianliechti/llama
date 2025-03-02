@@ -12,7 +12,7 @@ docker compose up --force-recreate --remove-orphans
 ## Index Documents
 
 ```shell
-docker run -it --rm -v ./:/data -w /data --pull=always ghcr.io/adrianliechti/llama-platform /ingest -url http://host.docker.internal:8080 -token -
+docker run -it --rm -v ./:/data -w /data --pull=always ghcr.io/adrianliechti/wingman /ingest -url http://host.docker.internal:8080 -token -
 ```
 
 ## Verify Documents

@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/summarizer"
+	"github.com/adrianliechti/wingman/pkg/summarizer"
 )
 
 func (h *Handler) handleSummarize(w http.ResponseWriter, r *http.Request) {

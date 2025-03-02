@@ -4,15 +4,15 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/provider/azure"
-	"github.com/adrianliechti/llama/pkg/provider/cohere"
-	"github.com/adrianliechti/llama/pkg/provider/google"
-	"github.com/adrianliechti/llama/pkg/provider/huggingface"
-	"github.com/adrianliechti/llama/pkg/provider/jina"
-	"github.com/adrianliechti/llama/pkg/provider/llama"
-	"github.com/adrianliechti/llama/pkg/provider/ollama"
-	"github.com/adrianliechti/llama/pkg/provider/openai"
+	"github.com/adrianliechti/wingman/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider/azure"
+	"github.com/adrianliechti/wingman/pkg/provider/cohere"
+	"github.com/adrianliechti/wingman/pkg/provider/google"
+	"github.com/adrianliechti/wingman/pkg/provider/huggingface"
+	"github.com/adrianliechti/wingman/pkg/provider/jina"
+	"github.com/adrianliechti/wingman/pkg/provider/llama"
+	"github.com/adrianliechti/wingman/pkg/provider/ollama"
+	"github.com/adrianliechti/wingman/pkg/provider/openai"
 )
 
 func (cfg *Config) RegisterEmbedder(id string, p provider.Embedder) {

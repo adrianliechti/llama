@@ -4,10 +4,10 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/adrianliechti/llama/config"
-	"github.com/adrianliechti/llama/server"
+	"github.com/adrianliechti/wingman/config"
+	"github.com/adrianliechti/wingman/server"
 
-	"github.com/adrianliechti/llama/pkg/otel"
+	"github.com/adrianliechti/wingman/pkg/otel"
 )
 
 func main() {

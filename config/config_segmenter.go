@@ -4,12 +4,12 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/limiter"
-	"github.com/adrianliechti/llama/pkg/otel"
-	"github.com/adrianliechti/llama/pkg/segmenter"
-	"github.com/adrianliechti/llama/pkg/segmenter/jina"
-	"github.com/adrianliechti/llama/pkg/segmenter/text"
-	"github.com/adrianliechti/llama/pkg/segmenter/unstructured"
+	"github.com/adrianliechti/wingman/pkg/limiter"
+	"github.com/adrianliechti/wingman/pkg/otel"
+	"github.com/adrianliechti/wingman/pkg/segmenter"
+	"github.com/adrianliechti/wingman/pkg/segmenter/jina"
+	"github.com/adrianliechti/wingman/pkg/segmenter/text"
+	"github.com/adrianliechti/wingman/pkg/segmenter/unstructured"
 
 	"golang.org/x/time/rate"
 )

@@ -3,8 +3,8 @@
 version: "3"
 
 vars:
-  REPOSITORY: ghcr.io/adrianliechti/llama-platform
-  #REPOSITORY: ghcr.io/adrianliechti/llama-platform:nightly
+  REPOSITORY: ghcr.io/adrianliechti/wingman
+  #REPOSITORY: ghcr.io/adrianliechti/wingman:nightly
 
 includes:
   llama:
@@ -45,11 +45,11 @@ tasks:
 
   webui:
     cmds:
-      - docker run -it --rm --pull always -p 8000:8000 -e OPENAI_BASE_URL=http://host.docker.internal:8080/v1 ghcr.io/adrianliechti/llama-chat
+      - docker run -it --rm --pull always -p 8000:8000 -e OPENAI_BASE_URL=http://host.docker.internal:8080/v1 ghcr.io/adrianliechti/wingman-chat
   
   start:
     cmds:
-      - docker run --name llama-platform -d --rm --pull always -p 8080:8080 --env-file .env -v ./config.yaml:/config.yaml -v ./prompts:/prompts ghcr.io/adrianliechti/llama-platform
+      - docker run --name wingman -d --rm --pull always -p 8080:8080 --env-file .env -v ./config.yaml:/config.yaml -v ./prompts:/prompts ghcr.io/adrianliechti/wingman
   
   otel:
     cmds:
@@ -57,4 +57,4 @@ tasks:
 
   stop:
     cmds:
-      -  docker rm llama-platform -f
+      -  docker rm wingman -f
