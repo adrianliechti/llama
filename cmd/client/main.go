@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/adrianliechti/llama/config"
+	"github.com/adrianliechti/wingman/config"
 
 	"github.com/google/uuid"
 

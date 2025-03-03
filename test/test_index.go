@@ -3,8 +3,8 @@ package test
 import (
 	"testing"
 
-	"github.com/adrianliechti/llama/pkg/index"
-	"github.com/adrianliechti/llama/pkg/to"
+	"github.com/adrianliechti/wingman/pkg/index"
+	"github.com/adrianliechti/wingman/pkg/to"
 )
 
 func TestIndex(t *testing.T, c *TestContext, i index.Provider) {

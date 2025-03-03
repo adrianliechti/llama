@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider"
 )
 
 type Tool = provider.Tool

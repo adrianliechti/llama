@@ -4,7 +4,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/adrianliechti/llama/pkg/template"
+	"github.com/adrianliechti/wingman/pkg/template"
 )
 
 func parseTemplate(val string) (*template.Template, error) {

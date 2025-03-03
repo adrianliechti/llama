@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/provider/groq"
+	"github.com/adrianliechti/wingman/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider/groq"
 
 	"github.com/stretchr/testify/require"
 )

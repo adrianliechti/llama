@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/adrianliechti/llama/pkg/extractor"
-	"github.com/adrianliechti/llama/pkg/extractor/tika"
+	"github.com/adrianliechti/wingman/pkg/extractor"
+	"github.com/adrianliechti/wingman/pkg/extractor/tika"
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"

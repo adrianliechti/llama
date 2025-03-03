@@ -1,8 +1,8 @@
 package json
 
 import (
-	"github.com/adrianliechti/llama/pkg/api"
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/api"
+	"github.com/adrianliechti/wingman/pkg/provider"
 )
 
 type Option func(*Handler)

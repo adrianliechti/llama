@@ -3,8 +3,8 @@ package weaviate_test
 import (
 	"testing"
 
-	"github.com/adrianliechti/llama/pkg/index/weaviate"
-	"github.com/adrianliechti/llama/test"
+	"github.com/adrianliechti/wingman/pkg/index/weaviate"
+	"github.com/adrianliechti/wingman/test"
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"

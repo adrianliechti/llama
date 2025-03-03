@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider"
 )
 
 func (h *Handler) handleTranscribe(w http.ResponseWriter, r *http.Request) {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"math/rand"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider"
 )
 
 type Completer struct {

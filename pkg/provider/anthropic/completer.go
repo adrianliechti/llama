@@ -7,7 +7,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )

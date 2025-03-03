@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "google/protobuf/empty.proto";
 
-option go_package = "github.com/adrianliechti/llama/pkg/index/custom;custom";
+option go_package = "github.com/adrianliechti/wingman/pkg/index/custom;custom";
 
 package index;
 

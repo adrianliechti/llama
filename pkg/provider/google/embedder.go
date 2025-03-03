@@ -3,7 +3,7 @@ package google
 import (
 	"context"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider"
 	"github.com/google/generative-ai-go/genai"
 )
 

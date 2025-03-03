@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/adrianliechti/llama/pkg/tool/custom;custom";
+option go_package = "github.com/adrianliechti/wingman/pkg/tool/custom;custom";
 
 package tool;
 

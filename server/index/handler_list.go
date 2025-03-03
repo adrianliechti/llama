@@ -3,7 +3,7 @@ package index
 import (
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/wingman/pkg/index"
 )
 
 func (s *Handler) handleList(w http.ResponseWriter, r *http.Request) {

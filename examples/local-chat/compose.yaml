@@ -1,6 +1,6 @@
 services:
   platform:
-    image: ghcr.io/adrianliechti/llama-platform
+    image: ghcr.io/adrianliechti/wingman
     pull_policy: always
     build:
       context: ../../
@@ -29,7 +29,7 @@ services:
       - OLLAMA_MODELS=llama3.2:1b,nomic-embed-text:v1.5
 
   web:
-    image: ghcr.io/adrianliechti/llama-chat
+    image: ghcr.io/adrianliechti/wingman-chat
     pull_policy: always
     ports:
       - 8000:8000

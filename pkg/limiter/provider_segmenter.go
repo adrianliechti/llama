@@ -3,7 +3,7 @@ package limiter
 import (
 	"context"
 
-	"github.com/adrianliechti/llama/pkg/segmenter"
+	"github.com/adrianliechti/wingman/pkg/segmenter"
 
 	"golang.org/x/time/rate"
 )

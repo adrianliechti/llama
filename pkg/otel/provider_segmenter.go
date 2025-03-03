@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/segmenter"
+	"github.com/adrianliechti/wingman/pkg/segmenter"
 	"go.opentelemetry.io/otel"
 )
 

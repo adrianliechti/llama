@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/adrianliechti/llama/pkg/extractor"
+	"github.com/adrianliechti/wingman/pkg/extractor"
 )
 
 var _ extractor.Provider = &Client{}

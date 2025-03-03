@@ -3,7 +3,7 @@ package cohere
 import (
 	"context"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider"
 
 	v2 "github.com/cohere-ai/cohere-go/v2"
 	client "github.com/cohere-ai/cohere-go/v2/v2"

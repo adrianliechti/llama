@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/adrianliechti/llama/pkg/index"
-	"github.com/adrianliechti/llama/pkg/tool"
+	"github.com/adrianliechti/wingman/pkg/index"
+	"github.com/adrianliechti/wingman/pkg/tool"
 )
 
 var _ tool.Provider = (*Client)(nil)

@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/adrianliechti/llama/pkg/index"
-	"github.com/adrianliechti/llama/pkg/to"
+	"github.com/adrianliechti/wingman/pkg/index"
+	"github.com/adrianliechti/wingman/pkg/to"
 
 	"github.com/google/uuid"
 )

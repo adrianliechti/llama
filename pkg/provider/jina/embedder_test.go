@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/adrianliechti/llama/pkg/provider/jina"
+	"github.com/adrianliechti/wingman/pkg/provider/jina"
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -18,7 +18,7 @@ func TestEmbedder(t *testing.T) {
 		Started: true,
 
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/adrianliechti/llama-embeddings",
+			Image: "ghcr.io/adrianliechti/wingman-embeddings",
 
 			Mounts: testcontainers.Mounts(
 				testcontainers.ContainerMount{

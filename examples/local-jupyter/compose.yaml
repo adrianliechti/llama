@@ -1,6 +1,6 @@
 services:
   platform:
-    image: ghcr.io/adrianliechti/llama-platform
+    image: ghcr.io/adrianliechti/wingman
     pull_policy: always
     build:
       context: ../../

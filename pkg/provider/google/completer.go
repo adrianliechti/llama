@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/api/iterator"
 
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/to"
+	"github.com/adrianliechti/wingman/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/to"
 )
 
 var _ provider.Completer = (*Completer)(nil)

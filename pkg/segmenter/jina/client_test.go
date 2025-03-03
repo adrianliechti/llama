@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/adrianliechti/llama/pkg/segmenter/jina"
+	"github.com/adrianliechti/wingman/pkg/segmenter/jina"
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -19,7 +19,7 @@ func TestExtract(t *testing.T) {
 		Started: true,
 
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "ghcr.io/adrianliechti/llama-segmenter",
+			Image:        "ghcr.io/adrianliechti/wingman-segmenter",
 			ExposedPorts: []string{"8000/tcp"},
 
 			WaitingFor: wait.ForLog("Application startup complete"),

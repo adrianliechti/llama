@@ -11,8 +11,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/extractor"
-	"github.com/adrianliechti/llama/pkg/text"
+	"github.com/adrianliechti/wingman/pkg/extractor"
+	"github.com/adrianliechti/wingman/pkg/text"
 )
 
 var _ extractor.Provider = &Client{}

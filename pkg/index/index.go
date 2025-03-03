@@ -3,7 +3,7 @@ package index
 import (
 	"context"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider"
 )
 
 type Provider interface {

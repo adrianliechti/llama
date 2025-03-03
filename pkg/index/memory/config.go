@@ -1,7 +1,7 @@
 package memory
 
 import (
-	"github.com/adrianliechti/llama/pkg/index"
+	"github.com/adrianliechti/wingman/pkg/index"
 )
 
 type Option func(*Provider)

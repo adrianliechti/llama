@@ -5,11 +5,11 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/chain"
-	"github.com/adrianliechti/llama/pkg/index"
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/template"
-	"github.com/adrianliechti/llama/pkg/text"
+	"github.com/adrianliechti/wingman/pkg/chain"
+	"github.com/adrianliechti/wingman/pkg/index"
+	"github.com/adrianliechti/wingman/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/template"
+	"github.com/adrianliechti/wingman/pkg/text"
 )
 
 var _ chain.Provider = &Chain{}

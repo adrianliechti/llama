@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/provider/elevenlabs"
-	"github.com/adrianliechti/llama/pkg/provider/openai"
+	"github.com/adrianliechti/wingman/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider/elevenlabs"
+	"github.com/adrianliechti/wingman/pkg/provider/openai"
 )
 
 func (cfg *Config) RegisterSynthesizer(id string, p provider.Synthesizer) {

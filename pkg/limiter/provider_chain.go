@@ -3,8 +3,8 @@ package limiter
 import (
 	"context"
 
-	"github.com/adrianliechti/llama/pkg/chain"
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/chain"
+	"github.com/adrianliechti/wingman/pkg/provider"
 
 	"golang.org/x/time/rate"
 )

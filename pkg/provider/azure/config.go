@@ -3,7 +3,7 @@ package azure
 import (
 	"net/http"
 
-	"github.com/adrianliechti/llama/pkg/provider/openai"
+	"github.com/adrianliechti/wingman/pkg/provider/openai"
 )
 
 type Config struct {

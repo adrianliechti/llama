@@ -6,7 +6,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/tool"
+	"github.com/adrianliechti/wingman/pkg/tool"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

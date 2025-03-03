@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/summarizer"
-	"github.com/adrianliechti/llama/pkg/text"
+	"github.com/adrianliechti/wingman/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/summarizer"
+	"github.com/adrianliechti/wingman/pkg/text"
 )
 
 var _ summarizer.Provider = (*Adapter)(nil)

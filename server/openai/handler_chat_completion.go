@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/provider"
 
 	"github.com/google/uuid"
 )

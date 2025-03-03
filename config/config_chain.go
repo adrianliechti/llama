@@ -4,19 +4,19 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/index"
-	"github.com/adrianliechti/llama/pkg/limiter"
-	"github.com/adrianliechti/llama/pkg/otel"
-	"github.com/adrianliechti/llama/pkg/provider"
-	"github.com/adrianliechti/llama/pkg/template"
+	"github.com/adrianliechti/wingman/pkg/index"
+	"github.com/adrianliechti/wingman/pkg/limiter"
+	"github.com/adrianliechti/wingman/pkg/otel"
+	"github.com/adrianliechti/wingman/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/template"
 
-	"github.com/adrianliechti/llama/pkg/chain"
-	"github.com/adrianliechti/llama/pkg/chain/agent"
-	"github.com/adrianliechti/llama/pkg/chain/assistant"
-	"github.com/adrianliechti/llama/pkg/chain/rag"
+	"github.com/adrianliechti/wingman/pkg/chain"
+	"github.com/adrianliechti/wingman/pkg/chain/agent"
+	"github.com/adrianliechti/wingman/pkg/chain/assistant"
+	"github.com/adrianliechti/wingman/pkg/chain/rag"
 
-	"github.com/adrianliechti/llama/pkg/to"
-	"github.com/adrianliechti/llama/pkg/tool"
+	"github.com/adrianliechti/wingman/pkg/to"
+	"github.com/adrianliechti/wingman/pkg/tool"
 
 	"golang.org/x/time/rate"
 )

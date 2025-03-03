@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/adrianliechti/llama/pkg/extractor"
-	"github.com/adrianliechti/llama/pkg/provider"
+	"github.com/adrianliechti/wingman/pkg/extractor"
+	"github.com/adrianliechti/wingman/pkg/provider"
 )
 
 func valueModel(r *http.Request) string {
