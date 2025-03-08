@@ -306,7 +306,7 @@ func convertChatRequest(model string, messages []provider.Message, options *prov
 			Type: to.Ptr("function"),
 
 			Function: &v2.ToolV2Function{
-				Name:        to.Ptr(t.Name),
+				Name:        t.Name,
 				Description: to.Ptr(t.Description),
 
 				Parameters: t.Parameters,
