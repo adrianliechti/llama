@@ -3,8 +3,8 @@
 version: "3"
 
 vars:
-  REPOSITORY: ghcr.io/adrianliechti/wingman
-  #REPOSITORY: ghcr.io/adrianliechti/wingman:nightly
+  REPOSITORY: ghcr.io/adrianliechti/wingman-platform
+  #REPOSITORY: ghcr.io/adrianliechti/wingman-platform:nightly
 
 includes:
   llama:
